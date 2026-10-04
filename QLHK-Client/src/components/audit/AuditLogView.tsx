@@ -1,4 +1,5 @@
 import {
+	Activity,
 	ArrowDownCircle,
 	ArrowRight,
 	ChevronLeft,
@@ -710,39 +711,55 @@ export const AuditLogView: React.FC = () => {
 					{
 						id: "ALL",
 						label: "Tất Cả",
+						icon: Activity,
 						color: "bg-slate-900 text-white dark:bg-white dark:text-slate-900",
 					},
 					{
 						id: "CREATE",
 						label: "Thêm Mới",
+						icon: Plus,
 						color: "bg-emerald-600 text-white",
 					},
-					{ id: "UPDATE", label: "Cập Nhật", color: "bg-blue-600 text-white" },
-					{ id: "DELETE", label: "Xóa", color: "bg-rose-600 text-white" },
+					{
+						id: "UPDATE",
+						label: "Cập Nhật",
+						icon: RefreshCw,
+						color: "bg-blue-600 text-white",
+					},
+					{
+						id: "DELETE",
+						label: "Xóa",
+						icon: Trash2,
+						color: "bg-rose-600 text-white",
+					},
 					{
 						id: "RESTORE",
 						label: "Khôi Phục",
+						icon: RotateCcw,
 						color: "bg-purple-600 text-white",
 					},
 					{
 						id: "IMPORT",
 						label: "Nhập Excel",
+						icon: FileSpreadsheet,
 						color: "bg-amber-600 text-white",
 					},
 				].map((item) => {
 					const isActive = actionFilter === item.id;
+					const Icon = item.icon;
 					return (
 						<button
 							key={item.id}
 							type="button"
 							onClick={() => setActionFilter(item.id)}
-							className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
 								isActive
 									? `${item.color} shadow-xs`
 									: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
 							}`}
 						>
-							{item.label}
+							<Icon className="w-3.5 h-3.5 shrink-0" strokeWidth={1.5} />
+							<span>{item.label}</span>
 						</button>
 					);
 				})}

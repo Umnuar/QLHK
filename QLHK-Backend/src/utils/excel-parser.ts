@@ -23,6 +23,8 @@ export interface ParsedHousehold {
 	head_name: string;
 	member_count: number;
 	members: ParsedCitizen[];
+	address?: string | null;
+	status?: string | null;
 }
 
 export interface ExcelParseResult {

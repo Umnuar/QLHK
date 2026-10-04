@@ -324,6 +324,48 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(res.body.data.insertedHouseholds).toBe(4);
       expect(res.body.data.insertedCitizens).toBe(14);
     });
+
+    it('POST /api/excel/import: Hỗ trợ JSON payload với địa chỉ và trạng thái cư trú tùy chỉnh', async () => {
+      const res = await request(app)
+        .post('/api/excel/import')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          village_id: thon1VillageId,
+          households: [
+            {
+              book_number: 'HK-CUSTOM-001',
+              address: 'Thôn 1, Đăk Hà (Khu kinh tế mới)',
+              status: 'Tạm trú',
+              members: [
+                {
+                  stt: 1,
+                  is_head: true,
+                  relationship: 'Chủ hộ',
+                  full_name: 'Đoàn Văn Custom',
+                  dob: '15/05/1988',
+                  gender: 'Nam',
+                  cccd: '060088001122',
+                  ethnicity: 'Kinh',
+                  religion: 'Không',
+                  notes: 'Nhập từ client batch',
+                },
+              ],
+            },
+          ],
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.insertedHouseholds).toBe(1);
+      expect(res.body.data.insertedCitizens).toBe(1);
+
+      const savedHh = await prisma.households.findFirst({
+        where: { book_number: 'HK-CUSTOM-001' },
+      });
+      expect(savedHh).toBeDefined();
+      expect(savedHh?.address).toBe('Thôn 1, Đăk Hà (Khu kinh tế mới)');
+      expect(savedHh?.status).toBe('Tạm trú');
+    });
   });
 
   describe('5. Analytics APIs', () => {
@@ -421,6 +463,15 @@ describe('QLHK Backend End-to-End API Integration', () => {
     it('Giải mã CCCD qua endpoint chuyên biệt (GET /api/citizens/:id/reveal-cccd)', async () => {
       const res = await request(app)
         .get(`/api/citizens/${testCitizenId}/reveal-cccd`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.cccd).toBe(secretCCCD);
+    });
+
+    it('Giải mã CCCD qua endpoint chuyên biệt (POST /api/citizens/:id/reveal-cccd)', async () => {
+      const res = await request(app)
+        .post(`/api/citizens/${testCitizenId}/reveal-cccd`)
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);

@@ -20,6 +20,7 @@ router.use(authorizeVillageScope);
 router.get("/", getCitizens);
 router.get("/:id", getCitizenById);
 router.get("/:id/reveal-cccd", revealCitizenCCCD);
+router.post("/:id/reveal-cccd", revealCitizenCCCD);
 router.post("/", createCitizen);
 router.put("/:id", updateCitizen);
 router.patch("/:id", updateCitizen);

@@ -127,8 +127,12 @@ export const importExcel = async (
 							data: {
 								village_id: targetVillageId!,
 								book_number: h.book_number,
-								address: `Thôn ${parseResult.village_name || ""}`.trim() || null,
-								status: "active",
+								address:
+									(h.address && String(h.address).trim()) ||
+									(parseResult.village_name
+										? `Thôn ${parseResult.village_name}`.trim()
+										: null),
+								status: (h.status && String(h.status).trim()) || "active",
 								version: 1,
 								is_deleted: false,
 							},

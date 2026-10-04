@@ -617,7 +617,8 @@ export const HouseholdsPage: React.FC = () => {
 					const hoDemVal = (lastName || "").toUpperCase();
 					const tenVal = (firstName || "").toUpperCase();
 					const dobVal = m.dob_formatted || m.dob_raw || m.dob || "";
-					const ageVal = m.age || "";
+					const ageVal =
+						(dobVal ? calculateAge(dobVal, calculationYear) : m.age) || "";
 					const nuVal = m.gender === "Nữ" ? "X" : null;
 					const dttsVal = m.ethnicity || "Kinh";
 					let religionVal = m.religion || "Không";

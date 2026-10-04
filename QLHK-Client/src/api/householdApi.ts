@@ -251,7 +251,12 @@ export const householdApi = {
 	 * Giải mã và hiển thị số CCCD của công dân (ghi log kiểm toán REVEAL_CCCD)
 	 */
 	async revealCitizenCCCD(citizenId: string): Promise<string | null> {
-		const res = await apiClient.post(`/citizens/${citizenId}/reveal-cccd`);
-		return res.data?.cccd || null;
+		try {
+			const res = await apiClient.post(`/citizens/${citizenId}/reveal-cccd`);
+			return res.data?.cccd || null;
+		} catch {
+			const res = await apiClient.get(`/citizens/${citizenId}/reveal-cccd`);
+			return res.data?.cccd || null;
+		}
 	},
 };

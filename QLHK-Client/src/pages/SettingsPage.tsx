@@ -2,7 +2,6 @@ import {
 	Building2,
 	CheckCircle2,
 	Database,
-	Edit3,
 	Eye,
 	EyeOff,
 	Home,
@@ -75,12 +74,6 @@ export const SettingsPage: React.FC = () => {
 	const [resetPwdValue, setResetPwdValue] = useState("");
 	const [showResetPwd, setShowResetPwd] = useState(false);
 	const [loadingResetPwd, setLoadingResetPwd] = useState(false);
-
-	// Modal phân công thôn cán bộ
-	const [assignUser, setAssignUser] = useState<User | null>(null);
-	const [assignVillageId, setAssignVillageId] = useState("");
-	const [assignRole, setAssignRole] = useState<"admin" | "user">("user");
-	const [loadingAssign, setLoadingAssign] = useState(false);
 
 	// --- TAB 4: THÔNG TIN ĐƠN VỊ & HỆ THỐNG ---
 	const [communeInfo, setCommuneInfo] = useState<CommuneInfo>(() => {
@@ -196,38 +189,6 @@ export const SettingsPage: React.FC = () => {
 			});
 		} finally {
 			setLoadingResetPwd(false);
-		}
-	};
-
-	// Phân công thôn cán bộ
-	const handleAssignVillage = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!assignUser) return;
-		setLoadingAssign(true);
-		try {
-			await authApi.updateUser(assignUser.id, {
-				role: assignRole,
-				village_id: assignRole === "user" ? assignVillageId || null : null,
-			});
-			const updatedUsername = assignUser.username;
-			setAssignUser(null);
-			fetchUsers();
-			showModal({
-				title: "Thành công",
-				message: `Đã cập nhật phân công công tác cho cán bộ "${updatedUsername}".`,
-				type: "success",
-			});
-		} catch (err: any) {
-			showModal({
-				title: "Lỗi",
-				message:
-					err.response?.data?.error ||
-					err.message ||
-					"Không thể cập nhật phân công",
-				type: "danger",
-			});
-		} finally {
-			setLoadingAssign(false);
 		}
 	};
 
@@ -589,87 +550,6 @@ export const SettingsPage: React.FC = () => {
 							document.body,
 						)}
 
-					{/* Modal phân công thôn cán bộ */}
-					{assignUser &&
-						typeof document !== "undefined" &&
-						createPortal(
-							<div
-								className="fixed inset-0 !m-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 dark:bg-black/70 backdrop-blur-xs select-none animate-in fade-in duration-150"
-								onClick={(e) => {
-									if (e.target === e.currentTarget) setAssignUser(null);
-								}}
-								role="dialog"
-								aria-modal="true"
-							>
-								<form
-									onSubmit={handleAssignVillage}
-									className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-w-md w-full animate-in zoom-in-95 duration-150"
-									onClick={(e) => e.stopPropagation()}
-								>
-									<div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-										<h4 className="text-sm font-bold text-slate-900 dark:text-white">
-											Phân Công Thôn Cho:{" "}
-											<strong className="text-emerald-600">
-												{assignUser.username}
-											</strong>
-										</h4>
-										<button
-											type="button"
-											onClick={() => setAssignUser(null)}
-											className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-											aria-label="Đóng modal"
-										>
-											<X className="w-4 h-4" strokeWidth={1.5} />
-										</button>
-									</div>
-									<div className="space-y-3">
-										<div>
-											<CustomSelect
-												label="Vai trò"
-												value={assignRole}
-												onChange={(val) => setAssignRole(val as any)}
-												options={[
-													{ value: "user", label: "Cán bộ Thôn (User)" },
-													{ value: "admin", label: "Quản trị viên Xã (Admin)" },
-												]}
-											/>
-										</div>
-										{assignRole === "user" && (
-											<div>
-												<CustomSelect
-													label="Thôn Phụ Trách"
-													value={assignVillageId}
-													onChange={(val) => setAssignVillageId(String(val))}
-													options={villages.map((v) => ({
-														value: v.id,
-														label: v.name,
-													}))}
-													placeholder="Chọn thôn"
-												/>
-											</div>
-										)}
-									</div>
-									<div className="flex justify-end gap-2 pt-2">
-										<button
-											type="button"
-											onClick={() => setAssignUser(null)}
-											className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold cursor-pointer active:scale-95"
-										>
-											Hủy
-										</button>
-										<button
-											type="submit"
-											disabled={loadingAssign}
-											className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold shadow-xs cursor-pointer active:scale-95 disabled:opacity-50"
-										>
-											{loadingAssign ? "Đang lưu..." : "Lưu Phân Công"}
-										</button>
-									</div>
-								</form>
-							</div>,
-							document.body,
-						)}
-
 					{/* Bảng danh sách cán bộ */}
 					<div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
 						<div className="overflow-x-auto">
@@ -740,22 +620,6 @@ export const SettingsPage: React.FC = () => {
 												</td>
 												<td className="px-4 py-3 text-right border-b border-slate-100 dark:border-slate-800">
 													<div className="flex items-center justify-end gap-1.5">
-														<button
-															type="button"
-															onClick={() => {
-																setAssignUser(u);
-																setAssignRole(u.role);
-																setAssignVillageId(u.village_id || "");
-															}}
-															className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-colors cursor-pointer"
-															title="Phân công thôn"
-															aria-label={`Phân công thôn cho ${u.username}`}
-														>
-															<Edit3
-																className="w-3.5 h-3.5"
-																strokeWidth={1.5}
-															/>
-														</button>
 														<button
 															type="button"
 															onClick={() => {

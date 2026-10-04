@@ -15,20 +15,19 @@ interface AgeFilterPopoverProps {
 
 interface PresetItem {
 	label: string;
-	subLabel: string;
 	min?: number;
 	max?: number;
 }
 
 const PRESETS: PresetItem[] = [
-	{ label: "< 6 tuổi", subLabel: "Trẻ em / Mầm non", max: 5 },
-	{ label: "6 - 17 tuổi", subLabel: "Độ tuổi đi học", min: 6, max: 17 },
-	{ label: "Tròn 14 tuổi", subLabel: "Cấp Căn cước lần đầu", min: 14, max: 14 },
-	{ label: "Tròn 18 tuổi", subLabel: "Căn cước & Bầu cử", min: 18, max: 18 },
-	{ label: "18 - 27 tuổi", subLabel: "Độ tuổi NVQS", min: 18, max: 27 },
-	{ label: "18 - 60 tuổi", subLabel: "Độ tuổi lao động", min: 18, max: 60 },
-	{ label: "≥ 60 tuổi", subLabel: "Người cao tuổi", min: 60 },
-	{ label: "≥ 80 tuổi", subLabel: "Chính sách bảo trợ", min: 80 },
+	{ label: "< 6 tuổi", max: 5 },
+	{ label: "6 - 17 tuổi", min: 6, max: 17 },
+	{ label: "Tròn 14 tuổi", min: 14, max: 14 },
+	{ label: "Tròn 18 tuổi", min: 18, max: 18 },
+	{ label: "18 - 27 tuổi", min: 18, max: 27 },
+	{ label: "18 - 60 tuổi", min: 18, max: 60 },
+	{ label: "≥ 60 tuổi", min: 60 },
+	{ label: "≥ 80 tuổi", min: 80 },
 ];
 
 export const AgeFilterPopover: React.FC<AgeFilterPopoverProps> = ({
@@ -191,18 +190,18 @@ export const AgeFilterPopover: React.FC<AgeFilterPopoverProps> = ({
 
 			{/* Popover Panel */}
 			{isOpen && (
-				<div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 w-80 bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-xl border border-slate-200 dark:border-slate-800 space-y-4 z-50 animate-in fade-in zoom-in-95 duration-100">
+				<div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 w-64 sm:w-72 bg-white dark:bg-slate-900 rounded-2xl p-3.5 shadow-xl border border-slate-200 dark:border-slate-800 space-y-3 z-50 animate-in fade-in zoom-in-95 duration-100">
 					{/* Header */}
 					<div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-						<div className="flex items-center gap-2 text-slate-800 dark:text-slate-100 font-bold text-sm">
-							<Users className="w-4 h-4 text-emerald-500" />
+						<div className="flex items-center gap-2 text-slate-800 dark:text-slate-100 font-bold text-xs">
+							<Users className="w-3.5 h-3.5 text-emerald-500" />
 							<span>Lọc Theo Nhóm Tuổi</span>
 						</div>
 						{currentFilter && (
 							<button
 								type="button"
 								onClick={handleClear}
-								className="text-xs text-rose-600 dark:text-rose-400 hover:underline font-medium cursor-pointer"
+								className="text-[11px] text-rose-600 dark:text-rose-400 hover:underline font-semibold cursor-pointer"
 							>
 								Xóa lọc
 							</button>
@@ -211,10 +210,10 @@ export const AgeFilterPopover: React.FC<AgeFilterPopoverProps> = ({
 
 					{/* Presets List */}
 					<div>
-						<div className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+						<div className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 px-0.5">
 							Nhóm tuổi phổ biến
 						</div>
-						<div className="grid grid-cols-2 gap-1.5">
+						<div className="space-y-1 max-h-52 overflow-y-auto pr-0.5">
 							{PRESETS.map((preset, idx) => {
 								const active = isPresetActive(preset);
 								return (
@@ -222,21 +221,16 @@ export const AgeFilterPopover: React.FC<AgeFilterPopoverProps> = ({
 										key={idx}
 										type="button"
 										onClick={() => handleSelectPreset(preset)}
-										className={`flex flex-col items-start p-2 rounded-xl text-left transition-all border cursor-pointer ${
+										className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-left text-xs font-semibold transition-all border cursor-pointer ${
 											active
 												? "bg-emerald-50 dark:bg-emerald-950/70 border-emerald-500 text-emerald-800 dark:text-emerald-200 shadow-xs"
-												: "bg-slate-50 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
+												: "bg-slate-50 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600"
 										}`}
 									>
-										<div className="flex items-center justify-between w-full">
-											<span className="text-xs font-bold">{preset.label}</span>
-											{active && (
-												<Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-											)}
-										</div>
-										<span className="text-[10px] text-slate-500 dark:text-slate-400 truncate w-full mt-0.5">
-											{preset.subLabel}
-										</span>
+										<span>{preset.label}</span>
+										{active && (
+											<Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+										)}
 									</button>
 								);
 							})}

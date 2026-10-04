@@ -1,0 +1,43 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+node_modules
+dist
+dist/
+dist-ssr
+dist-electron
+dist-electron/
+release
+*.local
+
+# Build artifacts & Vite timestamp files
+*.timestamp-*.mjs
+
+# Anti-temp file safety patterns
+patch_*
+temp_*
+debug_*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Graphify & CodeGraph local index
+.graphify/
+GRAPH_REPORT.md
+.codegraph/
+*.codegraph.db

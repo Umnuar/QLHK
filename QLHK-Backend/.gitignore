@@ -1,0 +1,13 @@
+node_modules
+dist
+.env
+*.db
+*.db-journal
+dev.db
+dev.db-journal
+uploads
+# Graphify & CodeGraph local index
+.graphify/
+GRAPH_REPORT.md
+.codegraph/
+*.codegraph.db

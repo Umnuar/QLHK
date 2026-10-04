@@ -1,0 +1,68 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Production build outputs
+dist/
+dist-electron/
+dist-ssr/
+release/
+.vite/
+
+# Environment files and credentials (CRITICAL)
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Databases and SQLite runtime
+*.db
+*.db-journal
+dev.db
+dev.db-journal
+
+# Uploads and temporary runtime assets
+uploads/
+backups/
+test-fixtures/*.xlsx
+*.timestamp-*.mjs
+*.timestamp*.mjs
+.workflow/
+.superpowers/
+
+# Temporary and patch files
+patch*
+fix*
+temp*
+debug*
+test_*.js
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local subrepo git backups (preserves child git history safely)
+**/.git_backup/
+**/.git_backup
+**/.git_local/
+
+# Graphify & CodeGraph local index
+.graphify/
+GRAPH_REPORT.md
+.codegraph/
+*.codegraph.db
+graphify-out/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+/.graft/

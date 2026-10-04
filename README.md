@@ -1,236 +1,224 @@
-# HỆ THỐNG QUẢN LÝ HỘ KHẨU & NHÂN KHẨU XÃ ĐĂK HÀ (QLHK)
+# Quản lý Hộ khẩu & Nhân khẩu Xã Đăk Hà (QLHK)
 
-> **Cơ quan chủ quản:** Ủy ban nhân dân Xã Đăk Hà, Huyện Đăk Hà, Tỉnh Kon Tum  
-> **Phiên bản:** `v1.0.0` (Production Ready)  
-> **Giấy phép:** Bản quyền thuộc UBND Xã Đăk Hà — Mọi quyền được bảo lưu (All Rights Reserved — **Không áp dụng giấy phép MIT**)  
-> **Chính sách an toàn thông tin:** Xem chi tiết tại [SECURITY.md](SECURITY.md)
+Hệ thống số hóa và quản lý dữ liệu dân cư, biến động hộ khẩu, nhân khẩu và thành phần dân tộc phục vụ công tác điều hành tại Xã Đăk Hà.
 
----
+![Phiên bản](https://img.shields.io/badge/Phi%C3%AAn_b%E1%BA%A3n-1.0.0-emerald)
+![Nền tảng](https://img.shields.io/badge/N%E1%BB%81n_t%E1%BA%A3ng-Web_%7C_Windows_Desktop-blue)
+![Giấy phép](https://img.shields.io/badge/Gi%E1%BA%A5y_ph%C3%A9p-Proprietary-slate)
 
-## 1. TỔNG QUAN HỆ THỐNG
-
-**QLHK** (Quản Lý Hộ Khẩu & Nhân Khẩu) là phân hệ trọng tâm thuộc Hệ sinh thái Số hóa Dữ liệu Công vụ Xã Đăk Hà, phục vụ công tác số hóa, tra cứu, quản lý biến động và thống kê dân cư, hộ khẩu, nhân khẩu và thành phần dân tộc trên địa bàn xã.
-
-Hệ thống vận hành đồng bộ trên hai nền tảng:
-- **Web Application** chạy trên trình duyệt hiện đại.
-- **Desktop Application (Electron)** trên máy trạm làm việc của cán bộ tại UBND Xã.
-
-Ứng dụng đáp ứng các yêu cầu khắt khe về bảo mật dữ liệu định danh công dân theo Nghị định 13/2023/NĐ-CP, hỗ trợ lưu trữ đệm ngoại tuyến (Offline IndexedDB) và phân quyền kiểm soát theo địa bàn từng thôn.
+> [!IMPORTANT]
+> **Bản quyền thuộc Ủy ban nhân dân Xã Đăk Hà, Huyện Đăk Hà, Tỉnh Kon Tum.**  
+> Mọi quyền được bảo lưu. Dự án này không áp dụng giấy phép mã nguồn mở tự do (không sử dụng MIT License, Apache hoặc GPL). Chi tiết xem tại mục [Giấy phép và bản quyền](#giay-phep-va-ban-quyen).
 
 ---
 
-## 2. CÁC TÍNH NĂNG CHÍNH
+## Mục lục
 
-### 2.1. Quản lý Hộ gia đình & Nhân khẩu Toàn diện
-- **Hộ gia đình:** Theo dõi theo định danh chủ hộ, địa bàn thôn quản lý, địa chỉ cư trú, phân loại tình trạng cư trú (*Thường trú*, *Tạm trú*, *Tạm vắng*).
-- **Thành viên nhân khẩu:** Quản lý mối quan hệ với chủ hộ (*Chủ hộ, Vợ/Chồng, Con đẻ, Bố/Mẹ, Anh/Chị/Em...*), ngày tháng năm sinh, giới tính, dân tộc, tôn giáo, nơi ở hiện tại và ghi chú.
-
-### 2.2. Bảo vệ Tuyệt đối Số Căn cước công dân (CCCD)
-- **Mã hóa tầng lưu trữ:** Số CCCD được mã hóa bằng thuật toán đối xứng **AES-256-GCM** với khóa bảo mật độc lập trước khi ghi vào cơ sở dữ liệu.
-- **Băm tra cứu bảo mật (`cccd_hash`):** Tìm kiếm và chống trùng lặp CCCD thông qua mã băm một chiều an toàn mà không cần giải mã dữ liệu thô.
-- **Che mờ chống nhìn lén:** Giao diện hiển thị mặc định `••••••••1234`, hỗ trợ cán bộ có thẩm quyền mở xem tạm thời.
-
-### 2.3. Nhập & Xuất Dữ liệu Excel Chuẩn hóa 11 Cột
-- **Tự động đối soát 11 cột chuẩn:** Nhận diện và ánh xạ chính xác mẫu biểu nhân hộ khẩu Đăk Hà (*STT, Chủ hộ/Thành viên, Họ và tên, Quan hệ, Ngày sinh, Giới tính, Dân tộc, Tôn giáo, CCCD, Địa chỉ, Ghi chú*).
-- **Khung xem trước đối soát (Preview Modal):** Phân tích hợp lệ, phát hiện cảnh báo ngày sinh sai định dạng, thống kê số dòng hợp lệ trước khi bấm xác nhận nhập vào CSDL.
-- **Tải biểu mẫu chuẩn (.xlsx):** Cung cấp sẵn file mẫu chuẩn Đăk Hà trực tiếp từ modal nhập liệu.
-
-### 2.4. Khóa Lạc quan & Chống Ghi đè Dữ liệu (OCC 409)
-- Quản lý phiên bản bản ghi qua trường số nguyên `version: Int`.
-- Tự động phát hiện xung đột khi nhiều cán bộ cùng cập nhật một hộ gia đình hoặc nhân khẩu, ngăn chặn tuyệt đối tình trạng mất dữ liệu do ghi đè ngầm.
-
-### 2.5. Phân quyền Theo Địa bàn Thôn (Village Scoping RBAC)
-- **Cán bộ Xã (Admin):** Quản lý toàn bộ các thôn, quản lý tài khoản cán bộ, sao lưu phục hồi CSDL, xóa vĩnh viễn dữ liệu.
-- **Cán bộ Cơ sở (Officer):** Chỉ được quản lý dữ liệu hộ gia đình và nhân khẩu thuộc địa bàn thôn được phân công. Mọi thao tác truy cập chéo thôn đều bị chặn từ tầng Backend (`403 Forbidden`).
-
-### 2.6. Thùng rác & Khôi phục Dữ liệu An toàn (Recycle Bin)
-- Cơ chế xóa mềm (`is_deleted: true`, `deleted_at`) bảo vệ an toàn trước các thao tác nhầm lẫn.
-- Khôi phục hộ gia đình tự động khôi phục toàn bộ nhân khẩu liên kết; hỗ trợ thông báo Toast hoàn tác nhanh.
-
-### 2.7. Báo cáo Thống kê Dân cư & Dân tộc (Analytics Dashboard)
-- **4 Thẻ chỉ số tổng quan (KPI):** Tổng hộ gia đình, Tổng nhân khẩu, Cơ cấu giới tính (Nam / Nữ), Tỷ lệ Dân tộc thiểu số (DTTS).
-- **Hệ thống biểu đồ phân tích:** Tháp tuổi dân số, cơ cấu dân tộc, cơ cấu tôn giáo, tình trạng cư trú.
-- **Bảng tổng hợp so sánh các thôn:** Truy vấn SQL Native Aggregation hiệu năng cao, xuất báo cáo tổng hợp ra tệp Excel.
-
-### 2.8. Nhật ký Hoạt động (Audit Log)
-- Ghi vết chi tiết mọi hành vi: Khởi tạo, Cập nhật, Xóa mềm, Khôi phục, Nhập Excel.
-- Bộ lọc thông minh theo địa bàn thôn, cán bộ thực hiện và khoảng thời gian.
+- [Tổng quan](#tong-quan)
+- [Tính năng chính](#tinh-nang-chinh)
+- [Kiến trúc hệ thống](#kien-truc-he-thong)
+- [Bắt đầu nhanh](#bat-dau-nhanh)
+- [Cấu trúc thư mục](#cau-truc-thu-muc)
+- [Bảo mật](#bao-mat)
+- [Trạng thái và giới hạn đã biết](#trang-thai-va-gioi-han-da-biet)
+- [Người duy trì và liên hệ](#nguoi-duy-tri-va-lien-he)
+- [Giấy phép và bản quyền](#giay-phep-va-ban-quyen)
 
 ---
 
-## 3. KIẾN TRÚC KỸ THUẬT
+<a id="tong-quan"></a>
+## Tổng quan
 
-```
-+-------------------------------------------------------------------------------+
-|                            KIẾN TRÚC HỆ THỐNG QLHK                            |
-+-------------------------------------------------------------------------------+
-                                        |
-          +-----------------------------+-----------------------------+
-          |                                                           |
-          v                                                           v
-+-------------------------------+                           +-------------------------------+
-|    QLHK-CLIENT (Desktop/Web)  |                           |     QLHK-BACKEND (REST API)   |
-|   Port: 5175 | Electron       |                           |     Port: 5002 | Express TS   |
-+-------------------------------+                           +-------------------------------+
-| - React 18 + Vite 5           |                           | - Node.js Express TypeScript  |
-| - Tailwind CSS v4             |                           | - Prisma ORM                  |
-| - Lucide React Icons          |       HTTPS / JSON        | - AES-256-GCM CCCD Crypto     |
-| - Electron Main & Preload IPC | <=======================> | - JWT Authentication          |
-| - Offline IndexedDB Storage   |      Bearer Token Auth    | - SQLite / PostgreSQL         |
-| - Centered Floating Modals    |                           | - Native SQL Aggregations     |
-| - Unified Toast Notifications |                           | - OCC Version Check           |
-+-------------------------------+                           +-------------------------------+
+**QLHK** là phần mềm phục vụ cán bộ tư pháp - hộ tịch xã và các cán bộ cơ sở trong công tác số hóa, tra cứu và theo dõi biến động nhân hộ khẩu trên địa bàn xã Đăk Hà. Ứng dụng hỗ trợ quản lý chi tiết từng hộ gia đình và nhân khẩu, đối soát tệp bảng tính Excel, bảo vệ dữ liệu định danh theo quy định và tổng hợp báo cáo thống kê dân số. Phần mềm chạy song song trên nền tảng Web và Desktop (Electron) cho máy trạm làm việc.
+
+### Hệ sinh thái số hóa công vụ Xã Đăk Hà
+
+| Ứng dụng | Tên đầy đủ | Vai trò chính | Kho lưu trữ |
+| :--- | :--- | :--- | :--- |
+| **QLCS** | Quản lý Chính sách | Chế độ người cao tuổi, hưu trí xã hội, chúc thọ | [Umnuar/QLCS](https://github.com/Umnuar/QLCS) |
+| **QLHK** | Quản lý Hộ khẩu | Dữ liệu dân cư, nhân hộ khẩu, dân tộc | [Umnuar/QLHK](https://github.com/Umnuar/QLHK) |
+| **QLNN** | Quản lý Nông nghiệp | Dữ liệu nông nghiệp, nông thôn mới, thống kê cây trồng và vật nuôi | [Umnuar/QLNN](https://github.com/Umnuar/QLNN) |
+
+---
+
+<a id="tinh-nang-chinh"></a>
+## Tính năng chính
+
+- **Quản lý hộ gia đình & nhân khẩu**: Theo dõi danh sách hộ gia đình theo từng thôn, thông tin chủ hộ, tình trạng cư trú (thường trú, tạm trú, tạm vắng) và danh sách thành viên với bảng dữ liệu có thể mở rộng.
+- **Bộ lọc đa tiêu chí linh hoạt**: Tìm kiếm theo họ tên, số CCCD; lọc kết hợp năm tính toán, mốc độ tuổi nghiệp vụ, giới tính, dân tộc và tình trạng cư trú.
+- **Bảo vệ số Căn cước công dân (CCCD)**: Mã hóa dữ liệu lưu trữ bằng thuật toán AES-256-GCM, sử dụng mã băm một chiều SHA-256 (`cccd_hash`) để tìm kiếm đối soát không lộ dữ liệu thô, và che mờ mặc định trên giao diện.
+- **Nhập xuất Excel 11 cột chuẩn**: Tự động nhận diện mẫu biểu thực tế Đăk Hà và mẫu 11 cột phẳng tiêu chuẩn, cung cấp hộp thoại xem trước đối soát kiểm tra hợp lệ trước khi lưu và xuất báo cáo danh sách.
+- **Khóa lạc quan (OCC)**: Phát hiện và cảnh báo xung đột dữ liệu đồng thời qua trường phiên bản `version`, ngăn chặn tình trạng ghi đè ngầm.
+- **Phân quyền theo địa bàn thôn**: Giới hạn phạm vi thao tác của Cán bộ Cơ sở theo thôn được phân công; Cán bộ Quản trị Xã có quyền quản lý toàn xã và phân công tài khoản.
+- **Thùng rác và phục hồi dữ liệu**: Cơ chế xóa mềm bản ghi kèm tính năng khôi phục hộ gia đình và nhân khẩu liên kết an toàn.
+- **Báo cáo thống kê dân cư**: Tổng hợp 4 chỉ số KPI tổng quan, biểu đồ cơ cấu giới tính, tháp tuổi, thành phần dân tộc và bảng đối soát quy mô giữa các thôn.
+- **Nhật ký hoạt động**: Ghi vết lịch sử khởi tạo, cập nhật, xóa mềm, khôi phục và nhập Excel phục vụ tra soát.
+- **Lưu trữ ngoại tuyến**: Đệm dữ liệu tạm thời qua IndexedDB phía Client hỗ trợ tra cứu khi mất kết nối mạng.
+
+---
+
+<a id="kien-truc-he-thong"></a>
+## Kiến trúc hệ thống
+
+```mermaid
+graph TD
+    Client["QLHK-Client (Web & Desktop Electron)<br/>React 18 • Vite 5 • Tailwind CSS v4"]
+    Backend["QLHK-Backend (REST API :5002)<br/>Express • TypeScript • Prisma ORM"]
+    DB[("Cơ sở dữ liệu SQLite / PostgreSQL<br/>Mã hóa AES-256-GCM • Khóa OCC")]
+
+    Client -->|"HTTP / REST API (JWT Bearer)"| Backend
+    Backend -->|"Prisma Client"| DB
 ```
 
-### Chi tiết Ngăn xếp Công nghệ (Tech Stack)
+### Bảng công nghệ chính
 
-| Thành phần | Công nghệ chính | Ghi chú |
+| Thành phần | Công nghệ | Phiên bản |
 | :--- | :--- | :--- |
-| **Backend Runtime** | Node.js (v18+) | Môi trường máy chủ |
-| **Backend Framework** | Express.js, TypeScript | Kiến trúc phân tầng Controller - Service |
-| **Database & ORM** | Prisma ORM, SQLite / PostgreSQL | Khóa phiên bản OCC, Soft-delete |
-| **Bảo mật Dữ liệu** | AES-256-GCM, SHA-256 (`cccd_hash`) | Mã hóa dữ liệu định danh CCCD |
-| **Authentication** | JWT (JSON Web Tokens), bcryptjs | Thu hồi phiên `token_version` |
-| **Frontend Framework** | React 18, TypeScript | Single Page Application |
-| **Build Tool** | Vite 5 | Bundle tốc độ cao, tối ưu chunks |
-| **Styling** | Tailwind CSS v4, CSS Variables | Dark / Light mode, lớp phủ solid không blur |
-| **Desktop Runtime** | Electron | Desktop Application có menu tối giản |
-| **Kiểm thử tự động** | Vitest, Testing Library, Supertest | Độ phủ 131+ test cases tự động |
+| Giao diện người dùng | React, Tailwind CSS | React 18.2.0, Tailwind CSS 4.2.4 |
+| Nền tảng Desktop | Electron, Electron Builder | Electron 42.1.0, Electron Builder 24.13.3 |
+| Công cụ xây dựng Client | Vite, TypeScript | Vite 5.1.6, TypeScript 5.2.2 |
+| Xử lý bảng tính | SheetJS (xlsx) | 0.18.5 |
+| Máy chủ API | Express, TypeScript | Express 4.21.2, TypeScript 5.7.2 |
+| Cơ sở dữ liệu và ORM | Prisma ORM, SQLite / PostgreSQL | Prisma 6.0.0 |
+| Xác thực và bảo mật | JWT, Bcryptjs, Helmet, AES-256-GCM | jsonwebtoken 9.0.2, bcryptjs 2.4.3, helmet 8.0.0 |
+| Kiểm thử tự động | Vitest, Supertest | Vitest 2.1.8 (Backend) / 4.1.11 (Client), Supertest 7.0.0 |
 
 ---
 
-## 4. CẤU TRÚC THƯ MỤC DỰ ÁN
+<a id="bat-dau-nhanh"></a>
+## Bắt đầu nhanh
 
-```
-QLHK/
-├── QLHK-Backend/                 # Máy chủ REST API & Cơ sở dữ liệu
-│   ├── prisma/                   # Schema Prisma & migrations CSDL
-│   ├── src/
-│   │   ├── config/               # Cấu hình Prisma, JWT, môi trường
-│   │   ├── controllers/          # Households, Citizens, Analytics, Auth, Backup, Excel
-│   │   ├── middlewares/          # Xác thực JWT, Scoping thôn, Error Handler
-│   │   ├── routes/               # Định tuyến API
-│   │   ├── utils/                # Mã hóa AES-256-GCM, băm CCCD, parser Excel
-│   │   └── index.ts              # Điểm khởi động Express server & Graceful Shutdown
-│   ├── tests/                    # Bộ kiểm thử tích hợp Backend
-│   └── package.json
-│
-├── QLHK-Client/                  # Giao diện Web & Desktop Electron
-│   ├── electron/                 # Electron Main Process & Preload IPC
-│   ├── src/
-│   │   ├── api/                  # Axios API clients & Interceptors
-│   │   ├── components/           # Households, Common Modals, FilterBar, Excel, Audit
-│   │   ├── pages/                # VillagesPage, HouseholdsPage, AnalyticsPage, Settings
-│   │   ├── db/                   # IndexedDB offline storage
-│   │   ├── utils/                # Tiện ích định dạng số, ngày sinh, phân tích Excel
-│   │   └── App.tsx               # Cấu hình App, Routing & Theme Provider
-│   ├── vite.config.ts            # Cấu hình Vite & Alias
-│   └── package.json
-│
-├── docs/                         # Báo cáo kiểm toán kiến trúc, an ninh, CSDL, hiệu năng
-├── qlhk_document.md              # Đặc tả chi tiết nghiệp vụ quản lý hộ khẩu
-├── SECURITY.md                   # Chính sách an toàn thông tin & tiếp nhận lỗ hổng
-└── README.md                     # Tài liệu hướng dẫn sử dụng & triển khai
-```
+### Yêu cầu môi trường
+- Node.js phiên bản 18 hoặc 20 trở lên
+- npm phiên bản 9 hoặc 10 trở lên
 
----
-
-## 5. HƯỚNG DẪN CÀI ĐẶT & CHẠY DỰ ÁN
-
-### 5.1. Yêu cầu Tiên quyết (Prerequisites)
-- **Node.js**: Phiên bản 18.x hoặc 20.x trở lên
-- **npm**: Phiên bản 9.x hoặc 10.x trở lên
-- **Hệ điều hành**: Windows 10/11, macOS hoặc Linux
-
-### 5.2. Khởi tạo & Cài đặt Thư viện
+### Cài đặt mã nguồn
 
 ```bash
-# 1. Cài đặt dependencies cho Backend
+# 1. Cài đặt Backend
 cd QLHK-Backend
 npm install
-
-# 2. Tạo file cấu hình môi trường Backend
 cp .env.example .env
 
-# 3. Khởi tạo cơ sở dữ liệu Prisma
-npx prisma generate
-npx prisma db push
+# 2. Sinh Prisma Client và cập nhật cấu trúc cơ sở dữ liệu
+npm run prisma:generate
+npm run prisma:push
 
-# 4. Cài đặt dependencies cho Client
+# 3. Cài đặt Client
 cd ../QLHK-Client
 npm install
 cp .env.example .env
 ```
 
-### 5.3. Khởi chạy Môi trường Phát triển (Development)
+### Cấu hình biến môi trường
 
-**Khởi động Backend:**
+**Backend (`QLHK-Backend/.env`):**
+
+| Tên biến | Ý nghĩa | Bắt buộc |
+| :--- | :--- | :--- |
+| `PORT` | Cổng máy chủ lắng nghe (mặc định 5002) | Không |
+| `NODE_ENV` | Môi trường thực thi (`development` / `production` / `test`) | Không |
+| `DATABASE_URL` | Chuỗi kết nối cơ sở dữ liệu Prisma (SQLite file hoặc PostgreSQL) | Có |
+| `JWT_SECRET` | Khóa bí mật ký Access Token | Có |
+| `JWT_REFRESH_SECRET` | Khóa bí mật ký Refresh Token | Có |
+| `ENCRYPTION_KEY` | Khóa đối xứng 256-bit (64 ký tự hex) mã hóa AES-256-GCM cho số CCCD | Có |
+| `EXCEL_SAMPLE_PATH` | Đường dẫn tệp mẫu Excel nhân hộ khẩu | Không |
+| `CORS_ORIGIN` | Danh sách domain hoặc cổng được phép truy cập CORS | Không |
+
+**Client (`QLHK-Client/.env`):**
+
+| Tên biến | Ý nghĩa | Bắt buộc |
+| :--- | :--- | :--- |
+| `VITE_API_URL` | Đường dẫn API Backend (mặc định `http://localhost:5002/api`) | Có |
+
+### Chạy ứng dụng
+
 ```bash
+# Chạy Backend (cổng 5002)
 cd QLHK-Backend
 npm run dev
-# Máy chủ khởi động tại: http://localhost:5002
-```
 
-**Khởi động Client (Web Dev Mode):**
-```bash
+# Chạy Client (giao diện Web và Desktop Electron, cổng 5175)
 cd QLHK-Client
 npm run dev
-# Ứng dụng mở tại: http://localhost:5175
 ```
 
-**Khởi động Client (Desktop Electron Mode):**
-```bash
-cd QLHK-Client
-npm run electron:dev
-```
-
-### 5.4. Chạy Kiểm thử Tự động (Automated Tests)
+### Kiểm thử và đóng gói
 
 ```bash
-# Chạy kiểm thử Backend (Supertest)
+# Chạy kiểm thử Backend (88 tests)
 cd QLHK-Backend
 npm test
 
-# Chạy kiểm thử Frontend (Vitest - 131 tests)
+# Chạy kiểm thử Client (Vitest)
 cd QLHK-Client
 npm test -- --run
-```
 
-### 5.5. Đóng gói Ứng dụng (Production Build)
-
-```bash
-# Build Backend
-cd QLHK-Backend
-npm run build
-
-# Build Frontend Web
+# Đóng gói bản phát hành Client
 cd QLHK-Client
-npm run build:vite
-
-# Đóng gói bộ cài đặt Desktop Windows (.exe)
-npm run build:win
+npm run build:vite  # Bản Web
+npm run build:win   # Bộ cài đặt Desktop Windows (.exe)
 ```
 
 ---
 
-## 6. QUY ĐỊNH BẢO MẬT & BÁO CÁO LỖ HỔNG
+<a id="cau-truc-thu-muc"></a>
+## Cấu trúc thư mục
 
-Hệ thống tuân thủ nghiêm ngặt quy trình tiếp nhận và xử lý sự cố an toàn thông tin:
-- Xem chi tiết tại tệp tin [SECURITY.md](SECURITY.md).
-- Không công khai lỗi hay kịch bản khai thác lên các diễn đàn công cộng.
-- Mọi phát hiện an ninh xin gửi trực tiếp về email phụ trách: `admin@dulieudakha.vn`.
+```
+QLHK/
+├── QLHK-Backend/            # Dịch vụ máy chủ REST API và cơ sở dữ liệu
+│   ├── prisma/              # Lược đồ cơ sở dữ liệu và cấu hình Prisma
+│   ├── src/config/          # Cấu hình môi trường và kết nối dịch vụ
+│   ├── src/controllers/     # Xử lý nghiệp vụ API hộ dân, nhân khẩu, thống kê
+│   ├── src/middlewares/     # Middleware xác thực JWT và kiểm soát quyền theo thôn
+│   ├── src/routes/          # Định tuyến các cổng API
+│   ├── src/utils/           # Tiện ích mã hóa CCCD, đối soát Excel và nhật ký
+│   └── tests/               # Bộ kiểm thử tích hợp Backend
+├── QLHK-Client/             # Ứng dụng giao diện Web và Desktop
+│   ├── electron/            # Tiến trình chính Electron và cầu nối IPC
+│   ├── src/api/             # Các hàm gọi API qua Axios
+│   ├── src/components/      # Thành phần giao diện, bảng dữ liệu và modal
+│   ├── src/pages/           # Các màn hình chính của ứng dụng
+│   ├── src/db/              # Lưu trữ ngoại tuyến qua IndexedDB
+│   ├── src/utils/           # Tiện ích che mờ CCCD, định dạng ngày và xử lý Excel
+│   └── src/__tests__/       # Bộ kiểm thử giao diện và luồng nghiệp vụ
+├── docs/                    # Tài liệu kiến trúc và kết quả kiểm thử
+├── qlhk_document.md         # Đặc tả chi tiết nghiệp vụ quản lý hộ khẩu
+├── SECURITY.md              # Chính sách an toàn thông tin và tiếp nhận sự cố
+└── README.md                # Tài liệu hướng dẫn sử dụng và triển khai
+```
 
 ---
 
-## 7. BẢN QUYỀN & ĐIỀU KHOẢN PHÁP LÝ (PROPRIETARY NOTICE)
+<a id="bao-mat"></a>
+## Bảo mật
 
-> ### ⚠️ THÔNG BÁO BẢN QUYỀN ĐỘC QUYỀN (NO MIT LICENSE)
-> 
-> **Toàn bộ mã nguồn, cấu trúc dữ liệu, tài liệu kỹ thuật và thiết kế giao diện của dự án này thuộc quyền sở hữu trí tuệ của:**  
-> **ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ, HUYỆN ĐĂK HÀ, TỈNH KON TUM**  
-> 
-> **Mọi quyền được bảo lưu (All Rights Reserved).**  
-> 
-> - **KHÔNG ÁP DỤNG** Giấy phép Mã nguồn Mở MIT (No MIT License), Apache, GPL hoặc bất kỳ giấy phép mở tự do nào khác.
-> - **NGHIÊM CẤM** mọi hành vi sao chép, trích xuất, phân phối lại, xuất bản, thương mại hóa hoặc chuyển giao mã nguồn dưới bất kỳ hình thức nào khi chưa có sự chấp thuận bằng văn bản chính thức của UBND Xã Đăk Hà.
-> - Dự án được phát triển và lưu trữ phục vụ độc quyền công tác quản lý điều hành nhân hộ khẩu và chuyển đổi số công vụ của địa phương.
+Hệ thống áp dụng xác thực JWT, phân quyền truy cập theo địa bàn thôn ở tầng máy chủ, mã hóa đối xứng AES-256-GCM cho số Căn cước công dân và lưu vết nhật ký kiểm toán. Dữ liệu công dân được thiết kế hướng tới việc bảo vệ bí mật đời tư cá nhân và an toàn thông tin.
+
+Chi tiết về quy trình tiếp nhận và xử lý báo cáo lỗ hổng an ninh thông tin xem tại [SECURITY.md](SECURITY.md).
+
+---
+
+<a id="trang-thai-va-gioi-han-da-biet"></a>
+## Trạng thái và giới hạn đã biết
+
+- **Trạng thái**: Đang vận hành thử nghiệm trên môi trường máy trạm phục vụ công tác số hóa tại địa phương.
+- **Giới hạn đã biết**: Danh mục thôn và tài khoản cán bộ cần được thiết lập trước trong cơ sở dữ liệu; việc thực thi kiểm thử phía Client cần môi trường Node tương thích với cấu hình phân giải tệp kiểm thử.
+- **Hướng phát triển**: Tiếp tục tối ưu hóa hiệu năng nạp danh sách nhân khẩu với tập dữ liệu lớn và hoàn thiện công cụ sao lưu dữ liệu tự động định kỳ.
+
+---
+
+<a id="nguoi-duy-tri-va-lien-he"></a>
+## Người duy trì và liên hệ
+
+- **Đơn vị duy trì**: Ban CĐS UBND Xã Đăk Hà
+- **Địa bàn**: Xã Đăk Hà, Huyện Đăk Hà, Tỉnh Kon Tum
+- **Kênh tiếp nhận kỹ thuật**: `admin@dulieudakha.vn`
+
+---
+
+<a id="giay-phep-va-ban-quyen"></a>
+## Giấy phép và bản quyền
+
+Toàn bộ mã nguồn, cấu trúc dữ liệu và tài liệu kỹ thuật của dự án này thuộc quyền sở hữu trí tuệ của **Ủy ban nhân dân Xã Đăk Hà, Huyện Đăk Hà, Tỉnh Kon Tum**. Mọi quyền được bảo lưu (All Rights Reserved). Dự án không áp dụng giấy phép mã nguồn mở (không áp dụng MIT License, Apache hoặc GPL). Nghiêm cấm sao chép, chỉnh sửa, phân phối lại hoặc sử dụng vào mục đích thương mại khi chưa có văn bản chấp thuận chính thức từ cơ quan chủ quản.

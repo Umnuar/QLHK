@@ -1,80 +1,106 @@
-# CHÍNH SÁCH BẢO MẬT & BÁO CÁO LỖ HỔNG (SECURITY POLICY)
-## Hệ Thống Quản Lý Hộ Khẩu & Nhân Khẩu Xã Đăk Hà (QLHK)
-**Cơ quan chủ quản**: UBND Xã Đăk Hà, Huyện Đăk Hà, Tỉnh Kon Tum  
-**Phiên bản áp dụng**: `v1.0.0` trở lên  
-**Khuôn khổ tuân thủ**: Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân  
+# Chính sách an toàn thông tin
+
+Tài liệu này quy định quy trình tiếp nhận và xử lý báo cáo lỗ hổng an ninh thông tin cho hệ thống Quản lý Hộ khẩu & Nhân khẩu Xã Đăk Hà (QLHK).
 
 ---
 
-Ban chỉ đạo Chuyển đổi số Xã Đăk Hà và đội ngũ phát triển cam kết bảo vệ tuyệt đối an toàn thông tin công dân, bí mật đời tư cá nhân và toàn vẹn dữ liệu nhân khẩu trên địa bàn xã. Chúng tôi hoan nghênh và trân trọng mọi đóng góp phát hiện lỗ hổng an ninh thông tin theo quy trình tiết lộ có trách nhiệm (Responsible Disclosure).
+## 1. Phiên bản được hỗ trợ
 
----
-
-## 1. CÁC PHIÊN BẢN ĐƯỢC HỖ TRỢ BẢO MẬT (SUPPORTED VERSIONS)
-
-Chỉ các phiên bản chính thức sau đây được hỗ trợ cập nhật vá lỗi bảo mật liên tục:
+Chỉ các phiên bản chính thức được liệt kê dưới đây mới nhận được các bản cập nhật an toàn thông tin:
 
 | Phiên bản | Tình trạng hỗ trợ | Ghi chú |
 | :---: | :---: | :--- |
-| **v1.0.x (Hiện tại)** | :white_check_mark: Được hỗ trợ đầy đủ | Nhánh chính `main` & `sec/hardening` |
-| **< v1.0.0 (Bản thử nghiệm)** | :x: Ngừng hỗ trợ | Yêu cầu nâng cấp lên bản mới nhất |
+| **1.0.x** | Đang được hỗ trợ | Phiên bản đang triển khai phục vụ công tác địa phương |
+| **< 1.0.0** | Không hỗ trợ | Các bản dựng thử nghiệm ban đầu |
 
 ---
 
-## 2. QUY TRÌNH BÁO CÁO LỖ HỔNG CÓ TRÁCH NHIỆM (REPORTING A VULNERABILITY)
+## 2. Cách báo cáo lỗ hổng
 
-Nếu bạn phát hiện một vấn đề hoặc lỗ hổng an ninh tiềm ẩn trong ứng dụng QLHK (Web, Desktop Electron hoặc Backend API), vui lòng thực hiện theo các bước sau:
+Nếu phát hiện vấn đề an ninh hoặc lỗ hổng tiềm ẩn trong ứng dụng, vui lòng thông báo theo các kênh sau:
 
-### 2.1. Kênh tiếp nhận an toàn
-- **KHÔNG** công khai lỗ hổng trên GitHub Issues, Pull Requests hoặc mạng xã hội trước khi lỗi được vá.
-- **Gửi báo cáo trực tiếp đến**:
-  - **Email Quản trị An ninh**: `admin@dulieudakha.vn` (hoặc `bancntt.dakha@gmail.com`)
-  - **Tiêu đề email**: `[SECURITY VULNERABILITY] - Báo cáo lỗ hổng QLHK - <Mức độ dự kiến P0/P1/P2>`
+- **Qua GitHub**: Sử dụng tính năng "Report a vulnerability" tại mục [Security](../../security/advisories) của kho lưu trữ (nếu đã kích hoạt).
+- **Qua thư điện tử**: Gửi báo cáo trực tiếp đến địa chỉ email an ninh duy nhất: `admin@dulieudakha.vn`.
+- **Tiêu đề thư mẫu**: `[BÁO CÁO AN NINH QLHK] - Tóm tắt ngắn gọn vấn đề`.
 
-### 2.2. Thông tin cần cung cấp trong báo cáo
-Để giúp đội ngũ kỹ thuật nhanh chóng tái hiện và khắc phục, vui lòng cung cấp:
-1. **Mô tả chi tiết lỗ hổng**: Thuộc loại lỗ hổng nào (CWE, OWASP Top 10:2021).
-2. **Vị trí ảnh hưởng**: Endpoint API (`QLHK-Backend`), component giao diện, hoặc kênh giao tiếp IPC Desktop (`QLHK-Client`).
-3. **Kịch bản khai thác tối thiểu (Minimal PoC)**: Các bước tái hiện chi tiết (kèm request mẫu hoặc script thử nghiệm trên môi trường Localhost).
-4. **Đánh giá mức độ ảnh hưởng**: Rủi ro đối với tính bảo mật (Confidentiality), toàn vẹn (Integrity) hoặc sẵn sàng (Availability) của dữ liệu nhân hộ khẩu cấp xã.
-5. **Gợi ý phương án khắc phục** (nếu có).
+Vui lòng không công khai thông tin lỗ hổng trên GitHub Issues, Pull Requests hoặc các kênh truyền thông trước khi sự cố được khắc phục và kiểm nghiệm ổn định.
 
 ---
 
-## 3. CAM KẾT VÀ THỜI GIAN PHẢN HỒI (SLA)
+## 3. Thông tin cần cung cấp trong báo cáo
 
-Đội ngũ kỹ thuật cam kết xử lý báo cáo bảo mật theo các mốc thời gian:
+Để hỗ trợ đội ngũ kỹ thuật xác minh và xử lý kịp thời, báo cáo nên bao gồm:
 
-- **Xác nhận tiếp nhận (Triage)**: Trong vòng **24 giờ** kể từ khi nhận được email.
-- **Xác minh & Phân loại mức độ**: Trong vòng **48 giờ**.
-- **Kế hoạch vá lỗi**:
-  - **Mức P0 (Nguy cấp - Lộ CCCD, chiếm quyền quản trị)**: Phát hành bản vá trong vòng **24 - 72 giờ**.
-  - **Mức P1 (Cao - Bypass thôn, IDOR, SQL/Prisma Injection)**: Phát hành bản vá trong vòng **5 ngày làm việc**.
-  - **Mức P2/P3 (Trung bình / Thấp)**: Khắc phục trong bản phát hành định kỳ kế tiếp.
-- **Thông báo phối hợp**: Chúng tôi sẽ thông báo cho người phát hiện ngay khi bản vá được kiểm thử thành công và sẵn sàng triển khai.
+1. **Mô tả vấn đề**: Bản chất và loại lỗ hổng được phát hiện.
+2. **Vị trí ảnh hưởng**: Điểm cuối API Backend, kênh IPC Electron hoặc thành phần giao diện Client có liên quan.
+3. **Các bước tái hiện tối thiểu**: Hướng dẫn chi tiết từng bước tái hiện lỗi trên môi trường cục bộ (`localhost`).
+4. **Đánh giá mức độ ảnh hưởng**: Rủi ro đối với tính bảo mật, tính toàn vẹn hoặc tính sẵn sàng của dữ liệu nhân hộ khẩu.
+5. **Gợi ý khắc phục**: Phương án xử lý hoặc giảm thiểu rủi ro (nếu có).
 
 ---
 
-## 4. PHẠM VI ÁP DỤNG & CÁC HÀNH VI BỊ NGHIÊM CẤM
+## 4. Mục tiêu phản hồi
 
-### 4.1. Trong phạm vi được phép kiểm thử (In-Scope)
-- Mã nguồn Backend API (`QLHK-Backend`) và cấu hình cơ sở dữ liệu trên môi trường kiểm thử cục bộ (`localhost:5002`).
-- Mã nguồn Client Web & Desktop Electron (`QLHK-Client`) trên môi trường kiểm thử cục bộ (`localhost:5175`).
-- Cơ chế mã hóa khóa đối xứng AES-256-GCM cho số Căn cước công dân (CCCD) và hàm băm tìm kiếm `cccd_hash` (`crypto.ts`).
-- Cơ chế xác thực JWT, thu hồi phiên làm việc qua `token_version`, phân quyền đa thôn RBAC (Village Scoping).
-- Module xử lý và đối soát tệp Excel (`excelParser.ts`, `excel.controller.ts`).
+Đội ngũ kỹ thuật đặt ra các mốc thời gian phản hồi sau:
 
-### 4.2. Ngoài phạm vi & Nghiêm cấm tuyệt đối (Out-of-Scope & Prohibited)
-- **Tuyệt đối không tấn công vào máy chủ Production thực tế** (`qlhk.dulieudakha.vn`) hoặc cơ sở hạ tầng đám mây trực tiếp.
-- Không thực hiện các cuộc tấn công từ chối dịch vụ (DoS / DDoS) làm gián đoạn công vụ của UBND Xã.
-- Không thử nghiệm brute force tài khoản thực tế của cán bộ xã.
-- Không truy cập, sửa đổi, hủy hoại hoặc sao chép dữ liệu thực tế của công dân và hộ gia đình xã Đăk Hà.
-- Không sử dụng kỹ thuật lừa đảo xã hội (Social Engineering, Phishing) nhắm vào cán bộ xã.
+- **Xác nhận tiếp nhận**: Mục tiêu trong vòng 1 đến 2 ngày làm việc kể từ thời điểm nhận được thư.
+- **Đánh giá và phân loại sơ bộ**: Mục tiêu trong vòng 3 đến 5 ngày làm việc.
+- **Xử lý và phát hành bản vá**: Đội ngũ kỹ thuật nỗ lực tối đa để phát hành bản khắc phục trong thời gian sớm nhất, ưu tiên xử lý trước các vấn đề nghiêm trọng ảnh hưởng đến rò rỉ thông tin cá nhân và kiểm soát quyền truy cập.
 
 ---
 
-## 5. BẢO VỆ DỮ LIỆU CÁ NHÂN & CÔNG DÂN
-Toàn bộ dữ liệu quản lý trong hệ thống được xử lý theo các quy định bảo vệ dữ liệu cá nhân của pháp luật Việt Nam (bao gồm Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân).
-- Số Căn cước công dân (CCCD) được mã hóa AES-256-GCM ở tầng lưu trữ CSDL.
-- Số CCCD trên giao diện được che mờ mặc định (`••••••••`), chỉ cán bộ có thẩm quyền mới được mở xem tạm thời.
-- Mọi hành vi làm lộ lọt dữ liệu hộ khẩu, nhân khẩu và CCCD của công dân sẽ bị xử lý nghiêm theo quy định pháp luật hiện hành.
+## 5. Chính sách công bố thông tin
+
+- Áp dụng nguyên tắc phối hợp công bố có trách nhiệm (Coordinated Disclosure).
+- Thông tin về vấn đề an ninh chỉ được công bố sau khi bản khắc phục đã được kiểm nghiệm và triển khai ổn định.
+- Chúng tôi ghi nhận đóng góp của người phát hiện trong tài liệu phát hành (nếu người báo cáo đồng ý).
+
+---
+
+## 6. Phạm vi áp dụng
+
+### Được phép kiểm thử
+- Mã nguồn ứng dụng và các dịch vụ thực thi trên môi trường máy trạm cục bộ (`localhost:5002`, `localhost:5175`).
+- Cơ chế xác thực, phân quyền theo thôn, mã hóa CCCD và kiểm tra tính toàn vẹn khi nhập tệp bảng tính trên môi trường cục bộ.
+
+### Nghiêm cấm
+- Tấn công vào các hệ thống máy chủ hoặc dịch vụ đang hoạt động thực tế của địa phương.
+- Thực hiện các cuộc tấn công từ chối dịch vụ (DoS / DDoS).
+- Thử mật khẩu vét cạn (brute force) nhắm vào tài khoản của cán bộ xã hoặc cán bộ thôn.
+- Truy cập, sửa đổi, làm lộ hoặc sao chép dữ liệu thật của các hộ dân.
+- Sử dụng các hình thức lừa đảo xã hội (Phishing hoặc Social Engineering).
+
+---
+
+## 7. Tổng quan thiết kế bảo mật
+
+- Xác thực người dùng thông qua mã thông báo JWT có kiểm tra phiên hợp lệ.
+- Phân quyền truy cập theo địa bàn thôn được cưỡng chế trực tiếp tại các bộ điều khiển máy chủ.
+- Mã hóa đối xứng AES-256-GCM cho số Căn cước công dân (CCCD) ở tầng lưu trữ cơ sở dữ liệu.
+- Băm một chiều SHA-256 (`cccd_hash`) phục vụ tra cứu và kiểm tra trùng lặp CCCD mà không để lộ dữ liệu thô.
+- Che mờ dữ liệu định danh trên giao diện hiển thị mặc định.
+- Kiểm soát xung đột dữ liệu đồng thời thông qua trường phiên bản (khóa lạc quan OCC).
+- Cơ chế xóa mềm dữ liệu ngăn ngừa thất thoát dữ liệu ngoài ý muốn.
+- Nhật ký hoạt động ghi nhận các thao tác thêm, cập nhật, xóa và nạp bảng tính để phục vụ đối soát.
+
+---
+
+## 8. Khuyến nghị cho đơn vị triển khai
+
+- Thay đổi toàn bộ mật khẩu quản trị và tài khoản mặc định trước khi đưa hệ thống vào sử dụng.
+- Bảo mật tệp cấu hình biến môi trường, không chia sẻ hoặc lưu trữ trên các kênh công cộng.
+- Sử dụng giao thức HTTPS và cấu hình tường lửa thích hợp cho máy chủ dịch vụ.
+- Thực hiện sao lưu cơ sở dữ liệu định kỳ và lưu trữ bản sao lưu tại phân vùng độc lập.
+- Định kỳ cập nhật các gói phụ thuộc và áp dụng các bản vá bảo mật mới nhất.
+
+---
+
+## 9. Dữ liệu cá nhân
+
+Hệ thống được thiết kế hướng tới phù hợp Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân; cần xác minh chi tiết với người có chuyên môn pháp lý khi triển khai thực tế.
+
+---
+
+## 10. Bản quyền và giấy phép
+
+Chi tiết về quyền sở hữu trí tuệ và giấy phép sử dụng xem tại [README.md](README.md#giay-phep-va-ban-quyen).

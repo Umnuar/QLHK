@@ -1,7 +1,6 @@
 import {
 	Building2,
 	CheckCircle2,
-	Clock,
 	Database,
 	Edit3,
 	Eye,
@@ -30,7 +29,7 @@ import { TimeCard } from "./Settings/TimeCard";
 import { useModal } from "../hooks/useModal";
 import type { User } from "../types";
 
-type SettingsTab = "profile" | "users" | "backup" | "system" | "time";
+type SettingsTab = "profile" | "users" | "backup" | "system";
 
 const COMMUNE_INFO_KEY = "qlhk_commune_info";
 
@@ -361,19 +360,6 @@ export const SettingsPage: React.FC = () => {
 				>
 					<Building2 className="w-4 h-4 shrink-0" strokeWidth={1.5} />
 					<span>Thông Tin Đơn Vị & Hệ Thống</span>
-				</button>
-
-				<button
-					type="button"
-					onClick={() => setActiveTab("time")}
-					className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-						activeTab === "time"
-							? "bg-emerald-600 text-white shadow-xs"
-							: "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-					}`}
-				>
-					<Clock className="w-4 h-4 shrink-0" strokeWidth={1.5} />
-					<span>Cài Đặt Thời Gian & Năm Tính Tuổi</span>
 				</button>
 			</div>
 
@@ -1028,9 +1014,6 @@ export const SettingsPage: React.FC = () => {
 					</div>
 				</div>
 			)}
-
-			{/* TAB 5: CÀI ĐẶT THỜI GIAN & NĂM TÍNH TUỔI */}
-			{activeTab === "time" && <TimeCard />}
 		</div>
 	);
 };

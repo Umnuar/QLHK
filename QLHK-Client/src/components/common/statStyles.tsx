@@ -63,7 +63,7 @@ export const STAT_PANEL_GRID_CLASS = "grid grid-cols-1 lg:grid-cols-2 gap-6";
  * Khung vùng cuộn danh sách thanh tiến độ kèm hiệu ứng mờ mép
  */
 export const STAT_SCROLL_CONTAINER_CLASS =
-	"space-y-2 max-h-[320px] overflow-y-auto pr-1 scrollbar-thin scroll-mask-bottom";
+	"space-y-2 max-h-[500px] overflow-y-auto pr-1 scrollbar-thin scroll-mask-bottom";
 
 /**
  * Interface cho Props của thẻ KPI

@@ -46,7 +46,6 @@ export const VillagesPage: React.FC = () => {
 	const [editName, setEditName] = useState("");
 	const [isAdding, setIsAdding] = useState(false);
 	const [newName, setNewName] = useState("");
-	const [newCode, setNewCode] = useState("");
 	const [userList, setUserList] = useState<User[]>([]);
 
 	// Số liệu thống kê động thời gian thực từ CSDL Backend kèm Offline Cache
@@ -248,13 +247,12 @@ export const VillagesPage: React.FC = () => {
 	const handleCreate = async () => {
 		if (!newName.trim()) return;
 		try {
-			await villageApi.create(newName.trim(), newCode.trim() || undefined);
+			await villageApi.create(newName.trim());
 			cachedStatsTime = 0;
 			await refreshVillages();
 			await fetchVillageStats(true);
 			setIsAdding(false);
 			setNewName("");
-			setNewCode("");
 			showModal({
 				title: "Thành công",
 				message: "Thêm thôn mới thành công",
@@ -479,31 +477,17 @@ export const VillagesPage: React.FC = () => {
 							<X strokeWidth={1.5} className="w-4 h-4" />
 						</button>
 					</div>
-					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-						<div>
-							<label className="block text-xs font-bold text-slate-500 mb-1">
-								Tên Thôn *
-							</label>
-							<input
-								type="text"
-								value={newName}
-								onChange={(e) => setNewName(e.target.value)}
-								placeholder="Vd: Thôn 6"
-								className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-hidden"
-							/>
-						</div>
-						<div>
-							<label className="block text-xs font-bold text-slate-500 mb-1">
-								Mã Viết Tắt
-							</label>
-							<input
-								type="text"
-								value={newCode}
-								onChange={(e) => setNewCode(e.target.value)}
-								placeholder="Vd: TH6"
-								className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-hidden"
-							/>
-						</div>
+					<div>
+						<label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
+							Tên Thôn *
+						</label>
+						<input
+							type="text"
+							value={newName}
+							onChange={(e) => setNewName(e.target.value)}
+							placeholder="Ví dụ: Thôn 8, Làng Mới..."
+							className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-hidden"
+						/>
 					</div>
 					<div className="flex justify-end gap-2">
 						<button

@@ -514,7 +514,7 @@ export const SettingsPage: React.FC = () => {
 						typeof document !== "undefined" &&
 						createPortal(
 							<div
-								className="fixed inset-0 !m-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 dark:bg-black/60 select-none animate-in fade-in duration-150"
+								className="fixed inset-0 !m-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 dark:bg-black/70 backdrop-blur-xs select-none animate-in fade-in duration-150"
 								onClick={(e) => {
 									if (e.target === e.currentTarget) setResetPwdUser(null);
 								}}
@@ -594,7 +594,7 @@ export const SettingsPage: React.FC = () => {
 						typeof document !== "undefined" &&
 						createPortal(
 							<div
-								className="fixed inset-0 !m-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 dark:bg-black/60 select-none animate-in fade-in duration-150"
+								className="fixed inset-0 !m-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 dark:bg-black/70 backdrop-blur-xs select-none animate-in fade-in duration-150"
 								onClick={(e) => {
 									if (e.target === e.currentTarget) setAssignUser(null);
 								}}

@@ -1,12 +1,7 @@
 import axios from "axios";
 import { secureStorage } from "../utils/secureStorage";
 
-export const API_BASE_URL =
-	import.meta.env.DEV
-		? (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes("dulieudakha.vn")
-				? import.meta.env.VITE_API_URL
-				: "/api")
-		: (import.meta.env.VITE_API_URL || "https://qlhk.dulieudakha.vn/api");
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "https://qlhk.dulieudakha.vn/api";
 
 let currentApiBaseUrl = API_BASE_URL;
 

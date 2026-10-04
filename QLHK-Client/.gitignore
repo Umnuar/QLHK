@@ -32,9 +32,8 @@ Thumbs.db
 Desktop.ini
 
 # Environment
-.env
-.env.local
-.env.*.local
+.env*
+!.env.example
 
 # Graphify & CodeGraph local index
 .graphify/

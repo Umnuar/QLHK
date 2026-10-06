@@ -18,22 +18,34 @@ export interface AuditParams {
 	villageId?: string | null;
 }
 
+const UUID_REGEX =
+	/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function logAudit(params: AuditParams) {
 	try {
 		let validUserId = params.userId || null;
 		if (validUserId) {
-			const userExists = await prisma.users.findUnique({
-				where: { id: validUserId },
-				select: { id: true },
-			});
-			if (!userExists) {
+			if (!UUID_REGEX.test(validUserId)) {
 				validUserId = null;
+			} else {
+				const userExists = await prisma.users.findUnique({
+					where: { id: validUserId },
+					select: { id: true },
+				});
+				if (!userExists) {
+					validUserId = null;
+				}
 			}
+		}
+
+		let validVillageId = params.villageId || null;
+		if (validVillageId && !UUID_REGEX.test(validVillageId)) {
+			validVillageId = null;
 		}
 
 		await prisma.audit_logs.create({
 			data: {
-				village_id: params.villageId || null,
+				village_id: validVillageId,
 				user_id: validUserId,
 				action: params.action,
 				entity_type: params.entityType,

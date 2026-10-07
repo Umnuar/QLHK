@@ -8,7 +8,7 @@ import { encryptCCCD, removeAccents } from "../utils/crypto";
 import {
 	type ExcelParseResult,
 	parseNhanHoKhauExcel,
-} from "../utils/excel-parser";
+} from "../utils/excelParser";
 
 /**
  * Lấy buffer hoặc đường dẫn file Excel:
@@ -41,7 +41,7 @@ export const previewExcel = async (
 ): Promise<void> => {
 	try {
 		const source = getExcelSource(req);
-		const parsed: ExcelParseResult = parseNhanHoKhauExcel(source);
+		const parsed: ExcelParseResult = await parseNhanHoKhauExcel(source);
 
 		res.json({
 			success: true,
@@ -104,7 +104,7 @@ export const importExcel = async (
 			};
 		} else {
 			const source = getExcelSource(req);
-			parseResult = parseNhanHoKhauExcel(source);
+			parseResult = await parseNhanHoKhauExcel(source);
 		}
 
 		if (!parseResult.households || parseResult.households.length === 0) {

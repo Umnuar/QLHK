@@ -2,6 +2,7 @@ import app from "./app";
 import { config } from "./config/env";
 import { prisma } from "./config/prisma";
 import { startDashboard } from "./utils/dashboard";
+import { initBackupCron } from "./crons/backup.cron";
 
 const PORT = config.port || 5002;
 
@@ -15,6 +16,7 @@ const server = app.listen(PORT, () => {
 
 	if (process.env.NODE_ENV !== "test") {
 		startDashboard();
+		initBackupCron();
 	}
 });
 

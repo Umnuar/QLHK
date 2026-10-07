@@ -7,6 +7,7 @@ import excelRoutes from "./excel.routes";
 import householdsRoutes from "./households.routes";
 import usersRoutes from "./users.routes";
 import villagesRoutes from "./villages.routes";
+import backupRoutes from "./backup.routes";
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use("/villages", villagesRoutes);
 router.use("/users", usersRoutes);
 router.use("/audit-logs", auditRoutes);
 router.use("/audit", auditRoutes);
+router.use("/backup", backupRoutes);
 
 export default router;

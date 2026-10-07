@@ -1,5 +1,6 @@
 import axios from "axios";
 import { secureStorage } from "../utils/secureStorage";
+import { getTauriAxiosAdapter } from "./tauriHttpAdapter";
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || "https://qlhk.dulieudakha.vn/api";
 
@@ -15,6 +16,7 @@ export const setApiBaseUrl = (url: string): void => {
 export const apiClient = axios.create({
 	baseURL: currentApiBaseUrl,
 	timeout: 10000,
+	adapter: getTauriAxiosAdapter(),
 	headers: {
 		"Content-Type": "application/json",
 	},

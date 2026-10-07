@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
-import { normalizeDob, parseNhanHoKhauExcel } from '../src/utils/excel-parser';
+import { normalizeDob, parseNhanHoKhauExcel } from '../src/utils/excelParser';
 import { config } from '../src/config/env';
+import ExcelJS from 'exceljs';
 
 describe('Bộ bóc tách Excel thông minh (Excel Parser Engine)', () => {
   describe('Chuẩn hóa ngày sinh (normalizeDob)', () => {
@@ -52,8 +53,8 @@ describe('Bộ bóc tách Excel thông minh (Excel Parser Engine)', () => {
       expect(fs.existsSync(filePath)).toBe(true);
     });
 
-    it('phải bóc tách chuẩn xác 4 hộ gia đình và 14 nhân khẩu', () => {
-      const result = parseNhanHoKhauExcel(filePath);
+    it('phải bóc tách chuẩn xác 4 hộ gia đình và 14 nhân khẩu', async () => {
+      const result = await parseNhanHoKhauExcel(filePath);
 
       expect(result.sheet_name).toBe('Dl Hộ');
       expect(result.total_households).toBe(4);
@@ -96,14 +97,14 @@ describe('Bộ bóc tách Excel thông minh (Excel Parser Engine)', () => {
       expect(h4.member_count).toBe(4);
     });
 
-    it('danh sách warnings và errors phải là mảng chuẩn', () => {
-      const result = parseNhanHoKhauExcel(filePath);
+    it('danh sách warnings và errors phải là mảng chuẩn', async () => {
+      const result = await parseNhanHoKhauExcel(filePath);
       expect(Array.isArray(result.warnings)).toBe(true);
       expect(Array.isArray(result.errors)).toBe(true);
     });
 
-    it('phải ghi nhận đầy đủ 14 dân tộc khác nhau trong file mẫu', () => {
-      const result = parseNhanHoKhauExcel(filePath);
+    it('phải ghi nhận đầy đủ 14 dân tộc khác nhau trong file mẫu', async () => {
+      const result = await parseNhanHoKhauExcel(filePath);
       const allCitizens = result.households.flatMap((h) => h.members);
       const uniqueEthnicities = new Set(allCitizens.map((c) => c.ethnicity));
 
@@ -122,6 +123,42 @@ describe('Bộ bóc tách Excel thông minh (Excel Parser Engine)', () => {
       expect(uniqueEthnicities.has('Hrê')).toBe(true);
       expect(uniqueEthnicities.has('Khách Gia')).toBe(true);
       expect(uniqueEthnicities.has('Kinh')).toBe(true);
+    });
+  });
+
+  describe('Bóc tách mẫu 11 cột tiêu chuẩn qua luồng ExcelJS (Buffer & Stream)', () => {
+    it('phải bóc tách chính xác biểu mẫu 11 cột phẳng tiêu chuẩn từ Buffer/Stream', async () => {
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('Mau11Cot');
+      // Thêm header 11 cột
+      sheet.addRow([
+        'STT',
+        'Mã hộ khẩu',
+        'Họ và tên',
+        'Quan hệ',
+        'Ngày sinh',
+        'Giới tính',
+        'Dân tộc',
+        'Tôn giáo',
+        'Số CCCD',
+        'Địa chỉ thường trú',
+        'Ghi chú',
+      ]);
+      // Thêm dữ liệu 2 hộ gia đình
+      sheet.addRow([1, 'HK-1001', 'A Thui', 'Chủ hộ', '1985', 'Nam', 'Xơ Đăng', 'Không', '064085000123', 'Thôn 1, Đăk Hà', 'Chính sách']);
+      sheet.addRow([2, 'HK-1001', 'Y Mới', 'Vợ', '1988', 'Nữ', 'Xơ Đăng', 'Không', '064088000456', 'Thôn 1, Đăk Hà', '']);
+      sheet.addRow([3, 'HK-1002', 'Nguyễn Thị Hoa', 'Chủ hộ', '1992', 'Nữ', 'Kinh', 'Công giáo', '064092000789', 'Thôn 2, Đăk Hà', '']);
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const parsed = await parseNhanHoKhauExcel(Buffer.from(buffer));
+
+      expect(parsed.total_households).toBe(2);
+      expect(parsed.total_citizens).toBe(3);
+      expect(parsed.households[0].head_name).toBe('A Thui');
+      expect(parsed.households[0].members.length).toBe(2);
+      expect(parsed.households[0].members[0].cccd).toBe('064085000123');
+      expect(parsed.households[1].head_name).toBe('Nguyễn Thị Hoa');
+      expect(parsed.households[1].members[0].ethnicity).toBe('Kinh');
     });
   });
 });

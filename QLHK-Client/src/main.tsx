@@ -8,6 +8,9 @@ import { NetworkProvider } from "./context/NetworkContext";
 import { ModalProvider } from "./hooks/useModal";
 import { ToastProvider } from "./hooks/useToast";
 import "./index.css";
+import { initTauriBridge } from "./utils/tauriBridge";
+
+initTauriBridge();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
 	<React.StrictMode>

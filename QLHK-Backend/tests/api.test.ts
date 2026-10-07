@@ -1265,4 +1265,49 @@ describe('QLHK Backend End-to-End API Integration', () => {
       }
     });
   });
+
+  describe('13. Cơ sở dữ liệu và Tác vụ Sao lưu (Backup API & Auto-Backup Cron)', () => {
+    it('GET /api/backup/export: Từ chối truy cập khi không có token (401)', async () => {
+      const res = await request(app).get('/api/backup/export');
+      expect(res.status).toBe(401);
+    });
+
+    it('GET /api/backup/export: Từ chối cán bộ cơ sở (non-admin) (403)', async () => {
+      const res = await request(app)
+        .get('/api/backup/export')
+        .set('Authorization', `Bearer ${thon1Token}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('GET /api/backup/export: Quản trị viên xuất toàn bộ 7 bảng CSDL (200 OK)', async () => {
+      const res = await request(app)
+        .get('/api/backup/export')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.metadata).toBeDefined();
+      expect(res.body.metadata.app).toBe('qlhk-backend');
+      expect(res.body.metadata.schema).toBe('qlhk');
+      expect(res.body.data).toBeDefined();
+      expect(Array.isArray(res.body.data.villages)).toBe(true);
+      expect(Array.isArray(res.body.data.users)).toBe(true);
+      expect(Array.isArray(res.body.data.refresh_tokens)).toBe(true);
+      expect(Array.isArray(res.body.data.households)).toBe(true);
+      expect(Array.isArray(res.body.data.citizens)).toBe(true);
+      expect(Array.isArray(res.body.data.audit_logs)).toBe(true);
+      expect(Array.isArray(res.body.data.settings)).toBe(true);
+    });
+
+    it('runAutoBackup: Thực thi snapshot 7 bảng ra file backups/qlhk_backup_*.json', async () => {
+      const { runAutoBackup } = await import('../src/controllers/backup.controller');
+      const backupPath = await runAutoBackup();
+      expect(backupPath).toBeTruthy();
+      const fs = await import('fs');
+      expect(fs.existsSync(backupPath!)).toBe(true);
+      // Clean up file sau khi test
+      if (backupPath && fs.existsSync(backupPath)) {
+        fs.unlinkSync(backupPath);
+      }
+    });
+  });
 });

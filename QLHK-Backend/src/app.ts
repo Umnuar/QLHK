@@ -52,29 +52,35 @@ app.use(
 	}),
 );
 
-const corsOrigins = config.corsOrigin
-	? config.corsOrigin.split(",").map((o) => o.trim())
-	: [
-			"http://localhost:5175",
-			"https://qlhk.dulieudakha.vn",
-			"https://dulieudakha.vn",
-		];
+const envCorsOrigins = config.corsOrigin
+	? config.corsOrigin.split(",").map((o) => o.trim()).filter(Boolean)
+	: [];
+
+const isOriginAllowed = (origin: string | undefined): boolean => {
+	if (!origin || origin === "null") return true; // Hỗ trợ Desktop (file://), mobile, cURL
+	if (
+		origin === "https://qlhk.dulieudakha.vn" ||
+		origin.endsWith(".dulieudakha.vn") ||
+		origin === "https://dulieudakha.vn" ||
+		origin === "http://tauri.localhost" ||
+		origin === "https://tauri.localhost" ||
+		origin.startsWith("tauri://") ||
+		origin.endsWith(".localhost") ||
+		origin.startsWith("http://localhost:") ||
+		origin.startsWith("http://127.0.0.1:") ||
+		origin.startsWith("https://localhost:") ||
+		origin.startsWith("https://127.0.0.1:") ||
+		envCorsOrigins.includes(origin)
+	) {
+		return true;
+	}
+	return false;
+};
 
 app.use(
 	cors({
 		origin: (origin, callback) => {
-			// Cho phép requests không có origin (Electron / Mobile / Postman)
-			if (!origin) {
-				return callback(null, true);
-			}
-			// Cho phép requests từ hệ sinh thái dulieudakha.vn, qlhk, corsOrigins, hoặc localhost
-			if (
-				origin === "https://qlhk.dulieudakha.vn" ||
-				origin.endsWith(".dulieudakha.vn") ||
-				corsOrigins.includes(origin) ||
-				origin.startsWith("http://localhost:") ||
-				origin.startsWith("http://127.0.0.1:")
-			) {
+			if (isOriginAllowed(origin)) {
 				return callback(null, true);
 			}
 			return callback(new Error("Blocked by CORS"));

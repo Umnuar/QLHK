@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
 import { prisma } from "../config/prisma";
 import type { AuthRequest } from "../middlewares/auth.middleware";
+import { getClientIp } from "../middlewares/logger.middleware";
+import { logAuth } from "../utils/logger";
 import {
 	generateAccessToken,
 	generateRefreshToken,
@@ -10,10 +12,12 @@ import {
 } from "../utils/jwt";
 
 export const login = async (req: Request, res: Response): Promise<void> => {
+	const clientIp = getClientIp(req);
 	try {
 		const { username, password } = req.body;
 
 		if (!username || !password) {
+			logAuth(username || "unknown", "unknown", "LOGIN_FAILED", clientIp);
 			res
 				.status(400)
 				.json({ error: "Vui lòng cung cấp đầy đủ tên đăng nhập và mật khẩu" });
@@ -26,6 +30,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 		});
 
 		if (!user) {
+			logAuth(username, "unknown", "LOGIN_FAILED", clientIp);
 			res
 				.status(401)
 				.json({ error: "Tên đăng nhập hoặc mật khẩu không chính xác" });
@@ -34,6 +39,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
 		const isMatch = await bcrypt.compare(password, user.password_hash);
 		if (!isMatch) {
+			logAuth(username, user.role, "LOGIN_FAILED", clientIp);
 			res
 				.status(401)
 				.json({ error: "Tên đăng nhập hoặc mật khẩu không chính xác" });
@@ -67,6 +73,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 			},
 		});
 
+		logAuth(user.username, user.role, "LOGIN_SUCCESS", clientIp);
+
 		res.json({
 			message: "Đăng nhập thành công",
 			user: {
@@ -81,12 +89,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 			refreshToken,
 		});
 	} catch (error) {
+		logAuth((req.body && req.body.username) || "unknown", "unknown", "LOGIN_ERROR", clientIp);
 		console.error("Lỗi login:", error);
 		res.status(500).json({ error: "Lỗi máy chủ khi đăng nhập" });
 	}
 };
 
 export const refresh = async (req: Request, res: Response): Promise<void> => {
+	const clientIp = getClientIp(req);
 	try {
 		const { refreshToken } = req.body;
 
@@ -147,6 +157,8 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
 			}),
 		]);
 
+		logAuth(user.username, user.role, "TOKEN_REFRESH", clientIp);
+
 		res.json({
 			accessToken: newAccessToken,
 			refreshToken: newRefreshToken,
@@ -164,6 +176,7 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const logout = async (req: Request, res: Response): Promise<void> => {
+	const clientIp = getClientIp(req);
 	try {
 		const { refreshToken } = req.body;
 		if (refreshToken) {
@@ -171,6 +184,8 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 				where: { token: refreshToken },
 			});
 		}
+		const user = (req as AuthRequest).user;
+		logAuth(user?.username || "anonymous", user?.role || "user", "LOGOUT", clientIp);
 		res.json({ message: "Đăng xuất thành công" });
 	} catch (error) {
 		console.error("Lỗi logout:", error);

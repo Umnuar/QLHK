@@ -33,6 +33,8 @@ let cachedUsersTime = 0;
 export const VillagesPage: React.FC = () => {
 	const {
 		villages,
+		setVillages,
+		removeVillage,
 		setSelectedVillageId,
 		setActiveTab,
 		user,
@@ -173,7 +175,7 @@ export const VillagesPage: React.FC = () => {
 		try {
 			await villageApi.update(id, editName.trim());
 			cachedStatsTime = 0;
-			await refreshVillages();
+			await refreshVillages(true);
 			await fetchVillageStats(true);
 			setEditingId(null);
 			showModal({
@@ -215,31 +217,47 @@ export const VillagesPage: React.FC = () => {
 			confirmText: "Xác nhận xóa",
 			cancelText: "Hủy",
 			onConfirm: async () => {
+				// 1. Optimistic Update: Xóa lập tức khỏi giao diện & cache local
+				await removeVillage(id);
+				setVillages((prev) => prev.filter((v) => v.id !== id && v.name !== name));
+
 				try {
 					await villageApi.delete(id);
-					cachedStatsTime = 0;
-					await refreshVillages();
-					await fetchVillageStats(true);
-					setTimeout(() => {
-						showModal({
-							title: "Thành công",
-							message: "Đã xóa thôn thành công",
-							type: "success",
-						});
-					}, 250);
 				} catch (err: any) {
-					console.error("Lỗi xóa thôn:", err);
-					setTimeout(() => {
-						showModal({
-							title: "Lỗi",
-							message:
-								err.response?.data?.error ||
-								err.message ||
-								"Không thể xóa thôn",
-							type: "danger",
-						});
-					}, 250);
+					// Nếu máy chủ báo 404 (Không tìm thấy thôn): Thôn đã không còn tồn tại trên CSDL, đồng bộ luôn là thành công
+					if (err.response?.status === 404) {
+						console.warn(
+							`[VillagesPage] Thôn "${name}" (${id}) không tồn tại trên CSDL, đã dọn sạch khỏi giao diện.`,
+						);
+					} else {
+						console.error("Lỗi xóa thôn:", err);
+						// Rollback nếu là lỗi thực sự
+						await refreshVillages(true);
+						await fetchVillageStats(true);
+						setTimeout(() => {
+							showModal({
+								title: "Lỗi",
+								message:
+									err.response?.data?.error ||
+									err.message ||
+									"Không thể xóa thôn",
+								type: "danger",
+							});
+						}, 250);
+						return;
+					}
 				}
+
+				cachedStatsTime = 0;
+				await refreshVillages(true);
+				await fetchVillageStats(true);
+				setTimeout(() => {
+					showModal({
+						title: "Thành công",
+						message: `Đã xóa thôn "${name}" thành công`,
+						type: "success",
+					});
+				}, 250);
 			},
 		});
 	};
@@ -249,7 +267,7 @@ export const VillagesPage: React.FC = () => {
 		try {
 			await villageApi.create(newName.trim());
 			cachedStatsTime = 0;
-			await refreshVillages();
+			await refreshVillages(true);
 			await fetchVillageStats(true);
 			setIsAdding(false);
 			setNewName("");
@@ -263,7 +281,9 @@ export const VillagesPage: React.FC = () => {
 			showModal({
 				title: "Lỗi",
 				message:
-					err.response?.data?.error || err.message || "Không thể tạo thôn mới",
+					err.response?.data?.error ||
+					err.message ||
+					"Không thể tạo thôn mới",
 				type: "danger",
 			});
 		}

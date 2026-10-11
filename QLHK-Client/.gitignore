@@ -38,5 +38,9 @@ Desktop.ini
 # Graphify & CodeGraph local index
 .graphify/
 GRAPH_REPORT.md
+
+# Playwright Test artifacts
+playwright-report/
+test-results/
 .codegraph/
 *.codegraph.db

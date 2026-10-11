@@ -77,6 +77,7 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 	// Trạng thái hiển thị đầy đủ CCCD cho từng nhân khẩu
 	const [revealedCccdIds, setRevealedCccdIds] = useState<string[]>([]);
 	const [decryptedCccds, setDecryptedCccds] = useState<Record<string, string>>({});
+	const [revealingCccdIds, setRevealingCccdIds] = useState<string[]>([]);
 	// Trạng thái xem toàn bộ thành viên (bỏ qua lọc độ tuổi cục bộ cho từng hộ)
 	const [showAllMembersHhIds, setShowAllMembersHhIds] = useState<string[]>([]);
 
@@ -106,14 +107,16 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 		}
 
 		try {
+			setRevealingCccdIds((prev) => [...prev, personId]);
 			const plain = await householdApi.revealCitizenCCCD(personId);
 			if (plain) {
 				setDecryptedCccds((prev) => ({ ...prev, [personId]: plain }));
+				setRevealedCccdIds((prev) => [...prev, personId]);
 			}
-			setRevealedCccdIds((prev) => [...prev, personId]);
 		} catch (err) {
 			console.error("Lỗi khi mở khóa CCCD:", err);
-			setRevealedCccdIds((prev) => [...prev, personId]);
+		} finally {
+			setRevealingCccdIds((prev) => prev.filter((id) => id !== personId));
 		}
 	};
 
@@ -522,25 +525,26 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 																					const isRevealed =
 																						revealedCccdIds.includes(m.id);
 																					const plain = decryptedCccds[m.id];
-																					const rawCccd = (m.cccd || m.cccd_last4 || plain || "").trim();
-																					const hasCccd =
-																						!!rawCccd &&
-																						rawCccd !== "—" &&
-																						rawCccd !== "-" &&
-																						rawCccd !== "0" &&
-																						!rawCccd.toLowerCase().includes("chưa có");
+																					const rawCccdLast4 = m.cccd_last4 ? String(m.cccd_last4).trim() : "";
+																					const validLast4 = /^\d+$/.test(rawCccdLast4) && rawCccdLast4.length === 4 ? rawCccdLast4 : "";
+																					const rawCccd = (m.cccd || "").trim();
+
+																					const hasRealCccd = Boolean(
+																						validLast4 ||
+																						(plain && /^\d+$/.test(plain)) ||
+																						(rawCccd && /\d{4}/.test(rawCccd) && !rawCccd.toLowerCase().includes("có"))
+																					);
+
+																					const cccdFull = plain || (rawCccd && !rawCccd.includes("•") && /^\d+$/.test(rawCccd) ? rawCccd : "");
+																					const cccdLast4 = validLast4 || (cccdFull ? cccdFull.slice(-4) : (rawCccd ? rawCccd.replace(/\D/g, "").slice(-4) : ""));
 
 																					const displayedCccd = isRevealed
-																						? plain ||
-																							(m.cccd && !m.cccd.includes("•")
-																								? m.cccd
-																								: m.cccd_masked || "—")
-																						: m.cccd_masked ||
-																							(m.cccd_last4
-																								? `••••••••${m.cccd_last4}`
-																								: m.cccd && m.cccd.includes("•")
-																									? m.cccd
-																									: "—");
+																						? cccdFull || (cccdLast4 ? `••••••••${cccdLast4}` : "Chưa có CCCD")
+																						: cccdLast4
+																							? `••••••••${cccdLast4}`
+																							: cccdFull
+																								? `••••••••${cccdFull.slice(-4)}`
+																								: "Chưa có CCCD";
 
 																					return (
 																						<tr
@@ -593,7 +597,7 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 																								)}
 																							</td>
 																							<td className="py-2.5 px-3 tabular-nums">
-																								{hasCccd ? (
+																								{hasRealCccd ? (
 																									<div
 																										className="inline-flex items-center gap-1.5 cursor-pointer select-none group/cccd"
 																										onClick={() =>
@@ -608,7 +612,13 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 																												: "Bấm để xem đầy đủ 12 số CCCD"
 																										}
 																									>
-																										<span className="text-slate-800 dark:text-slate-200 group-hover/cccd:text-emerald-600 dark:group-hover/cccd:text-emerald-400 transition-colors text-[13px]">
+																										<span
+																											className={`text-[13px] transition-colors ${
+																												isRevealed
+																													? "font-bold text-emerald-700 dark:text-emerald-300 tracking-wider"
+																													: "text-slate-800 dark:text-slate-200 group-hover/cccd:text-emerald-600 dark:group-hover/cccd:text-emerald-400"
+																											}`}
+																										>
 																											{displayedCccd}
 																										</span>
 																										<button
@@ -620,17 +630,20 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 																													m.cccd,
 																												);
 																											}}
+																											disabled={revealingCccdIds.includes(m.id)}
 																											title={
 																												isRevealed
 																													? "Ẩn số CCCD"
 																													: "Xem đầy đủ số CCCD"
 																											}
-																											className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+																											className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors disabled:opacity-60"
 																										>
-																											{isRevealed ? (
+																											{revealingCccdIds.includes(m.id) ? (
+																												<span className="w-3.5 h-3.5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+																											) : isRevealed ? (
 																												<EyeOff
 																													strokeWidth={1.75}
-																													className="w-3.5 h-3.5"
+																													className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"
 																												/>
 																											) : (
 																												<Eye
@@ -641,8 +654,8 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 																										</button>
 																									</div>
 																								) : (
-																									<span className="text-slate-400 dark:text-slate-500 font-normal select-none text-[13px]">
-																										—
+																									<span className="text-slate-400 dark:text-slate-500 font-normal italic select-none text-[12px]">
+																										Chưa có CCCD
 																									</span>
 																								)}
 																							</td>

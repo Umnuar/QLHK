@@ -4,6 +4,7 @@ import path from "path";
 import bcrypt from "bcryptjs";
 import { prisma } from "../config/prisma";
 import type { AuthRequest } from "../middlewares/auth.middleware";
+import { logCron, logError } from "../utils/logger";
 
 export const exportDatabase = async (
 	_req: Request,
@@ -71,7 +72,7 @@ export const exportDatabase = async (
 
 export const runAutoBackup = async (): Promise<string | null> => {
 	try {
-		console.log("[AutoBackup] Đang tiến hành sao lưu dữ liệu 7 bảng PostgreSQL...");
+		logCron("AutoBackup", "STARTED");
 
 		const [
 			villages,
@@ -130,7 +131,7 @@ export const runAutoBackup = async (): Promise<string | null> => {
 		const filepath = path.join(backupDir, filename);
 
 		fs.writeFileSync(filepath, JSON.stringify(backupData, null, 2));
-		console.log(`[AutoBackup] Đã tạo bản sao lưu thành công tại: ${filename}`);
+		logCron("AutoBackup", `SUCCESS - ${filename}`);
 
 		// Cleanup cũ (lưu trữ xoay vòng 7 ngày tương tự QLCS/QLNN)
 		const files = fs.readdirSync(backupDir);
@@ -143,14 +144,15 @@ export const runAutoBackup = async (): Promise<string | null> => {
 				const stats = fs.statSync(fullPath);
 				if (now - stats.mtimeMs > SEVEN_DAYS) {
 					fs.unlinkSync(fullPath);
-					console.log(`[AutoBackup] Đã xoá bản sao lưu cũ quá 7 ngày: ${file}`);
+					logCron("AutoBackup", `PURGED_OLD_FILE - ${file}`);
 				}
 			}
 		}
 
 		return filepath;
-	} catch (error) {
-		console.error("[AutoBackup] Lỗi nghiêm trọng khi sao lưu tự động:", error);
+	} catch (error: any) {
+		logCron("AutoBackup", `FAILED - ${error?.message || "Unknown error"}`);
+		logError("BACKUP_ERROR", error?.message || "Lỗi nghiêm trọng khi sao lưu tự động");
 		return null;
 	}
 };

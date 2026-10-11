@@ -1,0 +1,17 @@
+FROM node:20-slim
+
+WORKDIR /app
+
+# Cài đặt OpenSSL cho Prisma ORM
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+COPY package*.json ./
+COPY prisma ./prisma/
+
+RUN npm install
+RUN npx prisma generate
+
+EXPOSE 5002
+
+# Chạy tsx watch để tự động reload khi sửa code
+CMD ["npm", "run", "dev"]

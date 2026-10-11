@@ -22,6 +22,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
+    exclude: ['**/node_modules/**', '**/dist/**', 'tests/e2e/**'],
   },
   resolve: {
     alias: {

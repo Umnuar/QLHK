@@ -19,6 +19,7 @@ import type { Household, Person, RelationshipType } from "../../types";
 import { CustomSelect } from "../common/CustomSelect";
 import { CitizenModal } from "./CitizenModal";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
+import { householdApi } from "../../api/householdApi";
 
 export interface HouseholdDrawerProps {
 	isOpen: boolean;
@@ -49,11 +50,49 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 		null,
 	);
 	const [revealedCccdIds, setRevealedCccdIds] = useState<string[]>([]);
+	const [decryptedCccds, setDecryptedCccds] = useState<Record<string, string>>({});
+	const [revealingCccdIds, setRevealingCccdIds] = useState<string[]>([]);
 
-	const toggleRevealCccd = (id: string) => {
-		setRevealedCccdIds((prev) =>
-			prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-		);
+	const toggleRevealCccd = async (memId: string, fallbackCccd?: string) => {
+		if (revealedCccdIds.includes(memId)) {
+			setRevealedCccdIds((prev) => prev.filter((x) => x !== memId));
+			return;
+		}
+
+		// 1. Nếu đã có trong cache decryptedCccds
+		if (decryptedCccds[memId]) {
+			setRevealedCccdIds((prev) => [...prev, memId]);
+			return;
+		}
+
+		// 2. Nếu đã có sẵn plaintext không bị mask
+		if (fallbackCccd && !fallbackCccd.includes("•") && fallbackCccd.length >= 9) {
+			setDecryptedCccds((prev) => ({ ...prev, [memId]: fallbackCccd }));
+			setRevealedCccdIds((prev) => [...prev, memId]);
+			return;
+		}
+
+		// 3. Nếu là nhân khẩu đã lưu trong DB (UUID)
+		if (memId && !memId.startsWith("mem-")) {
+			try {
+				setRevealingCccdIds((prev) => [...prev, memId]);
+				const plain = await householdApi.revealCitizenCCCD(memId);
+				if (plain) {
+					setDecryptedCccds((prev) => ({ ...prev, [memId]: plain }));
+					setRevealedCccdIds((prev) => [...prev, memId]);
+				} else {
+					console.warn(`[HouseholdDrawer] Không thể giải mã CCCD cho ${memId}`);
+				}
+			} catch (err) {
+				console.error("[HouseholdDrawer] Lỗi mở khóa CCCD:", err);
+			} finally {
+				setRevealingCccdIds((prev) => prev.filter((x) => x !== memId));
+			}
+			return;
+		}
+
+		// Fallback cho nhân khẩu tạo mới trong phiên
+		setRevealedCccdIds((prev) => [...prev, memId]);
 	};
 
 	const [error, setError] = useState<string | null>(null);
@@ -107,6 +146,8 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 			setIsCitizenModalOpen(false);
 			setEditingMemberIndex(null);
 			setRevealedCccdIds([]);
+			setDecryptedCccds({});
+			setRevealingCccdIds([]);
 			setError(null);
 		}
 	}, [isOpen, household, selectedVillageId, availableVillages, user]);
@@ -221,6 +262,16 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 			updatedMembers[editingMemberIndex] = newPerson;
 		} else {
 			updatedMembers.push(newPerson);
+		}
+
+		if (newPerson.id && newPerson.cccd && !newPerson.cccd.includes("•")) {
+			setDecryptedCccds((prev) => ({ ...prev, [newPerson.id!]: newPerson.cccd! }));
+		} else if (newPerson.id && (!newPerson.cccd || !newPerson.cccd.trim())) {
+			setDecryptedCccds((prev) => {
+				const next = { ...prev };
+				delete next[newPerson.id!];
+				return next;
+			});
 		}
 
 		// Đánh lại STT 1..N
@@ -512,16 +563,29 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 											m.dob_formatted || m.dob_raw || m.birth_year || m.dob;
 										const memId = m.id || `mem-${idx}`;
 										const isCccdRevealed = revealedCccdIds.includes(memId);
-										const cccdFull = m.cccd ? m.cccd.trim() : "";
-										const cccdLast4 =
-											m.cccd_last4 || (cccdFull ? cccdFull.slice(-4) : "");
+										const isCccdRevealing = revealingCccdIds.includes(memId);
+										const plain = decryptedCccds[memId];
+
+										const rawCccdLast4 = m.cccd_last4 ? String(m.cccd_last4).trim() : "";
+										const validLast4 = /^\d+$/.test(rawCccdLast4) && rawCccdLast4.length === 4 ? rawCccdLast4 : "";
+										const rawCccd = (m.cccd || "").trim();
+
+										const hasRealCccd = Boolean(
+											validLast4 ||
+											(plain && /^\d+$/.test(plain)) ||
+											(rawCccd && /\d{4}/.test(rawCccd) && !rawCccd.toLowerCase().includes("có"))
+										);
+
+										const cccdFull = plain || (rawCccd && !rawCccd.includes("•") && /^\d+$/.test(rawCccd) ? rawCccd : "");
+										const cccdLast4 = validLast4 || (cccdFull ? cccdFull.slice(-4) : (rawCccd ? rawCccd.replace(/\D/g, "").slice(-4) : ""));
+
 										const cccdDisplay = isCccdRevealed
-											? cccdFull || (cccdLast4 ? `••••••••${cccdLast4}` : "")
+											? cccdFull || (cccdLast4 ? `••••••••${cccdLast4}` : "Chưa có CCCD")
 											: cccdLast4
 												? `••••••••${cccdLast4}`
 												: cccdFull
 													? `••••••••${cccdFull.slice(-4)}`
-													: "";
+													: "Chưa có CCCD";
 
 										return (
 											<div
@@ -550,11 +614,11 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 														{m.gender && (
 															<span
 																className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
-																	m.gender === "Nam"
-																		? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
-																		: "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300"
-																}`}
-															>
+																m.gender === "Nam"
+																	? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+																	: "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300"
+															}`}
+														>
 																{m.gender}
 															</span>
 														)}
@@ -563,21 +627,24 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 													{/* Hàng 2 (Metadata chi tiết, căn lề thẳng hàng họ tên pl-7) */}
 													<div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 pl-7">
 														{birthDisplay && <span>{birthDisplay}</span>}
-														{(cccdFull || cccdLast4) && (
+														{hasRealCccd ? (
 															<button
 																type="button"
-																onClick={() => toggleRevealCccd(memId)}
+																onClick={() => toggleRevealCccd(memId, m.cccd)}
+																disabled={isCccdRevealing}
 																title={
 																	isCccdRevealed
 																		? "Bấm để ẩn số CCCD"
 																		: "Bấm để xem đầy đủ 12 số CCCD"
 																}
-																className="inline-flex items-center gap-1 font-mono text-[11px] text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-colors"
+																className="inline-flex items-center gap-1 font-mono text-[11px] text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-colors disabled:opacity-60"
 															>
-																{isCccdRevealed ? (
+																{isCccdRevealing ? (
+																	<span className="w-3.5 h-3.5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+																) : isCccdRevealed ? (
 																	<EyeOff
 																		strokeWidth={1.5}
-																		className="w-3.5 h-3.5 text-slate-400"
+																		className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"
 																	/>
 																) : (
 																	<Eye
@@ -585,8 +652,14 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 																		className="w-3.5 h-3.5 text-slate-400"
 																	/>
 																)}
-																<span>{cccdDisplay}</span>
+																<span className={isCccdRevealed ? "font-bold text-emerald-700 dark:text-emerald-300 tracking-wider" : ""}>
+																	{cccdDisplay}
+																</span>
 															</button>
+														) : (
+															<span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 italic">
+																Chưa có CCCD
+															</span>
 														)}
 														<span
 															className={`px-1.5 py-0.5 rounded text-[10px] ${
@@ -673,7 +746,16 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 			<CitizenModal
 				isOpen={isCitizenModalOpen}
 				initialMember={
-					editingMemberIndex !== null ? members[editingMemberIndex] : null
+					editingMemberIndex !== null
+						? {
+								...members[editingMemberIndex],
+								cccd:
+									decryptedCccds[
+										members[editingMemberIndex].id ||
+											`mem-${editingMemberIndex}`
+									] || members[editingMemberIndex].cccd,
+							}
+						: null
 				}
 				onClose={() => {
 					setIsCitizenModalOpen(false);

@@ -13,10 +13,14 @@ function formatHouseholdWithDecryptedCitizens(household: any) {
 	if (!household) return household;
 	const formattedCitizens = (household.citizens || []).map((c: any) => {
 		let last4 = c.cccd_last4;
-		if (!last4 && c.cccd) {
+		if (last4 && (last4.toLowerCase().includes("có") || last4.includes("•") || !/^\d+$/.test(last4))) {
+			last4 = null;
+		}
+
+		if (!last4 && c.cccd && !c.cccd.toLowerCase().includes("có")) {
 			try {
 				const plainCCCD = decryptCCCD(c.cccd);
-				if (plainCCCD && plainCCCD.length >= 4) {
+				if (plainCCCD && plainCCCD.length >= 4 && /^\d+$/.test(plainCCCD)) {
 					last4 = plainCCCD.slice(-4);
 				}
 			} catch (err) {
@@ -26,17 +30,15 @@ function formatHouseholdWithDecryptedCitizens(household: any) {
 				);
 			}
 		}
-		const cccd_masked = last4
-			? `••••••••${last4}`
-			: c.cccd
-				? "••••••••"
-				: "Chưa có";
+
+		const hasRealCccd = Boolean(last4 && /^\d+$/.test(last4));
+		const cccd_masked = hasRealCccd ? `••••••••${last4}` : null;
 
 		return {
 			...c,
 			cccd: cccd_masked,
-			cccd_masked,
-			cccd_last4: last4 || null,
+			cccd_masked: cccd_masked || "Chưa có",
+			cccd_last4: hasRealCccd ? last4 : null,
 		};
 	});
 
@@ -361,7 +363,15 @@ export const createHousehold = async (
 			if (Array.isArray(members) && members.length > 0) {
 				for (let idx = 0; idx < members.length; idx++) {
 					const m = members[idx];
-					const enc = m.cccd ? encryptCCCD(m.cccd) : null;
+					const rawCccd = typeof m.cccd === "string" ? m.cccd.trim() : "";
+					const isInvalidCccd =
+						!rawCccd ||
+						rawCccd.toLowerCase().includes("chưa có") ||
+						rawCccd.includes("a có") ||
+						rawCccd.includes("•") ||
+						rawCccd === "—" ||
+						rawCccd === "-";
+					const enc = !isInvalidCccd && /^\d{9,12}$/.test(rawCccd) ? encryptCCCD(rawCccd) : null;
 					const cleanName = m.full_name?.trim() || "";
 					const name_unaccented = removeAccents(cleanName);
 
@@ -524,11 +534,19 @@ export const updateHousehold = async (
 					const m = members[idx];
 					const existing = existingCitizens.find((c) => c.id === m.id);
 
+					const rawCccd = typeof m.cccd === "string" ? m.cccd.trim() : "";
+					const isInvalidCccd =
+						rawCccd.toLowerCase().includes("chưa có") ||
+						rawCccd.includes("a có") ||
+						rawCccd === "—" ||
+						rawCccd === "-";
 					const isMasked =
-						typeof m.cccd === "string" &&
-						(m.cccd.includes("•") || m.cccd.includes("*"));
+						!isInvalidCccd &&
+						(rawCccd.includes("•") || rawCccd.includes("*"));
 					const enc =
-						m.cccd && !isMasked ? encryptCCCD(String(m.cccd).trim()) : null;
+						rawCccd && !isInvalidCccd && !isMasked && /^\d{9,12}$/.test(rawCccd)
+							? encryptCCCD(rawCccd)
+							: null;
 					const cleanName = m.full_name ? String(m.full_name).trim() : "";
 					const name_unaccented = removeAccents(cleanName);
 
@@ -584,6 +602,10 @@ export const updateHousehold = async (
 							updateData.cccd = enc.encrypted;
 							updateData.cccd_hash = enc.hash;
 							updateData.cccd_last4 = enc.last4;
+						} else if (!isMasked && (rawCccd === "" || isInvalidCccd || !/^\d{9,12}$/.test(rawCccd))) {
+							updateData.cccd = null;
+							updateData.cccd_hash = null;
+							updateData.cccd_last4 = null;
 						}
 
 						await tx.citizens.update({

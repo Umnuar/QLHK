@@ -203,8 +203,9 @@ export const revealCitizenCCCD = async (
 		}
 
 		if (
+			req.user?.role !== "admin" &&
 			req.user?.village_id &&
-			citizen.household.village_id !== req.user.village_id
+			citizen.household?.village_id !== req.user.village_id
 		) {
 			res.status(403).json({ error: "Không có quyền" });
 			return;
@@ -215,19 +216,28 @@ export const revealCitizenCCCD = async (
 			return;
 		}
 
-		const plainCCCD = decryptCCCD(citizen.cccd);
+		try {
+			const plainCCCD = decryptCCCD(citizen.cccd);
+			if (!plainCCCD || !/^\d{9,12}$/.test(plainCCCD)) {
+				res.json({ cccd: null });
+				return;
+			}
 
-		await logAudit({
-			userId: req.user?.id,
-			action: "UPDATE",
-			entityType: "citizen",
-			entityId: citizen.id,
-			villageId: citizen.household.village_id,
-			newValues: { action: "REVEAL_CCCD" },
-			ipAddress: req.ip ? String(req.ip) : null,
-		});
+			await logAudit({
+				userId: req.user?.id,
+				action: "UPDATE",
+				entityType: "citizen",
+				entityId: citizen.id,
+				villageId: citizen.household?.village_id,
+				newValues: { action: "REVEAL_CCCD" },
+				ipAddress: req.ip ? String(req.ip) : null,
+			});
 
-		res.json({ cccd: plainCCCD });
+			res.json({ cccd: plainCCCD });
+		} catch (error) {
+			console.error("Lỗi revealCitizenCCCD:", error);
+			res.json({ cccd: null });
+		}
 	} catch (error) {
 		console.error("Lỗi revealCitizenCCCD:", error);
 		res.status(500).json({ error: "Lỗi giải mã CCCD" });
@@ -289,10 +299,21 @@ export const createCitizen = async (
 		let cccdLast4 = null;
 
 		if (cccd && typeof cccd === "string" && cccd.trim()) {
-			const enc = encryptCCCD(cccd.trim());
-			cccdCipher = enc.encrypted;
-			cccdHash = enc.hash;
-			cccdLast4 = enc.last4;
+			const cleanedCccd = cccd.trim();
+			const isInvalid =
+				cleanedCccd.toLowerCase().includes("chưa có") ||
+				cleanedCccd.includes("a có") ||
+				cleanedCccd.includes("•") ||
+				cleanedCccd === "—" ||
+				cleanedCccd === "-" ||
+				!/^\d{9,12}$/.test(cleanedCccd);
+
+			if (!isInvalid) {
+				const enc = encryptCCCD(cleanedCccd);
+				cccdCipher = enc.encrypted;
+				cccdHash = enc.hash;
+				cccdLast4 = enc.last4;
+			}
 		}
 
 		const cleanFullName = full_name.trim();
@@ -431,11 +452,26 @@ export const updateCitizen = async (
 		if (notes !== undefined) updateData.notes = notes ? notes.trim() : null;
 
 		if (cccd !== undefined) {
-			if (cccd && cccd.trim()) {
-				const enc = encryptCCCD(cccd.trim());
-				updateData.cccd = enc.encrypted;
-				updateData.cccd_hash = enc.hash;
-				updateData.cccd_last4 = enc.last4;
+			if (cccd && typeof cccd === "string" && cccd.trim()) {
+				const cleanedCccd = cccd.trim();
+				const isInvalid =
+					cleanedCccd.toLowerCase().includes("chưa có") ||
+					cleanedCccd.includes("a có") ||
+					cleanedCccd.includes("•") ||
+					cleanedCccd === "—" ||
+					cleanedCccd === "-" ||
+					!/^\d{9,12}$/.test(cleanedCccd);
+
+				if (!isInvalid) {
+					const enc = encryptCCCD(cleanedCccd);
+					updateData.cccd = enc.encrypted;
+					updateData.cccd_hash = enc.hash;
+					updateData.cccd_last4 = enc.last4;
+				} else {
+					updateData.cccd = null;
+					updateData.cccd_hash = null;
+					updateData.cccd_last4 = null;
+				}
 			} else {
 				updateData.cccd = null;
 				updateData.cccd_hash = null;

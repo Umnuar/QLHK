@@ -48,11 +48,33 @@ export function normalizeHousehold(item: any): Household {
 		birth_year:
 			c.birth_year || (c.dob ? parseInt(String(c.dob).slice(-4), 10) || 0 : 0),
 		age: c.age || 0,
-		cccd: c.cccd || "",
-		cccd_last4: c.cccd_last4 || (c.cccd ? String(c.cccd).slice(-4) : ""),
-		cccd_masked:
-			c.cccd_masked ||
-			(c.cccd_last4 ? `••••••••${c.cccd_last4}` : "••••••••••••"),
+		cccd: (() => {
+			const rawCccd = c.cccd ? String(c.cccd).trim() : "";
+			const rawLast4 = c.cccd_last4 ? String(c.cccd_last4).trim() : "";
+			const validLast4 = /^\d+$/.test(rawLast4) && rawLast4.length === 4 ? rawLast4 : "";
+			if (/^\d{9,12}$/.test(rawCccd)) return rawCccd;
+			if ((rawCccd.includes("•") || rawCccd.includes("*")) && /\d/.test(rawCccd) && !rawCccd.toLowerCase().includes("có")) return rawCccd;
+			if (validLast4) return `••••••••${validLast4}`;
+			return "";
+		})(),
+		cccd_last4: (() => {
+			const rawLast4 = c.cccd_last4 ? String(c.cccd_last4).trim() : "";
+			if (/^\d+$/.test(rawLast4) && rawLast4.length === 4) return rawLast4;
+			const rawCccd = c.cccd ? String(c.cccd).trim() : "";
+			const digitsOnly = rawCccd.replace(/\D/g, "");
+			if (digitsOnly.length >= 4) return digitsOnly.slice(-4);
+			return "";
+		})(),
+		cccd_masked: (() => {
+			const rawMasked = c.cccd_masked ? String(c.cccd_masked).trim() : "";
+			if (rawMasked.includes("•") && /\d/.test(rawMasked) && !rawMasked.toLowerCase().includes("có")) return rawMasked;
+			const rawLast4 = c.cccd_last4 ? String(c.cccd_last4).trim() : "";
+			if (/^\d+$/.test(rawLast4) && rawLast4.length === 4) return `••••••••${rawLast4}`;
+			const rawCccd = c.cccd ? String(c.cccd).trim() : "";
+			const digitsOnly = rawCccd.replace(/\D/g, "");
+			if (digitsOnly.length >= 4) return `••••••••${digitsOnly.slice(-4)}`;
+			return "Chưa có";
+		})(),
 		ethnicity: c.ethnicity || "Kinh",
 		is_minority: c.ethnicity ? c.ethnicity !== "Kinh" : false,
 		religion: c.religion || "Không",
@@ -251,12 +273,18 @@ export const householdApi = {
 	 * Giải mã và hiển thị số CCCD của công dân (ghi log kiểm toán REVEAL_CCCD)
 	 */
 	async revealCitizenCCCD(citizenId: string): Promise<string | null> {
+		if (!citizenId || citizenId.startsWith("mem-")) return null;
 		try {
-			const res = await apiClient.post(`/citizens/${citizenId}/reveal-cccd`);
-			return res.data?.cccd || null;
-		} catch {
 			const res = await apiClient.get(`/citizens/${citizenId}/reveal-cccd`);
-			return res.data?.cccd || null;
+			return res.data?.cccd || res.data?.data?.cccd || null;
+		} catch {
+			try {
+				const res = await apiClient.post(`/citizens/${citizenId}/reveal-cccd`);
+				return res.data?.cccd || res.data?.data?.cccd || null;
+			} catch (err) {
+				console.error(`[revealCitizenCCCD] Lỗi giải mã CCCD (${citizenId}):`, err);
+				return null;
+			}
 		}
 	},
 };

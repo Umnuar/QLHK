@@ -170,36 +170,43 @@ export const deleteVillage = async (
 ): Promise<void> => {
 	try {
 		const id = String(req.params.id);
-		const current = await prisma.villages.findUnique({
+		let current = await prisma.villages.findUnique({
 			where: { id },
 		});
+		if (!current) {
+			current = await prisma.villages.findFirst({
+				where: { OR: [{ name: id }, { code: id }] },
+			});
+		}
 		if (!current) {
 			res.status(404).json({ error: "Không tìm thấy thôn" });
 			return;
 		}
 
+		const villageId = current.id;
+
 		// Kiểm tra số lượng hộ khẩu trong thôn
 		const householdCount = await prisma.households.count({
-			where: { village_id: id, is_deleted: false },
+			where: { village_id: villageId, is_deleted: false },
 		});
 
 		// Thực hiện trong transaction: hủy liên kết user, xóa hộ dân và công dân liên quan, rồi xóa thôn
 		await prisma.$transaction(async (tx) => {
 			// 1. Hủy liên kết người dùng với thôn bị xóa
 			await tx.users.updateMany({
-				where: { village_id: id },
+				where: { village_id: villageId },
 				data: { village_id: null },
 			});
 
 			// 2. Hủy liên kết audit logs với thôn bị xóa để tránh vi phạm foreign key
 			await tx.audit_logs.updateMany({
-				where: { village_id: id },
+				where: { village_id: villageId },
 				data: { village_id: null },
 			});
 
 			// 2. Lấy danh sách households thuộc thôn để xóa các citizens trước
 			const households = await tx.households.findMany({
-				where: { village_id: id },
+				where: { village_id: villageId },
 				select: { id: true },
 			});
 			const householdIds = households.map((h) => h.id);
@@ -215,7 +222,7 @@ export const deleteVillage = async (
 
 			// 3. Xóa thôn
 			await tx.villages.delete({
-				where: { id },
+				where: { id: villageId },
 			});
 		});
 

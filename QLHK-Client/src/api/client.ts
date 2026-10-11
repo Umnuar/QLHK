@@ -23,8 +23,32 @@ export const apiClient = axios.create({
 });
 
 export const detectAndSetOptimalApiGateway = async (): Promise<string> => {
-	// Mặc định 100% sử dụng Domain chính thức của Hệ sinh thái Đăk Hà để kết nối Online
 	const domainUrl = API_BASE_URL;
+	try {
+		// Thử kết nối gateway domain chính thức
+		const res = await apiClient.get("/ping", { timeout: 2000 });
+		if (res.status === 204 || res.status === 200) {
+			setApiBaseUrl(domainUrl);
+			return domainUrl;
+		}
+	} catch {
+		// Nếu domain không phản hồi, thử kết nối local backend cổng 5002
+		try {
+			const localUrl = "http://localhost:5002/api";
+			const testClient = axios.create({
+				baseURL: localUrl,
+				timeout: 1500,
+				adapter: getTauriAxiosAdapter(),
+			});
+			const localRes = await testClient.get("/ping");
+			if (localRes.status === 204 || localRes.status === 200) {
+				setApiBaseUrl(localUrl);
+				return localUrl;
+			}
+		} catch {
+			// Không kết nối được cả hai, giữ mặc định domainUrl
+		}
+	}
 	setApiBaseUrl(domainUrl);
 	return domainUrl;
 };

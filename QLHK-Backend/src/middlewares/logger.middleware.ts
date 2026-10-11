@@ -1,17 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { recordRequestLog } from "../utils/dashboard";
-
-const METHOD_COLORS: Record<string, string> = {
-	GET: "\x1b[32m", // Green
-	POST: "\x1b[34m", // Blue
-	PUT: "\x1b[33m", // Yellow
-	PATCH: "\x1b[35m", // Magenta
-	DELETE: "\x1b[31m", // Red
-};
-
-const RESET = "\x1b[0m";
-const DIM = "\x1b[2m";
-const BOLD = "\x1b[1m";
+import { logHttp } from "../utils/logger";
 
 /**
  * Trích xuất địa chỉ IP thực của client hỗ trợ qua Cloudflare Tunnel và reverse proxies
@@ -36,16 +24,24 @@ export const getClientIp = (req: Request): string => {
 	return ip;
 };
 
-const getStatusColor = (status: number): string => {
-	if (status >= 500) return "\x1b[31m"; // Red
-	if (status >= 400) return "\x1b[33m"; // Yellow
-	if (status >= 300) return "\x1b[36m"; // Cyan
-	if (status >= 200) return "\x1b[32m"; // Green
-	return RESET;
+/**
+ * Kiểm tra xem endpoint có phải là liveness/heartbeat cần bỏ qua log hay không:
+ * /api/health, /api/ping, /favicon.ico
+ */
+export const isLivenessEndpoint = (url: string): boolean => {
+	const cleanUrl = url.split("?")[0].trim();
+	return (
+		cleanUrl === "/api/health" ||
+		cleanUrl === "/api/health/" ||
+		cleanUrl === "/api/ping" ||
+		cleanUrl === "/api/ping/" ||
+		cleanUrl === "/favicon.ico"
+	);
 };
 
 /**
- * Middleware ghi log HTTP request và đồng bộ Terminal Status Dashboard thời gian thực
+ * Middleware ghi log HTTP request chuẩn 1 dòng tối ưu cho Docker container:
+ * [HH:mm:ss] [HTTP] <METHOD> <PATH> <STATUS> <DURATION>ms | IP: <IP>
  */
 export const requestLogger = (
 	req: Request,
@@ -56,41 +52,22 @@ export const requestLogger = (
 	const clientIp = getClientIp(req);
 
 	res.on("finish", () => {
+		const url = req.originalUrl || req.url;
+
+		// Bỏ qua log [HTTP] cho endpoint liveness: /api/health, /api/ping, /favicon.ico
+		if (isLivenessEndpoint(url)) {
+			return;
+		}
+
+		if (process.env.NODE_ENV === "test") {
+			return;
+		}
+
 		const duration = Date.now() - startTime;
 		const method = req.method;
-		const url = req.originalUrl || req.url;
 		const status = res.statusCode;
 
-		if (url.includes("/api/health") || url.includes("/api/ping")) {
-			return; // Bỏ qua heartbeat ping để terminal sạch và không nghẽn Event Loop
-		}
-
-		// Cập nhật vào Terminal Dashboard
-		recordRequestLog({
-			method,
-			url,
-			status,
-			duration,
-			ip: clientIp,
-		});
-
-		// Nếu không ở chế độ TTY và không phải môi trường test, xuất ANSI log bình thường
-		if (!process.stdout.isTTY && process.env.NODE_ENV !== "test") {
-			const methodColor = METHOD_COLORS[method] || "\x1b[37m";
-			const statusColor = getStatusColor(status);
-			const timestamp = new Date().toLocaleTimeString("vi-VN", {
-				hour12: false,
-			});
-
-			console.log(
-				`${DIM}[${timestamp}]${RESET} ` +
-					`${methodColor}${BOLD}${method.padEnd(7)}${RESET} ` +
-					`${url} ` +
-					`${statusColor}${BOLD}${status}${RESET} ` +
-					`${DIM}${duration}ms${RESET} - ` +
-					`${DIM}IP: ${clientIp}${RESET}`,
-			);
-		}
+		logHttp(method, url, status, duration, clientIp);
 	});
 
 	next();

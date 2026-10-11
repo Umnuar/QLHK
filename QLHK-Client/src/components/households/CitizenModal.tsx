@@ -1,7 +1,8 @@
-import { AlertCircle, Check, User, X } from "lucide-react";
+import { AlertCircle, Check, Eye, EyeOff, User, X } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { householdApi } from "../../api/householdApi";
 import { ETHNIC_GROUPS, RELIGIONS } from "../../data/constants";
 import type { Gender, Person, RelationshipType } from "../../types";
 import { maskCccd, validateCccd } from "../../utils/cccd";
@@ -58,6 +59,26 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 	const [religion, setReligion] = useState("Không");
 	const [notes, setNotes] = useState("");
 	const [error, setError] = useState<string | null>(null);
+	const [isRevealingCccd, setIsRevealingCccd] = useState(false);
+
+	const handleToggleRevealCccd = async () => {
+		if (!initialMember?.id || initialMember.id.startsWith("mem-")) return;
+		if (cccd.includes("•")) {
+			try {
+				setIsRevealingCccd(true);
+				const plain = await householdApi.revealCitizenCCCD(initialMember.id);
+				if (plain) {
+					setCccd(plain);
+				}
+			} catch (err) {
+				console.error("[CitizenModal] Lỗi mở khóa CCCD:", err);
+			} finally {
+				setIsRevealingCccd(false);
+			}
+		} else {
+			setCccd(maskCccd(cccd, false));
+		}
+	};
 
 	useEffect(() => {
 		if (isOpen) {
@@ -67,8 +88,17 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				setRelationship(rel);
 				setIsHead(initialMember.is_head || rel === "Chủ hộ");
 				setGender(initialMember.gender || "Nam");
-				setDob(initialMember.dob_raw || initialMember.dob || "");
-				setCccd(initialMember.cccd || "");
+				const rawCccd = (initialMember.cccd || "").trim();
+				const isPlaceholder =
+					!rawCccd ||
+					rawCccd.toLowerCase().includes("chưa có") ||
+					rawCccd.includes("a có") ||
+					rawCccd === "—" ||
+					rawCccd === "-" ||
+					rawCccd === "null" ||
+					rawCccd === "undefined" ||
+					!/\d/.test(rawCccd);
+				setCccd(isPlaceholder ? "" : rawCccd);
 				setEthnicity(initialMember.ethnicity || "Kinh");
 				setReligion(initialMember.religion || "Không");
 				setNotes(initialMember.notes || initialMember.occupation || "");
@@ -138,8 +168,12 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 		birthYear = dobVal.birthYear ?? 2000;
 		age = calculateAge(dobFormatted, new Date().getFullYear());
 
-		if (cccd.trim()) {
-			const cccdVal = validateCccd(cccd.trim());
+		const trimmedCccd = cccd.trim();
+		const isMasked = trimmedCccd.includes("•") || trimmedCccd.includes("*");
+		const hasCccdEntered = Boolean(trimmedCccd) && !trimmedCccd.toLowerCase().includes("chưa có");
+
+		if (hasCccdEntered && !isMasked) {
+			const cccdVal = validateCccd(trimmedCccd);
 			if (!cccdVal.isValid) {
 				setError(`Lỗi số CCCD: ${cccdVal.error}`);
 				return;
@@ -148,8 +182,21 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 
 		const { lastName, firstName } = splitFullName(trimmedName);
 		const isMinority = ethnicity !== "Kinh";
-		const cccdLast4 = cccd.trim() ? cccd.trim().slice(-4) : "";
-		const cccdMasked = maskCccd(cccd.trim(), false);
+		const cccdLast4 = isMasked
+			? initialMember?.cccd_last4 || trimmedCccd.slice(-4)
+			: hasCccdEntered
+				? trimmedCccd.slice(-4)
+				: "";
+		const cccdMasked = isMasked
+			? initialMember?.cccd_masked || trimmedCccd
+			: hasCccdEntered
+				? maskCccd(trimmedCccd, false)
+				: "Chưa có";
+		const finalCccd = isMasked
+			? initialMember?.cccd || trimmedCccd
+			: hasCccdEntered
+				? trimmedCccd
+				: "";
 		const headStatus = relationship === "Chủ hộ" || isHead;
 
 		const memberData: Partial<Person> = {
@@ -167,7 +214,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 			dob_formatted: formatDobDisplay(dobFormatted),
 			birth_year: birthYear,
 			age,
-			cccd: cccd.trim(),
+			cccd: finalCccd,
 			cccd_last4: cccdLast4,
 			cccd_masked: cccdMasked,
 			ethnicity,
@@ -295,16 +342,46 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 						</div>
 
 						<div>
-							<label htmlFor="citizen-cccd" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-								Số CCCD (12 số)
-							</label>
+							<div className="flex items-center justify-between mb-1.5">
+								<label htmlFor="citizen-cccd" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+									Số CCCD (12 số)
+								</label>
+								{Boolean(initialMember?.id) &&
+									!initialMember?.id?.startsWith("mem-") &&
+									Boolean(
+										(initialMember?.cccd_last4 && /^\d{4}$/.test(String(initialMember.cccd_last4).trim())) ||
+										(initialMember?.cccd && /\d{4}/.test(String(initialMember.cccd)) && !String(initialMember.cccd).toLowerCase().includes("có"))
+									) &&
+									Boolean(cccd.trim()) && (
+									<button
+										type="button"
+										onClick={handleToggleRevealCccd}
+										disabled={isRevealingCccd}
+										className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-60"
+									>
+										{isRevealingCccd ? (
+											<span className="w-3 h-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+										) : cccd.includes("•") ? (
+											<>
+												<Eye className="w-3 h-3" />
+												<span>Xem đầy đủ</span>
+											</>
+										) : (
+											<>
+												<EyeOff className="w-3 h-3" />
+												<span>Ẩn bớt</span>
+											</>
+										)}
+									</button>
+								)}
+							</div>
 							<input
 								id="citizen-cccd"
 								type="text"
 								maxLength={12}
 								value={cccd}
 								onChange={(e) => setCccd(e.target.value.replace(/\D/g, ""))}
-								placeholder="12 chữ số"
+								placeholder="12 chữ số (để trống nếu chưa có)"
 								className={inputClasses}
 							/>
 						</div>

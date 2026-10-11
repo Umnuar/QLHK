@@ -14,7 +14,10 @@ export const villageApi = {
 	 * Lấy danh sách thôn từ Backend (GET /villages)
 	 */
 	async getAll(): Promise<Village[]> {
-		const res = await apiClient.get("/villages");
+		const res = await apiClient.get("/villages", {
+			params: { _t: Date.now() },
+			headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+		});
 		const list = res.data?.data || res.data || [];
 		return Array.isArray(list) ? list.map(normalizeVillage) : [];
 	},

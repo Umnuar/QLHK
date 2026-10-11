@@ -1,5 +1,6 @@
 import cron from "node-cron";
 import { runAutoBackup } from "../controllers/backup.controller";
+import { logCron } from "../utils/logger";
 
 /**
  * Tác vụ Cron sao lưu tự động 7 bảng CSDL PostgreSQL lúc 02:00 AM hàng ngày.
@@ -7,12 +8,17 @@ import { runAutoBackup } from "../controllers/backup.controller";
  */
 export const initBackupCron = (): void => {
 	cron.schedule("0 2 * * *", async () => {
-		console.log(
-			"[Cron] Khởi chạy tác vụ tự động sao lưu dữ liệu lúc 02:00 AM...",
-		);
-		await runAutoBackup();
+		logCron("BackupDatabase", "STARTED");
+		try {
+			const result = await runAutoBackup();
+			if (result) {
+				logCron("BackupDatabase", "COMPLETED");
+			} else {
+				logCron("BackupDatabase", "FAILED");
+			}
+		} catch (err: any) {
+			logCron("BackupDatabase", `FAILED: ${err?.message || "Unknown error"}`);
+		}
 	});
-	console.log(
-		"[Cron] Đã đăng ký tác vụ Auto Backup (02:00 AM hàng ngày, xoay vòng 7 ngày)",
-	);
+	logCron("BackupDatabase", "REGISTERED (02:00 AM daily)");
 };

@@ -35,7 +35,8 @@ interface AppContextType {
 	latency: number | null;
 	isInitializing: boolean;
 	logout: () => Promise<void>;
-	refreshVillages: () => Promise<void>;
+	refreshVillages: (force?: boolean) => Promise<void>;
+	removeVillage: (idOrName: string) => Promise<void>;
 	checkServerHealth: () => Promise<boolean>;
 
 	// 1. Sidebar state
@@ -277,24 +278,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 	const refreshVillages = useCallback(async (force = false) => {
 		if (
 			!force &&
-			Date.now() - lastFetchedVillagesTime < 30000 &&
+			Date.now() - lastFetchedVillagesTime < 5000 &&
 			lastFetchedVillagesTime > 0
 		) {
 			return;
 		}
 		try {
 			const res = await villageApi.getAll();
-			if (Array.isArray(res) && res.length > 0) {
+			if (Array.isArray(res)) {
 				setVillages(res);
 				lastFetchedVillagesTime = Date.now();
 				await setCache("villages", res);
 				return;
 			}
 			const cached = await getCache<Village[]>("villages");
-			if (cached && cached.length > 0) {
+			if (cached && Array.isArray(cached)) {
 				setVillages(cached);
 			} else {
-				setVillages(VILLAGES);
+				setVillages([]);
 			}
 		} catch (err) {
 			console.warn(
@@ -303,13 +304,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 			);
 			try {
 				const cached = await getCache<Village[]>("villages");
-				if (cached && cached.length > 0) {
+				if (cached && Array.isArray(cached)) {
 					setVillages(cached);
 				} else {
-					setVillages(VILLAGES);
+					setVillages([]);
 				}
 			} catch {
-				setVillages(VILLAGES);
+				setVillages([]);
 			}
 		} finally {
 			const currentUser = userRef.current;
@@ -319,6 +320,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 					: prev,
 			);
 		}
+	}, []);
+
+	const removeVillage = useCallback(async (idOrName: string) => {
+		setVillages((prev) => {
+			const updated = prev.filter(
+				(v) => v.id !== idOrName && v.name !== idOrName,
+			);
+			setCache("villages", updated).catch(() => {});
+			return updated;
+		});
+		lastFetchedVillagesTime = 0;
 	}, []);
 
 	const checkServerHealth = useCallback(async (): Promise<boolean> => {
@@ -483,7 +495,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
 	useEffect(() => {
 		if (user?.id) {
-			refreshVillages();
+			refreshVillages(true);
 		}
 	}, [user?.id, refreshVillages]);
 
@@ -512,6 +524,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 				isInitializing,
 				logout,
 				refreshVillages,
+				removeVillage,
 				checkServerHealth,
 
 				// 1. Sidebar

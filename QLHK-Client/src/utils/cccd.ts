@@ -8,8 +8,22 @@ export function maskCccd(
 ): string {
 	if (!cccd || typeof cccd !== "string") return "Chưa có";
 	const cleaned = cccd.trim();
-	if (!cleaned) return "Chưa có";
+	if (
+		!cleaned ||
+		cleaned.toLowerCase().includes("chưa có") ||
+		cleaned.includes("a có") ||
+		cleaned === "—" ||
+		cleaned === "-" ||
+		!/\d/.test(cleaned)
+	) {
+		return "Chưa có";
+	}
 	if (showFull) return cleaned;
+
+	// Nếu chuỗi chứa chữ cái hoặc không phải số thuần túy, trả về "Chưa có"
+	if (/[a-zA-ZÀ-ỹ]/.test(cleaned) || !/^\d+$/.test(cleaned)) {
+		return "Chưa có";
+	}
 
 	if (cleaned.length <= 4) {
 		return cleaned;

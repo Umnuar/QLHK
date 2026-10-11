@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
+import { logError } from "../utils/logger";
 
 export function errorHandler(
 	err: any,
@@ -7,7 +8,11 @@ export function errorHandler(
 	res: Response,
 	_next: NextFunction,
 ): void {
-	console.error("[Error Middleware]:", err);
+	const statusCode = err.status || err.statusCode || (err instanceof ZodError ? 400 : 500);
+	const code = err.code || statusCode;
+	const message = err.message || "Lỗi hệ thống nội bộ";
+
+	logError(code, message);
 
 	if (err instanceof ZodError) {
 		res.status(400).json({
@@ -48,7 +53,6 @@ export function errorHandler(
 		return;
 	}
 
-	const statusCode = err.status || err.statusCode || 500;
 	res.status(statusCode).json({
 		error: err.message || "Lỗi hệ thống nội bộ",
 	});

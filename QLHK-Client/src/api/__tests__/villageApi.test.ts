@@ -48,7 +48,12 @@ describe("villageApi - Chuẩn hóa và API Thôn", () => {
 		} as any);
 
 		const villages = await villageApi.getAll();
-		expect(apiClient.get).toHaveBeenCalledWith("/villages");
+		expect(apiClient.get).toHaveBeenCalledWith(
+			"/villages",
+			expect.objectContaining({
+				params: expect.objectContaining({ _t: expect.any(Number) }),
+			}),
+		);
 		expect(villages.length).toBe(2);
 		expect(villages[0].name).toBe("Thôn 1");
 		expect(villages[0].short_code).toBe("TH1");

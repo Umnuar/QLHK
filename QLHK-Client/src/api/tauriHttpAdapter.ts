@@ -26,45 +26,57 @@ export const getTauriAxiosAdapter = (): AxiosAdapter | undefined => {
 					: JSON.stringify(config.data);
 		}
 
-		const response = await tauriFetch(fullUrl, {
-			method: (config.method || "GET").toUpperCase(),
-			headers,
-			body,
-		});
-
-		const responseText = await response.text();
-		let responseData: any = responseText;
 		try {
-			responseData = JSON.parse(responseText);
-		} catch {
-			// keep string
+			const response = await tauriFetch(fullUrl, {
+				method: (config.method || "GET").toUpperCase(),
+				headers,
+				body,
+				connectTimeout: config.timeout || 10000,
+			});
+
+			const responseText = await response.text();
+			let responseData: any = responseText;
+			try {
+				responseData = JSON.parse(responseText);
+			} catch {
+				// keep string
+			}
+
+			const responseHeaders: Record<string, string> = {};
+			response.headers.forEach((value, key) => {
+				responseHeaders[key] = value;
+			});
+
+			const axiosResponse = {
+				data: responseData,
+				status: response.status,
+				statusText: response.statusText,
+				headers: responseHeaders,
+				config,
+				request: {},
+			};
+
+			if (response.status >= 200 && response.status < 300) {
+				return axiosResponse;
+			}
+
+			const error: any = new Error(
+				`Request failed with status code ${response.status}`,
+			);
+			error.response = axiosResponse;
+			error.config = config;
+			error.status = response.status;
+			error.isAxiosError = true;
+			return Promise.reject(error);
+		} catch (fetchErr: any) {
+			if (fetchErr?.isAxiosError) {
+				return Promise.reject(fetchErr);
+			}
+			const networkError: any = new Error(fetchErr?.message || "Network Error");
+			networkError.config = config;
+			networkError.isAxiosError = true;
+			networkError.code = "ERR_NETWORK";
+			return Promise.reject(networkError);
 		}
-
-		const responseHeaders: Record<string, string> = {};
-		response.headers.forEach((value, key) => {
-			responseHeaders[key] = value;
-		});
-
-		const axiosResponse = {
-			data: responseData,
-			status: response.status,
-			statusText: response.statusText,
-			headers: responseHeaders,
-			config,
-			request: {},
-		};
-
-		if (response.status >= 200 && response.status < 300) {
-			return axiosResponse;
-		}
-
-		const error: any = new Error(
-			`Request failed with status code ${response.status}`,
-		);
-		error.response = axiosResponse;
-		error.config = config;
-		error.status = response.status;
-		error.isAxiosError = true;
-		return Promise.reject(error);
 	};
 };

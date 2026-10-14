@@ -1,3 +1,5 @@
+process.env.TZ = "Asia/Ho_Chi_Minh";
+
 import app from "./app";
 import { config } from "./config/env";
 import { prisma } from "./config/prisma";

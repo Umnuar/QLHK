@@ -245,7 +245,7 @@ describe("QLHK 20-Flow Full Regression Verification Suite", () => {
 	// FLOW 19: Sao lưu & phục hồi CSDL dạng JSON
 	it("Flow 19: Cấu trúc file sao lưu JSON an toàn", () => {
 		const backupData = {
-			version: "1.0.0",
+			version: "1.5.0",
 			exported_at: new Date().toISOString(),
 			total_households: 2,
 			households: [
@@ -258,7 +258,7 @@ describe("QLHK 20-Flow Full Regression Verification Suite", () => {
 		const parsed = JSON.parse(serialized);
 
 		expect(parsed.total_households).toBe(2);
-		expect(parsed.version).toBe("1.0.0");
+		expect(parsed.version).toBe("1.5.0");
 	});
 
 	// FLOW 20: Chế độ ngoại tuyến (Offline Mode & IndexedDB Cache)

@@ -113,7 +113,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 	res.json({
 		status: "ok",
 		app: "qlhk-backend",
-		version: "1.0.0",
+		version: "1.5.0",
 		timestamp: new Date().toISOString(),
 		uptime: process.uptime(),
 	});

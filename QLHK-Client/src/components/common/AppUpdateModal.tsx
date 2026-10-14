@@ -256,7 +256,7 @@ export const AppUpdateModal: React.FC = () => {
 								<div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
 									Phiên bản hiện tại:{" "}
 									<strong className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-										v1.0.0
+										v1.5.0
 									</strong>
 								</div>
 							</div>

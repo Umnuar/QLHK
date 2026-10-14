@@ -32,7 +32,7 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(res.status).toBe(200);
       expect(res.body.status).toBe('ok');
       expect(res.body.app).toBe('qlhk-backend');
-      expect(res.body.version).toBe('1.0.0');
+      expect(res.body.version).toBe('1.5.0');
       expect(typeof res.body.uptime).toBe('number');
       expect(res.body.timestamp).toBeDefined();
     });

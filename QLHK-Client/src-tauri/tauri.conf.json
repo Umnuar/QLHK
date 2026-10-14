@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Quan Ly Ho Khau - Nhan Khau Dak Ha",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "identifier": "com.quanly.hokhau",
   "build": {
     "frontendDist": "../dist",

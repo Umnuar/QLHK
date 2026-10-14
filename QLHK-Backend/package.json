@@ -1,6 +1,6 @@
 {
   "name": "qlhk-backend",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "description": "QLHK - Phân hệ Quản lý Hộ khẩu - Nhân khẩu Xã Đăk Hà (Backend)",
   "main": "dist/index.js",
   "scripts": {

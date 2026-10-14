@@ -1,6 +1,6 @@
 [package]
 name = "qlhk-client-tauri"
-version = "1.0.0"
+version = "1.5.0"
 description = "He Thong Quan Ly Ho Khau - Nhan Khau Dak Ha"
 authors = ["UBND Xa Dak Ha"]
 edition = "2024"

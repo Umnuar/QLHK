@@ -889,7 +889,7 @@ export const SettingsPage: React.FC = () => {
 									Phiên bản phát hành:
 								</span>
 								<span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-									v1.0.0 (Production Stable Edition)
+									v1.5.0 (Production Stable Edition)
 								</span>
 							</div>
 							<div className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
@@ -905,7 +905,7 @@ export const SettingsPage: React.FC = () => {
 									Công nghệ nền tảng:
 								</span>
 								<span className="font-mono text-slate-600 dark:text-slate-300">
-									Vite 5 • React 18 • Tailwind CSS • Electron
+									Vite 5 • React 18 • Tailwind CSS • Tauri v2
 								</span>
 							</div>
 							<div className="flex items-center justify-between py-1.5">

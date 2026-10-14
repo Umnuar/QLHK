@@ -19,7 +19,7 @@ export const BackupRestoreTab: React.FC = () => {
 		try {
 			const backupData = {
 				app: "QLHK-Client",
-				version: "1.0.0",
+				version: "1.5.0",
 				commune: "Xã Đăk Hà",
 				exportDate: new Date().toISOString(),
 				totalHouseholds: households.length,

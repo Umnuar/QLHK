@@ -2,7 +2,7 @@
 
 Hệ thống số hóa và quản lý dữ liệu dân cư, biến động hộ khẩu, nhân khẩu và thành phần dân tộc phục vụ công tác điều hành tại Xã Đăk Hà.
 
-![Phiên bản](https://img.shields.io/badge/Phi%C3%AAn_b%E1%BA%A3n-1.0.0-emerald)
+![Phiên bản](https://img.shields.io/badge/Phi%C3%AAn_b%E1%BA%A3n-1.5.0-emerald)
 ![Nền tảng](https://img.shields.io/badge/N%E1%BB%81n_t%E1%BA%A3ng-Web_%7C_Windows_Desktop-blue)
 ![Giấy phép](https://img.shields.io/badge/Gi%E1%BA%A5y_ph%C3%A9p-Proprietary-slate)
 
@@ -29,7 +29,7 @@ Hệ thống số hóa và quản lý dữ liệu dân cư, biến động hộ 
 <a id="tong-quan"></a>
 ## Tổng quan
 
-**QLHK** là phần mềm phục vụ cán bộ tư pháp - hộ tịch xã và các cán bộ cơ sở trong công tác số hóa, tra cứu và theo dõi biến động nhân hộ khẩu trên địa bàn xã Đăk Hà. Ứng dụng hỗ trợ quản lý chi tiết từng hộ gia đình và nhân khẩu, đối soát tệp bảng tính Excel, bảo vệ dữ liệu định danh theo quy định và tổng hợp báo cáo thống kê dân số. Phần mềm chạy song song trên nền tảng Web và Desktop (Electron) cho máy trạm làm việc.
+**QLHK** là phần mềm phục vụ cán bộ tư pháp - hộ tịch xã và các cán bộ cơ sở trong công tác số hóa, tra cứu và theo dõi biến động nhân hộ khẩu trên địa bàn xã Đăk Hà. Ứng dụng hỗ trợ quản lý chi tiết từng hộ gia đình và nhân khẩu, đối soát tệp bảng tính Excel, bảo vệ dữ liệu định danh theo quy định và tổng hợp báo cáo thống kê dân số. Phần mềm chạy song song trên nền tảng Web và Desktop (Tauri v2 Thin-Client) cho máy trạm làm việc.
 
 ### Hệ sinh thái số hóa công vụ Xã Đăk Hà
 
@@ -62,9 +62,9 @@ Hệ thống số hóa và quản lý dữ liệu dân cư, biến động hộ 
 
 ```mermaid
 graph TD
-    Client["QLHK-Client (Web & Desktop Electron)<br/>React 18 • Vite 5 • Tailwind CSS v4"]
+    Client["QLHK-Client (Web & Desktop Tauri v2)<br/>React 18 • Vite 5 • Tailwind CSS v4"]
     Backend["QLHK-Backend (REST API :5002)<br/>Express • TypeScript • Prisma ORM"]
-    DB[("Cơ sở dữ liệu SQLite / PostgreSQL<br/>Mã hóa AES-256-GCM • Khóa OCC")]
+    DB[("Cơ sở dữ liệu PostgreSQL Native (Schema qlhk)<br/>Mã hóa AES-256-GCM • Khóa OCC")]
 
     Client -->|"HTTP / REST API (JWT Bearer)"| Backend
     Backend -->|"Prisma Client"| DB
@@ -75,11 +75,11 @@ graph TD
 | Thành phần | Công nghệ | Phiên bản |
 | :--- | :--- | :--- |
 | Giao diện người dùng | React, Tailwind CSS | React 18.2.0, Tailwind CSS 4.2.4 |
-| Nền tảng Desktop | Electron, Electron Builder | Electron 42.1.0, Electron Builder 24.13.3 |
+| Nền tảng Desktop | Tauri v2 (Rust Thin-Client) | Tauri 2.12.1 |
 | Công cụ xây dựng Client | Vite, TypeScript | Vite 5.1.6, TypeScript 5.2.2 |
 | Xử lý bảng tính | SheetJS (xlsx) | 0.18.5 |
 | Máy chủ API | Express, TypeScript | Express 4.21.2, TypeScript 5.7.2 |
-| Cơ sở dữ liệu và ORM | Prisma ORM, SQLite / PostgreSQL | Prisma 6.0.0 |
+| Cơ sở dữ liệu và ORM | Prisma ORM, PostgreSQL Native (Schema qlhk) | Prisma 6.0.0 |
 | Xác thực và bảo mật | JWT, Bcryptjs, Helmet, AES-256-GCM | jsonwebtoken 9.0.2, bcryptjs 2.4.3, helmet 8.0.0 |
 | Kiểm thử tự động | Vitest, Supertest | Vitest 2.1.8 (Backend) / 4.1.11 (Client), Supertest 7.0.0 |
 

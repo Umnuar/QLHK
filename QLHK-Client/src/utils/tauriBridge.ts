@@ -122,7 +122,7 @@ export function initTauriBridge(): void {
 			try {
 				return await getVersion();
 			} catch {
-				return "1.0.0";
+				return "1.5.0";
 			}
 		},
 	};

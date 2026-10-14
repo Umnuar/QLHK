@@ -48,7 +48,7 @@ async function main() {
 	const initialSettings = [
 		{ key: "commune_name", value: "Xã Đăk Hà", description: "Tên đơn vị hành chính xã" },
 		{ key: "app_name", value: "Hệ thống Quản lý Hộ khẩu - Nhân khẩu Xã Đăk Hà", description: "Tên hệ thống" },
-		{ key: "system_version", value: "1.0.0", description: "Phiên bản hệ thống" },
+		{ key: "system_version", value: "1.5.0", description: "Phiên bản hệ thống" },
 	];
 
 	for (const s of initialSettings) {

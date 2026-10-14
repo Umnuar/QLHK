@@ -210,7 +210,7 @@ export const Sidebar: React.FC = () => {
 					<div className="space-y-1 whitespace-nowrap overflow-hidden">
 						<div className="flex items-center gap-2 text-slate-200 font-bold text-xs">
 							<ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-							<span>QLHK v1.0.0</span>
+							<span>QLHK v1.5.0</span>
 						</div>
 					</div>
 				) : (

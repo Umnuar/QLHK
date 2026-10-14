@@ -2,7 +2,7 @@
 
 Hệ thống số hóa, quản lý và đối soát dữ liệu hộ gia đình, nhân khẩu, biến động dân cư và thành phần 14 dân tộc thiểu số phục vụ công tác chỉ đạo, điều hành tại Ủy ban nhân dân Xã Đăk Hà, Huyện Đăk Hà, Tỉnh Kon Tum.
 
-![Phiên bản](https://img.shields.io/badge/Phi%C3%AAn_b%E1%BA%A3n-v2.2.0-emerald?style=flat-square)
+![Phiên bản](https://img.shields.io/badge/Phi%C3%AAn_b%E1%BA%A3n-v1-emerald?style=flat-square)
 ![Nền tảng](https://img.shields.io/badge/N%E1%BB%81n_t%E1%BA%A3ng-Windows_Desktop_Tauri_v2-blue?style=flat-square)
 ![Bảo mật](https://img.shields.io/badge/B%E1%BA%A3o_m%E1%BA%ADt-AES--256--GCM-purple?style=flat-square)
 ![Bản quyền](https://img.shields.io/badge/B%E1%BA%A3n_quy%E1%BB%81n-UBND_X%C3%A3_%C4%90%C4%83k_H%C3%A0-slate?style=flat-square)
@@ -17,7 +17,7 @@ Hệ thống số hóa, quản lý và đối soát dữ liệu hộ gia đình,
 
 Cán bộ tư pháp - hộ tịch, trưởng thôn và cán bộ quản lý tải gói cài đặt Windows Desktop mới nhất tại:
 
-👉 **[Tải Bản Cài Đặt Tại Mục Releases (v2.2.0)](https://github.com/Umnuar/QLHK/releases)**
+👉 **[Tải Bản Cài Đặt Tại Mục Releases (v1)](https://github.com/Umnuar/QLHK/releases)**
 
 | Tệp Cài Đặt | Hệ Điều Hành | Kiến Trúc | Mô Tả |
 | :--- | :--- | :--- | :--- |

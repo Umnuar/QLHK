@@ -59,6 +59,7 @@ QLHK-Backend/README.md
 QLHK-Client/README.md
 QLHK-Backend/Dockerfile*
 QLHK-Backend/.dockerignore
+QLHK-Backend/docker-entrypoint.sh
 
 # OS Junk
 Thumbs.db

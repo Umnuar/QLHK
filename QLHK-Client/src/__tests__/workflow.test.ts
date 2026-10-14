@@ -188,3 +188,36 @@ describe("Kiểm thử tích hợp Slide-over Drawer & Sub-modal CitizenModal", 
 		expect(typeof HouseholdModal).toBe("function");
 	}, 30000);
 });
+
+describe("Kiểm thử tính năng Tự Động Cập Nhật (Tauri Auto-Updater)", () => {
+	it("export hợp lệ AppUpdateModal và hàm checkAppUpdateManually", async () => {
+		const { AppUpdateModal, checkAppUpdateManually } = await import(
+			"../components/common/AppUpdateModal"
+		);
+
+		expect(typeof AppUpdateModal).toBe("function");
+		expect(typeof checkAppUpdateManually).toBe("function");
+	});
+
+	it("hàm checkAppUpdateManually chạy an toàn trong mọi môi trường (Node & Browser)", async () => {
+		const { checkAppUpdateManually } = await import(
+			"../components/common/AppUpdateModal"
+		);
+
+		// Trong môi trường Node (không có window), gọi hàm không bao giờ gây crash
+		expect(() => checkAppUpdateManually()).not.toThrow();
+
+		// Nếu có window (Browser/jsdom)
+		if (typeof window !== "undefined") {
+			let eventFired = false;
+			const listener = () => {
+				eventFired = true;
+			};
+			window.addEventListener("app:check-update", listener);
+			checkAppUpdateManually();
+			window.removeEventListener("app:check-update", listener);
+			expect(eventFired).toBe(true);
+		}
+	});
+});
+

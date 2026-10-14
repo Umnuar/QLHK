@@ -1,30 +1,47 @@
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 
-node_modules
-dist
+# Dependencies
+node_modules/
+
+# Production build outputs
 dist/
-dist-ssr
-dist-electron
+dist-ssr/
 dist-electron/
-release
+release/
+build/
+target/
+backups/
+backups/*.json
+*.xlsx
+*.xls
+*.csv
 *.local
+
+# Secrets & Keys
+*.pem
+*.key
+minisign.key
 
 # Build artifacts & Vite timestamp files
 *.timestamp-*.mjs
+*.timestamp*.mjs
 
 # Anti-temp file safety patterns
 patch_*
 temp_*
 debug_*
+*.tmp
+*.bak
+*.swp
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 
 # OS
@@ -32,15 +49,19 @@ Thumbs.db
 Desktop.ini
 
 # Environment
-.env*
+.env
+.env.*
 !.env.example
+
+# Test & coverage artifacts
+playwright-report/
+test-results/
+coverage/
+.turbo/
+.vite/
 
 # Graphify & CodeGraph local index
 .graphify/
 GRAPH_REPORT.md
-
-# Playwright Test artifacts
-playwright-report/
-test-results/
 .codegraph/
 *.codegraph.db

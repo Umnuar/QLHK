@@ -29,6 +29,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": ["nsis"],
     "icon": [
       "icons/32x32.png",
@@ -44,6 +45,14 @@
       "nsis": {
         "installMode": "currentUser"
       }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "http://localhost:5002/api/updates/latest"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDU3RUNGNTkyQkM1MTNDNjkKUldScFBGRzhrdlhzVjY0eHJFUnhRNEpLbXNCZlJKa2NVRm9Nc2dzWUV1N3ZrNk5HZkw2SUFmNUIK"
     }
   }
 }

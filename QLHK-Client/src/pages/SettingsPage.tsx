@@ -26,6 +26,7 @@ import { CustomSelect } from "../components/common/CustomSelect";
 import { BackupRestoreTab } from "../components/settings/BackupRestoreTab";
 import { ProfileCard } from "./Settings/ProfileCard";
 import { TimeCard } from "./Settings/TimeCard";
+import { checkAppUpdateManually } from "../components/common/AppUpdateModal";
 import { useModal } from "../hooks/useModal";
 import type { User } from "../types";
 
@@ -864,6 +865,24 @@ export const SettingsPage: React.FC = () => {
 								<span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
 									QLHK-DAKHA
 								</span>
+							</div>
+							<div className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
+								<div>
+									<div className="text-slate-700 dark:text-slate-300 font-bold">
+										Cập nhật phần mềm:
+									</div>
+									<div className="text-[11px] text-slate-400">
+										Tự động kiểm tra và nâng cấp phiên bản qua mạng
+									</div>
+								</div>
+								<button
+									type="button"
+									onClick={checkAppUpdateManually}
+									className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer active:scale-95 transition-all flex items-center gap-1.5"
+								>
+									<RefreshCw className="w-3.5 h-3.5" strokeWidth={1.5} />
+									<span>Kiểm Tra Cập Nhật</span>
+								</button>
 							</div>
 							<div className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
 								<span className="text-slate-500 dark:text-slate-400">

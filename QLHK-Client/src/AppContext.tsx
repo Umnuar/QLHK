@@ -232,13 +232,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 				const parsed = parseInt(saved, 10);
 				if (!isNaN(parsed) && parsed >= 1900 && parsed <= 2100) return parsed;
 			}
-			const timeConfigRaw = localStorage.getItem("app_time_config");
-			if (timeConfigRaw) {
-				const config = JSON.parse(timeConfigRaw);
-				const offset = config.offset || 0;
-				const effectiveDate = new Date(Date.now() + offset);
-				return effectiveDate.getFullYear();
-			}
 		} catch {
 			// Ignore
 		}

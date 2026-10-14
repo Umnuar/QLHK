@@ -99,6 +99,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 					rawCccd === "undefined" ||
 					!/\d/.test(rawCccd);
 				setCccd(isPlaceholder ? "" : rawCccd);
+				setDob(initialMember.dob || "");
 				setEthnicity(initialMember.ethnicity || "Kinh");
 				setReligion(initialMember.religion || "Không");
 				setNotes(initialMember.notes || initialMember.occupation || "");
@@ -282,7 +283,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				)}
 
 				{/* Form */}
-				<form onSubmit={handleSubmit} className="space-y-3.5">
+				<form onSubmit={handleSubmit} noValidate className="space-y-3.5">
 					{/* Hàng 1: Họ và Tên * */}
 					<div>
 						<label htmlFor="citizen-full-name" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">

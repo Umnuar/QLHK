@@ -8,6 +8,8 @@ import householdsRoutes from "./households.routes";
 import usersRoutes from "./users.routes";
 import villagesRoutes from "./villages.routes";
 import backupRoutes from "./backup.routes";
+import updatesRoutes from "./updates.routes";
+import settingsRoutes from "./settings.routes";
 
 const router = Router();
 
@@ -21,5 +23,7 @@ router.use("/users", usersRoutes);
 router.use("/audit-logs", auditRoutes);
 router.use("/audit", auditRoutes);
 router.use("/backup", backupRoutes);
+router.use("/updates", updatesRoutes);
+router.use("/settings", settingsRoutes);
 
 export default router;

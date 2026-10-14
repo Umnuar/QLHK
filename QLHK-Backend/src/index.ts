@@ -2,6 +2,7 @@ import app from "./app";
 import { config } from "./config/env";
 import { prisma } from "./config/prisma";
 import { initBackupCron } from "./crons/backup.cron";
+import { startAutoTimeSync, stopAutoTimeSync } from "./services/systemTime.service";
 import { getDbTargetInfo, logDb, logError, logStart } from "./utils/logger";
 
 const PORT = config.port || 5002;
@@ -13,6 +14,7 @@ const server = app.listen(PORT, () => {
 
 	if (process.env.NODE_ENV !== "test") {
 		initBackupCron();
+		startAutoTimeSync();
 	}
 });
 
@@ -28,6 +30,7 @@ server.on("error", (err: NodeJS.ErrnoException) => {
 
 // Xử lý đóng máy chủ an toàn (Graceful Shutdown)
 const gracefulShutdown = async (_signal: string) => {
+	stopAutoTimeSync();
 	server.close(async () => {
 		try {
 			await prisma.$disconnect();

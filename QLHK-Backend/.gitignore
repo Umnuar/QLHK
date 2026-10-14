@@ -1,11 +1,53 @@
-node_modules
-dist
+# Dependencies
+node_modules/
+
+# Production build outputs
+dist/
+build/
+target/
+
+# Environment files & Secrets
 .env
+.env.*
+!.env.example
+*.local
+*.pem
+*.key
+minisign.key
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Databases and Local SQLite runtime
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 dev.db
 dev.db-journal
-uploads
+
+# Local storage, uploads, and backups
+uploads/
+backups/
+backups/*.json
+storage/
+*.xlsx
+*.xls
+*.csv
+
+# Coverage and test artifacts
+coverage/
+.turbo/
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+
 # Graphify & CodeGraph local index
 .graphify/
 GRAPH_REPORT.md

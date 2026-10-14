@@ -2,12 +2,15 @@
 node_modules/
 .pnpm-store/
 
-# Production build outputs
+# Production build outputs & Rust/Tauri artifacts
 dist/
 dist-electron/
 dist-ssr/
+build/
 release/
-.vite/
+target/
+gen/
+/gen/schemas
 
 # Environment files and credentials (CRITICAL)
 .env
@@ -15,32 +18,56 @@ release/
 !.env.example
 *.local
 
+# Secrets & Cryptographic Keys
+*.pem
+*.key
+minisign.key
+
 # Logs
 logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
+pnpm-debug.log*
 
-# Databases and SQLite runtime
+# Databases and Local SQLite runtime
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
 dev.db
 dev.db-journal
 
-# Uploads and temporary runtime assets
+# Local storage, uploads, and backups
+storage/
 uploads/
 backups/
+backups/*.json
+*.xlsx
+*.xls
+*.csv
 test-fixtures/*.xlsx
 *.timestamp-*.mjs
 *.timestamp*.mjs
 .workflow/
 .superpowers/
 
-# Temporary and patch files
+# Test, coverage & tooling caches
+.vite/
+.turbo/
+playwright-report/
+test-results/
+coverage/
+
+# Temporary, patch, and debug files
 patch*
 fix*
 temp*
 debug*
+*.tmp
+*.bak
+*.swp
 test_*.js
 
 # OS & Editor files
@@ -66,3 +93,11 @@ graphify-out/
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
 /.graft/
+
+# Internal documentation and workspace notes (local only)
+/docs/
+SECURITY.md
+qlhk_document.md
+tasks.md
+TAURI_MIGRATION_PLAN.md
+ui-notes.md

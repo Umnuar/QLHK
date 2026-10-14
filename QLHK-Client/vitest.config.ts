@@ -22,7 +22,11 @@ export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
+    environment: 'jsdom',
+    setupFiles: [path.resolve(realDir, './src/tests/setup.ts')],
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['**/node_modules/**', '**/dist/**', 'tests/e2e/**'],
+    testTimeout: 20000,
   },
   resolve: {
     alias: {
@@ -30,4 +34,3 @@ export default defineConfig({
     },
   },
 })
-

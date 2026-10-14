@@ -13,6 +13,8 @@
     "dialog:default",
     "fs:default",
     "store:default",
+    "updater:default",
+    "process:default",
     {
       "identifier": "http:default",
       "allow": [

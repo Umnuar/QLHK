@@ -15,7 +15,7 @@ describe('QLHK Backend End-to-End API Integration', () => {
       include: { village: true },
     });
     if (!thon1User || !thon1User.village_id) {
-      const { seedDatabase } = await import('../../prisma/seed');
+      const { seedDatabase } = await import('../../scripts/seed');
       await seedDatabase(prisma);
       thon1User = await prisma.users.findUnique({
         where: { username: 'thon1' },

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { VILLAGES, ETHNIC_GROUPS } from "../data/constants";
-import { maskCccd, validateCccd } from "../utils/cccd";
-import { calculateAge, parseAndValidateDob } from "../utils/date";
-import { normalizeUnaccented } from "../utils/vietnamese";
-import { setCache, getCache } from "../db/indexedDB";
-import { householdApi } from "../api/householdApi";
-import { apiClient } from "../api/client";
+import { VILLAGES, ETHNIC_GROUPS } from "@/data/constants";
+import { maskCccd, validateCccd } from "@/utils/cccd";
+import { calculateAge, parseAndValidateDob } from "@/utils/date";
+import { normalizeUnaccented } from "@/utils/vietnamese";
+import { setCache, getCache } from "@/db/indexedDB";
+import { householdApi } from "@/api/householdApi";
+import { apiClient } from "@/api/client";
 
 describe("QLHK 20-Flow Full Regression Verification Suite", () => {
 	// FLOW 1: Khởi động ứng dụng lần đầu & nạp danh sách thôn

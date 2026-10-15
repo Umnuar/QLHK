@@ -113,6 +113,7 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 		await waitFor(() => {
 			expect(mockGetOverview).toHaveBeenCalled();
 			expect(mockGetByVillage).toHaveBeenCalled();
+			expect(screen.getAllByText("150").length).toBeGreaterThan(0);
 		});
 
 		// Kiểm tra tiêu đề chính
@@ -121,7 +122,6 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 		// Kiểm tra nhãn các thẻ KPI
 		expect(screen.getByText("Tổng Hộ Gia Đình")).toBeInTheDocument();
 		expect(screen.getAllByText("Tổng Nhân Khẩu").length).toBeGreaterThan(0);
-		expect(screen.getAllByText("150").length).toBeGreaterThan(0);
 		expect(screen.getAllByText("600").length).toBeGreaterThan(0);
 	});
 

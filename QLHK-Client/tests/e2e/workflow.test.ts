@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { ETHNIC_GROUPS, RELIGIONS, VILLAGES } from "../data/constants";
-import { maskCccd, validateCccd } from "../utils/cccd";
+import { ETHNIC_GROUPS, RELIGIONS, VILLAGES } from "@/data/constants";
+import { maskCccd, validateCccd } from "@/utils/cccd";
 import {
 	calculateAge,
 	formatDobDisplay,
 	parseAndValidateDob,
-} from "../utils/date";
-import { normalizeUnaccented, splitFullName } from "../utils/vietnamese";
+} from "@/utils/date";
+import { normalizeUnaccented, splitFullName } from "@/utils/vietnamese";
 
 describe("Đồng bộ dữ liệu chuẩn Thôn & 14 Dân Tộc Xã Đăk Hà", () => {
 	it("đúng danh mục thôn thuộc Xã Đăk Hà", () => {
@@ -174,13 +174,13 @@ describe("Kiểm thử ánh xạ thống kê thời gian thực các thôn (Vill
 describe("Kiểm thử tích hợp Slide-over Drawer & Sub-modal CitizenModal", () => {
 	it("export hợp lệ CitizenModal, HouseholdDrawer và HouseholdModal", async () => {
 		const { CitizenModal } = await import(
-			"../components/households/CitizenModal"
+			"@/components/households/CitizenModal"
 		);
 		const { HouseholdDrawer } = await import(
-			"../components/households/HouseholdDrawer"
+			"@/components/households/HouseholdDrawer"
 		);
 		const { HouseholdModal } = await import(
-			"../components/households/HouseholdModal"
+			"@/components/households/HouseholdModal"
 		);
 
 		expect(typeof CitizenModal).toBe("function");
@@ -192,7 +192,7 @@ describe("Kiểm thử tích hợp Slide-over Drawer & Sub-modal CitizenModal", 
 describe("Kiểm thử tính năng Tự Động Cập Nhật (Tauri Auto-Updater)", () => {
 	it("export hợp lệ AppUpdateModal và hàm checkAppUpdateManually", async () => {
 		const { AppUpdateModal, checkAppUpdateManually } = await import(
-			"../components/common/AppUpdateModal"
+			"@/components/common/AppUpdateModal"
 		);
 
 		expect(typeof AppUpdateModal).toBe("function");
@@ -201,7 +201,7 @@ describe("Kiểm thử tính năng Tự Động Cập Nhật (Tauri Auto-Updater
 
 	it("hàm checkAppUpdateManually chạy an toàn trong mọi môi trường (Node & Browser)", async () => {
 		const { checkAppUpdateManually } = await import(
-			"../components/common/AppUpdateModal"
+			"@/components/common/AppUpdateModal"
 		);
 
 		// Trong môi trường Node (không có window), gọi hàm không bao giờ gây crash

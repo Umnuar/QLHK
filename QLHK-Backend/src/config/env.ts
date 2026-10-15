@@ -10,6 +10,8 @@ function resolveExcelSamplePath(): string {
 		return process.env.EXCEL_SAMPLE_PATH;
 	}
 	const candidates = [
+		path.resolve(process.cwd(), "../../data-templates/QLHK/Nhân hộ khẩu.xlsx"),
+		path.resolve(process.cwd(), "../../data-templates/QLHK/Nhân hộ khẩu.xls"),
 		path.resolve(process.cwd(), "../Nhân hộ khẩu.xlsx"),
 		path.resolve(process.cwd(), "../../Nhân hộ khẩu.xlsx"),
 		"C:\\Projects\\Nhân hộ khẩu.xlsx",

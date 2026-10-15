@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from "react";
 import { useApp } from "./AppContext";
 import { LoginView } from "./components/auth/LoginView";
-import { AppLayout } from "./components/layout/AppLayout";
+import { AppLayout } from "./components/Layout/AppLayout";
 import { AppUpdateModal } from "./components/common/AppUpdateModal";
 import { HouseholdsPage } from "./pages/HouseholdsPage";
 import { VillagesPage } from "./pages/VillagesPage";

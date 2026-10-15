@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { calculatePercentagesWithLargestRemainder } from "../../components/common/tableStyles";
 import { maskCccd, validateCccd } from "../cccd";
 import { calculateAge, formatDobDisplay, parseAndValidateDob } from "../date";
 import {
@@ -197,6 +198,53 @@ describe("CCCD Utilities", () => {
 			const res = validateCccd("1234567890");
 			expect(res.isValid).toBe(false);
 			expect(res.error).toContain("phải gồm 12 chữ số");
+		});
+	});
+
+	describe("Hare-Niemeyer Algorithm (Largest Remainder Method)", () => {
+		it("chia đều 3 phần (1, 1, 1) tổng luôn đúng 100.0%", () => {
+			const items = [{ count: 1 }, { count: 1 }, { count: 1 }];
+			const res = calculatePercentagesWithLargestRemainder(items);
+			const totalPct = res.reduce((sum, it) => sum + it.percentage, 0);
+			expect(Number(totalPct.toFixed(1))).toBe(100.0);
+			expect(res[0].percentage).toBe(33.4);
+			expect(res[1].percentage).toBe(33.3);
+			expect(res[2].percentage).toBe(33.3);
+		});
+
+		it("phân bổ các nhóm dân số thực tế luôn có tổng 100.0%", () => {
+			const items = [
+				{ name: "Kinh", count: 240 },
+				{ name: "Xơ Đăng", count: 180 },
+				{ name: "Gia Rai", count: 90 },
+				{ name: "Giẻ Triêng", count: 50 },
+				{ name: "Ê Đê", count: 40 },
+			];
+			const res = calculatePercentagesWithLargestRemainder(items);
+			const totalPct = res.reduce((sum, it) => sum + it.percentage, 0);
+			expect(Number(totalPct.toFixed(1))).toBe(100.0);
+		});
+
+		it("không bao giờ phân bổ phần dư 0.1% cho nhóm có số lượng 0", () => {
+			const items = [
+				{ name: "A", count: 5 },
+				{ name: "B", count: 2 },
+				{ name: "C", count: 0 },
+				{ name: "D", count: 0 },
+			];
+			const res = calculatePercentagesWithLargestRemainder(items);
+			const totalPct = res.reduce((sum, it) => sum + it.percentage, 0);
+			expect(Number(totalPct.toFixed(1))).toBe(100.0);
+			expect(res.find((it) => it.name === "C")?.percentage).toBe(0);
+			expect(res.find((it) => it.name === "D")?.percentage).toBe(0);
+		});
+
+		it("xử lý mảng rỗng hoặc tổng bằng 0", () => {
+			expect(calculatePercentagesWithLargestRemainder([])).toEqual([]);
+			const zeroItems = [{ count: 0 }, { count: 0 }];
+			const res = calculatePercentagesWithLargestRemainder(zeroItems);
+			expect(res[0].percentage).toBe(0);
+			expect(res[1].percentage).toBe(0);
 		});
 	});
 });

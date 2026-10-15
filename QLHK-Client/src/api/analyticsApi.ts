@@ -13,9 +13,13 @@ export interface DistributionStat {
 
 export interface AgeGroupStats {
 	under16: GenderStat;
+	youth?: GenderStat;
 	militaryAge: GenderStat;
+	adult?: GenderStat;
 	workingAge: GenderStat;
 	over60: GenderStat;
+	unknownAge?: GenderStat;
+	legalWorkforce?: GenderStat;
 }
 
 export interface AnalyticsOverviewData {

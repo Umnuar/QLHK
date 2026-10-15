@@ -32,6 +32,7 @@ import {
 import {
 	TABLE_HEADER_CLASSES,
 	VILLAGE_BADGE_CLASS,
+	calculatePercentagesWithLargestRemainder,
 	formatVietnameseNumber,
 } from "../common/tableStyles";
 import { DistributionCard } from "./DistributionCard";
@@ -71,10 +72,12 @@ export const AnalyticsDashboard: React.FC = () => {
 		let femaleCount = 0;
 		let minorityCount = 0;
 
-		let under16Count = 0;
-		let militaryAgeCount = 0;
-		let workingAgeCount = 0;
-		let over60Count = 0;
+		let under16Count = 0; // < 16 tuổi (Thiếu nhi)
+		let youthCount = 0; // 16 - 27 tuổi (Thanh niên & NVQS)
+		let adultCount = 0; // 28 - 60 tuổi (Lao động chính)
+		let over60Count = 0; // > 60 tuổi (Người cao tuổi)
+		let unknownAgeCount = 0; // Chưa rõ năm sinh
+		let legalWorkforceCount = 0; // 18 - 60 tuổi (Độ tuổi LĐ theo luật, hiển thị ở tâm Donut)
 		const currentYear = new Date().getFullYear();
 
 		const ethnicMap: Record<string, number> = {};
@@ -118,88 +121,132 @@ export const AnalyticsDashboard: React.FC = () => {
 					age = currentYear - parseInt(match[1], 10);
 				}
 				if (typeof age === "number" && !isNaN(age)) {
-					if (age < 16) under16Count++;
-					if (age >= 18 && age <= 27) militaryAgeCount++;
-					if (age >= 18 && age <= 60) workingAgeCount++;
-					if (age > 60) over60Count++;
+					if (age < 16) {
+						under16Count++;
+					} else if (age <= 27) {
+						youthCount++;
+					} else if (age <= 60) {
+						adultCount++;
+					} else {
+						over60Count++;
+					}
+
+					if (age >= 18 && age <= 60) {
+						legalWorkforceCount++;
+					}
+				} else {
+					unknownAgeCount++;
 				}
 			});
 		});
 
+		const genderDistribution = calculatePercentagesWithLargestRemainder(
+			[
+				{ id: "male", count: maleCount },
+				{ id: "female", count: femaleCount },
+			],
+			totalMembers,
+		);
 		const malePct =
-			totalMembers > 0 ? Math.round((maleCount / totalMembers) * 1000) / 10 : 0;
+			genderDistribution.find((g) => g.id === "male")?.percentage || 0;
 		const femalePct =
-			totalMembers > 0
-				? Math.round((femaleCount / totalMembers) * 1000) / 10
-				: 0;
+			genderDistribution.find((g) => g.id === "female")?.percentage || 0;
 		const minorityPct =
 			totalMembers > 0
 				? Math.round((minorityCount / totalMembers) * 1000) / 10
 				: 0;
 
+		const rawAgeList = [
+			{ id: "under16", label: "Thiếu nhi (< 16 tuổi)", count: under16Count },
+			{
+				id: "youth",
+				label: "Thanh niên & NVQS (16 - 27 tuổi)",
+				count: youthCount,
+			},
+			{ id: "adult", label: "Lao động chính (28 - 60 tuổi)", count: adultCount },
+			{ id: "over60", label: "Người cao tuổi (> 60 tuổi)", count: over60Count },
+		];
+		if (unknownAgeCount > 0) {
+			rawAgeList.push({
+				id: "unknownAge",
+				label: "Chưa rõ năm sinh",
+				count: unknownAgeCount,
+			});
+		}
+
+		const ageDistribution = calculatePercentagesWithLargestRemainder(
+			rawAgeList,
+			totalMembers,
+		);
+		const agePctMap = Object.fromEntries(
+			ageDistribution.map((a) => [a.id, a.percentage]),
+		);
+		const legalWorkforcePct =
+			totalMembers > 0
+				? Number(((legalWorkforceCount / totalMembers) * 100).toFixed(1))
+				: 0;
+
 		const ageStats = {
 			under16: {
 				count: under16Count,
-				percentage:
-					totalMembers > 0
-						? Math.round((under16Count / totalMembers) * 1000) / 10
-						: 0,
+				percentage: agePctMap.under16 || 0,
+			},
+			youth: {
+				count: youthCount,
+				percentage: agePctMap.youth || 0,
 			},
 			militaryAge: {
-				count: militaryAgeCount,
-				percentage:
-					totalMembers > 0
-						? Math.round((militaryAgeCount / totalMembers) * 1000) / 10
-						: 0,
+				count: youthCount,
+				percentage: agePctMap.youth || 0,
+			},
+			adult: {
+				count: adultCount,
+				percentage: agePctMap.adult || 0,
 			},
 			workingAge: {
-				count: workingAgeCount,
-				percentage:
-					totalMembers > 0
-						? Math.round((workingAgeCount / totalMembers) * 1000) / 10
-						: 0,
+				count: adultCount,
+				percentage: agePctMap.adult || 0,
 			},
 			over60: {
 				count: over60Count,
-				percentage:
-					totalMembers > 0
-						? Math.round((over60Count / totalMembers) * 1000) / 10
-						: 0,
+				percentage: agePctMap.over60 || 0,
+			},
+			unknownAge: {
+				count: unknownAgeCount,
+				percentage: agePctMap.unknownAge || 0,
+			},
+			legalWorkforce: {
+				count: legalWorkforceCount,
+				percentage: legalWorkforcePct,
 			},
 		};
 
-		const militaryList = Object.entries(militaryMap)
-			.map(([name, count]) => ({
-				name,
-				count,
-				percentage:
-					totalMembers > 0
-						? Math.round((count / totalMembers) * 1000) / 10
-						: 0,
-			}))
+		const rawMilitary = Object.entries(militaryMap)
+			.map(([name, count]) => ({ name, count }))
 			.sort((a, b) => b.count - a.count);
+		const totalMilitary = rawMilitary.reduce((s, g) => s + g.count, 0);
+		const militaryList = calculatePercentagesWithLargestRemainder(
+			rawMilitary,
+			totalMilitary,
+		);
 
-		const educationList = Object.entries(educationMap)
-			.map(([name, count]) => ({
-				name,
-				count,
-				percentage:
-					totalMembers > 0
-						? Math.round((count / totalMembers) * 1000) / 10
-						: 0,
-			}))
+		const rawEducation = Object.entries(educationMap)
+			.map(([name, count]) => ({ name, count }))
 			.sort((a, b) => b.count - a.count);
+		const totalEducation = rawEducation.reduce((s, g) => s + g.count, 0);
+		const educationList = calculatePercentagesWithLargestRemainder(
+			rawEducation,
+			totalEducation,
+		);
 
-		const occupationList = Object.entries(occupationMap)
-			.map(([name, count]) => ({
-				name,
-				count,
-				percentage:
-					totalMembers > 0
-						? Math.round((count / totalMembers) * 1000) / 10
-						: 0,
-			}))
+		const rawOccupation = Object.entries(occupationMap)
+			.map(([name, count]) => ({ name, count }))
 			.sort((a, b) => b.count - a.count);
+		const totalOccupation = rawOccupation.reduce((s, g) => s + g.count, 0);
+		const occupationList = calculatePercentagesWithLargestRemainder(
+			rawOccupation,
+			totalOccupation,
+		);
 
 		const villageBreakdown = villages.map((v) => {
 			const hhList = activeHouseholds.filter((h) => h.village_id === v.id);
@@ -353,17 +400,33 @@ export const AnalyticsDashboard: React.FC = () => {
 					apiOverview.ageGroups?.under16 ||
 					(apiOverview.ageGroups as any)?.under6 ||
 					localCalculated.stats.ageStats.under16,
+				youth:
+					apiOverview.ageGroups?.youth ||
+					apiOverview.ageGroups?.militaryAge ||
+					localCalculated.stats.ageStats.youth,
 				militaryAge:
+					apiOverview.ageGroups?.youth ||
 					apiOverview.ageGroups?.militaryAge ||
 					(apiOverview.ageGroups as any)?.from6to17 ||
 					localCalculated.stats.ageStats.militaryAge,
+				adult:
+					apiOverview.ageGroups?.adult ||
+					apiOverview.ageGroups?.workingAge ||
+					localCalculated.stats.ageStats.adult,
 				workingAge:
+					apiOverview.ageGroups?.adult ||
 					apiOverview.ageGroups?.workingAge ||
 					(apiOverview.ageGroups as any)?.from18to60 ||
 					localCalculated.stats.ageStats.workingAge,
 				over60:
 					apiOverview.ageGroups?.over60 ||
 					localCalculated.stats.ageStats.over60,
+				unknownAge:
+					apiOverview.ageGroups?.unknownAge ||
+					localCalculated.stats.ageStats.unknownAge,
+				legalWorkforce:
+					apiOverview.ageGroups?.legalWorkforce ||
+					localCalculated.stats.ageStats.legalWorkforce,
 			};
 
 			const militaryList =
@@ -501,9 +564,8 @@ export const AnalyticsDashboard: React.FC = () => {
 		};
 	}, [stats.religionMap]);
 
-	// Phân khúc dân tộc cho DistributionCard (chuẩn SVG 136px)
+	// Phân khúc dân tộc cho DistributionCard (chuẩn SVG 176px, sum = 100.0%)
 	const ethnicSegments: Segment[] = useMemo(() => {
-		const total = stats.totalMembers || 1;
 		const colors = [
 			"#14b8a6", // teal
 			"#38bdf8", // sky
@@ -522,7 +584,13 @@ export const AnalyticsDashboard: React.FC = () => {
 		];
 
 		if (apiOverview?.ethnicities && apiOverview.ethnicities.length > 0) {
-			return apiOverview.ethnicities.map((e, idx) => ({
+			const active = apiOverview.ethnicities.filter((e) => e.count > 0);
+			const source = active.length > 0 ? active : apiOverview.ethnicities;
+			const withPcts = calculatePercentagesWithLargestRemainder(
+				source,
+				stats.totalMembers,
+			);
+			return withPcts.map((e, idx) => ({
 				id: e.name,
 				label: e.name.startsWith("Dân tộc") ? e.name : `Dân tộc ${e.name}`,
 				count: e.count,
@@ -531,62 +599,106 @@ export const AnalyticsDashboard: React.FC = () => {
 			}));
 		}
 
-		return ETHNIC_GROUPS.map((eth, idx) => {
-			const cnt = stats.ethnicMap[eth] || 0;
-			return {
-				id: eth,
-				label: `Dân tộc ${eth}`,
-				count: cnt,
-				pct: Math.round((cnt / total) * 1000) / 10,
-				color: colors[idx % colors.length],
-			};
-		});
+		const rawEthnicList = ETHNIC_GROUPS.map((eth) => ({
+			name: eth,
+			count: stats.ethnicMap[eth] || 0,
+		})).filter((e) => e.count > 0);
+
+		const withPcts = calculatePercentagesWithLargestRemainder(
+			rawEthnicList.length > 0
+				? rawEthnicList
+				: ETHNIC_GROUPS.map((eth) => ({ name: eth, count: 0 })),
+			stats.totalMembers,
+		);
+
+		return withPcts.map((eth, idx) => ({
+			id: eth.name,
+			label: `Dân tộc ${eth.name}`,
+			count: eth.count,
+			pct: eth.percentage,
+			color: colors[idx % colors.length],
+		}));
 	}, [apiOverview?.ethnicities, stats.totalMembers, stats.ethnicMap]);
 
-	// Phân khúc tôn giáo cho DistributionCard
+	// Phân khúc tôn giáo cho DistributionCard (sum = 100.0%)
 	const religionSegments: Segment[] = useMemo(() => {
-		const total = stats.totalMembers || 1;
-		return religionDetails.list.map((it) => ({
-			id: it.label,
+		const rawItems = religionDetails.list
+			.filter((it) => it.value > 0)
+			.map((it) => ({
+				id: it.label,
+				label: it.label,
+				count: it.value,
+				color: it.color,
+			}));
+
+		const targetList =
+			rawItems.length > 0
+				? rawItems
+				: religionDetails.list.map((it) => ({
+						id: it.label,
+						label: it.label,
+						count: it.value,
+						color: it.color,
+					}));
+
+		const withPcts = calculatePercentagesWithLargestRemainder(
+			targetList,
+			stats.totalMembers,
+		);
+
+		return withPcts.map((it) => ({
+			id: it.id,
 			label: it.label,
-			count: it.value,
-			pct: Math.round((it.value / total) * 1000) / 10,
+			count: it.count,
+			pct: it.percentage,
 			color: it.color,
 		}));
 	}, [religionDetails.list, stats.totalMembers]);
 
-	// Phân khúc tháp tuổi cho DistributionCard
+	// Phân khúc tháp tuổi cho DistributionCard (4 nhóm MECE + chưa rõ nếu có, sum = 100.0%)
 	const ageSegments: Segment[] = useMemo(() => {
-		return [
+		const segments: Segment[] = [
 			{
 				id: "under16",
 				label: "Thiếu nhi (< 16 tuổi)",
-				count: stats.ageStats.under16.count,
-				pct: stats.ageStats.under16.percentage,
+				count: stats.ageStats.under16?.count || 0,
+				pct: stats.ageStats.under16?.percentage || 0,
 				color: STAT_CATEGORY_COLORS.cat1,
 			},
 			{
 				id: "militaryAge",
-				label: "Độ tuổi NVQS (18 - 27 tuổi)",
-				count: stats.ageStats.militaryAge.count,
-				pct: stats.ageStats.militaryAge.percentage,
+				label: "Thanh niên & NVQS (16 - 27 tuổi)",
+				count: stats.ageStats.militaryAge?.count || 0,
+				pct: stats.ageStats.militaryAge?.percentage || 0,
 				color: STAT_CATEGORY_COLORS.cat2,
 			},
 			{
 				id: "workingAge",
-				label: "Độ tuổi lao động (18 - 60 tuổi)",
-				count: stats.ageStats.workingAge.count,
-				pct: stats.ageStats.workingAge.percentage,
+				label: "Lao động chính (28 - 60 tuổi)",
+				count: stats.ageStats.workingAge?.count || 0,
+				pct: stats.ageStats.workingAge?.percentage || 0,
 				color: STAT_CATEGORY_COLORS.cat3,
 			},
 			{
 				id: "over60",
 				label: "Người cao tuổi (> 60 tuổi)",
-				count: stats.ageStats.over60.count,
-				pct: stats.ageStats.over60.percentage,
+				count: stats.ageStats.over60?.count || 0,
+				pct: stats.ageStats.over60?.percentage || 0,
 				color: STAT_CATEGORY_COLORS.cat4,
 			},
 		];
+
+		if (stats.ageStats.unknownAge && stats.ageStats.unknownAge.count > 0) {
+			segments.push({
+				id: "unknownAge",
+				label: "Chưa rõ năm sinh",
+				count: stats.ageStats.unknownAge.count,
+				pct: stats.ageStats.unknownAge.percentage,
+				color: "#64748b",
+			});
+		}
+
+		return segments;
 	}, [stats.ageStats]);
 
 	const handleExportStatsExcel = () => {
@@ -761,10 +873,10 @@ export const AnalyticsDashboard: React.FC = () => {
 				<DistributionCard
 					icon={<Users className="size-4" />}
 					title="Tháp Tuổi & Cơ Cấu Thế Hệ"
-					badge="4 nhóm tuổi"
+					badge={`${ageSegments.length} nhóm tuổi`}
 					segments={ageSegments}
-					centerValue={`${formatVietnameseNumber(stats.ageStats.workingAge.percentage)}%`}
-					centerLabel="Trong độ tuổi lao động"
+					centerValue={`${formatVietnameseNumber(stats.ageStats.legalWorkforce?.percentage ?? stats.ageStats.workingAge?.percentage ?? 0)}%`}
+					centerLabel="Độ tuổi lao động (18 - 60)"
 					digits={1}
 				/>
 

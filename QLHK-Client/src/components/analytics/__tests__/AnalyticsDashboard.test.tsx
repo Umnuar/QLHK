@@ -220,8 +220,8 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 
 		// Tháp tuổi
 		expect(screen.getByText("Thiếu nhi (< 16 tuổi)")).toBeInTheDocument();
-		expect(screen.getByText("Độ tuổi NVQS (18 - 27 tuổi)")).toBeInTheDocument();
-		expect(screen.getByText("Độ tuổi lao động (18 - 60 tuổi)")).toBeInTheDocument();
+		expect(screen.getByText("Thanh niên & NVQS (16 - 27 tuổi)")).toBeInTheDocument();
+		expect(screen.getByText("Lao động chính (28 - 60 tuổi)")).toBeInTheDocument();
 		expect(screen.getByText("Người cao tuổi (> 60 tuổi)")).toBeInTheDocument();
 
 		// NVQS

@@ -28,6 +28,55 @@ export function formatVietnameseNumber(
 }
 
 /**
+ * Thuật toán Hare-Niemeyer (Largest Remainder Method)
+ * Đảm bảo tổng các phần trăm của một tập hợp luôn bằng chính xác 100.0%
+ */
+export function calculatePercentagesWithLargestRemainder<T extends { count: number }>(
+	items: T[],
+	totalOverride?: number,
+): (T & { percentage: number })[] {
+	const total =
+		totalOverride !== undefined
+			? totalOverride
+			: items.reduce((sum, item) => sum + item.count, 0);
+
+	if (total <= 0 || items.length === 0) {
+		return items.map((item) => ({ ...item, percentage: 0 }));
+	}
+
+	const TARGET_SUM = 1000;
+	let currentSum = 0;
+
+	const calculations = items.map((item, idx) => {
+		if (item.count <= 0) {
+			return { idx, floorTenths: 0, remainder: 0, original: item };
+		}
+		const rawTenths = (item.count / total) * TARGET_SUM;
+		const floorTenths = Math.floor(rawTenths);
+		const remainder = rawTenths - floorTenths;
+		currentSum += floorTenths;
+		return { idx, floorTenths, remainder, original: item };
+	});
+
+	const diff = TARGET_SUM - currentSum;
+	if (diff > 0 && diff < items.length) {
+		const eligible = calculations
+			.filter((c) => c.original.count > 0)
+			.sort((a, b) => b.remainder - a.remainder);
+
+		for (let i = 0; i < diff && i < eligible.length; i++) {
+			eligible[i].floorTenths += 1;
+		}
+	}
+
+	calculations.sort((a, b) => a.idx - b.idx);
+	return calculations.map((c) => ({
+		...c.original,
+		percentage: Number((c.floorTenths / 10).toFixed(1)),
+	}));
+}
+
+/**
  * Kiểu Badge thôn duy nhất cho mọi màn hình:
  * Nền xanh lá rất nhạt, viền xanh lá
  */

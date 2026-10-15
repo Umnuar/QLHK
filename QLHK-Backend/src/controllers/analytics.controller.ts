@@ -24,6 +24,55 @@ export const DAKHA_ETHNICITIES = [
 ];
 
 /**
+ * Thuật toán Hare-Niemeyer (Largest Remainder Method)
+ * Đảm bảo tổng các phần trăm luôn bằng chính xác 100.0% (với 1 chữ số thập phân)
+ */
+export function calculatePercentagesWithLargestRemainder<T extends { count: number }>(
+	items: T[],
+	totalOverride?: number,
+): (T & { percentage: number })[] {
+	const total =
+		totalOverride !== undefined
+			? totalOverride
+			: items.reduce((sum, item) => sum + item.count, 0);
+
+	if (total <= 0 || items.length === 0) {
+		return items.map((item) => ({ ...item, percentage: 0 }));
+	}
+
+	const TARGET_SUM = 1000;
+	let currentSum = 0;
+
+	const calculations = items.map((item, idx) => {
+		if (item.count <= 0) {
+			return { idx, floorTenths: 0, remainder: 0, original: item };
+		}
+		const rawTenths = (item.count / total) * TARGET_SUM;
+		const floorTenths = Math.floor(rawTenths);
+		const remainder = rawTenths - floorTenths;
+		currentSum += floorTenths;
+		return { idx, floorTenths, remainder, original: item };
+	});
+
+	const diff = TARGET_SUM - currentSum;
+	if (diff > 0 && diff < items.length) {
+		const eligible = calculations
+			.filter((c) => c.original.count > 0)
+			.sort((a, b) => b.remainder - a.remainder);
+
+		for (let i = 0; i < diff && i < eligible.length; i++) {
+			eligible[i].floorTenths += 1;
+		}
+	}
+
+	calculations.sort((a, b) => a.idx - b.idx);
+	return calculations.map((c) => ({
+		...c.original,
+		percentage: Number((c.floorTenths / 10).toFixed(1)),
+	}));
+}
+
+/**
  * GET /api/analytics/overview
  * Tổng số hộ, tổng nhân khẩu, tỷ lệ nam/nữ, cơ cấu theo 14 dân tộc, cơ cấu tôn giáo
  */
@@ -98,7 +147,7 @@ export const getOverview = async (
 			}),
 		]);
 
-		// 1. Tỷ lệ Nam / Nữ
+		// 1. Tỷ lệ Nam / Nữ (Chuẩn 100.0%)
 		let maleCount = 0;
 		let femaleCount = 0;
 		genderGroups.forEach((g) => {
@@ -109,24 +158,28 @@ export const getOverview = async (
 			}
 		});
 
+		const genderDistribution = calculatePercentagesWithLargestRemainder(
+			[
+				{ id: "male", count: maleCount },
+				{ id: "female", count: femaleCount },
+			],
+			totalCitizens,
+		);
+
 		const genderStats = {
 			male: {
 				count: maleCount,
 				percentage:
-					totalCitizens > 0
-						? Number(((maleCount / totalCitizens) * 100).toFixed(1))
-						: 0,
+					genderDistribution.find((g) => g.id === "male")?.percentage || 0,
 			},
 			female: {
 				count: femaleCount,
 				percentage:
-					totalCitizens > 0
-						? Number(((femaleCount / totalCitizens) * 100).toFixed(1))
-						: 0,
+					genderDistribution.find((g) => g.id === "female")?.percentage || 0,
 			},
 		};
 
-		// 2. Cơ cấu theo dân tộc (bao gồm 14 dân tộc)
+		// 2. Cơ cấu theo dân tộc (bao gồm 14 dân tộc chuẩn 100.0%)
 		const ethnicityCounts: Record<string, number> = {};
 		DAKHA_ETHNICITIES.forEach((eth) => {
 			ethnicityCounts[eth] = 0;
@@ -136,125 +189,189 @@ export const getOverview = async (
 			ethnicityCounts[eth] = (ethnicityCounts[eth] || 0) + g._count._all;
 		});
 
-		const ethnicityDistribution = Object.entries(ethnicityCounts)
-			.map(([name, count]) => ({
-				name,
-				count,
-				percentage:
-					totalCitizens > 0
-						? Number(((count / totalCitizens) * 100).toFixed(1))
-						: 0,
-			}))
+		const rawEthnicList = Object.entries(ethnicityCounts)
+			.map(([name, count]) => ({ name, count }))
 			.sort((a, b) => b.count - a.count);
 
-		// 3. Cơ cấu tôn giáo
+		const ethnicityDistribution = calculatePercentagesWithLargestRemainder(
+			rawEthnicList,
+			totalCitizens,
+		);
+
+		// 3. Cơ cấu tôn giáo (Chuẩn 100.0%)
 		const religionCounts: Record<string, number> = {};
 		religionGroups.forEach((g) => {
 			const rel = g.religion?.trim() || "Không";
 			religionCounts[rel] = (religionCounts[rel] || 0) + g._count._all;
 		});
 
-		const religionDistribution = Object.entries(religionCounts)
-			.map(([name, count]) => ({
-				name,
-				count,
-				percentage:
-					totalCitizens > 0
-						? Number(((count / totalCitizens) * 100).toFixed(1))
-						: 0,
-			}))
+		const rawReligionList = Object.entries(religionCounts)
+			.map(([name, count]) => ({ name, count }))
 			.sort((a, b) => b.count - a.count);
 
-		// 4. Thống kê theo Dải tuổi (Tháp tuổi)
+		const religionDistribution = calculatePercentagesWithLargestRemainder(
+			rawReligionList,
+			totalCitizens,
+		);
+
+		// 4. Thống kê theo Dải tuổi (Tháp tuổi MECE chuẩn 100.0%)
 		const currentYear = new Date().getFullYear();
-		let under16Count = 0;
-		let militaryAgeCount = 0; // 18-27
-		let workingAgeCount = 0; // 18-60
-		let over60Count = 0;
+		let under16Count = 0; // < 16 tuổi (Thiếu nhi)
+		let youthCount = 0; // 16 - 27 tuổi (Thanh niên & NVQS)
+		let adultCount = 0; // 28 - 60 tuổi (Lao động chính)
+		let over60Count = 0; // > 60 tuổi (Người cao tuổi)
+		let unknownAgeCount = 0; // Chưa rõ năm sinh
+		let workingAgeCount = 0; // 18 - 60 tuổi (Độ tuổi LĐ theo luật, hiển thị ở tâm Donut)
 
 		dobList.forEach((c) => {
-			if (!c.dob) return;
+			if (!c.dob) {
+				unknownAgeCount++;
+				return;
+			}
 			const trimmed = c.dob.trim();
 			const match = trimmed.match(/(\d{4})$/);
 			if (match) {
 				const birthYear = parseInt(match[1], 10);
 				const age = currentYear - birthYear;
-				if (age < 16) under16Count++;
-				if (age >= 18 && age <= 27) militaryAgeCount++;
-				if (age >= 18 && age <= 60) workingAgeCount++;
-				if (age > 60) over60Count++;
+				if (age < 16) {
+					under16Count++;
+				} else if (age <= 27) {
+					youthCount++;
+				} else if (age <= 60) {
+					adultCount++;
+				} else {
+					over60Count++;
+				}
+
+				if (age >= 18 && age <= 60) {
+					workingAgeCount++;
+				}
+			} else {
+				unknownAgeCount++;
 			}
 		});
+
+		const rawAgeList = [
+			{ id: "under16", label: "Thiếu nhi (< 16 tuổi)", count: under16Count },
+			{
+				id: "youth",
+				label: "Thanh niên & NVQS (16 - 27 tuổi)",
+				count: youthCount,
+			},
+			{ id: "adult", label: "Lao động chính (28 - 60 tuổi)", count: adultCount },
+			{ id: "over60", label: "Người cao tuổi (> 60 tuổi)", count: over60Count },
+		];
+
+		if (unknownAgeCount > 0) {
+			rawAgeList.push({
+				id: "unknownAge",
+				label: "Chưa rõ năm sinh",
+				count: unknownAgeCount,
+			});
+		}
+
+		const agePercentages = calculatePercentagesWithLargestRemainder(
+			rawAgeList,
+			totalCitizens,
+		);
+
+		const agePctMap = Object.fromEntries(
+			agePercentages.map((a) => [a.id, a.percentage]),
+		);
+
+		const legalWorkforcePct =
+			totalCitizens > 0
+				? Number(((workingAgeCount / totalCitizens) * 100).toFixed(1))
+				: 0;
 
 		const ageStats = {
 			under16: {
 				count: under16Count,
-				percentage:
-					totalCitizens > 0
-						? Number(((under16Count / totalCitizens) * 100).toFixed(1))
-						: 0,
+				percentage: agePctMap.under16 || 0,
+			},
+			youth: {
+				count: youthCount,
+				percentage: agePctMap.youth || 0,
 			},
 			militaryAge: {
-				count: militaryAgeCount,
-				percentage:
-					totalCitizens > 0
-						? Number(((militaryAgeCount / totalCitizens) * 100).toFixed(1))
-						: 0,
+				count: youthCount,
+				percentage: agePctMap.youth || 0,
+			},
+			adult: {
+				count: adultCount,
+				percentage: agePctMap.adult || 0,
 			},
 			workingAge: {
-				count: workingAgeCount,
-				percentage:
-					totalCitizens > 0
-						? Number(((workingAgeCount / totalCitizens) * 100).toFixed(1))
-						: 0,
+				count: adultCount,
+				percentage: agePctMap.adult || 0,
 			},
 			over60: {
 				count: over60Count,
-				percentage:
-					totalCitizens > 0
-						? Number(((over60Count / totalCitizens) * 100).toFixed(1))
-						: 0,
+				percentage: agePctMap.over60 || 0,
+			},
+			unknownAge: {
+				count: unknownAgeCount,
+				percentage: agePctMap.unknownAge || 0,
+			},
+			legalWorkforce: {
+				count: workingAgeCount,
+				percentage: legalWorkforcePct,
 			},
 		};
 
-		// 5. Thống kê Tình hình NVQS
-		const militaryDistribution = militaryGroups
+		// 5. Thống kê Tình hình NVQS (Chuẩn 100.0% trên số người có khai báo)
+		const rawMilitary = militaryGroups
 			.filter((g) => g.military_status && g.military_status.trim())
 			.map((g) => ({
 				name: g.military_status!.trim(),
 				count: g._count._all,
-				percentage:
-					totalCitizens > 0
-						? Number(((g._count._all / totalCitizens) * 100).toFixed(1))
-						: 0,
 			}))
 			.sort((a, b) => b.count - a.count);
 
-		// 6. Thống kê Trình độ học vấn
-		const educationDistribution = educationGroups
+		const totalMilitaryRecorded = rawMilitary.reduce(
+			(sum, g) => sum + g.count,
+			0,
+		);
+		const militaryDistribution = calculatePercentagesWithLargestRemainder(
+			rawMilitary,
+			totalMilitaryRecorded,
+		);
+
+		// 6. Thống kê Trình độ học vấn (Chuẩn 100.0% trên số người có khai báo)
+		const rawEducation = educationGroups
 			.filter((g) => g.education && g.education.trim())
 			.map((g) => ({
 				name: g.education!.trim(),
 				count: g._count._all,
-				percentage:
-					totalCitizens > 0
-						? Number(((g._count._all / totalCitizens) * 100).toFixed(1))
-						: 0,
 			}))
 			.sort((a, b) => b.count - a.count);
 
-		// 7. Thống kê Cơ cấu Nghề nghiệp
-		const occupationDistribution = occupationGroups
+		const totalEducationRecorded = rawEducation.reduce(
+			(sum, g) => sum + g.count,
+			0,
+		);
+		const educationDistribution = calculatePercentagesWithLargestRemainder(
+			rawEducation,
+			totalEducationRecorded,
+		);
+
+		// 7. Thống kê Cơ cấu Nghề nghiệp (Chuẩn 100.0% trên số người có khai báo)
+		const rawOccupation = occupationGroups
 			.filter((g) => g.occupation && g.occupation.trim())
 			.map((g) => ({
 				name: g.occupation!.trim(),
 				count: g._count._all,
-				percentage:
-					totalCitizens > 0
-						? Number(((g._count._all / totalCitizens) * 100).toFixed(1))
-						: 0,
 			}))
 			.sort((a, b) => b.count - a.count);
+
+		const totalOccupationRecorded = rawOccupation.reduce(
+			(sum, g) => sum + g.count,
+			0,
+		);
+		const occupationDistribution = calculatePercentagesWithLargestRemainder(
+			rawOccupation,
+			totalOccupationRecorded,
+		);
 
 		res.json({
 			success: true,

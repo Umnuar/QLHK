@@ -5,6 +5,7 @@ import { AnalyticsDashboard } from "../AnalyticsDashboard";
 
 // Mock AppContext
 const mockUseApp = vi.fn();
+const mockToggleTheme = vi.fn();
 vi.mock("../../../AppContext", () => ({
 	useApp: () => mockUseApp(),
 }));
@@ -109,6 +110,8 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 				{ id: "v-02", name: "Thôn 2" },
 			],
 			isBackendHealthy: true,
+			theme: "light",
+			toggleTheme: mockToggleTheme,
 		});
 
 		mockUseHouseholds.mockReturnValue({
@@ -241,5 +244,17 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 		expect(screen.getByText("Đại học")).toBeInTheDocument();
 		expect(screen.getByText("Làm nông")).toBeInTheDocument();
 		expect(screen.getByText("Công nhân")).toBeInTheDocument();
+	});
+
+	it("8. Bấm nút Đổi giao diện gọi toggleTheme từ AppContext", async () => {
+		render(<AnalyticsDashboard />);
+
+		await waitFor(() => {
+			expect(screen.getByLabelText("Đổi giao diện")).toBeInTheDocument();
+		});
+
+		const themeBtn = screen.getByLabelText("Đổi giao diện");
+		fireEvent.click(themeBtn);
+		expect(mockToggleTheme).toHaveBeenCalledTimes(1);
 	});
 });

@@ -6,9 +6,11 @@ import {
 	Download,
 	GraduationCap,
 	HeartHandshake,
+	Moon,
 	PieChart,
 	RefreshCw,
 	Shield,
+	Sun,
 	UserCheck,
 	Users,
 	Users2,
@@ -48,6 +50,8 @@ export const AnalyticsDashboard: React.FC = () => {
 		setActiveTab,
 		villages,
 		isBackendHealthy,
+		theme,
+		toggleTheme,
 	} = useApp();
 	const { activeHouseholds } = useHouseholds();
 
@@ -711,6 +715,20 @@ export const AnalyticsDashboard: React.FC = () => {
 					>
 						<Download className="w-4 h-4" strokeWidth={1.5} />
 						<span>Xuất Báo Cáo Excel</span>
+					</button>
+
+					<button
+						type="button"
+						onClick={toggleTheme}
+						title={theme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
+						aria-label="Đổi giao diện"
+						className="h-10 w-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+					>
+						{theme === "dark" ? (
+							<Sun className="w-4 h-4 text-amber-400" strokeWidth={1.5} />
+						) : (
+							<Moon className="w-4 h-4 text-slate-600" strokeWidth={1.5} />
+						)}
 					</button>
 
 					<button

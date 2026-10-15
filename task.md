@@ -25,15 +25,15 @@
   - Diff Budget: <= 180 LOC
   - Verification: `npx tsc --noEmit` Client (0 error), `npm test` Client (155/155 PASS)
 
-- [/] Step 3: Dashboard Integration & Theme Toggle Button (`AnalyticsDashboard.tsx`)
+- [x] Step 3: Dashboard Integration & Theme Toggle Button (`AnalyticsDashboard.tsx`)
   - Target Files: `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`
   - Assigned Role: `.agents/frontend-developer.md`, `.agents/ui-ux-designer.md`
   - Key Specs: Connect `theme, toggleTheme` from `useApp()`, import `Sun, Moon` from `lucide-react`, add Theme Toggle button to header action toolbar.
   - Diff Budget: <= 80 LOC
-  - Verification: `AnalyticsDashboard.test.tsx` (7/7 PASS), `npm test` Client (155/155 PASS)
+  - Verification: `AnalyticsDashboard.test.tsx` (8/8 PASS), `npm test` Client (155/155 PASS)
 
-- [ ] Step 4: Final Quality Gates & Full Verification
-  - Verification: `npm test` Client (155/155 PASS), `npx tsc --noEmit` Client (0 error), `npm test` Backend (115/115 PASS), Docker container health check (HTTP 200 OK)
+- [/] Step 4: Final Quality Gates & Full Verification
+  - Verification: `npm test` Client (156/156 PASS), `npx tsc --noEmit` Client (0 error), `npm test` Backend (115/115 PASS), Docker container health check (HTTP 200 OK)
 
 ## Project Gotchas & Learned Invariants
 - [Donut Track Contrast in Light Mode]: Trong chế độ sáng, rãnh nền Donut phải dùng `stroke-slate-100` và `dark:stroke-slate-800/40` để không bị quá gắt trên nền card trắng.

@@ -15,8 +15,9 @@
  * 6. Bảng so sánh: Chuẩn bảng dùng chung, header trung tính (không chữ tô màu, không nền màu riêng ở ô %), số tabular-nums.
  */
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
+import type { Segment } from "../analytics/DonutChart";
 import { formatVietnameseNumber } from "./tableStyles";
 
 /**
@@ -130,8 +131,8 @@ export const StatKpiCard: React.FC<StatKpiCardProps> = ({
  */
 export interface StatChartPanelProps {
 	title: string;
-	description: string;
-	icon: StatIconType;
+	description?: string;
+	icon: StatIconType | React.ReactNode;
 	badge?: React.ReactNode;
 	children: React.ReactNode;
 	accentColor?: string;
@@ -139,41 +140,66 @@ export interface StatChartPanelProps {
 }
 
 /**
- * Component Panel biểu đồ dùng chung
+ * Component Panel biểu đồ dùng chung chuẩn card-shell v0 (1)
  */
 export const StatChartPanel: React.FC<StatChartPanelProps> = ({
 	title,
 	description,
-	icon: Icon,
+	icon: IconProp,
 	badge,
 	children,
 	accentColor = DEFAULT_STAT_ACCENT,
 	className = "",
 }) => {
+	const renderIcon = () => {
+		if (React.isValidElement(IconProp)) return IconProp;
+		if (typeof IconProp === "function" || typeof IconProp === "object") {
+			const Comp = IconProp as React.ComponentType<{
+				className?: string;
+				style?: React.CSSProperties;
+				strokeWidth?: number | string;
+			}>;
+			return (
+				<Comp
+					className="size-4 shrink-0 text-teal-400"
+					strokeWidth={1.5}
+					style={{ color: accentColor }}
+				/>
+			);
+		}
+		return null;
+	};
+
 	return (
 		<div
-			className={`bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col justify-between h-full min-h-[320px] ${className}`}
+			className={`flex flex-col rounded-2xl border border-slate-800 bg-slate-900/90 py-0 text-slate-100 backdrop-blur-md transition-colors hover:border-slate-700 lg:h-[276px] overflow-hidden shadow-sm ${className}`}
 		>
-			{/* Tiêu đề = icon nét đơn + tên (đậm vừa, không viết hoa toàn bộ) + mô tả xám bên dưới */}
-			<div className="flex items-start justify-between gap-3 pb-2.5 border-b border-slate-100 dark:border-slate-800 mb-3">
+			<header className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-slate-800 px-4">
 				<div className="min-w-0">
-					<h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-						<Icon
-							className="w-4 h-4 shrink-0"
-							strokeWidth={1.5}
-							style={{ color: accentColor }}
-						/>
+					<h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-white">
+						<span className="text-teal-400 shrink-0" aria-hidden="true">
+							{renderIcon()}
+						</span>
 						<span className="truncate">{title}</span>
-					</h3>
-					<p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-normal line-clamp-1">
-						{description}
-					</p>
+					</h2>
+					{description && (
+						<p className="sr-only">{description}</p>
+					)}
 				</div>
-				{badge && <div className="shrink-0">{badge}</div>}
-			</div>
+				{badge &&
+					(typeof badge === "string" ? (
+						<span className="shrink-0 rounded-md border border-teal-500/30 bg-teal-500/10 px-2 py-0.5 text-xs font-semibold text-teal-300">
+							{badge}
+						</span>
+					) : (
+						<div className="shrink-0">{badge}</div>
+					))}
+			</header>
 
 			{/* Nội dung bên trong panel */}
-			<div className="flex-1 flex flex-col justify-between">{children}</div>
+			<div className="flex-1 min-h-0 flex flex-col justify-between overflow-hidden">
+				{children}
+			</div>
 		</div>
 	);
 };
@@ -256,6 +282,8 @@ export const StatBarRow: React.FC<StatBarRowProps> = ({
 /**
  * Interface cho Props của Donut Chart SVG
  */
+const MIN_HIT_LENGTH = 16;
+
 export interface StatDonutItem {
 	label: string;
 	value: number;
@@ -264,24 +292,81 @@ export interface StatDonutItem {
 }
 
 export interface StatDonutProps {
-	items: StatDonutItem[];
-	total: number;
+	items?: StatDonutItem[];
+	segments?: Segment[];
+	total?: number;
 	centerValue?: string | number;
 	centerLabel?: string;
+	activeId?: string | null;
+	onActiveChange?: (id: string | null) => void;
+	size?: number;
+	stroke?: number;
+	gap?: number;
 	className?: string;
+	ariaLabel?: string;
 }
 
 /**
- * Component Donut SVG chuẩn kích thước ~104px, vòng mảnh, số + nhãn ở giữa, đặt bên trái legend
+ * Component Donut SVG chuẩn v0 (1): kích thước 176px, MIN_HIT_LENGTH = 16, hit-target vô hình chống trượt
  */
 export const StatDonut: React.FC<StatDonutProps> = ({
 	items,
-	total,
+	segments: propSegments,
+	total: propTotal,
 	centerValue,
 	centerLabel,
+	activeId: propActiveId,
+	onActiveChange: propOnActiveChange,
+	size = 176,
+	stroke = 16,
+	gap = 2,
 	className = "",
+	ariaLabel = "Biểu đồ tỷ lệ",
 }) => {
-	if (total <= 0) {
+	const [internalActiveId, setInternalActiveId] = useState<string | null>(null);
+	const activeId = propActiveId !== undefined ? propActiveId : internalActiveId;
+	const onActiveChange = propOnActiveChange || setInternalActiveId;
+
+	const normalizedSegments: Segment[] = useMemo(() => {
+		if (propSegments && propSegments.length > 0) return propSegments;
+		if (!items || items.length === 0) return [];
+		const calcTotal =
+			propTotal || items.reduce((sum, it) => sum + it.value, 0) || 1;
+		return items.map((it, idx) => ({
+			id: it.label || `seg-${idx}`,
+			label: it.label,
+			count: it.value,
+			pct: Math.round((it.value / calcTotal) * 1000) / 10,
+			color: it.color,
+		}));
+	}, [propSegments, items, propTotal]);
+
+	const total = normalizedSegments.reduce((sum, s) => sum + s.pct, 0) || 1;
+	const radius = (size - stroke) / 2;
+	const circumference = 2 * Math.PI * radius;
+
+	let consumed = 0;
+	const arcs = normalizedSegments.map((segment) => {
+		const fraction = segment.pct / total;
+		const length = Math.max(fraction * circumference - gap, 0.5);
+		const offset = consumed * circumference;
+		consumed += fraction;
+		return { segment, length, offset };
+	});
+
+	const active = normalizedSegments.find((s) => s.id === activeId);
+	const displayCenterValue = active
+		? `${formatVietnameseNumber(active.pct)}%`
+		: centerValue !== undefined
+			? String(centerValue)
+			: `${normalizedSegments[0]?.pct || 0}%`;
+	const displayCenterLabel = active
+		? active.label
+		: centerLabel !== undefined
+			? centerLabel
+			: normalizedSegments[0]?.label || "";
+
+	if (normalizedSegments.length === 0) {
 		return (
 			<div className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs italic">
 				Chưa có số liệu thống kê
@@ -289,120 +374,87 @@ export const StatDonut: React.FC<StatDonutProps> = ({
 		);
 	}
 
-	// Kích thước vòng SVG cân đối 136px
-	const size = 136;
-	const radius = 54;
-	const strokeWidth = 12;
-	const circumference = 2 * Math.PI * radius; // ~339.29
-
-	// Đếm số phân khúc có giá trị > 0 để tạo khe hở 2px
-	const activeItems = items.filter((it) => it.value > 0);
-	const gap = activeItems.length > 1 ? 2 : 0;
-
-	// Tính toán phần bù strokeDashoffset cho từng phân khúc kèm khe 2px
-	let accumulatedPercent = 0;
-	const segments = items.map((item) => {
-		const pct = total > 0 ? (item.value / total) * 100 : 0;
-		const arcLen = (pct / 100) * circumference;
-		const dashLen = Math.max(0, arcLen - gap);
-		const dashArray = `${dashLen} ${circumference}`;
-		const dashOffset = -(accumulatedPercent / 100) * circumference;
-		accumulatedPercent += pct;
-		return {
-			...item,
-			pct,
-			dashArray,
-			dashOffset,
-		};
-	});
-
-	const firstPct = items[0] && total > 0 ? Math.round((items[0].value / total) * 100) : 0;
-	const displayCenterValue =
-		centerValue !== undefined ? centerValue : `${firstPct}%`;
-	const displayCenterLabel =
-		centerLabel !== undefined ? centerLabel : items[0]?.label || "";
-
 	return (
-		<div className={`flex items-center gap-5 py-1 ${className}`}>
-			{/* Vòng Donut 136px bên trái */}
-			<div
-				className="relative shrink-0 flex items-center justify-center"
-				style={{ width: size, height: size }}
+		<div
+			className={`relative shrink-0 flex items-center justify-center ${className}`}
+			style={{ width: size, height: size }}
+			role="img"
+			aria-label={ariaLabel}
+		>
+			<svg
+				width={size}
+				height={size}
+				viewBox={`0 0 ${size} ${size}`}
+				className="-rotate-90 overflow-visible"
+				aria-hidden="true"
 			>
-				<svg
-					className="-rotate-90"
-					style={{ width: size, height: size }}
-					viewBox="0 0 136 136"
-					role="img"
-					aria-label={`Biểu đồ tỷ lệ ${items.map((i) => i.label).join(", ")}`}
-				>
-					<title>{`Biểu đồ tỷ lệ ${items.map((i) => i.label).join(", ")}`}</title>
-					{/* Vòng nền xám nhạt */}
+				{/* Vòng nền xám */}
+				<circle
+					cx={size / 2}
+					cy={size / 2}
+					r={radius}
+					fill="none"
+					stroke="#1e293b"
+					strokeWidth={stroke}
+				/>
+
+				{/* Vòng SVG hiển thị màu sắc trực quan (pointer-events-none để tránh đè hit area) */}
+				{arcs.map(({ segment, length, offset }) => (
 					<circle
+						key={segment.id}
 						cx={size / 2}
 						cy={size / 2}
 						r={radius}
-						fill="transparent"
-						stroke="currentColor"
-						strokeWidth={strokeWidth}
-						className="text-slate-100 dark:text-slate-800"
+						fill="none"
+						stroke={segment.color}
+						strokeWidth={activeId === segment.id ? stroke + 4 : stroke}
+						strokeDasharray={`${length} ${circumference - length}`}
+						strokeDashoffset={-offset}
+						opacity={activeId && activeId !== segment.id ? 0.3 : 1}
+						className="pointer-events-none transition-all duration-200"
 					/>
-					{/* Các phân khúc màu kèm khe hở 2px */}
-					{segments.map((seg) => (
-						<circle
-							key={seg.label}
-							cx={size / 2}
-							cy={size / 2}
-							r={radius}
-							fill="transparent"
-							stroke={seg.color}
-							strokeWidth={strokeWidth}
-							strokeDasharray={seg.dashArray}
-							strokeDashoffset={seg.dashOffset}
-							strokeLinecap="butt"
-							className="transition-all duration-500"
-						/>
-					))}
-				</svg>
+				))}
 
-				{/* Số + nhãn ở giữa */}
-				<div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-					<span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums leading-tight">
-						{displayCenterValue}
-					</span>
-					<span className="text-[10px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase truncate max-w-[72px] mt-0.5">
-						{displayCenterLabel}
-					</span>
-				</div>
-			</div>
+				{/* Vòng Hit-Target vô hình với MIN_HIT_LENGTH = 16 chống trượt hover trên lát cắt nhỏ */}
+				{[...arcs]
+					.sort((a, b) => b.segment.pct - a.segment.pct)
+					.map(({ segment, length, offset }) => {
+						const hitLength = Math.max(length, MIN_HIT_LENGTH);
+						const hitOffset = offset - (hitLength - length) / 2;
+						return (
+							<circle
+								key={`hit-${segment.id}`}
+								cx={size / 2}
+								cy={size / 2}
+								r={radius}
+								fill="none"
+								stroke="transparent"
+								strokeWidth={stroke + 14}
+								strokeDasharray={`${hitLength} ${circumference - hitLength}`}
+								strokeDashoffset={-hitOffset}
+								pointerEvents="stroke"
+								className="cursor-pointer"
+								onMouseEnter={() => onActiveChange(segment.id)}
+								onMouseLeave={() => onActiveChange(null)}
+								onClick={() =>
+									onActiveChange(activeId === segment.id ? null : segment.id)
+								}
+							/>
+						);
+					})}
+			</svg>
 
-			{/* Danh sách Legend bên phải */}
-			<div className="flex-1 space-y-2">
-				{items.map((it) => {
-					const pct = total > 0 ? Math.round((it.value / total) * 1000) / 10 : 0;
-					return (
-						<div
-							key={it.label}
-							className="p-2.5 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800/80"
-						>
-							<div className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-200 text-xs">
-								<div className="flex items-center gap-2 min-w-0">
-									<div
-										className="w-2.5 h-2.5 rounded-full shrink-0"
-										style={{ backgroundColor: it.color }}
-									/>
-									<span className="truncate">{it.label}</span>
-								</div>
-								<span className="tabular-nums font-bold text-xs text-slate-900 dark:text-white shrink-0 ml-1">
-									{formatVietnameseNumber(pct)}%
-								</span>
-							</div>
-							<div className="text-slate-500 dark:text-slate-400 font-normal text-xs pl-4.5 mt-0.5 tabular-nums">
-								{formatVietnameseNumber(it.value)} {it.unit || "người"}
-							</div>
-						</div>
-					);
-				})}
+			{/* Tâm Donut: số lớn và nhãn tiếng Việt bọc chữ an toàn */}
+			<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+				<span className="text-xl font-black leading-none text-white tabular-nums">
+					{displayCenterValue}
+				</span>
+				<span
+					className="mt-1 text-balance break-words text-[10px] font-semibold leading-[1.15] text-slate-300"
+					style={{ maxWidth: Math.max(size - stroke * 2 - 20, 60) }}
+				>
+					{displayCenterLabel}
+				</span>
 			</div>
 		</div>
 	);
@@ -498,7 +550,7 @@ export const TooltipContent: React.FC<{
 };
 
 export { DonutChart } from "../analytics/DonutChart";
-export { MicroBar } from "../analytics/MicroBar";
+export { MicroBar, StatMicroBar } from "../analytics/MicroBar";
 export { CardShell } from "../analytics/CardShell";
 export { DistributionCard } from "../analytics/DistributionCard";
 export { WelfareCard } from "../analytics/WelfareCard";

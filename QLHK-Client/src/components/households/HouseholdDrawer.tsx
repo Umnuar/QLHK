@@ -139,6 +139,10 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 						gender: m.gender,
 						dob: m.dob,
 						cccd: m.cccd,
+						education: m.education,
+						military_status: m.military_status,
+						occupation: m.occupation,
+						native_place: m.native_place,
 					})),
 				}),
 			);
@@ -167,6 +171,10 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 					gender: m.gender,
 					dob: m.dob,
 					cccd: m.cccd,
+					education: m.education,
+					military_status: m.military_status,
+					occupation: m.occupation,
+					native_place: m.native_place,
 				})),
 			});
 
@@ -254,7 +262,10 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 			ethnicity: memberData.ethnicity || "Kinh",
 			is_minority: memberData.is_minority ?? memberData.ethnicity !== "Kinh",
 			religion: memberData.religion || "Không",
+			education: memberData.education || "",
+			military_status: memberData.military_status || "",
 			occupation: memberData.occupation || "",
+			native_place: memberData.native_place || "",
 			notes: memberData.notes || "",
 		};
 

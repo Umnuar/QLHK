@@ -18,11 +18,11 @@
   - Diff Budget: <= 50 LOC
   - Tests: Backend 115 tests PASS (100% green)
 
-- [ ] Step 2: Client Data Persistence & Unit Tests - Bổ sung mapping trong `householdApi.ts`
+- [x] Step 2: Client Data Persistence & Unit Tests - Bổ sung mapping trong `householdApi.ts`
   - Target Files: `QLHK-Client/src/api/householdApi.ts`, `QLHK-Client/src/api/__tests__/householdApi.test.ts`
   - Assigned Role: `c:/Users/umnuar/Documents/Projects/.agents/frontend-developer.md`, `c:/Users/umnuar/Documents/Projects/.agents/test-engineer.md`
   - Diff Budget: <= 100 LOC
-  - Tests: Client 155+ tests PASS (bao gồm test mới cho `normalizeHousehold`)
+  - Tests: Client 155 tests PASS (100% green)
 
 - [ ] Step 3: Compact Density & Donut Rebalance - Tinh gọn giao diện Analytics và Donut 136px
   - Target Files: `QLHK-Client/src/components/common/statStyles.tsx`, `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`

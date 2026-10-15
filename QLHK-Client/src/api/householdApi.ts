@@ -78,9 +78,12 @@ export function normalizeHousehold(item: any): Household {
 		ethnicity: c.ethnicity || "Kinh",
 		is_minority: c.ethnicity ? c.ethnicity !== "Kinh" : false,
 		religion: c.religion || "Không",
-		occupation: c.occupation || "",
+		education: c.education ? String(c.education).trim() : "",
+		military_status: c.military_status ? String(c.military_status).trim() : "",
+		occupation: c.occupation ? String(c.occupation).trim() : "",
+		native_place: c.native_place ? String(c.native_place).trim() : "",
 		address: c.address || item.address || "",
-		notes: c.notes || "",
+		notes: c.notes ? String(c.notes).trim() : "",
 	}));
 
 	return {

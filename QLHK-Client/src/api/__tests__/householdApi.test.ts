@@ -66,4 +66,50 @@ describe("householdApi - Chuẩn hóa dữ liệu Household", () => {
 		expect(normalized.members_count).toBe(0);
 		expect(normalized.members).toEqual([]);
 	});
+
+	it("bảo toàn đầy đủ các trường mới (education, military_status, occupation, native_place, notes)", () => {
+		const rawHh = {
+			id: "hh-fields-01",
+			book_number: "SHK-FIELD-01",
+			village_id: "vil-01",
+			citizens: [
+				{
+					id: "cit-fields-01",
+					stt: 1,
+					is_head: true,
+					full_name: "A Trọng",
+					education: " 12/12 ",
+					military_status: " Xuất ngũ năm 2022 ",
+					occupation: " Làm nông ",
+					native_place: " Xã Đăk Hà, Huyện Tu Mơ Rông ",
+					notes: " Gia đình chính sách ",
+				},
+				{
+					id: "cit-fields-02",
+					stt: 2,
+					is_head: false,
+					full_name: "Y Lan",
+					// Các trường null/undefined phải fallback về rỗng
+					education: null,
+					military_status: undefined,
+					occupation: "",
+					native_place: null,
+					notes: undefined,
+				},
+			],
+		};
+
+		const normalized = normalizeHousehold(rawHh);
+		expect(normalized.members[0].education).toBe("12/12");
+		expect(normalized.members[0].military_status).toBe("Xuất ngũ năm 2022");
+		expect(normalized.members[0].occupation).toBe("Làm nông");
+		expect(normalized.members[0].native_place).toBe("Xã Đăk Hà, Huyện Tu Mơ Rông");
+		expect(normalized.members[0].notes).toBe("Gia đình chính sách");
+
+		expect(normalized.members[1].education).toBe("");
+		expect(normalized.members[1].military_status).toBe("");
+		expect(normalized.members[1].occupation).toBe("");
+		expect(normalized.members[1].native_place).toBe("");
+		expect(normalized.members[1].notes).toBe("");
+	});
 });

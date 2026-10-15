@@ -172,12 +172,12 @@ export const StatChartPanel: React.FC<StatChartPanelProps> = ({
 
 	return (
 		<div
-			className={`flex flex-col rounded-2xl border border-slate-800 bg-slate-900/90 py-0 text-slate-100 backdrop-blur-md transition-colors hover:border-slate-700 lg:h-[276px] overflow-hidden shadow-sm ${className}`}
+			className={`flex flex-col rounded-2xl border border-slate-200 bg-white py-0 text-slate-900 shadow-xs ring-0 transition-colors duration-150 hover:border-slate-300 lg:h-[276px] overflow-hidden dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-100 dark:shadow-none dark:backdrop-blur-md dark:hover:border-slate-700 ${className}`}
 		>
-			<header className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-slate-800 px-4">
+			<header className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-4 dark:border-slate-800">
 				<div className="min-w-0">
-					<h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-white">
-						<span className="text-teal-400 shrink-0" aria-hidden="true">
+					<h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+						<span className="text-teal-600 dark:text-teal-400 shrink-0" aria-hidden="true">
 							{renderIcon()}
 						</span>
 						<span className="truncate">{title}</span>
@@ -188,7 +188,7 @@ export const StatChartPanel: React.FC<StatChartPanelProps> = ({
 				</div>
 				{badge &&
 					(typeof badge === "string" ? (
-						<span className="shrink-0 rounded-md border border-teal-500/30 bg-teal-500/10 px-2 py-0.5 text-xs font-semibold text-teal-300">
+						<span className="shrink-0 rounded-md border border-teal-200 bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300">
 							{badge}
 						</span>
 					) : (
@@ -388,14 +388,14 @@ export const StatDonut: React.FC<StatDonutProps> = ({
 				className="-rotate-90 overflow-visible"
 				aria-hidden="true"
 			>
-				{/* Vòng nền xám */}
+				{/* Vòng nền rãnh tròn */}
 				<circle
 					cx={size / 2}
 					cy={size / 2}
 					r={radius}
 					fill="none"
-					stroke="#1e293b"
 					strokeWidth={stroke}
+					className="stroke-slate-100 transition-colors duration-150 dark:stroke-slate-800/40"
 				/>
 
 				{/* Vòng SVG hiển thị màu sắc trực quan (pointer-events-none để tránh đè hit area) */}
@@ -446,11 +446,11 @@ export const StatDonut: React.FC<StatDonutProps> = ({
 
 			{/* Tâm Donut: số lớn và nhãn tiếng Việt bọc chữ an toàn */}
 			<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-				<span className="text-xl font-black leading-none text-white tabular-nums">
+				<span className="text-xl font-black leading-none text-slate-900 dark:text-white tabular-nums">
 					{displayCenterValue}
 				</span>
 				<span
-					className="mt-1 text-balance break-words text-[10px] font-semibold leading-[1.15] text-slate-300"
+					className="mt-1 text-balance break-words text-[10px] font-semibold leading-[1.15] text-slate-600 dark:text-slate-400"
 					style={{ maxWidth: Math.max(size - stroke * 2 - 20, 60) }}
 				>
 					{displayCenterLabel}

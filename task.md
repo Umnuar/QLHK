@@ -1,8 +1,8 @@
-# Task Progress Tracker (v0 Dashboard (1) Porting & Optimization Roadmap)
+# Task Progress Tracker (Dual Light & Dark Mode Dashboard Roadmap)
 
 - **Project**: QLHK (Hệ thống Quản lý Hộ khẩu Đăk Hà)
-- **Reference Source**: `C:\Users\umnuar\Downloads\dak-ha-demographic-dashboard (1)`
-- **Baseline Git Checkpoint**: `9162786` (Clean working tree, Backend: 115/115 PASS, Client: 155/155 PASS)
+- **Reference Source**: `C:\Users\umnuar\Downloads\dak-ha-demographic-dashboard (2)`
+- **Baseline Git Checkpoint**: `d8ebb69` (Clean working tree, Backend: 115/115 PASS, Client: 155/155 PASS)
 - **Status Legend**: 
   - `[ ]` Pending
   - `[/]` In Progress
@@ -11,32 +11,32 @@
 
 ## Execution Checklist
 
-- [x] Step 1: Upgrade Core Primitives to v0 (1) Spec (`DonutChart` 176px + Hit-Target, `MicroBar`, `CardShell`, `statStyles.tsx`)
-  - Target Files: `QLHK-Client/src/components/analytics/DonutChart.tsx`, `QLHK-Client/src/components/common/statStyles.tsx`
+- [x] Step 1: Core Primitives Dual Mode (`CardShell.tsx`, `MicroBar.tsx`, `DonutChart.tsx`, `statStyles.tsx`)
+  - Target Files: `QLHK-Client/src/components/analytics/CardShell.tsx`, `QLHK-Client/src/components/analytics/MicroBar.tsx`, `QLHK-Client/src/components/analytics/DonutChart.tsx`, `QLHK-Client/src/components/common/statStyles.tsx`
   - Assigned Role: `.agents/ui-ux-designer.md`
-  - Key Specs: `size = 176`, `stroke = 16`, `gap = 2`, `MIN_HIT_LENGTH = 16`, hit-target ring `strokeWidth = 30`, visual hover `strokeWidth = 20`, dimming 0.3, center label `maxWidth = Math.max(size - stroke * 2 - 20, 60)`, export `StatMicroBar`, `StatChartPanel`, `StatDonut`.
-  - Diff Budget: <= 200 LOC
+  - Key Specs: CardShell wrapper (border-slate-200 bg-white text-slate-900 / dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-100), header (border-slate-100 dark:border-slate-800), MicroBar track (bg-slate-200 dark:bg-slate-800), DonutChart track (stroke-slate-100 dark:stroke-slate-800/40), center text (text-slate-900 dark:text-white / text-slate-600 dark:text-slate-400).
+  - Diff Budget: <= 150 LOC
   - Verification: `npx tsc --noEmit` Client (0 error), `npm test` Client (155/155 PASS)
 
-- [x] Step 2: Refine Composite Cards (`DistributionCard.tsx`, `WelfareCard.tsx`, `KpiRow.tsx`)
-  - Target Files: `QLHK-Client/src/components/analytics/DistributionCard.tsx`, `QLHK-Client/src/components/analytics/WelfareCard.tsx`, `QLHK-Client/src/components/analytics/KpiRow.tsx`
+- [/] Step 2: Composite Cards Dual Mode (`KpiRow.tsx`, `DistributionCard.tsx`, `WelfareCard.tsx`)
+  - Target Files: `QLHK-Client/src/components/analytics/KpiRow.tsx`, `QLHK-Client/src/components/analytics/DistributionCard.tsx`, `QLHK-Client/src/components/analytics/WelfareCard.tsx`
   - Assigned Role: `.agents/frontend-developer.md`
-  - Key Specs: DistributionCard Donut 176px + full Vietnamese center labels, WelfareCard 2-column layout matching v0 (1), KpiRow 88px.
-  - Diff Budget: <= 200 LOC
+  - Key Specs: KpiCard container (border-slate-200 bg-white / dark:border-slate-800 dark:bg-slate-900/90), DistributionCard item container hover/active states, WelfareCard 2-column divide (divide-slate-200 dark:divide-slate-800) and badges/labels.
+  - Diff Budget: <= 180 LOC
   - Verification: `npx tsc --noEmit` Client (0 error), `npm test` Client (155/155 PASS)
 
-- [x] Step 3: Polish Single-Viewport Layout in `AnalyticsDashboard.tsx`
+- [ ] Step 3: Dashboard Integration & Theme Toggle Button (`AnalyticsDashboard.tsx`)
   - Target Files: `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`
   - Assigned Role: `.agents/frontend-developer.md`, `.agents/ui-ux-designer.md`
-  - Key Specs: 1080p single viewport (~700px total height, zero page scroll), full center labels, preserve Excel export & offline cache.
-  - Diff Budget: <= 180 LOC
+  - Key Specs: Connect `theme, toggleTheme` from `useApp()`, import `Sun, Moon` from `lucide-react`, add Theme Toggle button to header action toolbar.
+  - Diff Budget: <= 80 LOC
   - Verification: `AnalyticsDashboard.test.tsx` (7/7 PASS), `npm test` Client (155/155 PASS)
 
-- [x] Step 4: Final Quality Gates & Full Verification
+- [ ] Step 4: Final Quality Gates & Full Verification
   - Verification: `npm test` Client (155/155 PASS), `npx tsc --noEmit` Client (0 error), `npm test` Backend (115/115 PASS), Docker container health check (HTTP 200 OK)
 
 ## Project Gotchas & Learned Invariants
-- [Donut Hit-Target]: Với các phân khúc nhỏ (< 16px arc length), phải dùng `MIN_HIT_LENGTH = 16` trên vòng hit-target trong suốt `strokeWidth = stroke + 14` và `pointerEvents="stroke"` để chống trượt chuột khi rê vào lát cắt hẹp.
-- [Center Text Wrapping]: Nhãn phụ ở tâm Donut có `style={{ maxWidth: Math.max(size - stroke * 2 - 20, 60) }}` và `text-balance break-words text-[10px]` để nhãn tiếng Việt dài không bị tràn ra ngoài vòng Donut.
-- [Test Selectors Preservation]: Bắt buộc giữ nguyên các tiêu đề `Phân Bổ Dân Tộc Địa Bàn Đăk Hà`, `Cơ Cấu Tín Ngưỡng & Tôn Giáo`, `Tháp Tuổi & Cơ Cấu Thế Hệ`, `Tình Hình Nghĩa Vụ Quân Sự`, `Trình Độ Học Vấn`, `Cơ Cấu Nghề Nghiệp` và nhãn `Dân tộc Kinh...`, `12/12...` để 155 test Client không bị gãy.
-- [Zero-Dependency UI]: Không cài `@base-ui` hay `@radix-ui` mới; dùng React thuần + Tailwind CSS để bảo toàn tốc độ build và kích thước bundle.
+- [Donut Track Contrast in Light Mode]: Trong chế độ sáng, rãnh nền Donut phải dùng `stroke-slate-100` và `dark:stroke-slate-800/40` để không bị quá gắt trên nền card trắng.
+- [CardShell Dual Mode]: Card wrapper ở chế độ sáng dùng `bg-white border-slate-200 text-slate-900 shadow-xs`, ở tối dùng `dark:bg-slate-900/90 dark:border-slate-800 dark:text-slate-100 dark:backdrop-blur-md`.
+- [Test Selectors Preservation]: Bắt buộc giữ nguyên mọi text và aria-label hiện có để 155 test Client không bị gãy.
+- [AppContext Theme Protocol]: Sử dụng trực tiếp `theme` và `toggleTheme` từ `useApp()` (đã quản lý class `.dark` trên thẻ `<html>` và lưu `theme` trong `localStorage`).

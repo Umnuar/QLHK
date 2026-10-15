@@ -61,14 +61,14 @@ export const DonutChart: React.FC<DonutChartProps> = ({
 				className="-rotate-90 overflow-visible"
 				aria-hidden="true"
 			>
-				{/* Vòng nền xám */}
+				{/* Vòng nền rãnh tròn */}
 				<circle
 					cx={size / 2}
 					cy={size / 2}
 					r={radius}
 					fill="none"
-					stroke="#1e293b"
 					strokeWidth={stroke}
+					className="stroke-slate-100 transition-colors duration-150 dark:stroke-slate-800/40"
 				/>
 
 				{/* Vòng SVG hiển thị màu sắc trực quan (pointer-events-none để tránh đè hit area) */}
@@ -119,11 +119,11 @@ export const DonutChart: React.FC<DonutChartProps> = ({
 
 			{/* Tâm Donut: số lớn và nhãn tiếng Việt bọc chữ an toàn */}
 			<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-				<span className="text-xl font-black leading-none text-white tabular-nums">
+				<span className="text-xl font-black leading-none text-slate-900 dark:text-white tabular-nums">
 					{centerValue}
 				</span>
 				<span
-					className="mt-1 text-balance break-words text-[10px] font-semibold leading-[1.15] text-slate-300"
+					className="mt-1 text-balance break-words text-[10px] font-semibold leading-[1.15] text-slate-600 dark:text-slate-400"
 					style={{ maxWidth: Math.max(size - stroke * 2 - 20, 60) }}
 				>
 					{centerLabel}

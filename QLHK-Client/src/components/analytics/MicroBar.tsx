@@ -23,7 +23,7 @@ export const MicroBar: React.FC<MicroBarProps> = ({
 			aria-valuemin={0}
 			aria-valuemax={100}
 			style={{ "--bar": color } as React.CSSProperties}
-			className={`h-1 w-full rounded-full bg-slate-800 overflow-hidden ${className}`}
+			className={`h-1 w-full rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden ${className}`}
 		>
 			<div
 				className="h-full rounded-full transition-all duration-300"

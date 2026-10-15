@@ -574,11 +574,11 @@ export const AnalyticsDashboard: React.FC = () => {
 
 	return (
 		<div
-			className="space-y-6 animate-in fade-in"
+			className="space-y-4 sm:space-y-5 animate-in fade-in"
 			style={{ "--stat-accent": DEFAULT_STAT_ACCENT } as React.CSSProperties}
 		>
 			{/* Top Banner & Scope */}
-			<div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors duration-150">
+			<div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-colors duration-150">
 				<div>
 					<div className="flex items-center gap-2.5 flex-wrap">
 						<span className={VILLAGE_BADGE_CLASS}>
@@ -706,7 +706,7 @@ export const AnalyticsDashboard: React.FC = () => {
 						</span>
 					}
 				>
-					<div className="space-y-4">
+					<div className="space-y-3">
 						<StatDonut
 							items={[
 								{
@@ -756,7 +756,7 @@ export const AnalyticsDashboard: React.FC = () => {
 						</span>
 					}
 				>
-					<div className="space-y-4">
+					<div className="space-y-3">
 						<StatDonut
 							items={religionDetails.list.map((it) => ({
 								label: it.label,
@@ -807,7 +807,7 @@ export const AnalyticsDashboard: React.FC = () => {
 						</span>
 					}
 				>
-					<div className="space-y-4">
+					<div className="space-y-3">
 						<StatDonut
 							items={[
 								{
@@ -884,7 +884,7 @@ export const AnalyticsDashboard: React.FC = () => {
 						</span>
 					}
 				>
-					<div className="space-y-4">
+					<div className="space-y-3">
 						{stats.militaryList.length > 0 ? (
 							<>
 								<StatDonut
@@ -947,7 +947,7 @@ export const AnalyticsDashboard: React.FC = () => {
 						</span>
 					}
 				>
-					<div className="space-y-4">
+					<div className="space-y-3">
 						{stats.educationList.length > 0 ? (
 							<div className={STAT_SCROLL_CONTAINER_CLASS}>
 								{stats.educationList.map((edu, idx) => (
@@ -987,7 +987,7 @@ export const AnalyticsDashboard: React.FC = () => {
 						</span>
 					}
 				>
-					<div className="space-y-4">
+					<div className="space-y-3">
 						{stats.occupationList.length > 0 ? (
 							<div className={STAT_SCROLL_CONTAINER_CLASS}>
 								{stats.occupationList.map((occ, idx) => (

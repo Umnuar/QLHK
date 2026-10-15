@@ -55,15 +55,15 @@ export const STAT_KPI_GRID_CLASS =
 	"grid grid-cols-1 sm:grid-cols-2 min-[1100px]:grid-cols-4 gap-4";
 
 /**
- * Grid 2 panel biểu đồ: 2 cột trên desktop, 1 cột trên màn hình nhỏ, cách nhau 24px
+ * Grid 2 panel biểu đồ: 2 cột trên desktop, 1 cột trên màn hình nhỏ, cách nhau 16-20px
  */
-export const STAT_PANEL_GRID_CLASS = "grid grid-cols-1 lg:grid-cols-2 gap-6";
+export const STAT_PANEL_GRID_CLASS = "grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5";
 
 /**
  * Khung vùng cuộn danh sách thanh tiến độ kèm hiệu ứng mờ mép
  */
 export const STAT_SCROLL_CONTAINER_CLASS =
-	"space-y-2 max-h-[500px] overflow-y-auto pr-1 scrollbar-thin scroll-mask-bottom";
+	"space-y-2 max-h-[200px] sm:max-h-[220px] overflow-y-auto pr-1 scrollbar-thin scroll-mask-bottom";
 
 /**
  * Interface cho Props của thẻ KPI
@@ -152,10 +152,10 @@ export const StatChartPanel: React.FC<StatChartPanelProps> = ({
 }) => {
 	return (
 		<div
-			className={`bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col justify-between h-full min-h-[460px] ${className}`}
+			className={`bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col justify-between h-full min-h-[320px] ${className}`}
 		>
 			{/* Tiêu đề = icon nét đơn + tên (đậm vừa, không viết hoa toàn bộ) + mô tả xám bên dưới */}
-			<div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
+			<div className="flex items-start justify-between gap-3 pb-2.5 border-b border-slate-100 dark:border-slate-800 mb-3">
 				<div className="min-w-0">
 					<h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
 						<Icon
@@ -165,7 +165,7 @@ export const StatChartPanel: React.FC<StatChartPanelProps> = ({
 						/>
 						<span className="truncate">{title}</span>
 					</h3>
-					<p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-normal line-clamp-1">
+					<p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-normal line-clamp-1">
 						{description}
 					</p>
 				</div>
@@ -213,7 +213,7 @@ export const StatBarRow: React.FC<StatBarRowProps> = ({
 
 	return (
 		<div
-			className={`p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5 ${className}`}
+			className={`p-1.5 sm:p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1 ${className}`}
 		>
 			<div className="flex items-center justify-between text-xs gap-2">
 				{/* Trái: tên + phần trăm trong ngoặc xám nhỏ */}
@@ -289,11 +289,11 @@ export const StatDonut: React.FC<StatDonutProps> = ({
 		);
 	}
 
-	// Kích thước vòng mảnh chuẩn 104px
-	const size = 104;
-	const radius = 42;
-	const strokeWidth = 9;
-	const circumference = 2 * Math.PI * radius; // ~263.89
+	// Kích thước vòng SVG cân đối 136px
+	const size = 136;
+	const radius = 54;
+	const strokeWidth = 12;
+	const circumference = 2 * Math.PI * radius; // ~339.29
 
 	// Đếm số phân khúc có giá trị > 0 để tạo khe hở 2px
 	const activeItems = items.filter((it) => it.value > 0);
@@ -324,7 +324,7 @@ export const StatDonut: React.FC<StatDonutProps> = ({
 
 	return (
 		<div className={`flex items-center gap-5 py-1 ${className}`}>
-			{/* Vòng Donut ~104px bên trái */}
+			{/* Vòng Donut 136px bên trái */}
 			<div
 				className="relative shrink-0 flex items-center justify-center"
 				style={{ width: size, height: size }}
@@ -332,7 +332,7 @@ export const StatDonut: React.FC<StatDonutProps> = ({
 				<svg
 					className="-rotate-90"
 					style={{ width: size, height: size }}
-					viewBox={`0 0 ${size} ${size}`}
+					viewBox="0 0 136 136"
 					role="img"
 					aria-label={`Biểu đồ tỷ lệ ${items.map((i) => i.label).join(", ")}`}
 				>
@@ -367,10 +367,10 @@ export const StatDonut: React.FC<StatDonutProps> = ({
 
 				{/* Số + nhãn ở giữa */}
 				<div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-					<span className="text-sm font-bold text-slate-900 dark:text-white tabular-nums leading-tight">
+					<span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums leading-tight">
 						{displayCenterValue}
 					</span>
-					<span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase truncate max-w-[56px] mt-0.5">
+					<span className="text-[10px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase truncate max-w-[72px] mt-0.5">
 						{displayCenterLabel}
 					</span>
 				</div>

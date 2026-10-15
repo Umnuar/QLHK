@@ -81,7 +81,7 @@ export const DistributionCard: React.FC<DistributionCardProps> = ({
 													{segment.label}
 												</span>
 											</span>
-											<span className="shrink-0 tabular-nums font-semibold text-slate-900 dark:text-slate-100">
+											<span className="shrink-0 tabular-nums font-bold text-slate-900 dark:text-slate-100">
 												{formatVietnameseNumber(
 													digits === 0 ? Math.round(segment.pct) : segment.pct,
 												)}

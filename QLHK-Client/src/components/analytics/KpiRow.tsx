@@ -47,13 +47,13 @@ const KpiCard: React.FC<KpiCardProps> = ({
 				<p className="truncate text-xs font-medium text-slate-600 dark:text-slate-300">{label}</p>
 				<div className="flex items-baseline gap-1.5 leading-tight my-0.5">
 					{typeof value === "string" || typeof value === "number" ? (
-						<span className="text-2xl font-semibold text-slate-900 dark:text-white tabular-nums">
+						<span className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
 							{value}
 						</span>
 					) : (
 						value
 					)}
-					{unit && <span className="text-xs text-slate-500 dark:text-slate-400">{unit}</span>}
+					{unit && <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">{unit}</span>}
 				</div>
 				<p className="truncate text-xs text-slate-500 dark:text-slate-400 tabular-nums">{detail}</p>
 			</div>
@@ -85,7 +85,7 @@ export const KpiRow: React.FC<KpiRowProps> = ({
 				detail={
 					trend !== undefined ? (
 						<span>
-							<span className="font-semibold text-teal-300">
+							<span className="font-bold text-teal-600 dark:text-teal-400">
 								+{formatVietnameseNumber(trend)}%
 							</span>{" "}
 							so với quý trước
@@ -124,15 +124,15 @@ export const KpiRow: React.FC<KpiRowProps> = ({
 			<KpiCard
 				label="Cơ Cấu Giới Tính"
 				value={
-					<div className="flex items-center gap-1.5 text-base sm:text-lg font-semibold leading-none">
-						<span className="text-sky-400">
+					<div className="flex items-center gap-1.5 text-base sm:text-lg font-bold leading-none">
+						<span className="text-sky-500 dark:text-sky-400 tabular-nums">
 							{formatVietnameseNumber(malePct)}%
 						</span>
-						<span className="text-slate-500 text-xs font-normal">Nam /</span>
-						<span className="text-rose-400">
+						<span className="text-slate-500 dark:text-slate-400 text-xs font-normal">Nam /</span>
+						<span className="text-rose-500 dark:text-rose-400 tabular-nums">
 							{formatVietnameseNumber(femalePct)}%
 						</span>
-						<span className="text-slate-500 text-xs font-normal">Nữ</span>
+						<span className="text-slate-500 dark:text-slate-400 text-xs font-normal">Nữ</span>
 					</div>
 				}
 				detail={`${formatVietnameseNumber(maleCount)} Nam • ${formatVietnameseNumber(femaleCount)} Nữ`}

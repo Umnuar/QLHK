@@ -93,7 +93,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 											</span>
 										</div>
 										<div className="flex items-baseline justify-between gap-1 text-xs">
-											<span className="font-semibold text-slate-900 dark:text-white tabular-nums">
+											<span className="font-bold text-slate-900 dark:text-white tabular-nums">
 												{formatVietnameseNumber(item.percentage)}%
 											</span>
 											<span className="text-slate-500 dark:text-slate-400 tabular-nums">
@@ -120,7 +120,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 										</span>
 									</div>
 									<div className="flex items-baseline justify-between gap-1 text-xs">
-										<span className="font-semibold text-slate-900 dark:text-white tabular-nums">
+										<span className="font-bold text-slate-900 dark:text-white tabular-nums">
 											94,5%
 										</span>
 										<span className="text-slate-500 dark:text-slate-400 tabular-nums">
@@ -143,7 +143,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 										</span>
 									</div>
 									<div className="flex items-baseline justify-between gap-1 text-xs">
-										<span className="font-semibold text-slate-900 dark:text-white tabular-nums">
+										<span className="font-bold text-slate-900 dark:text-white tabular-nums">
 											100%
 										</span>
 										<span className="text-slate-500 dark:text-slate-400 tabular-nums">
@@ -166,7 +166,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 										</span>
 									</div>
 									<div className="flex items-baseline justify-between gap-1 text-xs">
-										<span className="font-semibold text-slate-900 dark:text-white tabular-nums">
+										<span className="font-bold text-slate-900 dark:text-white tabular-nums">
 											100%
 										</span>
 										<span className="text-slate-500 dark:text-slate-400 tabular-nums">
@@ -213,7 +213,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 												<span className="truncate font-medium text-slate-700 dark:text-slate-200">
 													{item.name}
 												</span>
-												<span className="shrink-0 font-semibold text-slate-900 dark:text-white tabular-nums">
+												<span className="shrink-0 font-bold text-slate-900 dark:text-white tabular-nums">
 													{formatVietnameseNumber(item.percentage)}%{" "}
 													<span className="font-normal text-slate-500 dark:text-slate-400">
  														({formatVietnameseNumber(item.count)})
@@ -235,7 +235,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
  											<span className="truncate font-medium text-slate-700 dark:text-slate-200">
  												Đào tạo nghề & Kỹ thuật
  											</span>
- 											<span className="shrink-0 font-semibold text-slate-900 dark:text-white tabular-nums">
+ 											<span className="shrink-0 font-bold text-slate-900 dark:text-white tabular-nums">
  												68,0%
  											</span>
  										</div>
@@ -250,7 +250,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
  											<span className="truncate font-medium text-slate-700 dark:text-slate-200">
  												Phổ cập GD / Đang đi học
  											</span>
- 											<span className="shrink-0 font-semibold text-slate-900 dark:text-white tabular-nums">
+ 											<span className="shrink-0 font-bold text-slate-900 dark:text-white tabular-nums">
  												100%
  											</span>
  										</div>
@@ -287,7 +287,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
  												<span className="truncate font-medium text-slate-700 dark:text-slate-200">
  													{item.name}
  												</span>
- 												<span className="shrink-0 font-semibold text-slate-900 dark:text-white tabular-nums">
+ 												<span className="shrink-0 font-bold text-slate-900 dark:text-white tabular-nums">
  													{formatVietnameseNumber(item.percentage)}%{" "}
  													<span className="font-normal text-slate-500 dark:text-slate-400">
  														({formatVietnameseNumber(item.count)})
@@ -309,7 +309,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
  											<span className="truncate font-medium text-slate-700 dark:text-slate-200">
  												Nông nghiệp (Cà phê, Cao su)
  											</span>
- 											<span className="shrink-0 font-semibold text-slate-900 dark:text-white tabular-nums">
+ 											<span className="shrink-0 font-bold text-slate-900 dark:text-white tabular-nums">
  												74,5%
  											</span>
  										</div>
@@ -324,7 +324,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
  											<span className="truncate font-medium text-slate-700 dark:text-slate-200">
  												Dịch vụ & TTCN
  											</span>
- 											<span className="shrink-0 font-semibold text-slate-900 dark:text-white tabular-nums">
+ 											<span className="shrink-0 font-bold text-slate-900 dark:text-white tabular-nums">
  												15,5%
  											</span>
  										</div>

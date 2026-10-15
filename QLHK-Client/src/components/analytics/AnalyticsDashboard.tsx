@@ -793,7 +793,7 @@ export const AnalyticsDashboard: React.FC = () => {
 				</div>
 
 				<div className="overflow-x-auto">
-					<table className="w-full text-left border-collapse text-xs">
+					<table className="w-full text-left border-collapse">
 						<thead className={TABLE_HEADER_CLASSES.thead}>
 							<tr className={TABLE_HEADER_CLASSES.row}>
 								<th className={`${TABLE_HEADER_CLASSES.thCenter} w-14`}>
@@ -828,28 +828,28 @@ export const AnalyticsDashboard: React.FC = () => {
 									key={row.village_id}
 									className="h-[52px] bg-white dark:bg-slate-900 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors text-[14px]"
 								>
-									<td className="py-3 px-3 text-center text-slate-500 dark:text-slate-400 tabular-nums font-medium text-[14px]">
+									<td className="py-3.5 px-3 text-center text-slate-500 dark:text-slate-400 tabular-nums font-medium text-[14px]">
 										{idx + 1}
 									</td>
-									<td className="py-3 px-4 font-semibold text-slate-900 dark:text-slate-100 text-[14px]">
+									<td className="py-3.5 px-4 font-bold text-slate-900 dark:text-slate-100 text-[14px] whitespace-nowrap">
 										{row.village_name}
 									</td>
-									<td className="py-3 px-3 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100 text-[14px]">
+									<td className="py-3.5 px-3 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100 text-[14px]">
 										{formatVietnameseNumber(row.household_count)}
 									</td>
-									<td className="py-3 px-3 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100 text-[14px]">
+									<td className="py-3.5 px-3 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100 text-[14px]">
 										{formatVietnameseNumber(row.citizen_count)}
 									</td>
-									<td className="py-3 px-3 text-right tabular-nums text-slate-600 dark:text-slate-300 text-[14px]">
+									<td className="py-3.5 px-3 text-right tabular-nums font-medium text-slate-600 dark:text-slate-300 text-[14px]">
 										{formatVietnameseNumber(row.male_count)}
 									</td>
-									<td className="py-3 px-3 text-right tabular-nums text-slate-600 dark:text-slate-300 text-[14px]">
+									<td className="py-3.5 px-3 text-right tabular-nums font-medium text-slate-600 dark:text-slate-300 text-[14px]">
 										{formatVietnameseNumber(row.female_count)}
 									</td>
-									<td className="py-3 px-3 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100 text-[14px]">
+									<td className="py-3.5 px-3 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100 text-[14px]">
 										{formatVietnameseNumber(row.dtts_count)}
 									</td>
-									<td className="py-3 px-3 text-right tabular-nums font-semibold text-emerald-600 dark:text-emerald-400 text-[14px]">
+									<td className="py-3.5 px-3 text-right tabular-nums font-bold text-emerald-600 dark:text-emerald-400 text-[14px]">
 										{formatVietnameseNumber(row.dtts_percentage)}%
 									</td>
 								</tr>
@@ -859,26 +859,26 @@ export const AnalyticsDashboard: React.FC = () => {
 							<tr className="h-[52px]">
 								<td
 									colSpan={2}
-									className="py-3.5 px-4 text-center font-bold uppercase tracking-wider text-xs sm:text-[13px]"
+									className="py-3.5 px-4 text-center font-bold uppercase tracking-wider text-[13px] text-slate-700 dark:text-slate-200"
 								>
 									TỔNG CỘNG TOÀN XÃ
 								</td>
-								<td className="py-3.5 px-3 text-right font-bold tabular-nums">
+								<td className="py-3.5 px-3 text-right font-bold tabular-nums text-[14px]">
 									{formatVietnameseNumber(villageTotals.totalHh)}
 								</td>
-								<td className="py-3.5 px-3 text-right font-bold tabular-nums">
+								<td className="py-3.5 px-3 text-right font-bold tabular-nums text-[14px]">
 									{formatVietnameseNumber(villageTotals.totalCit)}
 								</td>
-								<td className="py-3.5 px-3 text-right font-bold tabular-nums">
+								<td className="py-3.5 px-3 text-right font-bold tabular-nums text-[14px]">
 									{formatVietnameseNumber(villageTotals.totalMale)}
 								</td>
-								<td className="py-3.5 px-3 text-right font-bold tabular-nums">
+								<td className="py-3.5 px-3 text-right font-bold tabular-nums text-[14px]">
 									{formatVietnameseNumber(villageTotals.totalFemale)}
 								</td>
-								<td className="py-3.5 px-3 text-right font-bold tabular-nums">
+								<td className="py-3.5 px-3 text-right font-bold tabular-nums text-[14px]">
 									{formatVietnameseNumber(villageTotals.totalDtts)}
 								</td>
-								<td className="py-3.5 px-3 text-right font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+								<td className="py-3.5 px-3 text-right font-bold tabular-nums text-[14px] text-emerald-600 dark:text-emerald-400">
 									{formatVietnameseNumber(villageTotals.dttsPct)}%
 								</td>
 							</tr>

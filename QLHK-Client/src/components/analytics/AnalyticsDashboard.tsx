@@ -659,11 +659,11 @@ export const AnalyticsDashboard: React.FC = () => {
 
 	return (
 		<div
-			className="space-y-4 sm:space-y-5 animate-in fade-in"
+			className="space-y-3.5 sm:space-y-4 animate-in fade-in"
 			style={{ "--stat-accent": DEFAULT_STAT_ACCENT } as React.CSSProperties}
 		>
 			{/* Top Banner & Scope */}
-			<div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-colors duration-150">
+			<div className="bg-white dark:bg-slate-900 px-4 py-3 sm:py-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-colors duration-150">
 				<div>
 					<div className="flex items-center gap-2.5 flex-wrap">
 						<span className={VILLAGE_BADGE_CLASS}>
@@ -740,7 +740,7 @@ export const AnalyticsDashboard: React.FC = () => {
 			/>
 
 			{/* Lưới 4 Card Chính 2x2 Cố Định lg:h-[276px] */}
-			<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+			<div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
 				{/* Card 1: Dân tộc */}
 				<DistributionCard
 					icon={<PieChart className="size-4" />}
@@ -748,7 +748,7 @@ export const AnalyticsDashboard: React.FC = () => {
 					badge={`${ETHNIC_GROUPS.length} dân tộc`}
 					segments={ethnicSegments}
 					centerValue={`${formatVietnameseNumber(stats.minorityPct)}%`}
-					centerLabel="DTTS"
+					centerLabel="Dân tộc thiểu số"
 				/>
 
 				{/* Card 2: Tôn giáo */}
@@ -767,7 +767,7 @@ export const AnalyticsDashboard: React.FC = () => {
 								)}%`
 							: "0%"
 					}
-					centerLabel="Có đạo"
+					centerLabel="Người có tôn giáo"
 				/>
 
 				{/* Card 3: Tháp tuổi */}
@@ -777,7 +777,7 @@ export const AnalyticsDashboard: React.FC = () => {
 					badge="4 nhóm tuổi"
 					segments={ageSegments}
 					centerValue={`${formatVietnameseNumber(stats.ageStats.workingAge.percentage)}%`}
-					centerLabel="Lao động"
+					centerLabel="Trong độ tuổi lao động"
 					digits={1}
 				/>
 

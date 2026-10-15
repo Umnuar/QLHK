@@ -25,14 +25,14 @@
   - Diff Budget: <= 200 LOC
   - Verification: `npx tsc --noEmit` Client (0 error), `npm test` Client (155/155 PASS)
 
-- [/] Step 3: Polish Single-Viewport Layout in `AnalyticsDashboard.tsx`
+- [x] Step 3: Polish Single-Viewport Layout in `AnalyticsDashboard.tsx`
   - Target Files: `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`
   - Assigned Role: `.agents/frontend-developer.md`, `.agents/ui-ux-designer.md`
   - Key Specs: 1080p single viewport (~700px total height, zero page scroll), full center labels, preserve Excel export & offline cache.
   - Diff Budget: <= 180 LOC
   - Verification: `AnalyticsDashboard.test.tsx` (7/7 PASS), `npm test` Client (155/155 PASS)
 
-- [ ] Step 4: Final Quality Gates & Full Verification
+- [/] Step 4: Final Quality Gates & Full Verification
   - Verification: `npm test` Client (155/155 PASS), `npx tsc --noEmit` Client (0 error), `npm test` Backend (115/115 PASS), Docker container health check (HTTP 200 OK)
 
 ## Project Gotchas & Learned Invariants

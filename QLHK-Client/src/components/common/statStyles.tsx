@@ -500,3 +500,6 @@ export const TooltipContent: React.FC<{
 export { DonutChart } from "../analytics/DonutChart";
 export { MicroBar } from "../analytics/MicroBar";
 export { CardShell } from "../analytics/CardShell";
+export { DistributionCard } from "../analytics/DistributionCard";
+export { WelfareCard } from "../analytics/WelfareCard";
+export { KpiRow } from "../analytics/KpiRow";

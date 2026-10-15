@@ -17,11 +17,11 @@
   - Diff Budget: <= 200 LOC
   - Verification: `npx tsc --noEmit` Client (0 error, 155/155 tests PASS)
 
-- [ ] Step 2: Porting Composite Cards from v0 (`DistributionCard`, `WelfareCard`, `KpiRow`)
+- [x] Step 2: Porting Composite Cards from v0 (`DistributionCard`, `WelfareCard`, `KpiRow`)
   - Target Files: `QLHK-Client/src/components/analytics/DistributionCard.tsx`, `QLHK-Client/src/components/analytics/WelfareCard.tsx`, `QLHK-Client/src/components/analytics/KpiRow.tsx`
   - Assigned Role: `c:/Users/umnuar/Documents/Projects/.agents/frontend-developer.md`
   - Diff Budget: <= 200 LOC
-  - Verification: `npx tsc --noEmit` Client (0 error)
+  - Verification: `npx tsc --noEmit` Client (0 error), `npm test` Client (155/155 tests PASS)
 
 - [ ] Step 3: Integrating Single-Viewport Dashboard in `AnalyticsDashboard.tsx`
   - Target Files: `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`

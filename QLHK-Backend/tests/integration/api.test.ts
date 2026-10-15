@@ -743,7 +743,7 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(head.cccd_last4).toBe('1122');
       headCitizenId = head.id;
 
-      // Kiểm tra trong CSDL SQLite: CCCD phải được mã hóa AES-256-GCM và có hash, last4
+      // Kiểm tra trong CSDL PostgreSQL: CCCD phải được mã hóa AES-256-GCM và có hash, last4
       const citizensInDb = await prisma.citizens.findMany({
         where: { household_id: testHouseholdId, is_deleted: false },
       });

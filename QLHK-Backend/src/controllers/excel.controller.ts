@@ -112,7 +112,7 @@ export const importExcel = async (
 			return;
 		}
 
-		// Thực thi theo từng batch 100 hộ để tối ưu hoá SQLite I/O và tránh khóa DB quá lâu
+		// Thực thi theo từng batch 100 hộ để tối ưu hoá PostgreSQL I/O transaction và tránh khóa bảng quá lâu
 		const CHUNK_SIZE = 100;
 		let insertedHouseholds = 0;
 		let insertedCitizens = 0;

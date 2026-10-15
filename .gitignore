@@ -42,7 +42,6 @@ opencode.json
 AGENTS.md
 CLAUDE.md
 GEMINI.md
-SECURITY.md
 *tasks*.md
 *plan*.md
 *MIGRATION_PLAN*.md
@@ -53,13 +52,8 @@ test*.xlsx
 *.xlsx
 *.xls
 *.csv
-qlhk_document.md
-docs/
 QLHK-Backend/README.md
 QLHK-Client/README.md
-QLHK-Backend/Dockerfile*
-QLHK-Backend/.dockerignore
-QLHK-Backend/docker-entrypoint.sh
 
 # OS Junk
 Thumbs.db

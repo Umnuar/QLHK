@@ -298,7 +298,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				)}
 
 				{/* Form */}
-				<form onSubmit={handleSubmit} noValidate className="space-y-3.5">
+				<form onSubmit={handleSubmit} noValidate autoComplete="off" className="space-y-3.5">
 					{/* Hàng 1: Họ và Tên * */}
 					<div>
 						<label htmlFor="citizen-full-name" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -309,6 +309,8 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 							type="text"
 							required
 							autoFocus
+							autoComplete="off"
+							spellCheck={false}
 							value={fullName}
 							onChange={(e) => setFullName(e.target.value)}
 							placeholder="Ví dụ: A Đôi, Y Bluih, Nguyễn Văn A..."
@@ -327,6 +329,8 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 								list="citizen-relationships-list"
 								type="text"
 								required
+								autoComplete="off"
+								spellCheck={false}
 								value={relationship}
 								onChange={(e) => handleRelationshipChange(e.target.value)}
 								placeholder="Nhập hoặc chọn gợi ý..."
@@ -360,6 +364,8 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 								id="citizen-dob"
 								type="text"
 								required
+								autoComplete="off"
+								spellCheck={false}
 								value={dob}
 								onChange={(e) => setDob(e.target.value)}
 								placeholder="Ví dụ: 13/12/1987"
@@ -405,6 +411,8 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 								id="citizen-cccd"
 								type="text"
 								maxLength={12}
+								autoComplete="off"
+								spellCheck={false}
 								value={cccd}
 								onChange={(e) => setCccd(e.target.value.replace(/\D/g, ""))}
 								placeholder="12 chữ số (để trống nếu chưa có)"
@@ -444,6 +452,8 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 						<input
 							id="citizen-military-status"
 							type="text"
+							autoComplete="off"
+							spellCheck={false}
 							value={militaryStatus}
 							onChange={(e) => setMilitaryStatus(e.target.value)}
 							placeholder="VD: Đủ điều kiện gọi nhập ngũ, Bộ đội xuất ngũ năm 2024, Du kích thôn..."
@@ -460,6 +470,8 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 							<input
 								id="citizen-education"
 								type="text"
+								autoComplete="off"
+								spellCheck={false}
 								value={education}
 								onChange={(e) => setEducation(e.target.value)}
 								placeholder="VD: 12/12, Đại học, Cao đẳng, Biết chữ..."
@@ -474,6 +486,8 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 							<input
 								id="citizen-occupation"
 								type="text"
+								autoComplete="off"
+								spellCheck={false}
 								value={occupation}
 								onChange={(e) => setOccupation(e.target.value)}
 								placeholder="VD: Làm nông, Buôn bán, Công nhân..."
@@ -490,6 +504,8 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 						<input
 							id="citizen-native-place"
 							type="text"
+							autoComplete="off"
+							spellCheck={false}
 							value={nativePlace}
 							onChange={(e) => setNativePlace(e.target.value)}
 							placeholder="VD: Xã Đăk Hà, Huyện Tu Mơ Rông, Kon Tum..."
@@ -505,6 +521,8 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 						<input
 							id="citizen-notes"
 							type="text"
+							autoComplete="off"
+							spellCheck={false}
 							value={notes}
 							onChange={(e) => setNotes(e.target.value)}
 							placeholder="Tiền sử, nơi cư trú trước đây, thông tin bổ sung..."

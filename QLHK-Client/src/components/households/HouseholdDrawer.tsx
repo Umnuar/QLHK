@@ -442,6 +442,7 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 					<form
 						id="household-drawer-form"
 						onSubmit={handleSubmit}
+						autoComplete="off"
 						className="flex-1 overflow-y-auto p-6 space-y-6"
 					>
 						{/* KHỐI 1: Thông tin Chung Hộ Gia Đình */}
@@ -501,6 +502,8 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 										value={address}
 										onChange={(e) => setAddress(e.target.value)}
 										placeholder="Thôn 1, Xã Đăk Hà..."
+										autoComplete="off"
+										spellCheck={false}
 										className={inputClasses}
 									/>
 								</div>
@@ -515,6 +518,8 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 										value={notes}
 										onChange={(e) => setNotes(e.target.value)}
 										placeholder="Hoàn cảnh gia đình, ghi chú bổ sung..."
+										autoComplete="off"
+										spellCheck={false}
 										className={inputClasses}
 									/>
 								</div>

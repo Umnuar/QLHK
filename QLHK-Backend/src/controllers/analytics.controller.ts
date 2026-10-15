@@ -55,6 +55,10 @@ export const getOverview = async (
 			genderGroups,
 			ethnicityGroups,
 			religionGroups,
+			militaryGroups,
+			educationGroups,
+			occupationGroups,
+			dobList,
 		] = await Promise.all([
 			prisma.households.count({ where: householdWhere }),
 			prisma.citizens.count({ where: citizenWhere }),
@@ -72,6 +76,25 @@ export const getOverview = async (
 				by: ["religion"],
 				where: citizenWhere,
 				_count: { _all: true },
+			}),
+			prisma.citizens.groupBy({
+				by: ["military_status"],
+				where: citizenWhere,
+				_count: { _all: true },
+			}),
+			prisma.citizens.groupBy({
+				by: ["education"],
+				where: citizenWhere,
+				_count: { _all: true },
+			}),
+			prisma.citizens.groupBy({
+				by: ["occupation"],
+				where: citizenWhere,
+				_count: { _all: true },
+			}),
+			prisma.citizens.findMany({
+				where: citizenWhere,
+				select: { dob: true },
 			}),
 		]);
 
@@ -142,6 +165,97 @@ export const getOverview = async (
 			}))
 			.sort((a, b) => b.count - a.count);
 
+		// 4. Thống kê theo Dải tuổi (Tháp tuổi)
+		const currentYear = new Date().getFullYear();
+		let under16Count = 0;
+		let militaryAgeCount = 0; // 18-27
+		let workingAgeCount = 0; // 18-60
+		let over60Count = 0;
+
+		dobList.forEach((c) => {
+			if (!c.dob) return;
+			const trimmed = c.dob.trim();
+			const match = trimmed.match(/(\d{4})$/);
+			if (match) {
+				const birthYear = parseInt(match[1], 10);
+				const age = currentYear - birthYear;
+				if (age < 16) under16Count++;
+				if (age >= 18 && age <= 27) militaryAgeCount++;
+				if (age >= 18 && age <= 60) workingAgeCount++;
+				if (age > 60) over60Count++;
+			}
+		});
+
+		const ageStats = {
+			under16: {
+				count: under16Count,
+				percentage:
+					totalCitizens > 0
+						? Number(((under16Count / totalCitizens) * 100).toFixed(1))
+						: 0,
+			},
+			militaryAge: {
+				count: militaryAgeCount,
+				percentage:
+					totalCitizens > 0
+						? Number(((militaryAgeCount / totalCitizens) * 100).toFixed(1))
+						: 0,
+			},
+			workingAge: {
+				count: workingAgeCount,
+				percentage:
+					totalCitizens > 0
+						? Number(((workingAgeCount / totalCitizens) * 100).toFixed(1))
+						: 0,
+			},
+			over60: {
+				count: over60Count,
+				percentage:
+					totalCitizens > 0
+						? Number(((over60Count / totalCitizens) * 100).toFixed(1))
+						: 0,
+			},
+		};
+
+		// 5. Thống kê Tình hình NVQS
+		const militaryDistribution = militaryGroups
+			.filter((g) => g.military_status && g.military_status.trim())
+			.map((g) => ({
+				name: g.military_status!.trim(),
+				count: g._count._all,
+				percentage:
+					totalCitizens > 0
+						? Number(((g._count._all / totalCitizens) * 100).toFixed(1))
+						: 0,
+			}))
+			.sort((a, b) => b.count - a.count);
+
+		// 6. Thống kê Trình độ học vấn
+		const educationDistribution = educationGroups
+			.filter((g) => g.education && g.education.trim())
+			.map((g) => ({
+				name: g.education!.trim(),
+				count: g._count._all,
+				percentage:
+					totalCitizens > 0
+						? Number(((g._count._all / totalCitizens) * 100).toFixed(1))
+						: 0,
+			}))
+			.sort((a, b) => b.count - a.count);
+
+		// 7. Thống kê Cơ cấu Nghề nghiệp
+		const occupationDistribution = occupationGroups
+			.filter((g) => g.occupation && g.occupation.trim())
+			.map((g) => ({
+				name: g.occupation!.trim(),
+				count: g._count._all,
+				percentage:
+					totalCitizens > 0
+						? Number(((g._count._all / totalCitizens) * 100).toFixed(1))
+						: 0,
+			}))
+			.sort((a, b) => b.count - a.count);
+
 		res.json({
 			success: true,
 			data: {
@@ -154,6 +268,10 @@ export const getOverview = async (
 				gender: genderStats,
 				ethnicities: ethnicityDistribution,
 				religions: religionDistribution,
+				ageGroups: ageStats,
+				military: militaryDistribution,
+				educations: educationDistribution,
+				occupations: occupationDistribution,
 			},
 		});
 	} catch (error) {

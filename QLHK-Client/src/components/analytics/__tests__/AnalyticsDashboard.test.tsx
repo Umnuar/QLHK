@@ -59,6 +59,18 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 			{ name: "Tin lành", count: 70, percentage: 11.7 },
 			{ name: "Phật giáo", count: 30, percentage: 5.0 },
 		],
+		military: [
+			{ name: "Đủ điều kiện", count: 85, percentage: 14.2 },
+			{ name: "Xuất ngũ", count: 40, percentage: 6.7 },
+		],
+		educations: [
+			{ name: "12/12", count: 210, percentage: 35.0 },
+			{ name: "Đại học", count: 65, percentage: 10.8 },
+		],
+		occupations: [
+			{ name: "Làm nông", count: 320, percentage: 53.3 },
+			{ name: "Công nhân", count: 85, percentage: 14.2 },
+		],
 	};
 
 	const fakeVillageBreakdown = [
@@ -202,5 +214,32 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 		expect(screen.getByText("Thôn 2")).toBeInTheDocument();
 		expect(screen.getByText("Số Hộ")).toBeInTheDocument();
 		expect(screen.getByText("Đồng Bào DTTS")).toBeInTheDocument();
+	});
+
+	it("7. Hiển thị 3 cụm thống kê mới: Tháp tuổi, Tình hình NVQS, Học vấn & Nghề nghiệp", async () => {
+		render(<AnalyticsDashboard />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Tháp Tuổi & Cơ Cấu Thế Hệ")).toBeInTheDocument();
+			expect(screen.getByText("Tình Hình Nghĩa Vụ Quân Sự")).toBeInTheDocument();
+			expect(screen.getByText("Trình Độ Học Vấn")).toBeInTheDocument();
+			expect(screen.getByText("Cơ Cấu Nghề Nghiệp")).toBeInTheDocument();
+		});
+
+		// Tháp tuổi
+		expect(screen.getByText("Thiếu nhi (< 16 tuổi)")).toBeInTheDocument();
+		expect(screen.getByText("Độ tuổi NVQS (18 - 27 tuổi)")).toBeInTheDocument();
+		expect(screen.getByText("Độ tuổi lao động (18 - 60 tuổi)")).toBeInTheDocument();
+		expect(screen.getByText("Người cao tuổi (> 60 tuổi)")).toBeInTheDocument();
+
+		// NVQS
+		expect(screen.getAllByText("Đủ điều kiện").length).toBeGreaterThan(0);
+		expect(screen.getAllByText("Xuất ngũ").length).toBeGreaterThan(0);
+
+		// Học vấn & Nghề nghiệp
+		expect(screen.getByText("12/12")).toBeInTheDocument();
+		expect(screen.getByText("Đại học")).toBeInTheDocument();
+		expect(screen.getByText("Làm nông")).toBeInTheDocument();
+		expect(screen.getByText("Công nhân")).toBeInTheDocument();
 	});
 });

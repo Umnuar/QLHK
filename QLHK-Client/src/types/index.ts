@@ -1,22 +1,6 @@
 export type Gender = "Nam" | "Nữ";
 
-export type RelationshipType =
-	| "Chủ hộ"
-	| "Thành viên"
-	| "Vợ"
-	| "Chồng"
-	| "Con đẻ"
-	| "Con dâu"
-	| "Con rể"
-	| "Cháu"
-	| "Bố"
-	| "Mẹ"
-	| "Ông"
-	| "Bà"
-	| "Anh"
-	| "Chị"
-	| "Em"
-	| "Khác";
+export type RelationshipType = string;
 
 export interface Person {
 	id: string;
@@ -40,7 +24,10 @@ export interface Person {
 	ethnicity: string; // 1 trong 14 dân tộc
 	is_minority: boolean; // Dân tộc thiểu số (khác Kinh)
 	religion: string; // Công giáo, Tin lành, Phật giáo, Không...
+	education?: string; // Trình độ học vấn
+	military_status?: string; // Tình hình thực hiện NVQS
 	occupation?: string; // Nghề nghiệp
+	native_place?: string; // Quê quán
 	address?: string;
 	phone?: string;
 	notes?: string;

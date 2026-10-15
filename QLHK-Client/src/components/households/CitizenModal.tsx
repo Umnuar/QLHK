@@ -57,6 +57,10 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 	const [cccd, setCccd] = useState("");
 	const [ethnicity, setEthnicity] = useState("Kinh");
 	const [religion, setReligion] = useState("Không");
+	const [militaryStatus, setMilitaryStatus] = useState("");
+	const [education, setEducation] = useState("");
+	const [occupation, setOccupation] = useState("");
+	const [nativePlace, setNativePlace] = useState("");
 	const [notes, setNotes] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [isRevealingCccd, setIsRevealingCccd] = useState(false);
@@ -102,7 +106,11 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				setDob(initialMember.dob || "");
 				setEthnicity(initialMember.ethnicity || "Kinh");
 				setReligion(initialMember.religion || "Không");
-				setNotes(initialMember.notes || initialMember.occupation || "");
+				setMilitaryStatus(initialMember.military_status || "");
+				setEducation(initialMember.education || "");
+				setOccupation(initialMember.occupation || "");
+				setNativePlace(initialMember.native_place || "");
+				setNotes(initialMember.notes || "");
 			} else {
 				setFullName("");
 				setRelationship("Con đẻ");
@@ -112,6 +120,10 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				setCccd("");
 				setEthnicity("Kinh");
 				setReligion("Không");
+				setMilitaryStatus("");
+				setEducation("");
+				setOccupation("");
+				setNativePlace("");
 				setNotes("");
 			}
 			setError(null);
@@ -221,7 +233,10 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 			ethnicity,
 			is_minority: isMinority,
 			religion,
-			occupation: notes.trim(),
+			education: education.trim() || undefined,
+			military_status: militaryStatus.trim() || undefined,
+			occupation: occupation.trim() || undefined,
+			native_place: nativePlace.trim() || undefined,
 			notes: notes.trim(),
 		};
 
@@ -242,7 +257,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 			aria-modal="true"
 			aria-labelledby="citizen-modal-title"
 		>
-			<div ref={modalRef} className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150">
+			<div ref={modalRef} className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto">
 				{/* Header */}
 				<div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
 					<div className="flex items-center gap-2.5">
@@ -304,14 +319,24 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 					{/* Hàng 2: Quan hệ với chủ hộ & Giới tính */}
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 						<div>
-							<CustomSelect
-								value={relationship}
-								onChange={(val) => handleRelationshipChange(String(val))}
-								options={[...CITIZEN_RELATIONSHIPS]}
-								searchable
-								label="Quan hệ với chủ hộ"
+							<label htmlFor="citizen-relationship" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+								Quan hệ với chủ hộ <span className="text-rose-500">*</span>
+							</label>
+							<input
+								id="citizen-relationship"
+								list="citizen-relationships-list"
+								type="text"
 								required
+								value={relationship}
+								onChange={(e) => handleRelationshipChange(e.target.value)}
+								placeholder="Nhập hoặc chọn gợi ý..."
+								className={inputClasses}
 							/>
+							<datalist id="citizen-relationships-list">
+								{CITIZEN_RELATIONSHIPS.map((rel) => (
+									<option key={rel} value={rel} />
+								))}
+							</datalist>
 						</div>
 
 						<div>
@@ -411,7 +436,68 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 						</div>
 					</div>
 
-					{/* Hàng 5: Ghi chú nhân khẩu */}
+					{/* Hàng 5: Tình hình thực hiện nghĩa vụ quân sự */}
+					<div>
+						<label htmlFor="citizen-military-status" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+							Tình hình thực hiện nghĩa vụ quân sự
+						</label>
+						<input
+							id="citizen-military-status"
+							type="text"
+							value={militaryStatus}
+							onChange={(e) => setMilitaryStatus(e.target.value)}
+							placeholder="VD: Đủ điều kiện gọi nhập ngũ, Bộ đội xuất ngũ năm 2024, Du kích thôn..."
+							className={inputClasses}
+						/>
+					</div>
+
+					{/* Hàng 6: Trình độ học vấn & Nghề nghiệp */}
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+						<div>
+							<label htmlFor="citizen-education" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+								Trình độ học vấn
+							</label>
+							<input
+								id="citizen-education"
+								type="text"
+								value={education}
+								onChange={(e) => setEducation(e.target.value)}
+								placeholder="VD: 12/12, Đại học, Cao đẳng, Biết chữ..."
+								className={inputClasses}
+							/>
+						</div>
+
+						<div>
+							<label htmlFor="citizen-occupation" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+								Nghề nghiệp
+							</label>
+							<input
+								id="citizen-occupation"
+								type="text"
+								value={occupation}
+								onChange={(e) => setOccupation(e.target.value)}
+								placeholder="VD: Làm nông, Buôn bán, Công nhân..."
+								className={inputClasses}
+							/>
+						</div>
+					</div>
+
+					{/* Hàng 7: Quê quán */}
+					<div>
+						<label htmlFor="citizen-native-place" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+							Quê quán
+						</label>
+						<input
+							id="citizen-native-place"
+							type="text"
+							value={nativePlace}
+							onChange={(e) => setNativePlace(e.target.value)}
+							placeholder="VD: Xã Đăk Hà, Huyện Tu Mơ Rông, Kon Tum..."
+							className={inputClasses}
+						/>
+					</div>
+
+					{/* Hàng 8: Ghi chú nhân khẩu */}
 					<div>
 						<label htmlFor="citizen-notes" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
 							Ghi chú nhân khẩu / Nghề nghiệp
@@ -421,7 +507,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 							type="text"
 							value={notes}
 							onChange={(e) => setNotes(e.target.value)}
-							placeholder="Nghề nghiệp, tiền sử, nơi làm việc..."
+							placeholder="Tiền sử, nơi cư trú trước đây, thông tin bổ sung..."
 							className={inputClasses}
 						/>
 					</div>

@@ -276,4 +276,43 @@ describe("CitizenModal Component", () => {
 		);
 		expect(screen.queryByText("Thêm Nhân Khẩu Mới")).toBeNull();
 	});
+
+	it("8. Cho phép nhập quan hệ tự do và lưu các trường NVQS, Trình độ, Nghề nghiệp, Quê quán", () => {
+		render(
+			<CitizenModal
+				isOpen={true}
+				initialMember={null}
+				onClose={mockOnClose}
+				onSave={mockOnSave}
+			/>,
+		);
+
+		const nameInput = screen.getByLabelText(/Họ và Tên/i);
+		const relInput = screen.getByLabelText(/Quan hệ với chủ hộ/i);
+		const dobInput = screen.getByLabelText(/Ngày sinh/i);
+		const milInput = screen.getByLabelText(/Tình hình thực hiện nghĩa vụ quân sự/i);
+		const eduInput = screen.getByLabelText(/Trình độ học vấn/i);
+		const occInput = screen.getByLabelText(/^Nghề nghiệp/i);
+		const placeInput = screen.getByLabelText(/Quê quán/i);
+		const submitBtn = screen.getByRole("button", { name: /Lưu nhân khẩu/i });
+
+		fireEvent.change(nameInput, { target: { value: "Nguyễn Văn B" } });
+		fireEvent.change(relInput, { target: { value: "Cha ruột" } });
+		fireEvent.change(dobInput, { target: { value: "1965" } });
+		fireEvent.change(milInput, { target: { value: "Bộ đội xuất ngũ" } });
+		fireEvent.change(eduInput, { target: { value: "12/12" } });
+		fireEvent.change(occInput, { target: { value: "Làm rẫy" } });
+		fireEvent.change(placeInput, { target: { value: "Xã Đăk Hà" } });
+
+		fireEvent.click(submitBtn);
+
+		expect(mockOnSave).toHaveBeenCalledTimes(1);
+		const saved = mockOnSave.mock.calls[0][0];
+		expect(saved.relationship).toBe("Cha ruột");
+		expect(saved.military_status).toBe("Bộ đội xuất ngũ");
+		expect(saved.education).toBe("12/12");
+		expect(saved.occupation).toBe("Làm rẫy");
+		expect(saved.native_place).toBe("Xã Đăk Hà");
+		expect(mockOnClose).toHaveBeenCalledTimes(1);
+	});
 });

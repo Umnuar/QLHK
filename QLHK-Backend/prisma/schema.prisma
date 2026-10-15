@@ -79,6 +79,10 @@ model citizens {
   cccd_last4      String?    @db.VarChar(4) // Last 4 digits for quick display
   ethnicity       String?    @db.VarChar(50)
   religion        String?    @db.VarChar(50)
+  education       String?    @db.VarChar(100) // Trình độ học vấn
+  military_status String?    @db.VarChar(255) // Tình hình thực hiện NVQS
+  occupation      String?    @db.VarChar(100) // Nghề nghiệp
+  native_place    String?    @db.VarChar(255) // Quê quán
   notes           String?
   version         Int        @default(1)
   is_deleted      Boolean    @default(false)

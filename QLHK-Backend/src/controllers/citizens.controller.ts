@@ -118,6 +118,10 @@ export const getCitizens = async (
 			has_cccd: !!c.cccd,
 			ethnicity: c.ethnicity,
 			religion: c.religion,
+			education: c.education,
+			military_status: c.military_status,
+			occupation: c.occupation,
+			native_place: c.native_place,
 			notes: c.notes,
 			version: c.version,
 			created_at: c.created_at,
@@ -260,6 +264,10 @@ export const createCitizen = async (
 			cccd,
 			ethnicity,
 			religion,
+			education,
+			military_status,
+			occupation,
+			native_place,
 			notes,
 		} = req.body;
 
@@ -341,6 +349,10 @@ export const createCitizen = async (
 					cccd_last4: cccdLast4,
 					ethnicity: ethnicity?.trim() || "Kinh",
 					religion: religion?.trim() || "Không",
+					education: education?.trim() || null,
+					military_status: military_status?.trim() || null,
+					occupation: occupation?.trim() || null,
+					native_place: native_place?.trim() || null,
 					notes: notes?.trim() || null,
 					version: 1,
 					is_deleted: false,
@@ -388,6 +400,10 @@ export const updateCitizen = async (
 			cccd,
 			ethnicity,
 			religion,
+			education,
+			military_status,
+			occupation,
+			native_place,
 			notes,
 			version,
 		} = req.body;
@@ -449,6 +465,10 @@ export const updateCitizen = async (
 		if (gender !== undefined) updateData.gender = gender;
 		if (ethnicity !== undefined) updateData.ethnicity = ethnicity.trim();
 		if (religion !== undefined) updateData.religion = religion.trim();
+		if (education !== undefined) updateData.education = education ? education.trim() : null;
+		if (military_status !== undefined) updateData.military_status = military_status ? military_status.trim() : null;
+		if (occupation !== undefined) updateData.occupation = occupation ? occupation.trim() : null;
+		if (native_place !== undefined) updateData.native_place = native_place ? native_place.trim() : null;
 		if (notes !== undefined) updateData.notes = notes ? notes.trim() : null;
 
 		if (cccd !== undefined) {

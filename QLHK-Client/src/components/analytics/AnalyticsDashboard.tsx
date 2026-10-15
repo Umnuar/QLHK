@@ -1,12 +1,15 @@
 import {
 	ArrowLeft,
 	BarChart3,
+	Briefcase,
 	Building2,
 	Download,
+	GraduationCap,
 	HeartHandshake,
 	PieChart,
 	RefreshCw,
 	Shield,
+	UserCheck,
 	Users,
 	Users2,
 } from "lucide-react";
@@ -72,8 +75,17 @@ export const AnalyticsDashboard: React.FC = () => {
 		let femaleCount = 0;
 		let minorityCount = 0;
 
+		let under16Count = 0;
+		let militaryAgeCount = 0;
+		let workingAgeCount = 0;
+		let over60Count = 0;
+		const currentYear = new Date().getFullYear();
+
 		const ethnicMap: Record<string, number> = {};
 		const religionMap: Record<string, number> = {};
+		const militaryMap: Record<string, number> = {};
+		const educationMap: Record<string, number> = {};
+		const occupationMap: Record<string, number> = {};
 
 		filtered.forEach((h) => {
 			(h.members || []).forEach((m) => {
@@ -87,6 +99,34 @@ export const AnalyticsDashboard: React.FC = () => {
 
 				const rel = m.religion || "Không";
 				religionMap[rel] = (religionMap[rel] || 0) + 1;
+
+				if (m.military_status?.trim()) {
+					const mil = m.military_status.trim();
+					militaryMap[mil] = (militaryMap[mil] || 0) + 1;
+				}
+
+				if (m.education?.trim()) {
+					const edu = m.education.trim();
+					educationMap[edu] = (educationMap[edu] || 0) + 1;
+				}
+
+				if (m.occupation?.trim()) {
+					const occ = m.occupation.trim();
+					occupationMap[occ] = (occupationMap[occ] || 0) + 1;
+				}
+
+				const dobVal = m.dob_formatted || m.dob_raw || m.dob || "";
+				const match = dobVal.match(/(\d{4})$/);
+				let age = m.age;
+				if (match) {
+					age = currentYear - parseInt(match[1], 10);
+				}
+				if (typeof age === "number" && !isNaN(age)) {
+					if (age < 16) under16Count++;
+					if (age >= 18 && age <= 27) militaryAgeCount++;
+					if (age >= 18 && age <= 60) workingAgeCount++;
+					if (age > 60) over60Count++;
+				}
 			});
 		});
 
@@ -100,6 +140,70 @@ export const AnalyticsDashboard: React.FC = () => {
 			totalMembers > 0
 				? Math.round((minorityCount / totalMembers) * 1000) / 10
 				: 0;
+
+		const ageStats = {
+			under16: {
+				count: under16Count,
+				percentage:
+					totalMembers > 0
+						? Math.round((under16Count / totalMembers) * 1000) / 10
+						: 0,
+			},
+			militaryAge: {
+				count: militaryAgeCount,
+				percentage:
+					totalMembers > 0
+						? Math.round((militaryAgeCount / totalMembers) * 1000) / 10
+						: 0,
+			},
+			workingAge: {
+				count: workingAgeCount,
+				percentage:
+					totalMembers > 0
+						? Math.round((workingAgeCount / totalMembers) * 1000) / 10
+						: 0,
+			},
+			over60: {
+				count: over60Count,
+				percentage:
+					totalMembers > 0
+						? Math.round((over60Count / totalMembers) * 1000) / 10
+						: 0,
+			},
+		};
+
+		const militaryList = Object.entries(militaryMap)
+			.map(([name, count]) => ({
+				name,
+				count,
+				percentage:
+					totalMembers > 0
+						? Math.round((count / totalMembers) * 1000) / 10
+						: 0,
+			}))
+			.sort((a, b) => b.count - a.count);
+
+		const educationList = Object.entries(educationMap)
+			.map(([name, count]) => ({
+				name,
+				count,
+				percentage:
+					totalMembers > 0
+						? Math.round((count / totalMembers) * 1000) / 10
+						: 0,
+			}))
+			.sort((a, b) => b.count - a.count);
+
+		const occupationList = Object.entries(occupationMap)
+			.map(([name, count]) => ({
+				name,
+				count,
+				percentage:
+					totalMembers > 0
+						? Math.round((count / totalMembers) * 1000) / 10
+						: 0,
+			}))
+			.sort((a, b) => b.count - a.count);
 
 		const villageBreakdown = villages.map((v) => {
 			const hhList = activeHouseholds.filter((h) => h.village_id === v.id);
@@ -147,6 +251,10 @@ export const AnalyticsDashboard: React.FC = () => {
 				minorityPct,
 				ethnicMap,
 				religionMap,
+				ageStats,
+				militaryList,
+				educationList,
+				occupationList,
 			},
 			villageBreakdown,
 		};
@@ -243,6 +351,40 @@ export const AnalyticsDashboard: React.FC = () => {
 					? Math.round((minorityCount / totalMembers) * 1000) / 10
 					: 0;
 
+			// Age stats (hỗ trợ cả schema mới và schema cũ)
+			const ageStats = {
+				under16:
+					apiOverview.ageGroups?.under16 ||
+					(apiOverview.ageGroups as any)?.under6 ||
+					localCalculated.stats.ageStats.under16,
+				militaryAge:
+					apiOverview.ageGroups?.militaryAge ||
+					(apiOverview.ageGroups as any)?.from6to17 ||
+					localCalculated.stats.ageStats.militaryAge,
+				workingAge:
+					apiOverview.ageGroups?.workingAge ||
+					(apiOverview.ageGroups as any)?.from18to60 ||
+					localCalculated.stats.ageStats.workingAge,
+				over60:
+					apiOverview.ageGroups?.over60 ||
+					localCalculated.stats.ageStats.over60,
+			};
+
+			const militaryList =
+				apiOverview.military && apiOverview.military.length > 0
+					? apiOverview.military
+					: localCalculated.stats.militaryList;
+
+			const educationList =
+				apiOverview.educations && apiOverview.educations.length > 0
+					? apiOverview.educations
+					: localCalculated.stats.educationList;
+
+			const occupationList =
+				apiOverview.occupations && apiOverview.occupations.length > 0
+					? apiOverview.occupations
+					: localCalculated.stats.occupationList;
+
 			return {
 				totalHouseholds,
 				totalMembers,
@@ -254,6 +396,10 @@ export const AnalyticsDashboard: React.FC = () => {
 				minorityPct,
 				ethnicMap,
 				religionMap,
+				ageStats,
+				militaryList,
+				educationList,
+				occupationList,
 			};
 		}
 		return localCalculated.stats;
@@ -644,6 +790,229 @@ export const AnalyticsDashboard: React.FC = () => {
 								/>
 							))}
 						</div>
+					</div>
+				</StatChartPanel>
+			</div>
+
+			{/* Hàng 3: Tháp Tuổi & Tình Hình Nghĩa Vụ Quân Sự */}
+			<div className={STAT_PANEL_GRID_CLASS}>
+				{/* Tháp Tuổi & Cơ Cấu Thế Hệ */}
+				<StatChartPanel
+					title="Tháp Tuổi & Cơ Cấu Thế Hệ"
+					description="Phân bổ nhân khẩu theo 4 nhóm độ tuổi quan trọng trên địa bàn"
+					icon={Users}
+					badge={
+						<span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+							4 nhóm tuổi
+						</span>
+					}
+				>
+					<div className="space-y-4">
+						<StatDonut
+							items={[
+								{
+									label: "Thiếu nhi (<16 tuổi)",
+									value: stats.ageStats.under16.count,
+									color: STAT_CATEGORY_COLORS.cat1,
+									unit: "người",
+								},
+								{
+									label: "Độ tuổi NVQS (18-27 tuổi)",
+									value: stats.ageStats.militaryAge.count,
+									color: STAT_CATEGORY_COLORS.cat2,
+									unit: "người",
+								},
+								{
+									label: "Độ tuổi lao động (18-60 tuổi)",
+									value: stats.ageStats.workingAge.count,
+									color: STAT_CATEGORY_COLORS.cat3,
+									unit: "người",
+								},
+								{
+									label: "Người cao tuổi (>60 tuổi)",
+									value: stats.ageStats.over60.count,
+									color: STAT_CATEGORY_COLORS.cat4,
+									unit: "người",
+								},
+							]}
+							total={stats.totalMembers}
+							centerValue={`${formatVietnameseNumber(stats.ageStats.workingAge.percentage)}%`}
+							centerLabel="Lao động"
+						/>
+
+						<div className={STAT_SCROLL_CONTAINER_CLASS}>
+							<StatBarRow
+								label="Thiếu nhi (< 16 tuổi)"
+								value={stats.ageStats.under16.count}
+								total={stats.totalMembers}
+								barColor={STAT_CATEGORY_COLORS.cat1}
+								unit="người"
+							/>
+							<StatBarRow
+								label="Độ tuổi NVQS (18 - 27 tuổi)"
+								value={stats.ageStats.militaryAge.count}
+								total={stats.totalMembers}
+								barColor={STAT_CATEGORY_COLORS.cat2}
+								unit="người"
+							/>
+							<StatBarRow
+								label="Độ tuổi lao động (18 - 60 tuổi)"
+								value={stats.ageStats.workingAge.count}
+								total={stats.totalMembers}
+								barColor={STAT_CATEGORY_COLORS.cat3}
+								unit="người"
+							/>
+							<StatBarRow
+								label="Người cao tuổi (> 60 tuổi)"
+								value={stats.ageStats.over60.count}
+								total={stats.totalMembers}
+								barColor={STAT_CATEGORY_COLORS.cat4}
+								unit="người"
+							/>
+						</div>
+					</div>
+				</StatChartPanel>
+
+				{/* Tình Hình Nghĩa Vụ Quân Sự (NVQS) */}
+				<StatChartPanel
+					title="Tình Hình Nghĩa Vụ Quân Sự"
+					description="Phân loại tình trạng chấp hành và diện quản lý NVQS công dân"
+					icon={Shield}
+					badge={
+						<span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+							{stats.militaryList.length} trạng thái
+						</span>
+					}
+				>
+					<div className="space-y-4">
+						{stats.militaryList.length > 0 ? (
+							<>
+								<StatDonut
+									items={stats.militaryList.slice(0, 5).map((m, idx) => ({
+										label: m.name,
+										value: m.count,
+										color: [
+											STAT_CATEGORY_COLORS.cat1,
+											STAT_CATEGORY_COLORS.cat2,
+											STAT_CATEGORY_COLORS.cat3,
+											STAT_CATEGORY_COLORS.cat4,
+											STAT_CATEGORY_COLORS.cat5,
+										][idx % 5],
+										unit: "người",
+									}))}
+									total={stats.totalMembers}
+									centerValue={`${formatVietnameseNumber(stats.militaryList[0]?.percentage || 0)}%`}
+									centerLabel="Chủ yếu"
+								/>
+								<div className={STAT_SCROLL_CONTAINER_CLASS}>
+									{stats.militaryList.map((m, idx) => (
+										<StatBarRow
+											key={m.name}
+											label={m.name}
+											value={m.count}
+											total={stats.totalMembers}
+											barColor={
+												[
+													STAT_CATEGORY_COLORS.cat1,
+													STAT_CATEGORY_COLORS.cat2,
+													STAT_CATEGORY_COLORS.cat3,
+													STAT_CATEGORY_COLORS.cat4,
+													STAT_CATEGORY_COLORS.cat5,
+												][idx % 5]
+											}
+											unit="người"
+										/>
+									))}
+								</div>
+							</>
+						) : (
+							<div className="py-12 text-center text-xs text-slate-400">
+								Chưa có dữ liệu nghĩa vụ quân sự
+							</div>
+						)}
+					</div>
+				</StatChartPanel>
+			</div>
+
+			{/* Hàng 4: Trình Độ Học Vấn & Cơ Cấu Nghề Nghiệp */}
+			<div className={STAT_PANEL_GRID_CLASS}>
+				{/* Trình Độ Học Vấn */}
+				<StatChartPanel
+					title="Trình Độ Học Vấn"
+					description="Thống kê phân bổ trình độ học vấn của công dân"
+					icon={GraduationCap}
+					badge={
+						<span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+							{stats.educationList.length} trình độ
+						</span>
+					}
+				>
+					<div className="space-y-4">
+						{stats.educationList.length > 0 ? (
+							<div className={STAT_SCROLL_CONTAINER_CLASS}>
+								{stats.educationList.map((edu, idx) => (
+									<StatBarRow
+										key={edu.name}
+										label={edu.name}
+										value={edu.count}
+										total={stats.totalMembers}
+										barColor={
+											[
+												STAT_CATEGORY_COLORS.cat1,
+												STAT_CATEGORY_COLORS.cat2,
+												STAT_CATEGORY_COLORS.cat3,
+												STAT_CATEGORY_COLORS.cat4,
+											][idx % 4]
+										}
+										unit="người"
+									/>
+								))}
+							</div>
+						) : (
+							<div className="py-12 text-center text-xs text-slate-400">
+								Chưa có dữ liệu trình độ học vấn
+							</div>
+						)}
+					</div>
+				</StatChartPanel>
+
+				{/* Cơ Cấu Nghề Nghiệp */}
+				<StatChartPanel
+					title="Cơ Cấu Nghề Nghiệp"
+					description="Thống kê ngành nghề việc làm chủ yếu trong cộng đồng"
+					icon={Briefcase}
+					badge={
+						<span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+							{stats.occupationList.length} ngành nghề
+						</span>
+					}
+				>
+					<div className="space-y-4">
+						{stats.occupationList.length > 0 ? (
+							<div className={STAT_SCROLL_CONTAINER_CLASS}>
+								{stats.occupationList.map((occ, idx) => (
+									<StatBarRow
+										key={occ.name}
+										label={occ.name}
+										value={occ.count}
+										total={stats.totalMembers}
+										barColor={
+											[
+												STAT_CATEGORY_COLORS.cat3,
+												STAT_CATEGORY_COLORS.cat2,
+												STAT_CATEGORY_COLORS.cat1,
+												STAT_CATEGORY_COLORS.cat4,
+											][idx % 4]
+										}
+										unit="người"
+									/>
+								))}
+							</div>
+						) : (
+							<div className="py-12 text-center text-xs text-slate-400">
+								Chưa có dữ liệu nghề nghiệp
+							</div>
+						)}
 					</div>
 				</StatChartPanel>
 			</div>

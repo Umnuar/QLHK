@@ -391,6 +391,10 @@ export const createHousehold = async (
 							cccd_last4: enc?.last4 || null,
 							ethnicity: m.ethnicity?.trim() || null,
 							religion: m.religion?.trim() || null,
+							education: m.education ? String(m.education).trim() : null,
+							military_status: m.military_status ? String(m.military_status).trim() : null,
+							occupation: m.occupation ? String(m.occupation).trim() : null,
+							native_place: m.native_place ? String(m.native_place).trim() : null,
 							notes: m.notes?.trim() || null,
 							version: 1,
 							is_deleted: false,
@@ -588,6 +592,30 @@ export const updateHousehold = async (
 										? String(m.religion).trim()
 										: null
 									: existing.religion,
+							education:
+								m.education !== undefined
+									? m.education
+										? String(m.education).trim()
+										: null
+									: existing.education,
+							military_status:
+								m.military_status !== undefined
+									? m.military_status
+										? String(m.military_status).trim()
+										: null
+									: existing.military_status,
+							occupation:
+								m.occupation !== undefined
+									? m.occupation
+										? String(m.occupation).trim()
+										: null
+									: existing.occupation,
+							native_place:
+								m.native_place !== undefined
+									? m.native_place
+										? String(m.native_place).trim()
+										: null
+									: existing.native_place,
 							notes:
 								m.notes !== undefined
 									? m.notes
@@ -630,6 +658,10 @@ export const updateHousehold = async (
 								cccd_last4: enc?.last4 || null,
 								ethnicity: m.ethnicity ? String(m.ethnicity).trim() : null,
 								religion: m.religion ? String(m.religion).trim() : null,
+								education: m.education ? String(m.education).trim() : null,
+								military_status: m.military_status ? String(m.military_status).trim() : null,
+								occupation: m.occupation ? String(m.occupation).trim() : null,
+								native_place: m.native_place ? String(m.native_place).trim() : null,
 								notes: m.notes ? String(m.notes).trim() : null,
 								version: 1,
 								is_deleted: false,

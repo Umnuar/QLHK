@@ -11,7 +11,12 @@ import { useCallback, useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { useApp } from "../AppContext";
 import { householdApi } from "../api/householdApi";
-import { ExportSettingsModal } from "../components/excel/ExportSettingsModal";
+import {
+	EXPORT_COLUMNS,
+	type ExportConfig,
+	ExportSettingsModal,
+} from "../components/excel/ExportSettingsModal";
+import { exportExcelWithDialog } from "../utils/fileExport";
 import { ImportPreviewModal } from "../components/excel/ImportPreviewModal";
 import { formatVietnameseNumber } from "../components/common/tableStyles";
 import type { AgeFilter } from "../components/households/AgeFilterPopover";
@@ -487,12 +492,24 @@ export const HouseholdsPage: React.FC = () => {
 		});
 	};
 
-	// Quick export logic chuẩn 100% biểu mẫu Nhân hộ khẩu.xls
-	const handleExportConfirm = async (scope: "all" | "selected") => {
+	// Logic xuất Excel: Hỗ trợ Tab 1 (Truyền thống 11 cột) và Tab 2 (Chuyên đề tùy chọn)
+	const handleExportConfirm = async (
+		exportInput: "all" | "selected" | ExportConfig,
+	) => {
 		setIsExporting(true);
 		try {
+			const config: ExportConfig =
+				typeof exportInput === "string"
+					? {
+							tab: "traditional",
+							scope: exportInput,
+							ageMode: "range",
+							selectedColumns: EXPORT_COLUMNS.map((c) => c.key),
+						}
+					: exportInput;
+
 			let sourceList = households;
-			if (scope === "selected") {
+			if (config.scope === "selected") {
 				sourceList = households.filter((h) => selectedIds.includes(h.id));
 			} else {
 				try {
@@ -520,6 +537,247 @@ export const HouseholdsPage: React.FC = () => {
 			}
 
 			const now = new Date();
+			let currentStt = 1;
+
+			// XỬ LÝ TAB 2: BÁO CÁO CHUYÊN ĐỀ TÙY CHỌN
+			if (config.tab === "custom") {
+				const selectedCols =
+					config.selectedColumns.length > 0
+						? config.selectedColumns
+						: EXPORT_COLUMNS.map((c) => c.key);
+
+				const headerLabels = selectedCols.map((k) => {
+					const found = EXPORT_COLUMNS.find((c) => c.key === k);
+					return found ? found.label : k;
+				});
+
+				const customRows: any[][] = [
+					// Row 0
+					[
+						"UBND TỈNH QUẢNG NGÃI\nUBND XÃ ĐĂK HÀ",
+						...Array(Math.max(0, Math.floor(selectedCols.length / 2) - 1)).fill(
+							null,
+						),
+						"CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự Do - Hạnh Phúc",
+					],
+					// Row 1
+					[
+						"BÁO CÁO CHUYÊN ĐỀ NHÂN KHẨU - " +
+							(selectedVillageName || "TOÀN XÃ ĐĂK HÀ"),
+					],
+					// Row 2
+					[
+						"Ngày xuất: " +
+							now.getDate() +
+							"/" +
+							(now.getMonth() + 1) +
+							"/" +
+							now.getFullYear(),
+					],
+					// Row 3
+					[],
+					// Row 4: Header các cột
+					headerLabels,
+				];
+
+				sourceList.forEach((hh) => {
+					const membersList =
+						hh.members && hh.members.length > 0
+							? hh.members
+							: [
+									{
+										id: "head-" + hh.id,
+										household_id: hh.id,
+										stt: 1,
+										full_name: hh.head_name || "Chưa rõ",
+										last_name: "",
+										first_name: "",
+										name_unaccented: "",
+										relationship: "Chủ hộ",
+										is_head: true,
+										gender: "Nam",
+										dob: "",
+										dob_raw: "",
+										dob_formatted: "",
+										birth_year: 2000,
+										age: 0,
+										cccd: hh.head_cccd || "",
+										cccd_masked: "",
+										ethnicity: "Kinh",
+										is_minority: false,
+										religion: "Không",
+										education: "",
+										military_status: "",
+										occupation: "",
+										native_place: "",
+										notes: hh.notes || "",
+									},
+								];
+
+					membersList.forEach((m) => {
+						const dobVal = m.dob_formatted || m.dob_raw || m.dob || "";
+						const ageVal =
+							(dobVal ? calculateAge(dobVal, calculationYear) : m.age) || 0;
+
+						// Lọc theo độ tuổi
+						if (config.ageMode === "range") {
+							if (
+								config.minAge !== undefined &&
+								!isNaN(config.minAge) &&
+								ageVal < config.minAge
+							) {
+								return;
+							}
+							if (
+								config.maxAge !== undefined &&
+								!isNaN(config.maxAge) &&
+								ageVal > config.maxAge
+							) {
+								return;
+							}
+						} else if (config.ageMode === "exact") {
+							if (
+								config.exactAge !== undefined &&
+								!isNaN(config.exactAge) &&
+								ageVal !== config.exactAge
+							) {
+								return;
+							}
+						}
+
+						// Lọc theo giới tính
+						if (
+							config.gender &&
+							config.gender !== "all" &&
+							m.gender !== config.gender
+						) {
+							return;
+						}
+
+						// Lọc theo từ khóa NVQS
+						if (
+							config.militaryKeyword &&
+							!(m.military_status || "")
+								.toLowerCase()
+								.includes(config.militaryKeyword.toLowerCase())
+						) {
+							return;
+						}
+
+						// Lọc theo trình độ học vấn
+						if (
+							config.educationKeyword &&
+							!(m.education || "")
+								.toLowerCase()
+								.includes(config.educationKeyword.toLowerCase())
+						) {
+							return;
+						}
+
+						// Lọc theo nghề nghiệp
+						if (
+							config.occupationKeyword &&
+							!(m.occupation || "")
+								.toLowerCase()
+								.includes(config.occupationKeyword.toLowerCase())
+						) {
+							return;
+						}
+
+						// Xuất các cột đã chọn
+						const rowData = selectedCols.map((colKey) => {
+							switch (colKey) {
+								case "stt":
+									return currentStt;
+								case "household_book":
+									return hh.code || hh.village_name || "";
+								case "full_name":
+									return (m.full_name || "").toUpperCase();
+								case "relationship":
+									return m.relationship || (m.is_head ? "Chủ hộ" : "");
+								case "dob":
+									return dobVal;
+								case "age":
+									return ageVal;
+								case "gender":
+									return m.gender || "";
+								case "military_status":
+									return m.military_status || "";
+								case "education":
+									return m.education || "";
+								case "occupation":
+									return m.occupation || "";
+								case "native_place":
+									return m.native_place || "";
+								case "cccd":
+									return m.cccd || (m.is_head ? hh.head_cccd : "") || "";
+								case "ethnicity":
+									return m.ethnicity || "Kinh";
+								case "religion":
+									return m.religion || "Không";
+								case "address":
+									return hh.address || "";
+								case "notes":
+									return m.notes || "";
+								default:
+									return "";
+							}
+						});
+
+						customRows.push(rowData);
+						currentStt++;
+					});
+				});
+
+				const sanitizedRows = customRows.map(sanitizeExcelRow);
+				const ws = XLSX.utils.aoa_to_sheet(sanitizedRows);
+				ws["!merges"] = [
+					{
+						s: { r: 1, c: 0 },
+						e: { r: 1, c: Math.max(0, selectedCols.length - 1) },
+					},
+					{
+						s: { r: 2, c: 0 },
+						e: { r: 2, c: Math.max(0, selectedCols.length - 1) },
+					},
+				];
+				ws["!cols"] = selectedCols.map((k) => {
+					if (k === "stt") return { wch: 6 };
+					if (k === "full_name" || k === "address" || k === "native_place")
+						return { wch: 22 };
+					if (
+						k === "military_status" ||
+						k === "education" ||
+						k === "occupation" ||
+						k === "notes"
+					)
+						return { wch: 20 };
+					return { wch: 14 };
+				});
+
+				const wb = XLSX.utils.book_new();
+				XLSX.utils.book_append_sheet(wb, ws, "Báo cáo chuyên đề");
+				const filename = `BaoCaoChuyenDe_DakHa_${new Date().toISOString().slice(0, 10)}.xlsx`;
+				const exportRes = await exportExcelWithDialog(wb, filename);
+
+				setExportModalOpen(false);
+				if (exportRes.success) {
+					showModal({
+						title: "Xuất file thành công",
+						message: `Đã xuất ${currentStt - 1} nhân khẩu ra tệp:\n${exportRes.filePath || exportRes.fileName}`,
+						type: "success",
+					});
+				} else if (!exportRes.cancelled) {
+					showModal({
+						title: "Lỗi xuất file",
+						message: exportRes.error || "Không thể lưu file Excel",
+						type: "danger",
+					});
+				}
+				return;
+			}
+
+			// XỬ LÝ TAB 1: BIỂU MẪU 11 CỘT ĐĂK HÀ (TRUYỀN THỐNG)
 			const rows: any[][] = [
 				// Row 0
 				[
@@ -578,8 +836,6 @@ export const HouseholdsPage: React.FC = () => {
 				],
 			];
 
-			let currentStt = 1;
-
 			sourceList.forEach((hh) => {
 				const membersList =
 					hh.members && hh.members.length > 0
@@ -596,6 +852,7 @@ export const HouseholdsPage: React.FC = () => {
 									relationship: "Chủ hộ" as const,
 									is_head: true,
 									gender: "Nam" as const,
+									dob: "",
 									dob_raw: "",
 									dob_formatted: "",
 									birth_year: 2000,
@@ -675,14 +932,22 @@ export const HouseholdsPage: React.FC = () => {
 			const wb = XLSX.utils.book_new();
 			XLSX.utils.book_append_sheet(wb, ws, "Dl Hộ");
 			const filename = `NhanHoKhau_DakHa_${new Date().toISOString().slice(0, 10)}.xlsx`;
-			XLSX.writeFile(wb, filename);
+			const exportRes = await exportExcelWithDialog(wb, filename);
 
 			setExportModalOpen(false);
-			showModal({
-				title: "Xuất file thành công",
-				message: `Đã xuất ${currentStt - 1} nhân khẩu ra tệp ${filename}`,
-				type: "success",
-			});
+			if (exportRes.success) {
+				showModal({
+					title: "Xuất file thành công",
+					message: `Đã xuất ${currentStt - 1} nhân khẩu ra tệp:\n${exportRes.filePath || exportRes.fileName}`,
+					type: "success",
+				});
+			} else if (!exportRes.cancelled) {
+				showModal({
+					title: "Lỗi xuất file",
+					message: exportRes.error || "Không thể lưu file Excel",
+					type: "danger",
+				});
+			}
 		} catch (err: any) {
 			console.error(err);
 			showModal({

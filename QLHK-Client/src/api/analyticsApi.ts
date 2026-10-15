@@ -11,6 +11,13 @@ export interface DistributionStat {
 	percentage: number;
 }
 
+export interface AgeGroupStats {
+	under16: GenderStat;
+	militaryAge: GenderStat;
+	workingAge: GenderStat;
+	over60: GenderStat;
+}
+
 export interface AnalyticsOverviewData {
 	totalHouseholds: number;
 	totalCitizens: number;
@@ -21,6 +28,10 @@ export interface AnalyticsOverviewData {
 	};
 	ethnicities: DistributionStat[];
 	religions: DistributionStat[];
+	ageGroups?: AgeGroupStats;
+	military?: DistributionStat[];
+	educations?: DistributionStat[];
+	occupations?: DistributionStat[];
 }
 
 export interface VillageAnalyticsRow {

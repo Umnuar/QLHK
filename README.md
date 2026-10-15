@@ -345,7 +345,7 @@ QLHK/
 - **Đơn vị quản lý**: Ban Chỉ đạo Chuyển đổi số Ủy ban nhân dân Xã Đăk Hà.
 - **Địa bàn hành chính**: Xã Đăk Hà, Huyện Đăk Hà, Tỉnh Kon Tum.
 - **Tác giả phát triển**: [Umnuar (GitHub)](https://github.com/Umnuar).
-- **Kênh tiếp nhận kỹ thuật**: `admin@dulieudakha.vn`.
+- **Kênh tiếp nhận kỹ thuật**: `baotruongminh201@gmail.com`.
 
 ### 8.2. Giấy phép và bản quyền
 

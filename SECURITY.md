@@ -10,8 +10,8 @@ Chỉ các phiên bản chính thức được liệt kê dưới đây mới nh
 
 | Phiên bản | Tình trạng hỗ trợ | Ghi chú |
 | :---: | :---: | :--- |
-| **1.0.x** | Đang được hỗ trợ | Phiên bản đang triển khai phục vụ công tác địa phương |
-| **< 1.0.0** | Không hỗ trợ | Các bản dựng thử nghiệm ban đầu |
+| **1.5.x** | Đang được hỗ trợ | Phiên bản đang triển khai phục vụ công tác địa phương |
+| **< 1.5.0** | Không hỗ trợ | Các bản dựng thử nghiệm ban đầu |
 
 ---
 
@@ -20,7 +20,7 @@ Chỉ các phiên bản chính thức được liệt kê dưới đây mới nh
 Nếu phát hiện vấn đề an ninh hoặc lỗ hổng tiềm ẩn trong ứng dụng, vui lòng thông báo theo các kênh sau:
 
 - **Qua GitHub**: Sử dụng tính năng "Report a vulnerability" tại mục [Security](../../security/advisories) của kho lưu trữ (nếu đã kích hoạt).
-- **Qua thư điện tử**: Gửi báo cáo trực tiếp đến địa chỉ email an ninh duy nhất: `admin@dulieudakha.vn`.
+- **Qua thư điện tử**: Gửi báo cáo trực tiếp đến địa chỉ email an ninh: `baotruongminh201@gmail.com`.
 - **Tiêu đề thư mẫu**: `[BÁO CÁO AN NINH QLHK] - Tóm tắt ngắn gọn vấn đề`.
 
 Vui lòng không công khai thông tin lỗ hổng trên GitHub Issues, Pull Requests hoặc các kênh truyền thông trước khi sự cố được khắc phục và kiểm nghiệm ổn định.

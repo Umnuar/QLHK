@@ -29,8 +29,8 @@
   - Diff Budget: <= 180 LOC
   - Verification: `AnalyticsDashboard.test.tsx` (7/7 PASS), `npm test` Client (155/155 tests PASS), 1080p single-viewport layout check
 
-- [ ] Step 4: Final Quality Gates & Full Verification
-  - Verification: `npm test` Client (155/155 PASS), `npx tsc --noEmit` Client (0 error), `npm test` Backend (115/115 PASS), Docker container health check
+- [x] Step 4: Final Quality Gates & Full Verification
+  - Verification: `npm test` Client (155/155 PASS), `npx tsc --noEmit` Client (0 error), `npm test` Backend (115/115 PASS), Docker container health check (HTTP 200 OK)
 
 ## Project Gotchas & Learned Invariants
 - [Zero-Dependency UI]: Không cài `@base-ui` hay `@radix-ui` mới; dùng React thuần + Tailwind CSS để bảo toàn tốc độ build và kích thước bundle.

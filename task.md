@@ -18,14 +18,14 @@
   - Diff Budget: <= 150 LOC
   - Verification: `npx tsc --noEmit` Client (0 error), `npm test` Client (155/155 PASS)
 
-- [/] Step 2: Composite Cards Dual Mode (`KpiRow.tsx`, `DistributionCard.tsx`, `WelfareCard.tsx`)
+- [x] Step 2: Composite Cards Dual Mode (`KpiRow.tsx`, `DistributionCard.tsx`, `WelfareCard.tsx`)
   - Target Files: `QLHK-Client/src/components/analytics/KpiRow.tsx`, `QLHK-Client/src/components/analytics/DistributionCard.tsx`, `QLHK-Client/src/components/analytics/WelfareCard.tsx`
   - Assigned Role: `.agents/frontend-developer.md`
   - Key Specs: KpiCard container (border-slate-200 bg-white / dark:border-slate-800 dark:bg-slate-900/90), DistributionCard item container hover/active states, WelfareCard 2-column divide (divide-slate-200 dark:divide-slate-800) and badges/labels.
   - Diff Budget: <= 180 LOC
   - Verification: `npx tsc --noEmit` Client (0 error), `npm test` Client (155/155 PASS)
 
-- [ ] Step 3: Dashboard Integration & Theme Toggle Button (`AnalyticsDashboard.tsx`)
+- [/] Step 3: Dashboard Integration & Theme Toggle Button (`AnalyticsDashboard.tsx`)
   - Target Files: `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`
   - Assigned Role: `.agents/frontend-developer.md`, `.agents/ui-ux-designer.md`
   - Key Specs: Connect `theme, toggleTheme` from `useApp()`, import `Sun, Moon` from `lucide-react`, add Theme Toggle button to header action toolbar.

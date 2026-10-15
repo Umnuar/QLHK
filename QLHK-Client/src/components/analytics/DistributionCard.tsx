@@ -64,27 +64,29 @@ export const DistributionCard: React.FC<DistributionCardProps> = ({
 										onMouseLeave={() => setActiveId(null)}
 										onFocus={() => setActiveId(segment.id)}
 										onBlur={() => setActiveId(null)}
-										className={`block w-full rounded-sm outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-teal-400/60 cursor-pointer ${
-											activeId && activeId !== segment.id ? "opacity-40" : "opacity-100"
-										}`}
+										className={`block w-full rounded-md border px-2 py-1 text-slate-700 outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-teal-500/60 cursor-pointer dark:text-slate-300 ${
+											activeId === segment.id
+												? "border-teal-200 bg-teal-50 text-teal-900 dark:border-teal-700/50 dark:bg-teal-950/40 dark:text-teal-200"
+												: "border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/60"
+										} ${activeId && activeId !== segment.id ? "opacity-60" : "opacity-100"}`}
 									>
 										<div className="flex items-center justify-between gap-2 text-xs">
-											<span className="flex min-w-0 items-center gap-1.5 text-slate-200">
+											<span className="flex min-w-0 items-center gap-1.5 text-slate-800 dark:text-slate-200">
 												<span
 													className="w-2 h-2 shrink-0 rounded-full"
 													style={{ backgroundColor: segment.color }}
 													aria-hidden="true"
 												/>
-												<span className="truncate font-medium">
+												<span className="truncate font-medium leading-tight text-slate-800 dark:text-slate-200">
 													{segment.label}
 												</span>
 											</span>
-											<span className="shrink-0 tabular-nums font-semibold text-white">
+											<span className="shrink-0 tabular-nums font-semibold text-slate-900 dark:text-slate-100">
 												{formatVietnameseNumber(
 													digits === 0 ? Math.round(segment.pct) : segment.pct,
 												)}
 												%{" "}
-												<span className="font-normal text-slate-400">
+												<span className="font-normal text-slate-500 dark:text-slate-400">
 													({formatVietnameseNumber(segment.count)})
 												</span>
 											</span>

@@ -35,7 +35,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
 }) => {
 	return (
 		<div
-			className={`flex items-center gap-3 rounded-xl border border-t-2 border-slate-800 bg-slate-900/90 px-4 py-3 text-slate-100 ring-0 backdrop-blur-md transition-colors hover:border-slate-700 lg:h-[88px] ${borderClass}`}
+			className={`flex items-center gap-3 rounded-xl border border-t-2 border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-xs ring-0 transition-colors duration-150 hover:border-slate-300 lg:h-[88px] dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-100 dark:shadow-none dark:backdrop-blur-md dark:hover:border-slate-700 ${borderClass}`}
 		>
 			<div
 				className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${iconClass}`}
@@ -44,18 +44,18 @@ const KpiCard: React.FC<KpiCardProps> = ({
 				{icon}
 			</div>
 			<div className="min-w-0 flex-1">
-				<p className="truncate text-xs font-medium text-slate-300">{label}</p>
+				<p className="truncate text-xs font-medium text-slate-600 dark:text-slate-300">{label}</p>
 				<div className="flex items-baseline gap-1.5 leading-tight my-0.5">
 					{typeof value === "string" || typeof value === "number" ? (
-						<span className="text-2xl font-semibold text-white tabular-nums">
+						<span className="text-2xl font-semibold text-slate-900 dark:text-white tabular-nums">
 							{value}
 						</span>
 					) : (
 						value
 					)}
-					{unit && <span className="text-xs text-slate-400">{unit}</span>}
+					{unit && <span className="text-xs text-slate-500 dark:text-slate-400">{unit}</span>}
 				</div>
-				<p className="truncate text-xs text-slate-400 tabular-nums">{detail}</p>
+				<p className="truncate text-xs text-slate-500 dark:text-slate-400 tabular-nums">{detail}</p>
 			</div>
 		</div>
 	);

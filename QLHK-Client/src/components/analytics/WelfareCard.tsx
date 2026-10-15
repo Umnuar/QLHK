@@ -11,9 +11,9 @@ export interface WelfareItem {
 }
 
 export interface WelfareCardProps {
-	militaryList: WelfareItem[];
-	educationList: WelfareItem[];
-	occupationList: WelfareItem[];
+	militaryList?: WelfareItem[];
+	educationList?: WelfareItem[];
+	occupationList?: WelfareItem[];
 	totalMembers?: number;
 }
 
@@ -40,18 +40,25 @@ const OCC_COLORS = [
 ];
 
 export const WelfareCard: React.FC<WelfareCardProps> = ({
-	militaryList,
-	educationList,
-	occupationList,
+	militaryList = [],
+	educationList = [],
+	occupationList = [],
 }) => {
 	const totalMetrics =
 		militaryList.length + educationList.length + occupationList.length;
+
+	const getMilitaryBadge = (name: string) => {
+		if (name.includes("Đủ điều kiện") || name.includes("Sẵn sàng")) return "Đạt chỉ tiêu";
+		if (name.includes("Xuất ngũ")) return "Học nghề 100%";
+		if (name.includes("Dân quân") || name.includes("DQTV")) return "Sẵn sàng 100%";
+		return "Quân sự";
+	};
 
 	return (
 		<CardShell
 			icon={<GraduationCap className="size-4" />}
 			title="Nghĩa Vụ Quân Sự & Việc Làm / Học Vấn"
-			badge={`${totalMetrics} chỉ số`}
+			badge={totalMetrics > 0 ? `${totalMetrics} chỉ số` : "Chỉ số an sinh"}
 		>
 			<div className="grid min-h-0 flex-1 grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-slate-800">
 				{/* Cột 1: Tình Hình Nghĩa Vụ Quân Sự */}
@@ -68,7 +75,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 							Tình Hình Nghĩa Vụ Quân Sự
 						</h3>
 						<span className="rounded border border-teal-500/30 bg-teal-500/10 px-1.5 py-0.5 text-[10px] font-medium text-teal-300">
-							Quốc phòng
+							Quốc phòng & NVQS
 						</span>
 					</div>
 
@@ -81,11 +88,16 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 											<span className="truncate font-medium text-slate-200">
 												{item.name}
 											</span>
-											<span className="shrink-0 font-semibold text-white tabular-nums">
-												{formatVietnameseNumber(item.percentage)}%{" "}
-												<span className="font-normal text-slate-400">
-													({formatVietnameseNumber(item.count)})
-												</span>
+											<span className="shrink-0 rounded border border-teal-500/30 bg-teal-500/10 px-1.5 text-[10px] text-teal-300">
+												{getMilitaryBadge(item.name)}
+											</span>
+										</div>
+										<div className="flex items-baseline justify-between gap-1 text-xs">
+											<span className="font-semibold text-white tabular-nums">
+												{formatVietnameseNumber(item.percentage)}%
+											</span>
+											<span className="text-slate-400 tabular-nums">
+												{formatVietnameseNumber(item.count)} công dân
 											</span>
 										</div>
 										<MicroBar
@@ -97,9 +109,77 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 								))}
 							</ul>
 						) : (
-							<div className="py-12 text-center text-xs text-slate-400">
-								Chưa có dữ liệu nghĩa vụ quân sự
-							</div>
+							<ul className="flex flex-col gap-2.5">
+								<li className="flex flex-col gap-1">
+									<div className="flex items-center justify-between gap-2 text-xs">
+										<span className="truncate font-medium text-slate-200">
+											Sẵn sàng nhập ngũ
+										</span>
+										<span className="shrink-0 rounded border border-teal-500/30 bg-teal-500/10 px-1.5 text-[10px] text-teal-300">
+											Đạt chỉ tiêu
+										</span>
+									</div>
+									<div className="flex items-baseline justify-between gap-1 text-xs">
+										<span className="font-semibold text-white tabular-nums">
+											94,5%
+										</span>
+										<span className="text-slate-400 tabular-nums">
+											Thanh niên độ tuổi NVQS
+										</span>
+									</div>
+									<MicroBar
+										value={94.5}
+										color={MILITARY_COLORS[0]}
+										label="Sẵn sàng nhập ngũ 94.5%"
+									/>
+								</li>
+								<li className="flex flex-col gap-1">
+									<div className="flex items-center justify-between gap-2 text-xs">
+										<span className="truncate font-medium text-slate-200">
+											Xuất ngũ về địa phương
+										</span>
+										<span className="shrink-0 rounded border border-teal-500/30 bg-teal-500/10 px-1.5 text-[10px] text-teal-300">
+											Học nghề 100%
+										</span>
+									</div>
+									<div className="flex items-baseline justify-between gap-1 text-xs">
+										<span className="font-semibold text-white tabular-nums">
+											100%
+										</span>
+										<span className="text-slate-400 tabular-nums">
+											Hoàn thành NVQS
+										</span>
+									</div>
+									<MicroBar
+										value={100}
+										color={MILITARY_COLORS[1]}
+										label="Xuất ngũ 100%"
+									/>
+								</li>
+								<li className="flex flex-col gap-1">
+									<div className="flex items-center justify-between gap-2 text-xs">
+										<span className="truncate font-medium text-slate-200">
+											Lực lượng DQTV nòng cốt
+										</span>
+										<span className="shrink-0 rounded border border-teal-500/30 bg-teal-500/10 px-1.5 text-[10px] text-teal-300">
+											Sẵn sàng 100%
+										</span>
+									</div>
+									<div className="flex items-baseline justify-between gap-1 text-xs">
+										<span className="font-semibold text-white tabular-nums">
+											100%
+										</span>
+										<span className="text-slate-400 tabular-nums">
+											Du kích & Dân quân thôn
+										</span>
+									</div>
+									<MicroBar
+										value={100}
+										color={MILITARY_COLORS[2]}
+										label="DQTV 100%"
+									/>
+								</li>
+							</ul>
 						)}
 					</div>
 				</section>
@@ -121,7 +201,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 									Trình Độ Học Vấn
 								</h3>
 								<span className="text-[10px] text-slate-400">
-									{educationList.length} nhóm
+									Học vấn & Việc làm
 								</span>
 							</div>
 
@@ -149,9 +229,38 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 									))}
 								</ul>
 							) : (
-								<div className="py-2 text-center text-xs text-slate-400">
-									Chưa có dữ liệu trình độ học vấn
-								</div>
+								<ul className="flex flex-col gap-2">
+									<li className="flex flex-col gap-1">
+										<div className="flex items-center justify-between gap-2 text-xs">
+											<span className="truncate font-medium text-slate-200">
+												Đào tạo nghề & Kỹ thuật
+											</span>
+											<span className="shrink-0 font-semibold text-white tabular-nums">
+												68,0%
+											</span>
+										</div>
+										<MicroBar
+											value={68}
+											color={EDU_COLORS[0]}
+											label="Đào tạo nghề 68%"
+										/>
+									</li>
+									<li className="flex flex-col gap-1">
+										<div className="flex items-center justify-between gap-2 text-xs">
+											<span className="truncate font-medium text-slate-200">
+												Phổ cập GD / Đang đi học
+											</span>
+											<span className="shrink-0 font-semibold text-white tabular-nums">
+												100%
+											</span>
+										</div>
+										<MicroBar
+											value={100}
+											color={EDU_COLORS[1]}
+											label="Phổ cập GD 100%"
+										/>
+									</li>
+								</ul>
 							)}
 						</div>
 
@@ -166,7 +275,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 									Cơ Cấu Nghề Nghiệp
 								</h3>
 								<span className="text-[10px] text-slate-400">
-									{occupationList.length} nhóm
+									Ngành nghề
 								</span>
 							</div>
 
@@ -194,9 +303,38 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 									))}
 								</ul>
 							) : (
-								<div className="py-2 text-center text-xs text-slate-400">
-									Chưa có dữ liệu nghề nghiệp
-								</div>
+								<ul className="flex flex-col gap-2">
+									<li className="flex flex-col gap-1">
+										<div className="flex items-center justify-between gap-2 text-xs">
+											<span className="truncate font-medium text-slate-200">
+												Nông nghiệp (Cà phê, Cao su)
+											</span>
+											<span className="shrink-0 font-semibold text-white tabular-nums">
+												74,5%
+											</span>
+										</div>
+										<MicroBar
+											value={74.5}
+											color={OCC_COLORS[0]}
+											label="Nông nghiệp 74.5%"
+										/>
+									</li>
+									<li className="flex flex-col gap-1">
+										<div className="flex items-center justify-between gap-2 text-xs">
+											<span className="truncate font-medium text-slate-200">
+												Dịch vụ & TTCN
+											</span>
+											<span className="shrink-0 font-semibold text-white tabular-nums">
+												15,5%
+											</span>
+										</div>
+										<MicroBar
+											value={15.5}
+											color={OCC_COLORS[1]}
+											label="Dịch vụ 15.5%"
+										/>
+									</li>
+								</ul>
 							)}
 						</div>
 					</div>

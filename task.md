@@ -18,14 +18,14 @@
   - Diff Budget: <= 200 LOC
   - Verification: `npx tsc --noEmit` Client (0 error), `npm test` Client (155/155 PASS)
 
-- [/] Step 2: Refine Composite Cards (`DistributionCard.tsx`, `WelfareCard.tsx`, `KpiRow.tsx`)
+- [x] Step 2: Refine Composite Cards (`DistributionCard.tsx`, `WelfareCard.tsx`, `KpiRow.tsx`)
   - Target Files: `QLHK-Client/src/components/analytics/DistributionCard.tsx`, `QLHK-Client/src/components/analytics/WelfareCard.tsx`, `QLHK-Client/src/components/analytics/KpiRow.tsx`
   - Assigned Role: `.agents/frontend-developer.md`
   - Key Specs: DistributionCard Donut 176px + full Vietnamese center labels, WelfareCard 2-column layout matching v0 (1), KpiRow 88px.
   - Diff Budget: <= 200 LOC
   - Verification: `npx tsc --noEmit` Client (0 error), `npm test` Client (155/155 PASS)
 
-- [ ] Step 3: Polish Single-Viewport Layout in `AnalyticsDashboard.tsx`
+- [/] Step 3: Polish Single-Viewport Layout in `AnalyticsDashboard.tsx`
   - Target Files: `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`
   - Assigned Role: `.agents/frontend-developer.md`, `.agents/ui-ux-designer.md`
   - Key Specs: 1080p single viewport (~700px total height, zero page scroll), full center labels, preserve Excel export & offline cache.

@@ -31,10 +31,11 @@ export const DistributionCard: React.FC<DistributionCardProps> = ({
 	return (
 		<CardShell icon={icon} title={title} badge={badge}>
 			<div className="grid min-h-0 flex-1 grid-cols-1 items-center gap-4 px-4 py-3 sm:grid-cols-2">
-				{/* Cột trái: Donut SVG 136px */}
+				{/* Cột trái: Donut SVG 176px */}
 				<div className="flex justify-center">
 					<DonutChart
 						segments={segments}
+						size={176}
 						centerValue={
 							active
 								? `${formatVietnameseNumber(
@@ -42,7 +43,7 @@ export const DistributionCard: React.FC<DistributionCardProps> = ({
 									)}%`
 								: centerValue
 						}
-						centerLabel={active ? active.label.split(" ")[0] : centerLabel}
+						centerLabel={active ? active.label : centerLabel}
 						activeId={activeId}
 						onActiveChange={setActiveId}
 						ariaLabel={`${title}: ${segments

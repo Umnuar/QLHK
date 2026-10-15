@@ -35,10 +35,10 @@ const KpiCard: React.FC<KpiCardProps> = ({
 }) => {
 	return (
 		<div
-			className={`flex items-center gap-3 rounded-xl border border-t-2 border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-xs ring-0 transition-colors duration-150 hover:border-slate-300 lg:h-[88px] dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-100 dark:shadow-none dark:backdrop-blur-md dark:hover:border-slate-700 ${borderClass}`}
+			className={`flex items-center gap-3 rounded-3xl border border-t-2 border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-xs ring-0 transition-colors duration-150 hover:border-slate-300 lg:h-[88px] dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-100 dark:shadow-none dark:backdrop-blur-md dark:hover:border-slate-700 ${borderClass}`}
 		>
 			<div
-				className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${iconClass}`}
+				className={`flex size-10 shrink-0 items-center justify-center rounded-2xl ${iconClass}`}
 				aria-hidden="true"
 			>
 				{icon}

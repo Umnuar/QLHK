@@ -662,7 +662,7 @@ export const AnalyticsDashboard: React.FC = () => {
 			style={{ "--stat-accent": DEFAULT_STAT_ACCENT } as React.CSSProperties}
 		>
 			{/* Top Banner & Scope */}
-			<div className="bg-white dark:bg-slate-900 px-4 py-3 sm:py-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-colors duration-150">
+			<div className="bg-white dark:bg-slate-900 px-4 py-3 sm:py-3.5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-colors duration-150">
 				<div>
 					<div className="flex items-center gap-2.5 flex-wrap">
 						<span className={VILLAGE_BADGE_CLASS}>

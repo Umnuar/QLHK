@@ -74,7 +74,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 							/>
 							Tình Hình Nghĩa Vụ Quân Sự
 						</h3>
-						<span className="rounded border border-teal-200 bg-teal-50 px-1.5 py-0.5 text-[10px] font-medium text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300">
+						<span className="rounded-xl border border-teal-200 bg-teal-50 px-2 py-0.5 text-[10px] font-medium text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300">
 							Quốc phòng & NVQS
 						</span>
 					</div>
@@ -88,7 +88,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 											<span className="truncate font-medium text-slate-700 dark:text-slate-200">
 												{item.name}
 											</span>
-											<span className="shrink-0 rounded border border-teal-200 bg-teal-50 px-1.5 text-[10px] text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300">
+											<span className="shrink-0 rounded-xl border border-teal-200 bg-teal-50 px-2 text-[10px] text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300">
 												{getMilitaryBadge(item.name)}
 											</span>
 										</div>
@@ -115,7 +115,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 										<span className="truncate font-medium text-slate-700 dark:text-slate-200">
 											Sẵn sàng nhập ngũ
 										</span>
-										<span className="shrink-0 rounded border border-teal-200 bg-teal-50 px-1.5 text-[10px] text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300">
+										<span className="shrink-0 rounded-xl border border-teal-200 bg-teal-50 px-2 text-[10px] text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300">
 											Đạt chỉ tiêu
 										</span>
 									</div>
@@ -138,7 +138,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 										<span className="truncate font-medium text-slate-700 dark:text-slate-200">
 											Xuất ngũ về địa phương
 										</span>
-										<span className="shrink-0 rounded border border-teal-200 bg-teal-50 px-1.5 text-[10px] text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300">
+										<span className="shrink-0 rounded-xl border border-teal-200 bg-teal-50 px-2 text-[10px] text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300">
 											Học nghề 100%
 										</span>
 									</div>
@@ -161,7 +161,7 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 										<span className="truncate font-medium text-slate-700 dark:text-slate-200">
 											Lực lượng DQTV nòng cốt
 										</span>
-										<span className="shrink-0 rounded border border-teal-200 bg-teal-50 px-1.5 text-[10px] text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300">
+										<span className="shrink-0 rounded-xl border border-teal-200 bg-teal-50 px-2 text-[10px] text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-300">
 											Sẵn sàng 100%
 										</span>
 									</div>

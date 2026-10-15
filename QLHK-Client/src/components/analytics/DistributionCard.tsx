@@ -64,7 +64,7 @@ export const DistributionCard: React.FC<DistributionCardProps> = ({
 										onMouseLeave={() => setActiveId(null)}
 										onFocus={() => setActiveId(segment.id)}
 										onBlur={() => setActiveId(null)}
-										className={`block w-full rounded-md border px-2 py-1 text-slate-700 outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-teal-500/60 cursor-pointer dark:text-slate-300 ${
+										className={`block w-full rounded-xl border px-2.5 py-1 text-slate-700 outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-teal-500/60 cursor-pointer dark:text-slate-300 ${
 											activeId === segment.id
 												? "border-teal-200 bg-teal-50 text-teal-900 dark:border-teal-700/50 dark:bg-teal-950/40 dark:text-teal-200"
 												: "border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/60"

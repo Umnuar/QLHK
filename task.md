@@ -1,8 +1,8 @@
-# Task Progress Tracker
+# Task Progress Tracker (v0 Dashboard Porting & Data Persistence Roadmap)
 
 - **Project**: QLHK (Hệ thống Quản lý Hộ khẩu Đăk Hà)
-- **Plan Reference**: User Roadmap Prompt /grill-me v1.5.0
-- **Baseline Git Checkpoint**: `0bd7b00` (Clean working tree, Backend: 115/115 PASS, Client: 154/154 PASS)
+- **Plan Reference**: `C:\Users\umnuar\.gemini\antigravity\brain\458ec4a9-7e3a-4e81-bed4-e6d9fa30bef9\implementation_plan.md`
+- **Baseline Git Checkpoint**: `587bbd6` (Clean working tree, Backend: 115/115 PASS, Client: 155/155 PASS)
 - **Status Legend**: 
   - `[ ]` Pending
   - `[/]` In Progress
@@ -11,30 +11,29 @@
 
 ## Execution Checklist
 
-- [x] Step 1: Backend Data Persistence - Bổ sung các trường nhân khẩu trong `households.controller.ts`
-  - Target Files: `QLHK-Backend/src/controllers/households.controller.ts`
-  - Assigned Role: `c:/Users/umnuar/Documents/Projects/.agents/backend-architect.md`
-  - Graph Check: `graft ask "getHouseholds" --source`
-  - Diff Budget: <= 50 LOC
-  - Tests: Backend 115 tests PASS (100% green)
-
-- [x] Step 2: Client Data Persistence & Unit Tests - Bổ sung mapping trong `householdApi.ts`
-  - Target Files: `QLHK-Client/src/api/householdApi.ts`, `QLHK-Client/src/api/__tests__/householdApi.test.ts`
-  - Assigned Role: `c:/Users/umnuar/Documents/Projects/.agents/frontend-developer.md`, `c:/Users/umnuar/Documents/Projects/.agents/test-engineer.md`
-  - Diff Budget: <= 100 LOC
-  - Tests: Client 155 tests PASS (100% green)
-
-- [x] Step 3: Compact Density & Donut Rebalance - Tinh gọn giao diện Analytics và Donut 136px
-  - Target Files: `QLHK-Client/src/components/common/statStyles.tsx`, `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`
+- [x] Step 1: Porting Core UI Primitives from v0 (`DonutChart`, `MicroBar`, `CardShell`, Native `Tooltip`)
+  - Target Files: `QLHK-Client/src/components/analytics/DonutChart.tsx`, `QLHK-Client/src/components/analytics/MicroBar.tsx`, `QLHK-Client/src/components/analytics/CardShell.tsx`, `QLHK-Client/src/components/common/statStyles.tsx`
   - Assigned Role: `c:/Users/umnuar/Documents/Projects/.agents/ui-ux-designer.md`
-  - Diff Budget: <= 150 LOC
-  - Tests: Client Analytics & UI tests PASS (100% green)
+  - Diff Budget: <= 200 LOC
+  - Verification: `npx tsc --noEmit` Client (0 error, 155/155 tests PASS)
 
-- [x] Step 4: Final Quality Gates & Verification
-  - Verification: `npm test` Backend (115/115 PASS), `npm test` Client (155/155 PASS), `npx tsc --noEmit` Client (0 error)
-  - Docker container health check: HTTP 200 OK (uptime confirmed)
+- [ ] Step 2: Porting Composite Cards from v0 (`DistributionCard`, `WelfareCard`, `KpiRow`)
+  - Target Files: `QLHK-Client/src/components/analytics/DistributionCard.tsx`, `QLHK-Client/src/components/analytics/WelfareCard.tsx`, `QLHK-Client/src/components/analytics/KpiRow.tsx`
+  - Assigned Role: `c:/Users/umnuar/Documents/Projects/.agents/frontend-developer.md`
+  - Diff Budget: <= 200 LOC
+  - Verification: `npx tsc --noEmit` Client (0 error)
+
+- [ ] Step 3: Integrating Single-Viewport Dashboard in `AnalyticsDashboard.tsx`
+  - Target Files: `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`
+  - Assigned Role: `c:/Users/umnuar/Documents/Projects/.agents/frontend-developer.md`, `c:/Users/umnuar/Documents/Projects/.agents/ui-ux-designer.md`
+  - Diff Budget: <= 180 LOC
+  - Verification: `AnalyticsDashboard.test.tsx` (7/7 PASS), 1080p layout check
+
+- [ ] Step 4: Final Quality Gates & Full Verification
+  - Verification: `npm test` Client (155/155 PASS), `npx tsc --noEmit` Client (0 error), `npm test` Backend (115/115 PASS), Docker container health check
 
 ## Project Gotchas & Learned Invariants
-- [Container Prisma Sync]: Docker volume `/app/node_modules` cô lập; nếu sửa schema cần `docker exec dakha-qlhk-backend npx prisma generate && docker restart dakha-qlhk-backend`.
-- [Browser Form Autofill]: Luôn đặt `autoComplete="off"` và `spellCheck={false}` trên toàn bộ text inputs để ngăn Chromium/Edge popup autofill.
-- [Data Mapping Invariant]: Mọi trường trong Prisma Schema (`education`, `military_status`, `occupation`, `native_place`, `notes`) phải được select tại Backend và map rõ ràng tại `normalizeHousehold` trong Client để tránh mất dữ liệu khi mở lại modal.
+- [Zero-Dependency UI]: Không cài `@base-ui` hay `@radix-ui` mới; dùng React thuần + Tailwind CSS để bảo toàn tốc độ build và kích thước bundle.
+- [ActiveId 2-Way Sync]: Rê chuột vào danh sách bên phải sẽ làm sáng vòng Donut tương ứng bên trái (`activeId === segment.id ? stroke + 3 : stroke`, `opacity: 0.3` cho các segment khác) và ngược lại.
+- [Single Viewport 1080p]: Chiều cao 4 card chính cố định `lg:h-[276px]`, KpiRow `lg:h-[88px]`, tổng cụm ~708px hiển thị trọn vẹn không cần cuộn chuột trên màn hình 1080p.
+- [Test Selectors Preservation]: Bắt buộc giữ nguyên các tiêu đề `Phân Bổ Dân Tộc Địa Bàn Đăk Hà`, `Cơ Cấu Tín Ngưỡng & Tôn Giáo`, `Tháp Tuổi & Cơ Cấu Thế Hệ`, `Tình Hình Nghĩa Vụ Quân Sự`, `Trình Độ Học Vấn`, `Cơ Cấu Nghề Nghiệp` và nhãn `Dân tộc Kinh...`, `12/12...` để 155 test Client không bị gãy.

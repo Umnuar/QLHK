@@ -23,11 +23,11 @@
   - Diff Budget: <= 200 LOC
   - Verification: `npx tsc --noEmit` Client (0 error), `npm test` Client (155/155 tests PASS)
 
-- [ ] Step 3: Integrating Single-Viewport Dashboard in `AnalyticsDashboard.tsx`
+- [x] Step 3: Integrating Single-Viewport Dashboard in `AnalyticsDashboard.tsx`
   - Target Files: `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`
   - Assigned Role: `c:/Users/umnuar/Documents/Projects/.agents/frontend-developer.md`, `c:/Users/umnuar/Documents/Projects/.agents/ui-ux-designer.md`
   - Diff Budget: <= 180 LOC
-  - Verification: `AnalyticsDashboard.test.tsx` (7/7 PASS), 1080p layout check
+  - Verification: `AnalyticsDashboard.test.tsx` (7/7 PASS), `npm test` Client (155/155 tests PASS), 1080p single-viewport layout check
 
 - [ ] Step 4: Final Quality Gates & Full Verification
   - Verification: `npm test` Client (155/155 PASS), `npx tsc --noEmit` Client (0 error), `npm test` Backend (115/115 PASS), Docker container health check

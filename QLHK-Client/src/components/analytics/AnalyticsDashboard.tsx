@@ -29,19 +29,16 @@ import { sanitizeExcelRow } from "../../utils/excelParser";
 import {
 	DEFAULT_STAT_ACCENT,
 	STAT_CATEGORY_COLORS,
-	STAT_KPI_GRID_CLASS,
-	STAT_PANEL_GRID_CLASS,
-	STAT_SCROLL_CONTAINER_CLASS,
-	StatBarRow,
-	StatChartPanel,
-	StatDonut,
-	StatKpiCard,
 } from "../common/statStyles";
 import {
 	TABLE_HEADER_CLASSES,
 	VILLAGE_BADGE_CLASS,
 	formatVietnameseNumber,
 } from "../common/tableStyles";
+import { DistributionCard } from "./DistributionCard";
+import type { Segment } from "./DonutChart";
+import { KpiRow } from "./KpiRow";
+import { WelfareCard } from "./WelfareCard";
 
 export const AnalyticsDashboard: React.FC = () => {
 	const {
@@ -505,6 +502,94 @@ export const AnalyticsDashboard: React.FC = () => {
 		};
 	}, [stats.religionMap]);
 
+	// Phân khúc dân tộc cho DistributionCard (chuẩn SVG 136px)
+	const ethnicSegments: Segment[] = useMemo(() => {
+		const total = stats.totalMembers || 1;
+		const colors = [
+			"#14b8a6", // teal
+			"#38bdf8", // sky
+			"#f59e0b", // amber
+			"#a855f7", // purple
+			"#ec4899", // pink
+			"#06b6d4", // cyan
+			"#10b981", // emerald
+			"#84cc16", // lime
+			"#eab308", // yellow
+			"#f97316", // orange
+			"#ef4444", // red
+			"#6366f1", // indigo
+			"#8b5cf6", // violet
+			"#d946ef", // fuchsia
+		];
+
+		if (apiOverview?.ethnicities && apiOverview.ethnicities.length > 0) {
+			return apiOverview.ethnicities.map((e, idx) => ({
+				id: e.name,
+				label: e.name.startsWith("Dân tộc") ? e.name : `Dân tộc ${e.name}`,
+				count: e.count,
+				pct: e.percentage,
+				color: colors[idx % colors.length],
+			}));
+		}
+
+		return ETHNIC_GROUPS.map((eth, idx) => {
+			const cnt = stats.ethnicMap[eth] || 0;
+			return {
+				id: eth,
+				label: `Dân tộc ${eth}`,
+				count: cnt,
+				pct: Math.round((cnt / total) * 1000) / 10,
+				color: colors[idx % colors.length],
+			};
+		});
+	}, [apiOverview?.ethnicities, stats.totalMembers, stats.ethnicMap]);
+
+	// Phân khúc tôn giáo cho DistributionCard
+	const religionSegments: Segment[] = useMemo(() => {
+		const total = stats.totalMembers || 1;
+		return religionDetails.list.map((it) => ({
+			id: it.label,
+			label: it.label,
+			count: it.value,
+			pct: Math.round((it.value / total) * 1000) / 10,
+			color: it.color,
+		}));
+	}, [religionDetails.list, stats.totalMembers]);
+
+	// Phân khúc tháp tuổi cho DistributionCard
+	const ageSegments: Segment[] = useMemo(() => {
+		return [
+			{
+				id: "under16",
+				label: "Thiếu nhi (< 16 tuổi)",
+				count: stats.ageStats.under16.count,
+				pct: stats.ageStats.under16.percentage,
+				color: STAT_CATEGORY_COLORS.cat1,
+			},
+			{
+				id: "militaryAge",
+				label: "Độ tuổi NVQS (18 - 27 tuổi)",
+				count: stats.ageStats.militaryAge.count,
+				pct: stats.ageStats.militaryAge.percentage,
+				color: STAT_CATEGORY_COLORS.cat2,
+			},
+			{
+				id: "workingAge",
+				label: "Độ tuổi lao động (18 - 60 tuổi)",
+				count: stats.ageStats.workingAge.count,
+				pct: stats.ageStats.workingAge.percentage,
+				color: STAT_CATEGORY_COLORS.cat3,
+			},
+			{
+				id: "over60",
+				label: "Người cao tuổi (> 60 tuổi)",
+				count: stats.ageStats.over60.count,
+				pct: stats.ageStats.over60.percentage,
+				color: STAT_CATEGORY_COLORS.cat4,
+			},
+		];
+	}, [stats.ageStats]);
+
 	const handleExportStatsExcel = () => {
 		try {
 			const titleRow = [
@@ -642,379 +727,67 @@ export const AnalyticsDashboard: React.FC = () => {
 				</div>
 			</div>
 
-			{/* 4 Thẻ KPI Đầu Trang */}
-			<div className={STAT_KPI_GRID_CLASS}>
-				{/* KPI 1: Tổng số Hộ */}
-				<StatKpiCard
-					label="Tổng Hộ Gia Đình"
-					value={formatVietnameseNumber(stats.totalHouseholds)}
-					unit="hộ"
-					subText="Hộ gia đình quản lý"
-					icon={Building2}
-				/>
+			{/* 4 Thẻ KPI Chuẩn Chiều Cao 88px */}
+			<KpiRow
+				totalHouseholds={stats.totalHouseholds}
+				totalMembers={stats.totalMembers}
+				maleCount={stats.maleCount}
+				femaleCount={stats.femaleCount}
+				malePct={stats.malePct}
+				femalePct={stats.femalePct}
+				minorityCount={stats.minorityCount}
+				minorityPct={stats.minorityPct}
+			/>
 
-				{/* KPI 2: Tổng Nhân Khẩu */}
-				<StatKpiCard
-					label="Tổng Nhân Khẩu"
-					value={formatVietnameseNumber(stats.totalMembers)}
-					unit="người"
-					subText="Công dân thường trú"
-					icon={Users}
-				/>
-
-				{/* KPI 3: Cơ cấu Giới tính */}
-				<StatKpiCard
-					label="Cơ Cấu Giới Tính"
-					value={
-						<span className="flex items-center gap-2">
-							<span className="flex items-center gap-1.5">
-								<span className="w-2 h-2 rounded-full bg-blue-500 inline-block shrink-0" />
-								<span>{formatVietnameseNumber(stats.malePct)}%</span>
-							</span>
-							<span className="text-slate-300 dark:text-slate-600 font-normal">
-								/
-							</span>
-							<span className="flex items-center gap-1.5">
-								<span className="w-2 h-2 rounded-full bg-rose-500 inline-block shrink-0" />
-								<span>{formatVietnameseNumber(stats.femalePct)}%</span>
-							</span>
-						</span>
-					}
-					subText={`${formatVietnameseNumber(stats.maleCount)} Nam • ${formatVietnameseNumber(stats.femaleCount)} Nữ`}
-					icon={Users2}
-				/>
-
-				{/* KPI 4: Tỷ lệ DTTS */}
-				<StatKpiCard
-					label="Tỷ Lệ DTTS"
-					value={`${formatVietnameseNumber(stats.minorityPct)}%`}
-					subText={`${formatVietnameseNumber(stats.minorityCount)} đồng bào DTTS`}
-					icon={HeartHandshake}
-				/>
-			</div>
-
-			{/* Hàng 2: Biểu Đồ Dân Tộc & Tôn Giáo */}
-			<div className={STAT_PANEL_GRID_CLASS}>
-				{/* Biểu đồ phân bổ 14 Dân tộc */}
-				<StatChartPanel
+			{/* Lưới 4 Card Chính 2x2 Cố Định lg:h-[276px] */}
+			<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+				{/* Card 1: Dân tộc */}
+				<DistributionCard
+					icon={<PieChart className="size-4" />}
 					title="Phân Bổ Dân Tộc Địa Bàn Đăk Hà"
-					description="Tỷ lệ đồng bào dân tộc thiểu số và phân bổ chi tiết các dân tộc"
-					icon={PieChart}
-					badge={
-						<span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-							{ETHNIC_GROUPS.length} dân tộc
-						</span>
-					}
-				>
-					<div className="space-y-3">
-						<StatDonut
-							items={[
-								{
-									label: "Kinh",
-									value: stats.totalMembers - stats.minorityCount,
-									color: STAT_CATEGORY_COLORS.cat1,
-									unit: "người",
-								},
-								{
-									label: "DTTS",
-									value: stats.minorityCount,
-									color: STAT_CATEGORY_COLORS.cat2,
-									unit: "người",
-								},
-							]}
-							total={stats.totalMembers}
-							centerValue={`${formatVietnameseNumber(stats.minorityPct)}%`}
-							centerLabel="DTTS"
-						/>
+					badge={`${ETHNIC_GROUPS.length} dân tộc`}
+					segments={ethnicSegments}
+					centerValue={`${formatVietnameseNumber(stats.minorityPct)}%`}
+					centerLabel="DTTS"
+				/>
 
-						<div className={STAT_SCROLL_CONTAINER_CLASS}>
-							{ETHNIC_GROUPS.map((eth) => {
-								const cnt = stats.ethnicMap[eth] || 0;
-								return (
-									<StatBarRow
-										key={eth}
-										label={`Dân tộc ${eth}`}
-										value={cnt}
-										total={stats.totalMembers}
-										barColor={STAT_CATEGORY_COLORS.cat1}
-										unit="người"
-									/>
-								);
-							})}
-						</div>
-					</div>
-				</StatChartPanel>
-
-				{/* Biểu đồ phân bổ Tôn giáo */}
-				<StatChartPanel
+				{/* Card 2: Tôn giáo */}
+				<DistributionCard
+					icon={<Shield className="size-4" />}
 					title="Cơ Cấu Tín Ngưỡng & Tôn Giáo"
-					description="Tỷ lệ có tín ngưỡng / tôn giáo và các tổ chức tôn giáo trên địa bàn"
-					icon={Shield}
-					badge={
-						<span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-							5 nhóm
-						</span>
+					badge="5 nhóm"
+					segments={religionSegments}
+					centerValue={
+						stats.totalMembers > 0
+							? `${formatVietnameseNumber(
+									Math.round(
+										(religionDetails.religiousCount / stats.totalMembers) *
+											1000,
+									) / 10,
+								)}%`
+							: "0%"
 					}
-				>
-					<div className="space-y-3">
-						<StatDonut
-							items={religionDetails.list.map((it) => ({
-								label: it.label,
-								value: it.value,
-								color: it.color,
-								unit: "người",
-							}))}
-							total={stats.totalMembers}
-							centerValue={
-								stats.totalMembers > 0
-									? `${formatVietnameseNumber(
-											Math.round(
-												(religionDetails.religiousCount / stats.totalMembers) *
-													1000,
-											) / 10,
-										)}%`
-									: "0%"
-							}
-							centerLabel="Có đạo"
-						/>
+					centerLabel="Có đạo"
+				/>
 
-						<div className={STAT_SCROLL_CONTAINER_CLASS}>
-							{religionDetails.list.map((item) => (
-								<StatBarRow
-									key={item.label}
-									label={item.label}
-									value={item.value}
-									total={stats.totalMembers}
-									barColor={item.color}
-									unit="người"
-								/>
-							))}
-						</div>
-					</div>
-				</StatChartPanel>
-			</div>
-
-			{/* Hàng 3: Tháp Tuổi & Tình Hình Nghĩa Vụ Quân Sự */}
-			<div className={STAT_PANEL_GRID_CLASS}>
-				{/* Tháp Tuổi & Cơ Cấu Thế Hệ */}
-				<StatChartPanel
+				{/* Card 3: Tháp tuổi */}
+				<DistributionCard
+					icon={<Users className="size-4" />}
 					title="Tháp Tuổi & Cơ Cấu Thế Hệ"
-					description="Phân bổ nhân khẩu theo 4 nhóm độ tuổi quan trọng trên địa bàn"
-					icon={Users}
-					badge={
-						<span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-							4 nhóm tuổi
-						</span>
-					}
-				>
-					<div className="space-y-3">
-						<StatDonut
-							items={[
-								{
-									label: "Thiếu nhi (<16 tuổi)",
-									value: stats.ageStats.under16.count,
-									color: STAT_CATEGORY_COLORS.cat1,
-									unit: "người",
-								},
-								{
-									label: "Độ tuổi NVQS (18-27 tuổi)",
-									value: stats.ageStats.militaryAge.count,
-									color: STAT_CATEGORY_COLORS.cat2,
-									unit: "người",
-								},
-								{
-									label: "Độ tuổi lao động (18-60 tuổi)",
-									value: stats.ageStats.workingAge.count,
-									color: STAT_CATEGORY_COLORS.cat3,
-									unit: "người",
-								},
-								{
-									label: "Người cao tuổi (>60 tuổi)",
-									value: stats.ageStats.over60.count,
-									color: STAT_CATEGORY_COLORS.cat4,
-									unit: "người",
-								},
-							]}
-							total={stats.totalMembers}
-							centerValue={`${formatVietnameseNumber(stats.ageStats.workingAge.percentage)}%`}
-							centerLabel="Lao động"
-						/>
+					badge="4 nhóm tuổi"
+					segments={ageSegments}
+					centerValue={`${formatVietnameseNumber(stats.ageStats.workingAge.percentage)}%`}
+					centerLabel="Lao động"
+					digits={1}
+				/>
 
-						<div className={STAT_SCROLL_CONTAINER_CLASS}>
-							<StatBarRow
-								label="Thiếu nhi (< 16 tuổi)"
-								value={stats.ageStats.under16.count}
-								total={stats.totalMembers}
-								barColor={STAT_CATEGORY_COLORS.cat1}
-								unit="người"
-							/>
-							<StatBarRow
-								label="Độ tuổi NVQS (18 - 27 tuổi)"
-								value={stats.ageStats.militaryAge.count}
-								total={stats.totalMembers}
-								barColor={STAT_CATEGORY_COLORS.cat2}
-								unit="người"
-							/>
-							<StatBarRow
-								label="Độ tuổi lao động (18 - 60 tuổi)"
-								value={stats.ageStats.workingAge.count}
-								total={stats.totalMembers}
-								barColor={STAT_CATEGORY_COLORS.cat3}
-								unit="người"
-							/>
-							<StatBarRow
-								label="Người cao tuổi (> 60 tuổi)"
-								value={stats.ageStats.over60.count}
-								total={stats.totalMembers}
-								barColor={STAT_CATEGORY_COLORS.cat4}
-								unit="người"
-							/>
-						</div>
-					</div>
-				</StatChartPanel>
-
-				{/* Tình Hình Nghĩa Vụ Quân Sự (NVQS) */}
-				<StatChartPanel
-					title="Tình Hình Nghĩa Vụ Quân Sự"
-					description="Phân loại tình trạng chấp hành và diện quản lý NVQS công dân"
-					icon={Shield}
-					badge={
-						<span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-							{stats.militaryList.length} trạng thái
-						</span>
-					}
-				>
-					<div className="space-y-3">
-						{stats.militaryList.length > 0 ? (
-							<>
-								<StatDonut
-									items={stats.militaryList.slice(0, 5).map((m, idx) => ({
-										label: m.name,
-										value: m.count,
-										color: [
-											STAT_CATEGORY_COLORS.cat1,
-											STAT_CATEGORY_COLORS.cat2,
-											STAT_CATEGORY_COLORS.cat3,
-											STAT_CATEGORY_COLORS.cat4,
-											STAT_CATEGORY_COLORS.cat5,
-										][idx % 5],
-										unit: "người",
-									}))}
-									total={stats.totalMembers}
-									centerValue={`${formatVietnameseNumber(stats.militaryList[0]?.percentage || 0)}%`}
-									centerLabel="Chủ yếu"
-								/>
-								<div className={STAT_SCROLL_CONTAINER_CLASS}>
-									{stats.militaryList.map((m, idx) => (
-										<StatBarRow
-											key={m.name}
-											label={m.name}
-											value={m.count}
-											total={stats.totalMembers}
-											barColor={
-												[
-													STAT_CATEGORY_COLORS.cat1,
-													STAT_CATEGORY_COLORS.cat2,
-													STAT_CATEGORY_COLORS.cat3,
-													STAT_CATEGORY_COLORS.cat4,
-													STAT_CATEGORY_COLORS.cat5,
-												][idx % 5]
-											}
-											unit="người"
-										/>
-									))}
-								</div>
-							</>
-						) : (
-							<div className="py-12 text-center text-xs text-slate-400">
-								Chưa có dữ liệu nghĩa vụ quân sự
-							</div>
-						)}
-					</div>
-				</StatChartPanel>
-			</div>
-
-			{/* Hàng 4: Trình Độ Học Vấn & Cơ Cấu Nghề Nghiệp */}
-			<div className={STAT_PANEL_GRID_CLASS}>
-				{/* Trình Độ Học Vấn */}
-				<StatChartPanel
-					title="Trình Độ Học Vấn"
-					description="Thống kê phân bổ trình độ học vấn của công dân"
-					icon={GraduationCap}
-					badge={
-						<span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-							{stats.educationList.length} trình độ
-						</span>
-					}
-				>
-					<div className="space-y-3">
-						{stats.educationList.length > 0 ? (
-							<div className={STAT_SCROLL_CONTAINER_CLASS}>
-								{stats.educationList.map((edu, idx) => (
-									<StatBarRow
-										key={edu.name}
-										label={edu.name}
-										value={edu.count}
-										total={stats.totalMembers}
-										barColor={
-											[
-												STAT_CATEGORY_COLORS.cat1,
-												STAT_CATEGORY_COLORS.cat2,
-												STAT_CATEGORY_COLORS.cat3,
-												STAT_CATEGORY_COLORS.cat4,
-											][idx % 4]
-										}
-										unit="người"
-									/>
-								))}
-							</div>
-						) : (
-							<div className="py-12 text-center text-xs text-slate-400">
-								Chưa có dữ liệu trình độ học vấn
-							</div>
-						)}
-					</div>
-				</StatChartPanel>
-
-				{/* Cơ Cấu Nghề Nghiệp */}
-				<StatChartPanel
-					title="Cơ Cấu Nghề Nghiệp"
-					description="Thống kê ngành nghề việc làm chủ yếu trong cộng đồng"
-					icon={Briefcase}
-					badge={
-						<span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-							{stats.occupationList.length} ngành nghề
-						</span>
-					}
-				>
-					<div className="space-y-3">
-						{stats.occupationList.length > 0 ? (
-							<div className={STAT_SCROLL_CONTAINER_CLASS}>
-								{stats.occupationList.map((occ, idx) => (
-									<StatBarRow
-										key={occ.name}
-										label={occ.name}
-										value={occ.count}
-										total={stats.totalMembers}
-										barColor={
-											[
-												STAT_CATEGORY_COLORS.cat3,
-												STAT_CATEGORY_COLORS.cat2,
-												STAT_CATEGORY_COLORS.cat1,
-												STAT_CATEGORY_COLORS.cat4,
-											][idx % 4]
-										}
-										unit="người"
-									/>
-								))}
-							</div>
-						) : (
-							<div className="py-12 text-center text-xs text-slate-400">
-								Chưa có dữ liệu nghề nghiệp
-							</div>
-						)}
-					</div>
-				</StatChartPanel>
+				{/* Card 4: Nghĩa vụ quân sự & Việc làm / Học vấn */}
+				<WelfareCard
+					militaryList={stats.militaryList}
+					educationList={stats.educationList}
+					occupationList={stats.occupationList}
+					totalMembers={stats.totalMembers}
+				/>
 			</div>
 
 			{/* Hàng 3: Bảng Thống Kê So Sánh Giữa Các Thôn Xã Đăk Hà */}

@@ -119,7 +119,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
 
 			{/* Tâm Donut: số lớn và nhãn tiếng Việt bọc chữ an toàn */}
 			<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-				<span className="text-xl font-black leading-none text-slate-900 dark:text-white tabular-nums">
+				<span className="text-xl font-bold leading-none text-slate-900 dark:text-white tabular-nums">
 					{centerValue}
 				</span>
 				<span

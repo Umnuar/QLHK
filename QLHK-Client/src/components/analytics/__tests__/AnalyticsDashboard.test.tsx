@@ -5,7 +5,6 @@ import { AnalyticsDashboard } from "../AnalyticsDashboard";
 
 // Mock AppContext
 const mockUseApp = vi.fn();
-const mockToggleTheme = vi.fn();
 vi.mock("../../../AppContext", () => ({
 	useApp: () => mockUseApp(),
 }));
@@ -110,8 +109,6 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 				{ id: "v-02", name: "Thôn 2" },
 			],
 			isBackendHealthy: true,
-			theme: "light",
-			toggleTheme: mockToggleTheme,
 		});
 
 		mockUseHouseholds.mockReturnValue({
@@ -188,19 +185,11 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 		expect(screen.getByText(/290 Nam • 310 Nữ/)).toBeInTheDocument();
 	});
 
-	it("5. Bấm nút Làm mới gọi lại API thống kê thời gian thực", async () => {
+	it("5. Hiển thị nút Xuất Báo Cáo Excel trên thanh thao tác", async () => {
 		render(<AnalyticsDashboard />);
 
 		await waitFor(() => {
-			expect(mockGetOverview).toHaveBeenCalledTimes(1);
-		});
-
-		const refreshBtn = screen.getByLabelText("Làm mới số liệu");
-		fireEvent.click(refreshBtn);
-
-		await waitFor(() => {
-			expect(mockGetOverview).toHaveBeenCalledTimes(2);
-			expect(mockGetByVillage).toHaveBeenCalledTimes(2);
+			expect(screen.getByText("Xuất Báo Cáo Excel")).toBeInTheDocument();
 		});
 	});
 
@@ -244,17 +233,5 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 		expect(screen.getByText("Đại học")).toBeInTheDocument();
 		expect(screen.getByText("Làm nông")).toBeInTheDocument();
 		expect(screen.getByText("Công nhân")).toBeInTheDocument();
-	});
-
-	it("8. Bấm nút Đổi giao diện gọi toggleTheme từ AppContext", async () => {
-		render(<AnalyticsDashboard />);
-
-		await waitFor(() => {
-			expect(screen.getByLabelText("Đổi giao diện")).toBeInTheDocument();
-		});
-
-		const themeBtn = screen.getByLabelText("Đổi giao diện");
-		fireEvent.click(themeBtn);
-		expect(mockToggleTheme).toHaveBeenCalledTimes(1);
 	});
 });

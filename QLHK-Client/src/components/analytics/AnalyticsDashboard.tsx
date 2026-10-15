@@ -6,11 +6,8 @@ import {
 	Download,
 	GraduationCap,
 	HeartHandshake,
-	Moon,
 	PieChart,
-	RefreshCw,
 	Shield,
-	Sun,
 	UserCheck,
 	Users,
 	Users2,
@@ -50,8 +47,6 @@ export const AnalyticsDashboard: React.FC = () => {
 		setActiveTab,
 		villages,
 		isBackendHealthy,
-		theme,
-		toggleTheme,
 	} = useApp();
 	const { activeHouseholds } = useHouseholds();
 
@@ -716,32 +711,6 @@ export const AnalyticsDashboard: React.FC = () => {
 						<Download className="w-4 h-4" strokeWidth={1.5} />
 						<span>Xuất Báo Cáo Excel</span>
 					</button>
-
-					<button
-						type="button"
-						onClick={toggleTheme}
-						title={theme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
-						aria-label="Đổi giao diện"
-						className="h-10 w-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-					>
-						{theme === "dark" ? (
-							<Sun className="w-4 h-4 text-amber-400" strokeWidth={1.5} />
-						) : (
-							<Moon className="w-4 h-4 text-slate-600" strokeWidth={1.5} />
-						)}
-					</button>
-
-					<button
-						type="button"
-						onClick={fetchAnalytics}
-						aria-label="Làm mới số liệu"
-						className="h-10 w-10 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-					>
-						<RefreshCw
-							strokeWidth={1.5}
-							className={`w-4 h-4 ${refreshing ? "animate-spin text-emerald-600" : ""}`}
-						/>
-					</button>
 				</div>
 			</div>
 
@@ -810,15 +779,15 @@ export const AnalyticsDashboard: React.FC = () => {
 
 			{/* Hàng 3: Bảng Thống Kê So Sánh Giữa Các Thôn Xã Đăk Hà */}
 			<div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col transition-colors duration-150">
-				<div className="p-4 bg-slate-50 dark:bg-slate-950/60 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
-					<div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+				<div className="p-3 sm:px-4 bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap text-xs">
+					<div className="flex items-center gap-2.5 text-slate-700 dark:text-slate-300 font-bold">
 						<Building2
-							className="w-4 h-4 text-slate-500 dark:text-slate-400"
-							strokeWidth={1.5}
+							className="w-4 h-4 text-emerald-600 dark:text-emerald-400"
+							strokeWidth={1.75}
 						/>
 						<span>Bảng Thống Kê So Sánh Giữa Các Thôn</span>
 					</div>
-					<span className="text-xs text-slate-500 dark:text-slate-400 font-normal">
+					<span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
 						{villages.length} thôn đơn vị hành chính
 					</span>
 				</div>
@@ -827,122 +796,89 @@ export const AnalyticsDashboard: React.FC = () => {
 					<table className="w-full text-left border-collapse text-xs">
 						<thead className={TABLE_HEADER_CLASSES.thead}>
 							<tr className={TABLE_HEADER_CLASSES.row}>
-								<th
-									className={
-										TABLE_HEADER_CLASSES.thCenter +
-										" w-12 border-r border-slate-200/80 dark:border-slate-800"
-									}
-								>
+								<th className={`${TABLE_HEADER_CLASSES.thCenter} w-14`}>
 									STT
 								</th>
-								<th
-									className={
-										TABLE_HEADER_CLASSES.th +
-										" border-r border-slate-200/80 dark:border-slate-800 min-w-[180px]"
-									}
-								>
+								<th className={`${TABLE_HEADER_CLASSES.th} min-w-[180px]`}>
 									Tên Thôn
 								</th>
-								<th
-									className={
-										TABLE_HEADER_CLASSES.thRight +
-										" border-r border-slate-200/80 dark:border-slate-800"
-									}
-								>
+								<th className={TABLE_HEADER_CLASSES.thRight}>
 									Số Hộ
 								</th>
-								<th
-									className={
-										TABLE_HEADER_CLASSES.thRight +
-										" border-r border-slate-200/80 dark:border-slate-800"
-									}
-								>
+								<th className={TABLE_HEADER_CLASSES.thRight}>
 									Tổng Nhân Khẩu
 								</th>
-								<th
-									className={
-										TABLE_HEADER_CLASSES.thRight +
-										" border-r border-slate-200/80 dark:border-slate-800"
-									}
-								>
+								<th className={TABLE_HEADER_CLASSES.thRight}>
 									Nam
 								</th>
-								<th
-									className={
-										TABLE_HEADER_CLASSES.thRight +
-										" border-r border-slate-200/80 dark:border-slate-800"
-									}
-								>
+								<th className={TABLE_HEADER_CLASSES.thRight}>
 									Nữ
 								</th>
-								<th
-									className={
-										TABLE_HEADER_CLASSES.thRight +
-										" border-r border-slate-200/80 dark:border-slate-800"
-									}
-								>
+								<th className={TABLE_HEADER_CLASSES.thRight}>
 									Đồng Bào DTTS
 								</th>
-								<th className={TABLE_HEADER_CLASSES.thRight}>Tỷ Lệ DTTS</th>
+								<th className={TABLE_HEADER_CLASSES.thRight}>
+									Tỷ Lệ DTTS
+								</th>
 							</tr>
 						</thead>
-						<tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+						<tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
 							{villageBreakdown.map((row, idx) => (
 								<tr
 									key={row.village_id}
-									className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-[13px]"
+									className="h-[52px] bg-white dark:bg-slate-900 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors text-[14px]"
 								>
-									<td className="py-3 px-3.5 text-center text-slate-500 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800/60 tabular-nums">
+									<td className="py-3 px-3 text-center text-slate-500 dark:text-slate-400 tabular-nums font-medium text-[14px]">
 										{idx + 1}
 									</td>
-									<td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100 border-r border-slate-100 dark:border-slate-800/60">
+									<td className="py-3 px-4 font-semibold text-slate-900 dark:text-slate-100 text-[14px]">
 										{row.village_name}
 									</td>
-									<td className="py-3 px-3 text-right tabular-nums font-semibold text-slate-900 dark:text-slate-100 border-r border-slate-100 dark:border-slate-800/60">
+									<td className="py-3 px-3 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100 text-[14px]">
 										{formatVietnameseNumber(row.household_count)}
 									</td>
-									<td className="py-3 px-3 text-right tabular-nums font-semibold text-slate-900 dark:text-slate-100 border-r border-slate-100 dark:border-slate-800/60">
+									<td className="py-3 px-3 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100 text-[14px]">
 										{formatVietnameseNumber(row.citizen_count)}
 									</td>
-									<td className="py-3 px-3 text-right tabular-nums text-slate-700 dark:text-slate-300 border-r border-slate-100 dark:border-slate-800/60">
+									<td className="py-3 px-3 text-right tabular-nums text-slate-600 dark:text-slate-300 text-[14px]">
 										{formatVietnameseNumber(row.male_count)}
 									</td>
-									<td className="py-3 px-3 text-right tabular-nums text-slate-700 dark:text-slate-300 border-r border-slate-100 dark:border-slate-800/60">
+									<td className="py-3 px-3 text-right tabular-nums text-slate-600 dark:text-slate-300 text-[14px]">
 										{formatVietnameseNumber(row.female_count)}
 									</td>
-									<td className="py-3 px-3 text-right tabular-nums font-semibold text-slate-900 dark:text-slate-100 border-r border-slate-100 dark:border-slate-800/60">
+									<td className="py-3 px-3 text-right tabular-nums font-medium text-slate-900 dark:text-slate-100 text-[14px]">
 										{formatVietnameseNumber(row.dtts_count)}
 									</td>
-									<td className="py-3 px-3 text-right tabular-nums font-bold text-slate-900 dark:text-white">
+									<td className="py-3 px-3 text-right tabular-nums font-semibold text-emerald-600 dark:text-emerald-400 text-[14px]">
 										{formatVietnameseNumber(row.dtts_percentage)}%
 									</td>
 								</tr>
 							))}
 						</tbody>
-						<tfoot className="bg-slate-100/80 dark:bg-slate-800/80 font-black text-slate-900 dark:text-white border-t-2 border-slate-200 dark:border-slate-700">
-							<tr className="text-[13px]">
+						<tfoot className="bg-slate-50 dark:bg-slate-800/80 font-bold text-slate-900 dark:text-white border-t-2 border-slate-200 dark:border-slate-700 text-[14px]">
+							<tr className="h-[52px]">
 								<td
 									colSpan={2}
-									className="py-3.5 px-4 text-center font-black uppercase tracking-wider"
+									className="py-3.5 px-4 text-center font-bold uppercase tracking-wider text-xs sm:text-[13px]"
 								>
 									TỔNG CỘNG TOÀN XÃ
 								</td>
-								<td className="py-3.5 px-3 text-right font-black tabular-nums border-r border-slate-200 dark:border-slate-700">
+								<td className="py-3.5 px-3 text-right font-bold tabular-nums">
 									{formatVietnameseNumber(villageTotals.totalHh)}
 								</td>
-								<td className="py-3.5 px-3 text-right font-black tabular-nums border-r border-slate-200 dark:border-slate-700">
+								<td className="py-3.5 px-3 text-right font-bold tabular-nums">
 									{formatVietnameseNumber(villageTotals.totalCit)}
 								</td>
-								<td className="py-3.5 px-3 text-right font-black tabular-nums border-r border-slate-200 dark:border-slate-700">
+								<td className="py-3.5 px-3 text-right font-bold tabular-nums">
 									{formatVietnameseNumber(villageTotals.totalMale)}
 								</td>
-								<td className="py-3.5 px-3 text-right font-black tabular-nums border-r border-slate-200 dark:border-slate-700">
+								<td className="py-3.5 px-3 text-right font-bold tabular-nums">
 									{formatVietnameseNumber(villageTotals.totalFemale)}
 								</td>
-								<td className="py-3.5 px-3 text-right font-black tabular-nums border-r border-slate-200 dark:border-slate-700">
+								<td className="py-3.5 px-3 text-right font-bold tabular-nums">
 									{formatVietnameseNumber(villageTotals.totalDtts)}
 								</td>
-								<td className="py-3.5 px-3 text-right font-black tabular-nums">
+								<td className="py-3.5 px-3 text-right font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
 									{formatVietnameseNumber(villageTotals.dttsPct)}%
 								</td>
 							</tr>

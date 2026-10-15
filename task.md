@@ -30,9 +30,9 @@
   - Diff Budget: <= 150 LOC
   - Tests: Client Analytics & UI tests PASS (100% green)
 
-- [ ] Step 4: Final Quality Gates & Verification
-  - Verification: `npm test` Backend (115 PASS), `npm test` Client (155+ PASS), `npx tsc --noEmit` Client (0 error)
-  - Docker container health check
+- [x] Step 4: Final Quality Gates & Verification
+  - Verification: `npm test` Backend (115/115 PASS), `npm test` Client (155/155 PASS), `npx tsc --noEmit` Client (0 error)
+  - Docker container health check: HTTP 200 OK (uptime confirmed)
 
 ## Project Gotchas & Learned Invariants
 - [Container Prisma Sync]: Docker volume `/app/node_modules` cô lập; nếu sửa schema cần `docker exec dakha-qlhk-backend npx prisma generate && docker restart dakha-qlhk-backend`.

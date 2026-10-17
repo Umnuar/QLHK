@@ -32,13 +32,15 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Backend && npx vitest run tests/integration/citizens-search-cccd.test.ts`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit`
-- [ ] Step 3: Verification & Final Gate
-  - Full Test Suite: `cd QLHK-Backend && npm test` (Zero new failures vs baseline)
+- [x] Step 3: Verification & Final Gate
+  - Full Test Suite: `cd QLHK-Backend && npm test` (Zero new failures vs baseline: 119/119 PASS)
   - Typecheck: `cd QLHK-Backend && npx tsc --noEmit` (0 errors)
   - Clean Working Tree & No Orphan Patches: Verified (`test -z "$(git status --porcelain)" && test -z "$(ls -A .git/roadmap-stash 2>/dev/null)"`)
 
 ## Finding Closure Mapping (When Sourced from `audit` / `optimize`)
-<!-- Populate at Step 3 when steps carry Finding IDs: `BUG-001 -> <commit_hash> (Step 1)` -->
+- `BUG-001` -> `d7311fa` (Step 1: Fix Demographics Persistence and Placeholder CCCD Handling in Excel Import)
+- `BUG-002` -> `d7311fa` (Step 1: Fix Demographics Persistence and Placeholder CCCD Handling in Excel Import)
+- `BUG-003` -> `dd3a766` (Step 2: Support Full 9/12-Digit CCCD Hash Matching in Citizens Search)
 
 ## Project Gotchas & Learned Invariants
 <!-- Append verified gotchas here when encountering subtle bugs -->

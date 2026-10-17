@@ -16,7 +16,7 @@
 
 ## Execution Checklist
 
-- [ ] Step 1: Fix Demographics Persistence and Placeholder CCCD Handling in Excel Import
+- [x] Step 1: Fix Demographics Persistence and Placeholder CCCD Handling in Excel Import
   - Finding IDs: `BUG-001`, `BUG-002`
   - Target Files: `QLHK-Backend/src/controllers/excel.controller.ts`, `QLHK-Backend/tests/integration/excel-import-demographics.test.ts`
   - Role Focus: Excel data ingestion, CCCD validation, and demographic persistence invariants

@@ -144,8 +144,16 @@ export const importExcel = async (
 							let cccdHash: string | null = null;
 							let cccdLast4: string | null = null;
 
-							if (m.cccd && typeof m.cccd === "string") {
-								const enc = encryptCCCD(m.cccd);
+							const rawCccd = typeof m.cccd === "string" ? m.cccd.trim() : "";
+							const isInvalidCccd =
+								!rawCccd ||
+								rawCccd.toLowerCase().includes("chưa có") ||
+								rawCccd.includes("a có") ||
+								rawCccd.includes("•") ||
+								rawCccd === "—" ||
+								rawCccd === "-";
+							if (!isInvalidCccd && /^\d{9,12}$/.test(rawCccd)) {
+								const enc = encryptCCCD(rawCccd);
 								cccdCipher = enc.encrypted;
 								cccdHash = enc.hash;
 								cccdLast4 = enc.last4;
@@ -168,6 +176,10 @@ export const importExcel = async (
 								cccd_last4: cccdLast4,
 								ethnicity: m.ethnicity || "Kinh",
 								religion: m.religion || "Không",
+								education: m.education ? String(m.education).trim() : null,
+								military_status: m.military_status ? String(m.military_status).trim() : null,
+								occupation: m.occupation ? String(m.occupation).trim() : null,
+								native_place: m.native_place ? String(m.native_place).trim() : null,
 								notes: m.notes || null,
 								version: 1,
 								is_deleted: false,

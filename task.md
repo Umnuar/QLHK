@@ -24,7 +24,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Backend && npx vitest run tests/integration/excel-import-demographics.test.ts`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit`
-- [ ] Step 2: Support Full 9/12-Digit CCCD Hash Matching in Citizens Search
+- [x] Step 2: Support Full 9/12-Digit CCCD Hash Matching in Citizens Search
   - Finding IDs: `BUG-003`
   - Target Files: `QLHK-Backend/src/controllers/citizens.controller.ts`, `QLHK-Backend/tests/integration/citizens-search-cccd.test.ts`
   - Role Focus: Citizen query sanitization, exact CCCD hash lookup, and database index utilization

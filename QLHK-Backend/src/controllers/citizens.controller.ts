@@ -73,14 +73,20 @@ export const getCitizens = async (
 			where.cccd_hash = cccdHash;
 		}
 
-		// Tìm kiếm họ tên không dấu hoặc 4 số cuối CCCD
+		// Tìm kiếm họ tên không dấu, 4 số cuối hoặc băm CCCD
 		if (search && typeof search === "string" && search.trim()) {
-			const cleanSearch = removeAccents(search.trim());
-			where.OR = [
+			const rawSearch = search.trim();
+			const cleanSearch = removeAccents(rawSearch);
+			const cleanDigits = rawSearch.replace(/\D/g, "");
+			const orConditions: any[] = [
 				{ name_unaccented: { contains: cleanSearch } },
-				{ full_name: { contains: search.trim() } },
-				{ cccd_last4: { contains: search.trim() } },
+				{ full_name: { contains: rawSearch } },
+				{ cccd_last4: { contains: rawSearch } },
 			];
+			if (cleanDigits.length === 9 || cleanDigits.length === 12) {
+				orConditions.push({ cccd_hash: hashCCCD(cleanDigits) });
+			}
+			where.OR = orConditions;
 		}
 
 		const [total, citizens] = await Promise.all([

@@ -48,13 +48,17 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/components/excel/__tests__/ExportSettingsModal.test.tsx src/components/excel/__tests__/ImportPreviewModal.test.tsx`
   - Static Check: `cd QLHK-Client && npx tsc --noEmit`
-- [ ] Step 5: Verification & Final Gate
-  - Full Test Suite: `cd QLHK-Client && npm test` (Zero new failures vs baseline)
+- [x] Step 5: Verification & Final Gate
+  - Full Test Suite: `cd QLHK-Client && npm test -- --run` (Zero new failures vs baseline: 17 files, 162 passed)
   - Typecheck: `cd QLHK-Client && npx tsc --noEmit` (0 errors)
   - Clean Working Tree & No Orphan Patches: Verified (`test -z "$(git status --porcelain)" && test -z "$(ls -A .git/roadmap-stash 2>/dev/null)"`)
 
 ## Finding Closure Mapping (When Sourced from `audit` / `optimize`)
-<!-- Populate at Step 5 when steps carry Finding IDs: `BUG-001 -> <commit_hash> (Step K)` -->
+- `BUG-001 -> ecb8854 (Step 1: Fallback to Vietnamese demographic aliases in normalizeHousehold and CitizenModal)`
+- `BUG-002 -> 5aed979 (Step 2: Dynamic calculation year in householdStore)`
+- `BUG-003 -> 1ce3791 (Step 3: Backdrop blur on core/household modals), 6697711 (Step 4: Backdrop blur on Excel/auxiliary modals)`
+- `BUG-004 -> 5aed979 (Step 2: Robust ISO date regex parsing in AnalyticsDashboard)`
 
 ## Project Gotchas & Learned Invariants
-<!-- Append verified gotchas here when encountering subtle bugs -->
+- `GOTCHA-01`: When parsing DOB in AnalyticsDashboard, DOB strings can come from Excel in ISO format `YYYY-MM-DD` or `YYYY/MM/DD` as well as Vietnamese `DD/MM/YYYY`. Using `/(?:^|\D)(\d{4})(?:\D|$)/` matches 4 digits in either format.
+- `GOTCHA-02`: In Tailwind CSS modals, modal overlays need explicit `backdrop-blur-sm` along with `bg-slate-950/45 dark:bg-black/60` to adhere to P0 glassmorphism design invariants.

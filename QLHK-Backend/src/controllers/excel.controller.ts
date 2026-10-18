@@ -1,4 +1,5 @@
 import type { Response } from "express";
+import crypto from "crypto";
 import fs from "fs";
 import { config } from "../config/env";
 import { prisma } from "../config/prisma";
@@ -120,76 +121,82 @@ export const importExcel = async (
 		const totalHouseholds = parseResult.households.length;
 		for (let i = 0; i < totalHouseholds; i += CHUNK_SIZE) {
 			const chunk = parseResult.households.slice(i, i + CHUNK_SIZE);
+			const householdsData: any[] = [];
+			const allCitizensData: any[] = [];
+
+			for (const h of chunk) {
+				const householdId = crypto.randomUUID();
+				householdsData.push({
+					id: householdId,
+					village_id: targetVillageId!,
+					book_number: h.book_number,
+					address:
+						(h.address && String(h.address).trim()) ||
+						(parseResult.village_name
+							? `Thôn ${parseResult.village_name}`.trim()
+							: null),
+					status: (h.status && String(h.status).trim()) || "active",
+					version: 1,
+					is_deleted: false,
+				});
+
+				for (const m of (h.members || []) as any[]) {
+					let cccdCipher: string | null = null;
+					let cccdHash: string | null = null;
+					let cccdLast4: string | null = null;
+
+					const rawCccd = typeof m.cccd === "string" ? m.cccd.trim() : "";
+					const isInvalidCccd =
+						!rawCccd ||
+						rawCccd.toLowerCase().includes("chưa có") ||
+						rawCccd.includes("a có") ||
+						rawCccd.includes("•") ||
+						rawCccd === "—" ||
+						rawCccd === "-";
+					if (!isInvalidCccd && /^\d{9,12}$/.test(rawCccd)) {
+						const enc = encryptCCCD(rawCccd);
+						cccdCipher = enc.encrypted;
+						cccdHash = enc.hash;
+						cccdLast4 = enc.last4;
+					}
+
+					const fullName = (m.full_name || "").trim();
+
+					allCitizensData.push({
+						household_id: householdId,
+						stt: m.stt,
+						is_head: Boolean(m.is_head),
+						relationship:
+							m.relationship || (m.is_head ? "Chủ hộ" : "Thành viên"),
+						full_name: fullName,
+						name_unaccented: removeAccents(fullName),
+						dob: m.dob || null,
+						gender: m.gender || "Nam",
+						cccd: cccdCipher,
+						cccd_hash: cccdHash,
+						cccd_last4: cccdLast4,
+						ethnicity: m.ethnicity || "Kinh",
+						religion: m.religion || "Không",
+						education: m.education ? String(m.education).trim() : null,
+						military_status: m.military_status ? String(m.military_status).trim() : null,
+						occupation: m.occupation ? String(m.occupation).trim() : null,
+						native_place: m.native_place ? String(m.native_place).trim() : null,
+						notes: m.notes || null,
+						version: 1,
+						is_deleted: false,
+					});
+				}
+			}
+
 			await prisma.$transaction(
 				async (tx) => {
-					for (const h of chunk) {
-						const household = await tx.households.create({
-							data: {
-								village_id: targetVillageId!,
-								book_number: h.book_number,
-								address:
-									(h.address && String(h.address).trim()) ||
-									(parseResult.village_name
-										? `Thôn ${parseResult.village_name}`.trim()
-										: null),
-								status: (h.status && String(h.status).trim()) || "active",
-								version: 1,
-								is_deleted: false,
-							},
-						});
-						insertedHouseholds++;
-
-						const citizensData = (h.members || []).map((m: any) => {
-							let cccdCipher: string | null = null;
-							let cccdHash: string | null = null;
-							let cccdLast4: string | null = null;
-
-							const rawCccd = typeof m.cccd === "string" ? m.cccd.trim() : "";
-							const isInvalidCccd =
-								!rawCccd ||
-								rawCccd.toLowerCase().includes("chưa có") ||
-								rawCccd.includes("a có") ||
-								rawCccd.includes("•") ||
-								rawCccd === "—" ||
-								rawCccd === "-";
-							if (!isInvalidCccd && /^\d{9,12}$/.test(rawCccd)) {
-								const enc = encryptCCCD(rawCccd);
-								cccdCipher = enc.encrypted;
-								cccdHash = enc.hash;
-								cccdLast4 = enc.last4;
-							}
-
-							const fullName = (m.full_name || "").trim();
-
-							return {
-								household_id: household.id,
-								stt: m.stt,
-								is_head: Boolean(m.is_head),
-								relationship:
-									m.relationship || (m.is_head ? "Chủ hộ" : "Thành viên"),
-								full_name: fullName,
-								name_unaccented: removeAccents(fullName),
-								dob: m.dob || null,
-								gender: m.gender || "Nam",
-								cccd: cccdCipher,
-								cccd_hash: cccdHash,
-								cccd_last4: cccdLast4,
-								ethnicity: m.ethnicity || "Kinh",
-								religion: m.religion || "Không",
-								education: m.education ? String(m.education).trim() : null,
-								military_status: m.military_status ? String(m.military_status).trim() : null,
-								occupation: m.occupation ? String(m.occupation).trim() : null,
-								native_place: m.native_place ? String(m.native_place).trim() : null,
-								notes: m.notes || null,
-								version: 1,
-								is_deleted: false,
-							};
-						});
-
-						if (citizensData.length > 0) {
-							await tx.citizens.createMany({ data: citizensData });
-							insertedCitizens += citizensData.length;
-						}
+					if (householdsData.length > 0) {
+						await tx.households.createMany({ data: householdsData });
+						insertedHouseholds += householdsData.length;
+					}
+					if (allCitizensData.length > 0) {
+						await tx.citizens.createMany({ data: allCitizensData });
+						insertedCitizens += allCitizensData.length;
 					}
 				},
 				{

@@ -24,7 +24,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Backend && npx vitest run tests/integration/api.test.ts`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit && cd ../QLHK-Client && npx tsc --noEmit`
-- [/] Step 2: Chunked Batch Insert for Excel Import Ingestion
+- [x] Step 2: Chunked Batch Insert for Excel Import Ingestion
   - Finding IDs: `OPT-005`
   - Target Files: `QLHK-Backend/src/controllers/excel.controller.ts`
   - Role Focus: PostgreSQL bulk write performance, foreign key integrity, preserving 5 new citizen fields (INV-01).
@@ -32,7 +32,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Backend && npx vitest run tests/integration/excel-import-demographics.test.ts tests/unit/excel-parser.test.ts`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit && cd ../QLHK-Client && npx tsc --noEmit`
-- [ ] Step 3: Client Store Search Filter & Village Aggregation Fast Paths
+- [/] Step 3: Client Store Search Filter & Village Aggregation Fast Paths
   - Finding IDs: `OPT-001`, `OPT-002`
   - Target Files: `QLHK-Client/src/store/householdStore.ts`
   - Role Focus: React state memoization, string search performance, avoiding Unicode NFD re-allocations.

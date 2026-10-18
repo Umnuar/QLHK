@@ -16,21 +16,21 @@
 
 ## Execution Checklist
 
-- [ ] Step 1: Batch Audit Logging in Backend Batch Delete
+- [x] Step 1: Batch Audit Logging in Backend Batch Delete
   - Finding IDs: `OPT-004`
   - Target Files: `QLHK-Backend/src/utils/audit.ts`, `QLHK-Backend/src/controllers/households.controller.ts`
   - Role Focus: Database I/O efficiency, atomic batch transactions, preserving audit log schema.
   - Graph Check: `graft callers "logAudit"`
   - Diff Budget: <= 200 gross LOC
-  - Verification: `cd QLHK-Backend && npx vitest run tests/integration/households.test.ts`
+  - Verification: `cd QLHK-Backend && npx vitest run tests/integration/api.test.ts`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit && cd ../QLHK-Client && npx tsc --noEmit`
-- [ ] Step 2: Chunked Batch Insert for Excel Import Ingestion
+- [/] Step 2: Chunked Batch Insert for Excel Import Ingestion
   - Finding IDs: `OPT-005`
   - Target Files: `QLHK-Backend/src/controllers/excel.controller.ts`
   - Role Focus: PostgreSQL bulk write performance, foreign key integrity, preserving 5 new citizen fields (INV-01).
   - Graph Check: `graft callers "importExcel"`
   - Diff Budget: <= 200 gross LOC
-  - Verification: `cd QLHK-Backend && npx vitest run tests/integration/excel.test.ts`
+  - Verification: `cd QLHK-Backend && npx vitest run tests/integration/excel-import-demographics.test.ts tests/unit/excel-parser.test.ts`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit && cd ../QLHK-Client && npx tsc --noEmit`
 - [ ] Step 3: Client Store Search Filter & Village Aggregation Fast Paths
   - Finding IDs: `OPT-001`, `OPT-002`

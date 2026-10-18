@@ -60,3 +60,60 @@ export async function logAudit(params: AuditParams) {
 		console.error("Lỗi khi ghi audit log:", error);
 	}
 }
+
+export async function logAuditBatch(items: AuditParams[]): Promise<void> {
+	if (!items || items.length === 0) return;
+	try {
+		const uniqueUserIds = Array.from(
+			new Set(
+				items
+					.map((item) => item.userId)
+					.filter((id): id is string => Boolean(id && UUID_REGEX.test(id))),
+			),
+		);
+
+		const validUserSet = new Set<string>();
+		if (uniqueUserIds.length > 0) {
+			const existingUsers = await prisma.users.findMany({
+				where: { id: { in: uniqueUserIds } },
+				select: { id: true },
+			});
+			for (const u of existingUsers) {
+				validUserSet.add(u.id);
+			}
+		}
+
+		const entries = items.map((params) => {
+			let validUserId = params.userId || null;
+			if (
+				validUserId &&
+				(!UUID_REGEX.test(validUserId) || !validUserSet.has(validUserId))
+			) {
+				validUserId = null;
+			}
+
+			let validVillageId = params.villageId || null;
+			if (validVillageId && !UUID_REGEX.test(validVillageId)) {
+				validVillageId = null;
+			}
+
+			return {
+				village_id: validVillageId,
+				user_id: validUserId,
+				action: params.action,
+				entity_type: params.entityType,
+				entity_id: params.entityId || null,
+				old_values: params.oldValues ? JSON.stringify(params.oldValues) : null,
+				new_values: params.newValues ? JSON.stringify(params.newValues) : null,
+				ip_address: params.ipAddress || null,
+			};
+		});
+
+		await prisma.audit_logs.createMany({
+			data: entries,
+		});
+	} catch (error) {
+		console.error("Lỗi khi ghi audit log batch:", error);
+	}
+}
+

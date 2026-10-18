@@ -1,7 +1,7 @@
 import type { Response } from "express";
 import { prisma } from "../config/prisma";
 import type { AuthRequest } from "../middlewares/auth.middleware";
-import { logAudit } from "../utils/audit";
+import { logAudit, logAuditBatch } from "../utils/audit";
 import {
 	decryptCCCD,
 	encryptCCCD,
@@ -996,17 +996,17 @@ export const batchDeleteHouseholds = async (
 			}),
 		]);
 
-		for (const h of households) {
-			await logAudit({
+		await logAuditBatch(
+			households.map((h) => ({
 				userId: req.user?.id,
-				action: "BULK_DELETE",
-				entityType: "household",
+				action: "BULK_DELETE" as const,
+				entityType: "household" as const,
 				entityId: h.id,
 				villageId: h.village_id,
 				oldValues: { book_number: h.book_number, address: h.address },
 				ipAddress: req.ip ? String(req.ip) : null,
-			});
-		}
+			})),
+		);
 
 		res.json({
 			success: true,

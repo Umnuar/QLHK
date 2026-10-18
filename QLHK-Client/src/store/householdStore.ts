@@ -100,13 +100,16 @@ export function useHouseholdStore() {
 		if (!search.trim()) return activeHouseholds;
 		const query = normalizeUnaccented(search.toLowerCase());
 		return activeHouseholds.filter((h) => {
-			const headMatch = normalizeUnaccented(h.head_name.toLowerCase()).includes(
-				query,
-			);
+			const head = h.members.find((m) => m.is_head);
+			const headUnaccented =
+				head?.name_unaccented ||
+				(h as any).head_name_unaccented ||
+				normalizeUnaccented(h.head_name);
+			const headMatch = headUnaccented.includes(query);
 			const codeMatch = (h.code || "").toLowerCase().includes(query);
 			const bookMatch = (h.book_number || "").toLowerCase().includes(query);
 			const memberMatch = h.members.some((m) =>
-				normalizeUnaccented(m.full_name.toLowerCase()).includes(query),
+				(m.name_unaccented || normalizeUnaccented(m.full_name)).includes(query),
 			);
 			return headMatch || codeMatch || bookMatch || memberMatch;
 		});
@@ -190,35 +193,59 @@ export function useHouseholdStore() {
 
 	// Thống kê phân bổ theo Thôn
 	const villageStats = useMemo<VillageStatRow[]>(() => {
-		return VILLAGES.map((v) => {
-			const vHouseholds = activeHouseholds.filter((h) => h.village_id === v.id);
-			let members_count = 0;
-			let male_count = 0;
-			let female_count = 0;
-			let minority_count = 0;
+		type VillageAcc = {
+			households_count: number;
+			members_count: number;
+			male_count: number;
+			female_count: number;
+			minority_count: number;
+		};
 
-			vHouseholds.forEach((h) => {
-				h.members.forEach((m) => {
-					members_count++;
-					if (m.gender === "Nam") male_count++;
-					if (m.gender === "Nữ") female_count++;
-					if (m.ethnicity !== "Kinh") minority_count++;
-				});
+		const statsMap = new Map<string, VillageAcc>();
+		for (const v of VILLAGES) {
+			statsMap.set(v.id, {
+				households_count: 0,
+				members_count: 0,
+				male_count: 0,
+				female_count: 0,
+				minority_count: 0,
 			});
+		}
 
+		for (const h of activeHouseholds) {
+			const acc = statsMap.get(h.village_id);
+			if (acc) {
+				acc.households_count++;
+				for (const m of h.members) {
+					acc.members_count++;
+					if (m.gender === "Nam") acc.male_count++;
+					if (m.gender === "Nữ") acc.female_count++;
+					if (m.ethnicity !== "Kinh") acc.minority_count++;
+				}
+			}
+		}
+
+		return VILLAGES.map((v) => {
+			const acc = statsMap.get(v.id) || {
+				households_count: 0,
+				members_count: 0,
+				male_count: 0,
+				female_count: 0,
+				minority_count: 0,
+			};
 			const minority_percentage =
-				members_count > 0
-					? Math.round((minority_count / members_count) * 1000) / 10
+				acc.members_count > 0
+					? Math.round((acc.minority_count / acc.members_count) * 1000) / 10
 					: 0;
 
 			return {
 				village_id: v.id,
 				village_name: v.name,
-				households_count: vHouseholds.length,
-				members_count,
-				male_count,
-				female_count,
-				minority_count,
+				households_count: acc.households_count,
+				members_count: acc.members_count,
+				male_count: acc.male_count,
+				female_count: acc.female_count,
+				minority_count: acc.minority_count,
 				minority_percentage,
 			};
 		});

@@ -32,21 +32,21 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Backend && npx vitest run tests/integration/excel-import-demographics.test.ts tests/unit/excel-parser.test.ts`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit && cd ../QLHK-Client && npx tsc --noEmit`
-- [/] Step 3: Client Store Search Filter & Village Aggregation Fast Paths
+- [x] Step 3: Client Store Search Filter & Village Aggregation Fast Paths
   - Finding IDs: `OPT-001`, `OPT-002`
   - Target Files: `QLHK-Client/src/store/householdStore.ts`
   - Role Focus: React state memoization, string search performance, avoiding Unicode NFD re-allocations.
   - Graph Check: `graft callers "searchedHouseholds"`
   - Diff Budget: <= 200 gross LOC
-  - Verification: `cd QLHK-Client && npx vitest run tests/utilities.test.ts`
+  - Verification: `cd QLHK-Client && npx vitest run src/utils/__tests__/utilities.test.ts`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit && cd ../QLHK-Client && npx tsc --noEmit`
-- [ ] Step 4: O(1) Set Lookup for Household Table Row Selection
+- [/] Step 4: O(1) Set Lookup for Household Table Row Selection
   - Finding IDs: `OPT-003`
   - Target Files: `QLHK-Client/src/components/households/HouseholdTable.tsx`
   - Role Focus: Component render efficiency, O(1) set membership, table interaction responsiveness.
   - Graph Check: `graft callers "HouseholdTable"`
   - Diff Budget: <= 200 gross LOC
-  - Verification: `cd QLHK-Client && npx vitest run tests/components/HouseholdTable.test.tsx`
+  - Verification: `cd QLHK-Client && npx vitest run src/components/households/__tests__/HouseholdTable.test.tsx`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit && cd ../QLHK-Client && npx tsc --noEmit`
 - [ ] Step 5: Analytics Dashboard Single-Pass Aggregation & Age Short-Circuit
   - Finding IDs: `OPT-001`, `OPT-006`
@@ -54,7 +54,7 @@
   - Role Focus: Analytics math precision (INV-03), 1080p single viewport invariants (INV-04), single-pass data bucketing.
   - Graph Check: `graft callers "AnalyticsDashboard"`
   - Diff Budget: <= 200 gross LOC
-  - Verification: `cd QLHK-Client && npx vitest run tests/components/AnalyticsDashboard.test.tsx`
+  - Verification: `cd QLHK-Client && npx vitest run src/components/analytics/__tests__/AnalyticsDashboard.test.tsx`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit && cd ../QLHK-Client && npx tsc --noEmit`
 - [ ] Step 6: Full Suite Verification & Zero-Regression Gate
   - Full Test Suite: `cd QLHK-Backend && npm test && cd ../QLHK-Client && npm test` (Zero new failures vs baseline)

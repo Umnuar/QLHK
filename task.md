@@ -48,7 +48,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/components/households/__tests__/HouseholdTable.test.tsx`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit && cd ../QLHK-Client && npx tsc --noEmit`
-- [/] Step 5: Analytics Dashboard Single-Pass Aggregation & Age Short-Circuit
+- [x] Step 5: Analytics Dashboard Single-Pass Aggregation & Age Short-Circuit
   - Finding IDs: `OPT-001`, `OPT-006`
   - Target Files: `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`
   - Role Focus: Analytics math precision (INV-03), 1080p single viewport invariants (INV-04), single-pass data bucketing.
@@ -56,7 +56,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/components/analytics/__tests__/AnalyticsDashboard.test.tsx`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit && cd ../QLHK-Client && npx tsc --noEmit`
-- [ ] Step 6: Full Suite Verification & Zero-Regression Gate
+- [/] Step 6: Full Suite Verification & Zero-Regression Gate
   - Full Test Suite: `cd QLHK-Backend && npm test && cd ../QLHK-Client && npm test` (Zero new failures vs baseline)
   - Typecheck: `cd QLHK-Backend && npx tsc --noEmit && cd ../QLHK-Client && npx tsc --noEmit` (0 errors)
   - Clean Working Tree & No Orphan Patches: Verified (`test -z "$(git status --porcelain)" && test -z "$(ls -A .git/roadmap-stash 2>/dev/null)"`)

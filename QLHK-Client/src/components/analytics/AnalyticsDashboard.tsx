@@ -115,15 +115,23 @@ export const AnalyticsDashboard: React.FC = () => {
 					occupationMap[occ] = (occupationMap[occ] || 0) + 1;
 				}
 
-				const dobVal = m.dob_formatted || m.dob_raw || m.dob || "";
-				let age = m.age;
-				const parsed = parseAndValidateDob(dobVal);
-				if (parsed.isValid && parsed.birthYear) {
-					age = currentYear - parsed.birthYear;
-				} else {
-					const match = dobVal.match(/(?:^|\D)(\d{4})(?:\D|$)/);
-					if (match) {
-						age = currentYear - parseInt(match[1], 10);
+				let age: number | undefined =
+					typeof m.birth_year === "number" && m.birth_year > 1900
+						? currentYear - m.birth_year
+						: typeof m.age === "number" && m.age > 0
+							? m.age
+							: undefined;
+
+				if (age === undefined) {
+					const dobVal = m.dob_formatted || m.dob_raw || m.dob || "";
+					const parsed = parseAndValidateDob(dobVal);
+					if (parsed.isValid && parsed.birthYear) {
+						age = currentYear - parsed.birthYear;
+					} else {
+						const match = dobVal.match(/(?:^|\D)(\d{4})(?:\D|$)/);
+						if (match) {
+							age = currentYear - parseInt(match[1], 10);
+						}
 					}
 				}
 				if (typeof age === "number" && !isNaN(age)) {
@@ -254,34 +262,61 @@ export const AnalyticsDashboard: React.FC = () => {
 			totalOccupation,
 		);
 
-		const villageBreakdown = villages.map((v) => {
-			const hhList = activeHouseholds.filter((h) => h.village_id === v.id);
-			let memCount = 0;
-			let male = 0;
-			let female = 0;
-			let minCount = 0;
+		type VillageBreakdownAcc = {
+			household_count: number;
+			citizen_count: number;
+			male_count: number;
+			female_count: number;
+			dtts_count: number;
+		};
 
-			hhList.forEach((h) => {
-				(h.members || []).forEach((m) => {
-					memCount++;
-					if (m.gender === "Nam") male++;
-					if (m.gender === "Nữ") female++;
-					if (m.ethnicity !== "Kinh") minCount++;
-				});
+		const villageStatsMap = new Map<string, VillageBreakdownAcc>();
+		for (const v of villages) {
+			villageStatsMap.set(v.id, {
+				household_count: 0,
+				citizen_count: 0,
+				male_count: 0,
+				female_count: 0,
+				dtts_count: 0,
 			});
+		}
+
+		for (const h of activeHouseholds) {
+			const acc = villageStatsMap.get(h.village_id);
+			if (acc) {
+				acc.household_count++;
+				for (const m of (h.members || [])) {
+					acc.citizen_count++;
+					if (m.gender === "Nam") acc.male_count++;
+					if (m.gender === "Nữ") acc.female_count++;
+					if (m.ethnicity !== "Kinh") acc.dtts_count++;
+				}
+			}
+		}
+
+		const villageBreakdown = villages.map((v) => {
+			const acc = villageStatsMap.get(v.id) || {
+				household_count: 0,
+				citizen_count: 0,
+				male_count: 0,
+				female_count: 0,
+				dtts_count: 0,
+			};
 
 			const minPct =
-				memCount > 0 ? Math.round((minCount / memCount) * 1000) / 10 : 0;
+				acc.citizen_count > 0
+					? Math.round((acc.dtts_count / acc.citizen_count) * 1000) / 10
+					: 0;
 
 			return {
 				village_id: v.id,
 				village_name: v.name,
 				village_code: v.short_code,
-				household_count: hhList.length,
-				citizen_count: memCount,
-				male_count: male,
-				female_count: female,
-				dtts_count: minCount,
+				household_count: acc.household_count,
+				citizen_count: acc.citizen_count,
+				male_count: acc.male_count,
+				female_count: acc.female_count,
+				dtts_count: acc.dtts_count,
 				dtts_percentage: minPct,
 				top_ethnicity: "Kinh",
 				top_religion: "Không",

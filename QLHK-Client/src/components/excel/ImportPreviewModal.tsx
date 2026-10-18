@@ -290,7 +290,7 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 
 	return createPortal(
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-[rgba(15,23,42,0.45)] dark:bg-[rgba(0,0,0,0.6)] animate-in fade-in duration-150 select-none"
+			className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-[rgba(15,23,42,0.45)] dark:bg-[rgba(0,0,0,0.6)] backdrop-blur-sm animate-in fade-in duration-150 select-none"
 			aria-hidden="false"
 			onClick={(e) => {
 				if (e.target === e.currentTarget && !activeFile && !importing) {

@@ -40,7 +40,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/components/households/__tests__/CitizenModal.test.tsx src/components/households/__tests__/HouseholdTable.test.tsx`
   - Static Check: `cd QLHK-Client && npx tsc --noEmit`
-- [ ] Step 4: Add Backdrop Blur to Excel and Auxiliary Modal Overlays
+- [x] Step 4: Add Backdrop Blur to Excel and Auxiliary Modal Overlays
   - Finding IDs: `BUG-003`
   - Target Files: `QLHK-Client/src/components/excel/ExportSettingsModal.tsx`, `QLHK-Client/src/components/excel/ImportPreviewModal.tsx`, `QLHK-Client/src/components/common/AppUpdateModal.tsx`, `QLHK-Client/src/components/network/ServerStatusModal.tsx`
   - Role Focus: Auxiliary and import/export modal overlay consistency

@@ -234,4 +234,52 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 		expect(screen.getByText("Làm nông")).toBeInTheDocument();
 		expect(screen.getByText("Công nhân")).toBeInTheDocument();
 	});
+
+	it("8. Tính toán chính xác nhóm tuổi cho ngày sinh định dạng ISO YYYY-MM-DD (BUG-004)", async () => {
+		mockUseApp.mockReturnValue({
+			user: { id: "u-1", username: "admin", role: "admin" },
+			selectedVillageId: "",
+			selectedVillageName: "Toàn xã Đăk Hà",
+			setActiveTab: vi.fn(),
+			villages: [{ id: "v-01", name: "Thôn 1" }],
+			isBackendHealthy: false,
+		});
+
+		mockUseHouseholds.mockReturnValue({
+			activeHouseholds: [
+				{
+					id: "hh-iso-1",
+					book_number: "HK-ISO-1",
+					village_id: "v-01",
+					members: [
+						{
+							id: "m-iso-1",
+							full_name: "Nguyễn Văn ISO",
+							dob: "2015-06-20",
+							gender: "Nam",
+							relationship: "Chủ hộ",
+							ethnicity: "Kinh",
+						},
+						{
+							id: "m-iso-2",
+							full_name: "Trần Thị ISO",
+							dob: "2005-01-10",
+							gender: "Nữ",
+							relationship: "Vợ",
+							ethnicity: "Kinh",
+						},
+					],
+				},
+			],
+		});
+
+		render(<AnalyticsDashboard />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Tháp Tuổi & Cơ Cấu Thế Hệ")).toBeInTheDocument();
+		});
+
+		expect(screen.getByText("Thiếu nhi (< 16 tuổi)")).toBeInTheDocument();
+		expect(screen.getByText("Thanh niên & NVQS (16 - 27 tuổi)")).toBeInTheDocument();
+	});
 });

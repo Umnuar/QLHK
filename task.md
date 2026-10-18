@@ -24,7 +24,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/api/__tests__/householdApi.test.ts src/components/households/__tests__/CitizenModal.test.tsx`
   - Static Check: `cd QLHK-Client && npx tsc --noEmit`
-- [ ] Step 2: Dynamic Calculation Year in Store and Robust ISO Date Parsing in Analytics
+- [x] Step 2: Dynamic Calculation Year in Store and Robust ISO Date Parsing in Analytics
   - Finding IDs: `BUG-002`, `BUG-004`
   - Target Files: `QLHK-Client/src/store/householdStore.ts`, `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`, `QLHK-Client/src/components/analytics/__tests__/AnalyticsDashboard.test.tsx`
   - Role Focus: Dynamic calendar year calculations and ISO date parsing robustness

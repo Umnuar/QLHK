@@ -17,6 +17,7 @@ import { normalizeUnaccented, splitFullName } from "../utils/vietnamese";
 
 const STORAGE_KEY = "qlhk_households_v1";
 const ADMIN_MODE_KEY = "qlhk_admin_mode";
+const CURRENT_CALCULATION_YEAR = new Date().getFullYear();
 
 export function useHouseholdStore() {
 	// Lấy dữ liệu từ localStorage hoặc dùng INITIAL_HOUSEHOLDS
@@ -245,7 +246,7 @@ export function useHouseholdStore() {
 			const fullName = newH.initialMember.full_name;
 			const { lastName, firstName } = splitFullName(fullName);
 			const dobRaw = newH.initialMember.dob_raw || "1990";
-			const age = calculateAge(dobRaw, 2026);
+			const age = calculateAge(dobRaw, CURRENT_CALCULATION_YEAR);
 			const cccd = newH.initialMember.cccd || "";
 			const ethnicity = newH.initialMember.ethnicity || "Kinh";
 
@@ -263,7 +264,7 @@ export function useHouseholdStore() {
 				dob: dobRaw,
 				dob_raw: dobRaw,
 				dob_formatted: formatDobDisplay(dobRaw),
-				birth_year: 2026 - age,
+				birth_year: CURRENT_CALCULATION_YEAR - age,
 				age,
 				cccd,
 				cccd_last4: cccd ? cccd.slice(-4) : "",
@@ -376,7 +377,7 @@ export function useHouseholdStore() {
 					const fullName = memberData.full_name || "";
 					const { lastName, firstName } = splitFullName(fullName);
 					const dobRaw = memberData.dob_raw || "1990";
-					const age = calculateAge(dobRaw, 2026);
+					const age = calculateAge(dobRaw, CURRENT_CALCULATION_YEAR);
 					const cccd = memberData.cccd || "";
 					const ethnicity = memberData.ethnicity || "Kinh";
 					const isHead =
@@ -407,7 +408,7 @@ export function useHouseholdStore() {
 								name_unaccented: normalizeUnaccented(fullName),
 								dob_raw: dobRaw,
 								dob_formatted: formatDobDisplay(dobRaw),
-								birth_year: 2026 - age,
+								birth_year: CURRENT_CALCULATION_YEAR - age,
 								age,
 								cccd,
 								cccd_masked: maskCccd(cccd, false),
@@ -450,7 +451,7 @@ export function useHouseholdStore() {
 							gender: memberData.gender || "Nam",
 							dob_raw: dobRaw,
 							dob_formatted: formatDobDisplay(dobRaw),
-							birth_year: 2026 - age,
+							birth_year: CURRENT_CALCULATION_YEAR - age,
 							age,
 							cccd,
 							cccd_masked: maskCccd(cccd, false),

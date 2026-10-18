@@ -167,6 +167,13 @@ STRICT INVARIANTS:
 - **Reason**: These symbols are defined as shared cross-system tokens for the Đăk Hà ecosystem. While uncalled within `QLHK-Client`, removing them may break planned cross-subsystem parity.
 - **Disposition**: `NEEDS_DECISION`
 
+### `EXC-004` | Shared Ecosystem Table Tokens in `tableStyles.ts`
+- **Class**: `CL-04` (Unused exported tokens and styling dictionaries)
+- **Location**: `QLHK-Client/src/components/common/tableStyles.ts:205`
+- **Target Symbol**: `TABLE_CLASSES`
+- **Reason**: `TABLE_CLASSES` aggregates standard Tailwind table classes for Đăk Hà ecosystem components. While uncalled within `QLHK-Client`, removing it may affect cross-subsystem styling alignment.
+- **Disposition**: `NEEDS_DECISION`
+
 ---
 
 ### STEP 0: BRANCH ISOLATION, PRE-FLIGHT GATE & TASK INITIALIZATION

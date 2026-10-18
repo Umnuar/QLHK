@@ -88,7 +88,7 @@ export const Modal: React.FC<ModalProps> = ({
 
 	return createPortal(
 		<div
-			className="fixed inset-0 !m-0 flex items-center justify-center p-4 sm:p-6 bg-slate-950/45 dark:bg-black/60 select-none animate-in fade-in duration-150"
+			className="fixed inset-0 !m-0 flex items-center justify-center p-4 sm:p-6 bg-slate-950/45 dark:bg-black/60 backdrop-blur-sm select-none animate-in fade-in duration-150"
 			style={{ zIndex }}
 			onClick={(e) => {
 				if (closeOnOverlayClick && e.target === e.currentTarget) {

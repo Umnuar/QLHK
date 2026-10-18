@@ -363,7 +363,7 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 		<>
 			{/* Backdrop phủ mờ toàn màn hình & Canh giữa Modal */}
 			<div
-				className="fixed inset-0 !m-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/45 dark:bg-black/60 select-none animate-in fade-in duration-150"
+				className="fixed inset-0 !m-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/45 dark:bg-black/60 backdrop-blur-sm select-none animate-in fade-in duration-150"
 				onClick={(e) => {
 					if (e.target === e.currentTarget && !isCitizenModalOpen) {
 						handleRequestClose();

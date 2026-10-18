@@ -315,4 +315,51 @@ describe("CitizenModal Component", () => {
 		expect(saved.native_place).toBe("Xã Đăk Hà");
 		expect(mockOnClose).toHaveBeenCalledTimes(1);
 	});
+
+	it("9. Khởi tạo form chuẩn xác khi initialMember chứa các trường bí danh tiếng Việt (BUG-001)", () => {
+		const initialMemberWithAliases = {
+			id: "mem-alias-01",
+			full_name: "Y Thoan",
+			relationship: "Con dâu",
+			dob: "1998",
+			gender: "Nữ" as const,
+			hoc_van: "Cao đẳng",
+			nvqs: "Không thuộc diện",
+			nghe_nghiep: "Y tế thôn bản",
+			que_quan: "Xã Đăk Hà",
+			ghi_chu: "Đã qua đào tạo",
+		};
+
+		render(
+			<CitizenModal
+				isOpen={true}
+				initialMember={initialMemberWithAliases as any}
+				onClose={mockOnClose}
+				onSave={mockOnSave}
+			/>,
+		);
+
+		const milInput = screen.getByLabelText(/Tình hình thực hiện nghĩa vụ quân sự/i) as HTMLInputElement;
+		const eduInput = screen.getByLabelText(/Trình độ học vấn/i) as HTMLInputElement;
+		const occInput = screen.getByLabelText(/^Nghề nghiệp/i) as HTMLInputElement;
+		const placeInput = screen.getByLabelText(/Quê quán/i) as HTMLInputElement;
+		const notesInput = screen.getByLabelText(/Ghi chú nhân khẩu \/ Nghề nghiệp/i) as HTMLTextAreaElement;
+
+		expect(milInput.value).toBe("Không thuộc diện");
+		expect(eduInput.value).toBe("Cao đẳng");
+		expect(occInput.value).toBe("Y tế thôn bản");
+		expect(placeInput.value).toBe("Xã Đăk Hà");
+		expect(notesInput.value).toBe("Đã qua đào tạo");
+
+		const submitBtn = screen.getByRole("button", { name: /Lưu nhân khẩu/i });
+		fireEvent.click(submitBtn);
+
+		expect(mockOnSave).toHaveBeenCalledTimes(1);
+		const saved = mockOnSave.mock.calls[0][0];
+		expect(saved.military_status).toBe("Không thuộc diện");
+		expect(saved.education).toBe("Cao đẳng");
+		expect(saved.occupation).toBe("Y tế thôn bản");
+		expect(saved.native_place).toBe("Xã Đăk Hà");
+		expect(saved.notes).toBe("Đã qua đào tạo");
+	});
 });

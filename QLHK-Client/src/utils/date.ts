@@ -103,11 +103,18 @@ export function parseAndValidateDob(
 		};
 	}
 
-	// Trường hợp 3: Đầy đủ Ngày Tháng Năm (DD/MM/YYYY)
+	// Trường hợp 3: Đầy đủ Ngày Tháng Năm (DD/MM/YYYY hoặc YYYY/MM/DD)
 	if (parts.length === 3) {
-		const dayStr = parts[0].trim();
+		let dayStr = parts[0].trim();
 		const monthStr = parts[1].trim();
-		const yearStr = parts[2].trim();
+		let yearStr = parts[2].trim();
+
+		// Hỗ trợ định dạng ISO (YYYY-MM-DD hoặc YYYY/MM/DD)
+		if (dayStr.length === 4 && yearStr.length <= 2) {
+			const temp = dayStr;
+			dayStr = yearStr;
+			yearStr = temp;
+		}
 
 		if (
 			!/^\d+$/.test(dayStr) ||

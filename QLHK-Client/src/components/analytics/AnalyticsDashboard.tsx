@@ -25,6 +25,7 @@ import { useHouseholds } from "../../context/HouseholdContext";
 import { ETHNIC_GROUPS } from "../../data/constants";
 import { getCache, setCache } from "../../db/indexedDB";
 import { sanitizeExcelRow } from "../../utils/excelParser";
+import { parseAndValidateDob } from "../../utils/date";
 import {
 	DEFAULT_STAT_ACCENT,
 	STAT_CATEGORY_COLORS,
@@ -115,10 +116,15 @@ export const AnalyticsDashboard: React.FC = () => {
 				}
 
 				const dobVal = m.dob_formatted || m.dob_raw || m.dob || "";
-				const match = dobVal.match(/(\d{4})$/);
 				let age = m.age;
-				if (match) {
-					age = currentYear - parseInt(match[1], 10);
+				const parsed = parseAndValidateDob(dobVal);
+				if (parsed.isValid && parsed.birthYear) {
+					age = currentYear - parsed.birthYear;
+				} else {
+					const match = dobVal.match(/(?:^|\D)(\d{4})(?:\D|$)/);
+					if (match) {
+						age = currentYear - parseInt(match[1], 10);
+					}
 				}
 				if (typeof age === "number" && !isNaN(age)) {
 					if (age < 16) {

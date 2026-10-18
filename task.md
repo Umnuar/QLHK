@@ -32,7 +32,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/components/analytics/__tests__/AnalyticsDashboard.test.tsx`
   - Static Check: `cd QLHK-Client && npx tsc --noEmit`
-- [ ] Step 3: Add Backdrop Blur to Core and Household Modal Overlays
+- [x] Step 3: Add Backdrop Blur to Core and Household Modal Overlays
   - Finding IDs: `BUG-003`
   - Target Files: `QLHK-Client/src/components/common/Modal.tsx`, `QLHK-Client/src/components/households/CitizenModal.tsx`, `QLHK-Client/src/components/households/HouseholdDrawer.tsx`, `QLHK-Client/src/components/households/ConflictResolutionModal.tsx`
   - Role Focus: Modal overlay separation and visual accessibility standards

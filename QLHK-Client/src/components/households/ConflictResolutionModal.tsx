@@ -34,7 +34,7 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
 		"Chưa xác định";
 
 	return createPortal(
-		<div className="fixed inset-0 !m-0 z-[70] flex items-center justify-center p-4 bg-slate-950/45 dark:bg-black/60 select-none animate-in fade-in duration-150">
+		<div className="fixed inset-0 !m-0 z-[70] flex items-center justify-center p-4 bg-slate-950/45 dark:bg-black/60 backdrop-blur-sm select-none animate-in fade-in duration-150">
 			<div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
 				{/* Top Bar */}
 				<div className="p-5 px-6 border-b border-slate-200 dark:border-slate-800 bg-amber-50/70 dark:bg-amber-950/30 flex items-center justify-between shrink-0">

@@ -112,4 +112,32 @@ describe("householdApi - Chuẩn hóa dữ liệu Household", () => {
 		expect(normalized.members[1].native_place).toBe("");
 		expect(normalized.members[1].notes).toBe("");
 	});
+
+	it("hỗ trợ fallback alias tiếng Việt (hoc_van, nvqs, nghe_nghiep, que_quan, ghi_chu) (BUG-001)", () => {
+		const rawHh = {
+			id: "hh-alias-01",
+			book_number: "SHK-ALIAS-01",
+			village_id: "vil-01",
+			citizens: [
+				{
+					id: "cit-alias-01",
+					stt: 1,
+					is_head: true,
+					full_name: "A Thao",
+					hoc_van: " 9/12 ",
+					nvqs: " Sẵn sàng nhập ngũ ",
+					nghe_nghiep: " Thợ mộc ",
+					que_quan: " Thôn Đăk Kang Pơ ",
+					ghi_chu: " Tạm vắng lao động ",
+				},
+			],
+		};
+
+		const normalized = normalizeHousehold(rawHh);
+		expect(normalized.members[0].education).toBe("9/12");
+		expect(normalized.members[0].military_status).toBe("Sẵn sàng nhập ngũ");
+		expect(normalized.members[0].occupation).toBe("Thợ mộc");
+		expect(normalized.members[0].native_place).toBe("Thôn Đăk Kang Pơ");
+		expect(normalized.members[0].notes).toBe("Tạm vắng lao động");
+	});
 });

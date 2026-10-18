@@ -106,11 +106,11 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				setDob(initialMember.dob || "");
 				setEthnicity(initialMember.ethnicity || "Kinh");
 				setReligion(initialMember.religion || "Không");
-				setMilitaryStatus(initialMember.military_status || "");
-				setEducation(initialMember.education || "");
-				setOccupation(initialMember.occupation || "");
-				setNativePlace(initialMember.native_place || "");
-				setNotes(initialMember.notes || "");
+				setMilitaryStatus(initialMember.military_status || (initialMember as any).nvqs || "");
+				setEducation(initialMember.education || (initialMember as any).hoc_van || "");
+				setOccupation(initialMember.occupation || (initialMember as any).nghe_nghiep || "");
+				setNativePlace(initialMember.native_place || (initialMember as any).que_quan || "");
+				setNotes(initialMember.notes || (initialMember as any).ghi_chu || "");
 			} else {
 				setFullName("");
 				setRelationship("Con đẻ");

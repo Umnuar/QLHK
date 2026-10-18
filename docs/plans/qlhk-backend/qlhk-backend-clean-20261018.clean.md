@@ -8,7 +8,7 @@ All shell commands require a POSIX-compatible shell (Git Bash on Windows, WSL, L
 
 STRICT INVARIANTS:
 1. BRANCH & PRE-FLIGHT (Initial Start Only):
-   - **Pre-Switch Detached-HEAD & Protected-Branch Guard**: Verify `HEAD` is not detached (`test -n "$(git branch --show-current)"`, halting if detached). Set `BASE_BRANCH="${BASE_BRANCH:-roadmap/remediate-optimization-findings}"` (the intended base branch `roadmap/remediate-optimization-findings` captured and confirmed when the prompt was generated).
+   - **Pre-Switch Detached-HEAD & Protected-Branch Guard**: Verify `HEAD` is not detached (`test -n "$(git branch --show-current)"`, halting if detached). Set `BASE_BRANCH="${BASE_BRANCH:-feat/qlhk-merge-qlcs}"` (the intended base branch `feat/qlhk-merge-qlcs` captured and confirmed when the prompt was generated).
    - Create and switch to isolated branch: `git switch -c clean/qlhk-backend-clean-20261018`. If the branch already exists on a fresh start, halt immediately and ask the user whether to resume the existing branch or choose a new branch name. (When resuming via a Handoff Prompt, skip `STEP 0` and use `git switch clean/qlhk-backend-clean-20261018`.)
    - Verify clean working tree: `test -z "$(git status --porcelain)"`.
    - Execute the baseline test command **twice** (`Run 1` and `Run 2`), record `Base Branch: <BASE_BRANCH>`, the passing count, and exact names of any tests failing in **either** run as "flaky/known failing" into `task.md`. Run `cd QLHK-Backend && npx tsc --noEmit` once and record the baseline error count.
@@ -184,7 +184,7 @@ STRICT INVARIANTS:
      # Task Progress Tracker: qlhk-backend-clean-20261018
 
      - **Project**: QLHK-Backend
-     - **Base Branch**: `roadmap/remediate-optimization-findings`
+     - **Base Branch**: `feat/qlhk-merge-qlcs`
      - **Branch**: `clean/qlhk-backend-clean-20261018`
      - **Plan Reference**: `docs/plans/qlhk-backend/qlhk-backend-clean-20261018.clean.md`
      - **Baseline Checkpoint**: `<BASELINE_HASH>` (<PASS_COUNT> passing, verified across 2 baseline runs)

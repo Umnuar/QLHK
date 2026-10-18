@@ -40,7 +40,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/utils/__tests__/utilities.test.ts`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit && cd ../QLHK-Client && npx tsc --noEmit`
-- [/] Step 4: O(1) Set Lookup for Household Table Row Selection
+- [x] Step 4: O(1) Set Lookup for Household Table Row Selection
   - Finding IDs: `OPT-003`
   - Target Files: `QLHK-Client/src/components/households/HouseholdTable.tsx`
   - Role Focus: Component render efficiency, O(1) set membership, table interaction responsiveness.
@@ -48,7 +48,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/components/households/__tests__/HouseholdTable.test.tsx`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit && cd ../QLHK-Client && npx tsc --noEmit`
-- [ ] Step 5: Analytics Dashboard Single-Pass Aggregation & Age Short-Circuit
+- [/] Step 5: Analytics Dashboard Single-Pass Aggregation & Age Short-Circuit
   - Finding IDs: `OPT-001`, `OPT-006`
   - Target Files: `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`
   - Role Focus: Analytics math precision (INV-03), 1080p single viewport invariants (INV-04), single-pass data bucketing.

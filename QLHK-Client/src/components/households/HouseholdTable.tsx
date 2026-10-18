@@ -8,7 +8,7 @@ import {
 	Trash2,
 	Users,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { householdApi } from "../../api/householdApi";
 import type { Household, Person } from "../../types";
 import { calculateAge } from "../../utils/date";
@@ -120,11 +120,13 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 		}
 	};
 
+	const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+
 	const isAllCurrentSelected =
 		households.length > 0 &&
-		households.every((h) => selectedIds.includes(h.id));
+		households.every((h) => selectedSet.has(h.id));
 	const isSomeCurrentSelected =
-		households.some((h) => selectedIds.includes(h.id));
+		households.some((h) => selectedSet.has(h.id));
 
 	return (
 		<div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col transition-colors duration-150">
@@ -238,7 +240,7 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 									headName.trim().toLowerCase() === "chưa rõ" ||
 									headName.trim().toLowerCase().startsWith("thôn ");
 
-								const isSelected = selectedIds.includes(hh.id);
+								const isSelected = selectedSet.has(hh.id);
 								const memberCount = hh.members
 									? hh.members.length
 									: hh.members_count || 0;
@@ -264,7 +266,7 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 													type="checkbox"
 													aria-label={`Chọn hộ ${headName}`}
 													className="w-4 h-4 cursor-pointer accent-emerald-600 rounded"
-													checked={selectedIds.includes(hh.id)}
+													checked={isSelected}
 													onChange={() =>
 														onToggleSelect && onToggleSelect(hh.id)
 													}

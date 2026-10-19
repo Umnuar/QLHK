@@ -3,7 +3,6 @@ import {
 	Download,
 	FileSpreadsheet,
 	Plus,
-	Trash2,
 	Users,
 } from "lucide-react";
 import type React from "react";

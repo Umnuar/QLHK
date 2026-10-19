@@ -24,7 +24,7 @@ import { authApi } from "../api/authApi";
 import { villageApi } from "../api/villageApi";
 import { getCache, setCache } from "../db/indexedDB";
 import { useModal } from "../hooks/useModal";
-import { type User, Village } from "../types";
+import type { User, Village } from "../types";
 import { normalizeUnaccented } from "../utils/vietnamese";
 
 let cachedStatsTime = 0;

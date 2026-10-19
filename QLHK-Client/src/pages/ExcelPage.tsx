@@ -10,7 +10,6 @@ import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { useApp } from "../AppContext";
 import { apiClient } from "../api/client";
-import { householdApi } from "../api/householdApi";
 import { ImportPreviewModal } from "../components/excel/ImportPreviewModal";
 import { useHouseholds } from "../context/HouseholdContext";
 import { useModal } from "../hooks/useModal";

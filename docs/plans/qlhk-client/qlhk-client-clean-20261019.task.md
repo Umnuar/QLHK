@@ -72,7 +72,7 @@
   - Equivalence Check: API Surface unchanged vs Step 0 snapshot; scoped tests pass
   - Evidence: BEFORE 8 passed, 0 tsc errors / AFTER 8 passed, 0 tsc errors; API Surface unchanged
 
-- [ ] Step 6: Remove Unused Imports and Dead Local Variable in Page Components [CLN-006]
+- [x] Step 6: Remove Unused Imports and Dead Local Variable in Page Components [CLN-006]
   - Finding IDs: `CLN-006` (Root Cause Key: `CL-01:QLHK-Client/src/pages:unused-page-symbols`; Class: `CL-01`)
   - Target Files: `QLHK-Client/src/pages/ExcelPage.tsx`, `QLHK-Client/src/pages/HouseholdsPage.tsx`, `QLHK-Client/src/pages/SettingsPage.tsx`, `QLHK-Client/src/pages/VillagesPage.tsx`
   - Role Focus: Preserving external behavior, dead-code elimination, caller-callee blast radius verification
@@ -80,7 +80,7 @@
   - Diff Budget: <= 200 gross LOC (modified/added), <= 25 files outside target directories
   - Verification: `cd QLHK-Client && npm test -- tests/e2e/regressionFlows.test.ts && cd QLHK-Client && npx tsc --noEmit`
   - Equivalence Check: API Surface unchanged vs Step 0 snapshot; scoped tests pass
-  - Evidence: BEFORE `<pass summary>` / AFTER `<pass summary>`
+  - Evidence: BEFORE 22 passed, 0 tsc errors / AFTER 22 passed, 0 tsc errors; API Surface unchanged
 
 - [ ] Step 7: Remove Redundant React and FireEvent Imports in Test Suites [CLN-007]
   - Finding IDs: `CLN-007` (Root Cause Key: `CL-01:QLHK-Client/tests:redundant-test-imports`; Class: `CL-01`)

@@ -4,14 +4,10 @@ import {
 	Database,
 	Eye,
 	EyeOff,
-	Home,
 	Info,
 	KeyRound,
-	LogOut,
-	MapPin,
 	Plus,
 	RefreshCw,
-	Shield,
 	Trash2,
 	User as UserIcon,
 	Users,
@@ -258,12 +254,6 @@ export const SettingsPage: React.FC = () => {
 			type: "success",
 		});
 	};
-
-	const currentVillageName =
-		user?.role === "admin"
-			? "Toàn xã Đăk Hà"
-			: villages.find((v) => v.id === user?.village_id)?.name ||
-				"Chưa phân công";
 
 	return (
 		<div className="space-y-6 max-w-5xl mx-auto pb-12 select-none animate-in fade-in">

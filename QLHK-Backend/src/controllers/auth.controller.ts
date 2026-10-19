@@ -56,11 +56,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 		const accessToken = generateAccessToken(payload);
 		const refreshToken = generateRefreshToken(payload);
 
-		// Lưu refresh token vào DB (7 ngày)
 		const expiresAt = new Date();
 		expiresAt.setDate(expiresAt.getDate() + 7);
 
-		// Dọn dẹp các token đã hết hạn
 		await prisma.refresh_tokens.deleteMany({
 			where: { expires_at: { lt: new Date() } },
 		});
@@ -115,7 +113,6 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		// Kiểm tra token có trong DB không (Token Rotation & Revocation)
 		const tokenRecord = await prisma.refresh_tokens.findUnique({
 			where: { token: refreshToken },
 			include: { user: true },
@@ -142,7 +139,6 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
 		const newAccessToken = generateAccessToken(payload);
 		const newRefreshToken = generateRefreshToken(payload);
 
-		// Thu hồi token cũ và lưu token mới (Rotation)
 		const newExpiresAt = new Date();
 		newExpiresAt.setDate(newExpiresAt.getDate() + 7);
 

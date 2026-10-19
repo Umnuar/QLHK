@@ -1,10 +1,5 @@
-/**
- * Chuẩn hóa Terminal Logger 1 dòng cho Docker Container & Observability
- * Tuân thủ quy chuẩn: [HH:mm:ss] [TAG] Message [Details]
- */
 
 export const isColorEnabled = (): boolean => {
-	// Bỏ hoàn toàn mã màu ANSI khi chạy trong môi trường container (!process.stdout.isTTY) hoặc khi có biến NO_COLOR
 	return Boolean(process.stdout && process.stdout.isTTY && !process.env.NO_COLOR);
 };
 
@@ -20,7 +15,6 @@ export const formatTimestamp = (date: Date = new Date()): string => {
 	return vnTimeFormatter.format(date);
 };
 
-// ANSI color codes
 const COLORS = {
 	RESET: "\x1b[0m",
 	DIM: "\x1b[2m",

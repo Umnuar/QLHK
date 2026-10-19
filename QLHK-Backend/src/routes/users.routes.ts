@@ -13,7 +13,6 @@ import {
 
 const router = Router();
 
-// Yêu cầu xác thực JWT cho toàn bộ router người dùng
 router.use(authenticateToken);
 
 router.get("/", requireAdmin, getUsers);

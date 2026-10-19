@@ -10,9 +10,6 @@ export function normalizeVillage(item: any): Village {
 }
 
 export const villageApi = {
-	/**
-	 * Lấy danh sách thôn từ Backend (GET /villages)
-	 */
 	async getAll(): Promise<Village[]> {
 		const res = await apiClient.get("/villages", {
 			params: { _t: Date.now() },
@@ -22,18 +19,12 @@ export const villageApi = {
 		return Array.isArray(list) ? list.map(normalizeVillage) : [];
 	},
 
-	/**
-	 * Tạo thôn mới (POST /villages)
-	 */
 	async create(name: string, code?: string): Promise<Village> {
 		const res = await apiClient.post("/villages", { name, code });
 		const data = res.data?.data || res.data;
 		return normalizeVillage(data);
 	},
 
-	/**
-	 * Cập nhật thôn (PUT /villages/:id)
-	 */
 	async update(id: string, name: string, code?: string): Promise<Village> {
 		const res = await apiClient.put(`/villages/${id}`, { name, code });
 		const data = res.data?.data || res.data;

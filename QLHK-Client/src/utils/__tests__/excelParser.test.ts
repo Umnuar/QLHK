@@ -40,7 +40,7 @@ describe("Smart Excel Parser (Client)", () => {
 		});
 
 		it("xử lý chính xác đối tượng JavaScript Date", () => {
-			const d = new Date(Date.UTC(2001, 7, 18)); // 18/08/2001
+			const d = new Date(Date.UTC(2001, 7, 18));
 			expect(normalizeExcelDob(d).dob).toBe("18/08/2001");
 		});
 
@@ -195,34 +195,31 @@ describe("Smart Excel Parser (Client)", () => {
 			expect(parsed[0].fullName).toBe("NGUYỄN VĂN A");
 			expect(parsed[0].relationship).toBe("Chủ hộ");
 			expect(parsed[0].code).toBe("HK-0001");
-			expect(parsed[0].gender).toBe("Nữ"); // Cột Nữ có X
+			expect(parsed[0].gender).toBe("Nữ");
 			expect(parsed[0].dobRaw).toBe("18/08/2001");
 			expect(parsed[0].ethnicity).toBe("Cor");
 			expect(parsed[0].hasError).toBe(false);
 
 			expect(parsed[1].fullName).toBe("NGUYỄN VĂN B");
 			expect(parsed[1].relationship).toBe("Thành viên");
-			expect(parsed[1].code).toBe("HK-0001"); // Cùng hộ HK-0001
+			expect(parsed[1].code).toBe("HK-0001");
 			expect(parsed[1].gender).toBe("Nam");
 			expect(parsed[1].dobRaw).toBe("22/11/1966");
 			expect(parsed[1].ethnicity).toBe("Cơ Ho");
 
 			expect(parsed[3].fullName).toBe("NGUYỄN VĂN B");
 			expect(parsed[3].relationship).toBe("Chủ hộ");
-			expect(parsed[3].code).toBe("HK-0002"); // Hộ mới vì có CH
+			expect(parsed[3].code).toBe("HK-0002");
 			expect(parsed[3].gender).toBe("Nữ");
 
-			// Kiểm tra chuẩn hóa 976 -> 1976
 			expect(parsed[4].fullName).toBe("NGUYỄN VĂN A");
 			expect(parsed[4].dobRaw).toBe("11/01/1976");
 			expect(parsed[4].hasError).toBe(false);
 
-			// Kiểm tra tôn giáo Công giáo
 			expect(parsed[5].fullName).toBe("ĐINH THANH HIỂU");
 			expect(parsed[5].code).toBe("HK-0003");
 			expect(parsed[5].religion).toBe("Công giáo");
 
-			// Kiểm tra dòng có lỗi ngày sinh 15/17/1989
 			expect(parsed[6].fullName).toBe("TRẦN VĂN BẢO");
 			expect(parsed[6].hasError).toBe(true);
 			expect(parsed[6].dobError).toBeDefined();
@@ -311,7 +308,6 @@ describe("Smart Excel Parser (Client)", () => {
 			const parsed = parseExcelSheet(rawRows);
 			expect(parsed.length).toBe(14);
 
-			// Kiểm tra 4 chủ hộ
 			const heads = parsed.filter((r) => r.relationship === "Chủ hộ");
 			expect(heads.length).toBe(4);
 			expect(heads[0].fullName).toBe("NGUYỄN VĂN A");
@@ -319,7 +315,6 @@ describe("Smart Excel Parser (Client)", () => {
 			expect(heads[2].fullName).toBe("ĐINH THANH HIỂU");
 			expect(heads[3].fullName).toBe("TRƯƠNG VĂN THÀNH");
 
-			// Kiểm tra số dòng hợp lệ
 			const validRows = parsed.filter((r) => !r.hasError);
 			const errorRows = parsed.filter((r) => r.hasError);
 			expect(validRows.length).toBe(14);
@@ -329,7 +324,6 @@ describe("Smart Excel Parser (Client)", () => {
 
 	describe("Chống tấn công Formula Injection (CSV/Excel Macro Injection - CWE-1236)", () => {
 		it("phải thêm tiền tố dấu nháy đơn ' cho các ô bắt đầu bằng =, +, -, @, \\t, \\r", () => {
-			// Các chuỗi payload công thức độc hại
 			expect(sanitizeExcelCellValue("=cmd|' /C calc'!A0")).toBe("'=cmd|' /C calc'!A0");
 			expect(sanitizeExcelCellValue("+12345678")).toBe("'+12345678");
 			expect(sanitizeExcelCellValue("-2+3*cmd")).toBe("'-2+3*cmd");
@@ -337,7 +331,6 @@ describe("Smart Excel Parser (Client)", () => {
 			expect(sanitizeExcelCellValue("\t=1+1")).toBe("'\t=1+1");
 			expect(sanitizeExcelCellValue("\r=1+1")).toBe("'\r=1+1");
 
-			// Chuỗi có khoảng trắng phía trước trước ký tự công thức
 			expect(sanitizeExcelCellValue("  =HYPERLINK('http://evil.com')")).toBe("'  =HYPERLINK('http://evil.com')");
 		});
 

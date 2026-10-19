@@ -11,23 +11,23 @@ export interface Person {
 	first_name: string;
 	name_unaccented: string;
 	relationship: RelationshipType;
-	is_head: boolean; // true = Chủ hộ (CH)
+	is_head: boolean;
 	gender: Gender;
-	dob?: string; // Ngày sinh
-	dob_raw: string; // Ngày sinh thô: '24/07/1988' hoặc '05/1985' hoặc '1960'
-	dob_formatted: string; // Chuẩn hóa
-	birth_year: number; // Năm sinh
-	age: number; // Tuổi
-	cccd: string; // CCCD 12 số
-	cccd_last4?: string; // 4 số cuối
-	cccd_masked: string; // ••••••••1234
-	ethnicity: string; // 1 trong 14 dân tộc
-	is_minority: boolean; // Dân tộc thiểu số (khác Kinh)
-	religion: string; // Công giáo, Tin lành, Phật giáo, Không...
-	education?: string; // Trình độ học vấn
-	military_status?: string; // Tình hình thực hiện NVQS
-	occupation?: string; // Nghề nghiệp
-	native_place?: string; // Quê quán
+	dob?: string;
+	dob_raw: string;
+	dob_formatted: string;
+	birth_year: number;
+	age: number;
+	cccd: string;
+	cccd_last4?: string;
+	cccd_masked: string;
+	ethnicity: string;
+	is_minority: boolean;
+	religion: string;
+	education?: string;
+	military_status?: string;
+	occupation?: string;
+	native_place?: string;
 	address?: string;
 	phone?: string;
 	notes?: string;
@@ -35,15 +35,15 @@ export interface Person {
 
 export interface Household {
 	id: string;
-	code: string; // Mã hộ (ví dụ: HK-TH1-001)
-	book_number?: string; // Số sổ hộ khẩu (ví dụ: SHK-01024)
+	code: string;
+	book_number?: string;
 	village_id: string;
 	village_name: string;
 	head_name: string;
 	head_cccd?: string;
 	address: string;
-	status?: string; // Trạng thái ('Thường trú' | 'Tạm trú' | 'Chuyển đi')
-	version?: number; // Optimistic Concurrency Control
+	status?: string;
+	version?: number;
 	members_count: number;
 	members: Person[];
 	is_deleted: boolean;
@@ -112,7 +112,6 @@ export interface ExcelImportRow {
 	cccd: string;
 	address: string;
 	notes?: string;
-	// Validation status
 	isValid: boolean;
 	errors: string[];
 	warnings: string[];

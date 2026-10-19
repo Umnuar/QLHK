@@ -1,8 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-// =============================================================================
-// TRỤ CỘT 0: BỘ ĐO LƯỜNG ĐỘ PHỦ TƯƠNG TÁC (CLICK COVERAGE TRACKER CHUẨN BEST-OF-3)
-// =============================================================================
 interface CoverageItem {
 	id: string;
 	screen: string;
@@ -14,7 +11,7 @@ interface CoverageItem {
 class ClickCoverageTracker {
 	private discoveredMap = new Map<string, CoverageItem>();
 	private clickedSet = new Set<string>();
-	private guardedMap = new Map<string, string>(); // id -> reason
+	private guardedMap = new Map<string, string>();
 
 	private normalize(text: string): string {
 		return text.replace(/\s+/g, " ").trim().split("\n")[0].trim().slice(0, 70);

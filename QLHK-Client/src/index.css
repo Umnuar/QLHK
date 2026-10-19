@@ -37,7 +37,6 @@
   }
 }
 
-/* Custom modern scrollbar (Light & Dark) */
 html {
   color-scheme: light;
   scrollbar-width: thin;
@@ -80,17 +79,10 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
 
-/* Gradient fade mask at bottom of scrollable panels */
 .scroll-mask-bottom {
   mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
 }
-
-
-/* ==========================================================================
-   Animation Engine (Tailwind v4 Animation Polyfill)
-   Supports .animate-in, .fade-in, .zoom-in-95, .slide-in-from-*, .duration-*
-   ========================================================================== */
 
 @keyframes enter {
   from {

@@ -99,19 +99,16 @@ export const authApi = {
 				};
 			}
 		} catch (err: any) {
-			// Nếu là lỗi 401 từ server: Báo sai thông tin xác thực, không fallback
 			if (err.response?.status === 401) {
 				throw new Error(
 					err.response.data?.error || "Tên đăng nhập hoặc mật khẩu không chính xác.",
 				);
 			}
 
-			// Nếu server trả về lỗi nghiệp vụ khác
 			if (err.response?.data?.error) {
 				throw new Error(err.response.data.error);
 			}
 
-			// Chế độ Offline Fallback: Chỉ cho phép phiên làm việc trước đó của chính người dùng đã đăng nhập thành công
 			const storedSession = await getStoredSessionUser();
 			if (
 				storedSession &&

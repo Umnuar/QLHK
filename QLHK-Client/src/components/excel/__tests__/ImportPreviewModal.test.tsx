@@ -12,16 +12,13 @@ describe("ImportPreviewModal Component", () => {
 	});
 
 	it("2. Chuyển đổi trạng thái từ isOpen = false sang isOpen = true mà không vi phạm Rules of Hooks", () => {
-		// Đây là kịch bản trực tiếp gây ra lỗi "Rendered more hooks than during the previous render"
 		const { container, rerender } = render(
 			<ImportPreviewModal isOpen={false} onClose={vi.fn()} />,
 		);
 		expect(container.firstChild).toBeNull();
 
-		// Rerender với isOpen = true
 		rerender(<ImportPreviewModal isOpen={true} onClose={vi.fn()} />);
 
-		// Modal phải hiển thị tiêu đề chính xác
 		expect(
 			screen.getByText(/Nhập dữ liệu Excel — Hộ gia đình/i),
 		).toBeDefined();
@@ -29,7 +26,6 @@ describe("ImportPreviewModal Component", () => {
 			screen.getByText(/Chọn tệp Excel để bắt đầu đối soát dữ liệu/i),
 		).toBeDefined();
 
-		// Rerender lại về isOpen = false
 		rerender(<ImportPreviewModal isOpen={false} onClose={vi.fn()} />);
 		expect(container.firstChild).toBeNull();
 	});
@@ -84,17 +80,14 @@ describe("ImportPreviewModal Component", () => {
 			/>,
 		);
 
-		// Kiểm tra hiển thị số lượng hợp lệ và thông báo lỗi
 		expect(screen.getByText(/Hợp lệ: 1 nhân khẩu/i)).toBeDefined();
 		expect(
 			screen.getByText(/Phát hiện 1 dòng có lỗi ngày sinh/i),
 		).toBeDefined();
 
-		// Kiểm tra hiển thị tên nhân khẩu trong bảng
 		expect(screen.getByText("Nguyễn Văn A")).toBeDefined();
 		expect(screen.getByText("Trần Thị B")).toBeDefined();
 
-		// Bấm nút Xác Nhận Nhập
 		const confirmBtn = screen.getByRole("button", {
 			name: /Xác Nhận Nhập \(1 Hợp Lệ\)/i,
 		});
@@ -102,7 +95,6 @@ describe("ImportPreviewModal Component", () => {
 		expect(handleConfirm).toHaveBeenCalledTimes(1);
 		expect(handleConfirm).toHaveBeenCalledWith([mockRows[0]]);
 
-		// Bấm nút Hủy Bỏ
 		const cancelBtn = screen.getByRole("button", { name: /Hủy Bỏ/i });
 		fireEvent.click(cancelBtn);
 		expect(handleClose).toHaveBeenCalledTimes(1);
@@ -113,9 +105,7 @@ describe("ImportPreviewModal Component", () => {
 
 		render(<ImportPreviewModal isOpen={true} onClose={handleClose} />);
 
-		// Nút đóng modal ở header có icon X
 		const closeButtons = screen.getAllByRole("button");
-		// Button đầu tiên trong header là nút X (hoặc chứa svg lucide-x)
 		const xButton = closeButtons.find((btn) =>
 			btn.querySelector("svg.lucide-x"),
 		);
@@ -180,7 +170,6 @@ describe("ImportPreviewModal Component", () => {
 			/>,
 		);
 
-		// Kiểm tra đã chuẩn hóa thành công từ mảng thô
 		expect(screen.getByText("Lê Văn C")).toBeDefined();
 		expect(screen.getByText("Phạm Thị D")).toBeDefined();
 		expect(screen.getByText(/Hợp lệ: 2 nhân khẩu/i)).toBeDefined();
@@ -263,7 +252,6 @@ describe("ImportPreviewModal Component", () => {
 	});
 
 	it("8. Xử lý phân trang khi số lượng dòng vượt quá limit hiển thị", () => {
-		// Tạo 25 dòng
 		const manyRows: ParsedExcelRow[] = Array.from({ length: 25 }, (_, i) => ({
 			index: i,
 			stt: `${i + 1}`,

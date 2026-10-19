@@ -3,7 +3,6 @@ import path from 'node:path'
 import fs from 'node:fs'
 import react from '@vitejs/plugin-react'
 
-// Normalize Windows NTFS junction (c:\Projects -> C:\Users\umnuar\Documents\Projects)
 if (fs.existsSync(process.cwd())) {
   const realCwd = fs.realpathSync(process.cwd())
   if (realCwd.toLowerCase() !== process.cwd().toLowerCase()) {
@@ -13,7 +12,6 @@ if (fs.existsSync(process.cwd())) {
   }
 }
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   resolve: {

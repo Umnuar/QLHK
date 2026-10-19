@@ -1,20 +1,4 @@
-/**
- * tableStyles.ts
- * Quy ước phong cách và định dạng bảng dùng chung cho hệ sinh thái dữ liệu Đăk Hà.
- * Tuân thủ:
- * - Thẻ bo góc + bóng mềm
- * - Header chữ hoa nhỏ, nền rất nhạt, không viền dọc, chỉ kẻ ngang mảnh
- * - Chiều cao dòng ~52px, nền trắng, hover xám rất nhạt
- * - Định dạng số Việt Nam (1.200.000 / 3,6), font mono
- * - Badge thôn chuẩn: nền xanh lá rất nhạt, viền xanh lá (đồng bộ mọi màn)
- * - Nút thao tác kích thước 32px
- */
 
-/**
- * Định dạng số theo chuẩn Việt Nam:
- * - Dấu chấm '.' ngăn cách hàng nghìn (1.200.000)
- * - Dấu phẩy ',' ngăn cách phần thập phân (3,6)
- */
 export function formatVietnameseNumber(
 	value: number | string | undefined | null,
 ): string {
@@ -27,10 +11,6 @@ export function formatVietnameseNumber(
 	return parts.join(",");
 }
 
-/**
- * Thuật toán Hare-Niemeyer (Largest Remainder Method)
- * Đảm bảo tổng các phần trăm của một tập hợp luôn bằng chính xác 100.0%
- */
 export function calculatePercentagesWithLargestRemainder<T extends { count: number }>(
 	items: T[],
 	totalOverride?: number,
@@ -76,16 +56,9 @@ export function calculatePercentagesWithLargestRemainder<T extends { count: numb
 	}));
 }
 
-/**
- * Kiểu Badge thôn duy nhất cho mọi màn hình:
- * Nền xanh lá rất nhạt, viền xanh lá
- */
 export const VILLAGE_BADGE_CLASS =
 	"inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/80 dark:bg-emerald-950/50 dark:text-emerald-200 dark:border-emerald-800";
 
-/**
- * Chuẩn hóa trạng thái cư trú hộ gia đình
- */
 export function formatHouseholdStatus(status?: string): string {
 	if (!status) return "Thường trú";
 	const s = status.toLowerCase().trim();
@@ -96,9 +69,6 @@ export function formatHouseholdStatus(status?: string): string {
 	return status;
 }
 
-/**
- * Thông tin hiển thị Badge trạng thái có kích thước đồng nhất và chấm màu trợ năng (Rule 2)
- */
 export function getHouseholdStatusBadge(status?: string): {
 	label: string;
 	className: string;
@@ -144,17 +114,10 @@ export function getHouseholdStatusBadge(status?: string): {
 	}
 }
 
-/**
- * Trả về class styling của badge trạng thái (tương thích ngược)
- */
 export function getHouseholdStatusBadgeClass(status?: string): string {
 	return getHouseholdStatusBadge(status).className;
 }
 
-/**
- * Chuẩn Header bảng từ màn Kinh tế (QLNN) làm chuẩn duy nhất cho cả 3 màn hình
- * Nền đặc tách rõ khỏi data rows ở cả Light và Dark mode, sticky top-0 với bóng nhẹ khi cuộn.
- */
 export const TABLE_HEADER_CLASSES = {
 	thead:
 		"sticky top-0 z-20 select-none shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)]",
@@ -172,11 +135,6 @@ export const TABLE_HEADER_CLASSES = {
 		"py-3.5 px-3 text-center min-w-[96px] sticky right-0 z-30 bg-slate-50 dark:bg-slate-800 border-b border-slate-200/90 dark:border-slate-800 shadow-[-6px_0_12px_-2px_rgba(0,0,0,0.08)] dark:shadow-[-6px_0_12px_-2px_rgba(0,0,0,0.3)] text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 select-none whitespace-nowrap",
 };
 
-/**
- * Trả về class màu nền đồng bộ 100% giữa hàng tr và các ô sticky td
- * Đảm bảo không bao giờ bị lệch tông hay lộ khối màu riêng biệt ở mọi trạng thái (bình thường, hover, đang chọn).
- * Tuân thủ quy tắc mới: CCCD không bắt buộc -> không dòng nào bị nhấn mạnh vì thiếu CCCD.
- */
 export function getTableRowBackground(
 	isSelected: boolean,
 ): {
@@ -199,9 +157,6 @@ export function getTableRowBackground(
 	};
 }
 
-/**
- * Bộ class Tailwind chuẩn quy ước bảng
- */
 export const TABLE_CLASSES = {
 	container:
 		"bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col transition-colors duration-150",

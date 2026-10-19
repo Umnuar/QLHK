@@ -46,24 +46,20 @@ describe("ExportSettingsModal Component", () => {
 			/>,
 		);
 
-		// Chuyển sang Tab 2
 		const customTabBtn = screen.getByRole("tab", {
 			name: /Báo cáo chuyên đề tùy chọn/i,
 		});
 		fireEvent.click(customTabBtn);
 
-		// Kiểm tra phần lọc tuổi
 		expect(screen.getByText(/1\. Lọc theo độ tuổi/i)).toBeDefined();
 		expect(screen.getByLabelText(/Từ tuổi/i)).toBeDefined();
 		expect(screen.getByLabelText(/Đến tuổi/i)).toBeDefined();
 
-		// Kiểm tra tiêu chí chuyên đề qua placeholder
 		expect(screen.getByText(/2\. Tiêu chí chuyên đề/i)).toBeDefined();
 		expect(screen.getByPlaceholderText(/VD: Đủ điều kiện, Xuất ngũ/i)).toBeDefined();
 		expect(screen.getByPlaceholderText(/VD: Đại học, 12\/12/i)).toBeDefined();
 		expect(screen.getByPlaceholderText(/VD: Làm nông, Công nhân/i)).toBeDefined();
 
-		// Kiểm tra 16 cột
 		expect(
 			screen.getByText(new RegExp(`3\\. Tùy biến cột xuất \\(16\\/${EXPORT_COLUMNS.length} cột\\)`)),
 		).toBeDefined();

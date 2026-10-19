@@ -11,12 +11,6 @@ import {
 	parseNhanHoKhauExcel,
 } from "../utils/excelParser";
 
-/**
- * Lấy buffer hoặc đường dẫn file Excel:
- * 1. Từ file upload (Multer req.file)
- * 2. Hoặc đường dẫn gửi trong body.filePath
- * 3. Hoặc file mẫu mặc định config.excelSamplePath
- */
 function getExcelSource(req: any): Buffer | string {
 	if (req.file && req.file.buffer) {
 		return req.file.buffer;

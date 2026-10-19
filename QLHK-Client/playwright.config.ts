@@ -1,9 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * Playwright E2E Configuration for QLHK-Client
- * Hệ thống Quản Lý Hộ Khẩu & Nhân Khẩu Xã Đăk Hà
- */
 export default defineConfig({
 	testDir: './tests/e2e',
 	timeout: 360_000,
@@ -11,7 +7,7 @@ export default defineConfig({
 		timeout: 15_000,
 	},
 	fullyParallel: false,
-	workers: 1, // Tuần tự 1 luồng để mô phỏng chính xác hành vi người dùng và bảo toàn dữ liệu
+	workers: 1,
 	forbidOnly: !!process.env.CI,
 	retries: 0,
 	reporter: [

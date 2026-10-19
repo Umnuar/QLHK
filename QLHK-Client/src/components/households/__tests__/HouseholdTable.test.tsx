@@ -113,13 +113,11 @@ describe("HouseholdTable Component", () => {
 			/>,
 		);
 
-		// Kiểm tra hiển thị tên đậm và không còn tiền tố lặp lại
 		expect(screen.getByText("A Đôi")).toBeDefined();
 		expect(screen.getByText("Trần Văn Nam")).toBeDefined();
 		const tableBody = document.querySelector("tbody");
 		expect(tableBody?.textContent).not.toContain("Hộ ông/bà:");
 
-		// Tuyệt đối không hiển thị mã sổ kỹ thuật HK-9999 và HK-8888 trên giao diện bảng
 		expect(screen.queryByText("HK-9999")).toBeNull();
 		expect(screen.queryByText("HK-8888")).toBeNull();
 	});
@@ -140,18 +138,14 @@ describe("HouseholdTable Component", () => {
 			/>,
 		);
 
-		// Trước khi bấm, chưa hiển thị bảng con nhân khẩu của Y Ble
 		expect(screen.queryByText("Y Ble")).toBeNull();
 
-		// Bấm vào dòng hộ A Đôi
 		const headCell = screen.getByText("A Đôi");
 		fireEvent.click(headCell);
 
-		// Bảng nhân khẩu con được mở ra, hiển thị Y Ble và quan hệ Vợ
 		expect(screen.getByText("Y Ble")).toBeDefined();
 		expect(screen.getByText("Vợ")).toBeDefined();
 
-		// Không hiển thị mã sổ trong bảng con
 		expect(screen.queryByText("HK-9999")).toBeNull();
 	});
 });

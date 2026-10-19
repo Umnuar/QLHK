@@ -39,7 +39,6 @@ export const getTauriAxiosAdapter = (): AxiosAdapter | undefined => {
 			try {
 				responseData = JSON.parse(responseText);
 			} catch {
-				// keep string
 			}
 
 			const responseHeaders: Record<string, string> = {};

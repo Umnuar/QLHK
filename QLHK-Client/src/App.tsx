@@ -6,7 +6,6 @@ import { AppUpdateModal } from "./components/common/AppUpdateModal";
 import { HouseholdsPage } from "./pages/HouseholdsPage";
 import { VillagesPage } from "./pages/VillagesPage";
 
-// Code-splitting via React.lazy() for sub-pages
 const AnalyticsPage = lazy(() =>
 	import("./pages/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage }))
 );

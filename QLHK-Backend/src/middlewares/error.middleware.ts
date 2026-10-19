@@ -25,7 +25,6 @@ export function errorHandler(
 		return;
 	}
 
-	// Optimistic concurrency conflict error
 	if (err?.status === 409 || err?.code === "OCC_CONFLICT") {
 		res.status(409).json({
 			error:
@@ -36,7 +35,6 @@ export function errorHandler(
 		return;
 	}
 
-	// Prisma unique constraint error
 	if (err?.code === "P2002") {
 		res.status(409).json({
 			error: "Dữ liệu đã tồn tại trong hệ thống (trùng lặp giá trị duy nhất)",
@@ -45,7 +43,6 @@ export function errorHandler(
 		return;
 	}
 
-	// Prisma record not found error
 	if (err?.code === "P2025") {
 		res.status(404).json({
 			error: "Không tìm thấy bản ghi yêu cầu",

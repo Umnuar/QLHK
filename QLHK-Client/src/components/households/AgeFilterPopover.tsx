@@ -39,7 +39,6 @@ export const AgeFilterPopover: React.FC<AgeFilterPopoverProps> = ({
 	const [customMax, setCustomMax] = useState<string>("");
 	const popoverRef = useRef<HTMLDivElement>(null);
 
-	// Đồng bộ custom inputs khi filter bên ngoài thay đổi
 	useEffect(() => {
 		if (currentFilter) {
 			setCustomMin(
@@ -54,7 +53,6 @@ export const AgeFilterPopover: React.FC<AgeFilterPopoverProps> = ({
 		}
 	}, [currentFilter]);
 
-	// Đóng popover khi click ra ngoài
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
 			if (
@@ -100,7 +98,6 @@ export const AgeFilterPopover: React.FC<AgeFilterPopoverProps> = ({
 		let max =
 			maxVal !== undefined && !isNaN(maxVal) ? Math.max(0, maxVal) : undefined;
 
-		// Nếu người dùng nhập min > max, tự động hoán đổi hợp lý
 		if (min !== undefined && max !== undefined && min > max) {
 			const temp = min;
 			min = max;

@@ -55,7 +55,6 @@ export const AnalyticsDashboard: React.FC = () => {
 		VillageAnalyticsRow[] | null
 	>(null);
 
-	// Tính toán fallback từ danh sách households cục bộ theo mảng villages động
 	const localCalculated = useMemo(() => {
 		const filtered = selectedVillageId
 			? activeHouseholds.filter((h) => h.village_id === selectedVillageId)
@@ -67,12 +66,12 @@ export const AnalyticsDashboard: React.FC = () => {
 		let femaleCount = 0;
 		let minorityCount = 0;
 
-		let under16Count = 0; // < 16 tuổi (Thiếu nhi)
-		let youthCount = 0; // 16 - 27 tuổi (Thanh niên & NVQS)
-		let adultCount = 0; // 28 - 60 tuổi (Lao động chính)
-		let over60Count = 0; // > 60 tuổi (Người cao tuổi)
-		let unknownAgeCount = 0; // Chưa rõ năm sinh
-		let legalWorkforceCount = 0; // 18 - 60 tuổi (Độ tuổi LĐ theo luật, hiển thị ở tâm Donut)
+		let under16Count = 0;
+		let youthCount = 0;
+		let adultCount = 0;
+		let over60Count = 0;
+		let unknownAgeCount = 0;
+		let legalWorkforceCount = 0;
 		const currentYear = new Date().getFullYear();
 
 		const ethnicMap: Record<string, number> = {};
@@ -338,7 +337,6 @@ export const AnalyticsDashboard: React.FC = () => {
 		};
 	}, [activeHouseholds, selectedVillageId, villages]);
 
-	// Nạp dữ liệu từ backend API kèm Offline Cache
 	const fetchAnalytics = useCallback(async () => {
 		const overviewCacheKey = `analytics_overview_${selectedVillageId || "all"}`;
 		const villageCacheKey = "analytics_by_village";

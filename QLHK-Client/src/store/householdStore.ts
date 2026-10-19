@@ -20,7 +20,6 @@ const ADMIN_MODE_KEY = "qlhk_admin_mode";
 const CURRENT_CALCULATION_YEAR = new Date().getFullYear();
 
 export function useHouseholdStore() {
-	// Lấy dữ liệu từ localStorage hoặc dùng INITIAL_HOUSEHOLDS
 	const [households, setHouseholds] = useState<Household[]>(() => {
 		try {
 			const saved = localStorage.getItem(STORAGE_KEY);
@@ -41,12 +40,10 @@ export function useHouseholdStore() {
 	const [isCheckingBackend, setIsCheckingBackend] = useState<boolean>(false);
 	const [loading] = useState<boolean>(false);
 
-	// Tìm kiếm & phân trang
 	const [search, setSearch] = useState<string>("");
 	const [page, setPage] = useState<number>(1);
 	const [limit, setLimit] = useState<number>(10);
 
-	// Lưu lại mỗi khi households thay đổi
 	useEffect(() => {
 		try {
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(households));
@@ -59,12 +56,10 @@ export function useHouseholdStore() {
 		localStorage.setItem(ADMIN_MODE_KEY, String(isAdmin));
 	}, [isAdmin]);
 
-	// Reset page khi search thay đổi
 	useEffect(() => {
 		setPage(1);
 	}, [search]);
 
-	// Kiểm tra kết nối Backend
 	const checkBackend = useCallback(async () => {
 		setIsCheckingBackend(true);
 		try {
@@ -85,17 +80,14 @@ export function useHouseholdStore() {
 		checkBackend();
 	}, [checkBackend]);
 
-	// Danh sách các hộ đang hoạt động (không ở trong thùng rác)
 	const activeHouseholds = useMemo(() => {
 		return households.filter((h) => !h.is_deleted);
 	}, [households]);
 
-	// Danh sách các hộ trong Thùng rác
 	const trashHouseholds = useMemo(() => {
 		return households.filter((h) => h.is_deleted);
 	}, [households]);
 
-	// Lọc theo tìm kiếm không dấu
 	const searchedHouseholds = useMemo(() => {
 		if (!search.trim()) return activeHouseholds;
 		const query = normalizeUnaccented(search.toLowerCase());
@@ -115,7 +107,6 @@ export function useHouseholdStore() {
 		});
 	}, [activeHouseholds, search]);
 
-	// Phân trang
 	const total = searchedHouseholds.length;
 	const totalPages = Math.ceil(total / limit) || 1;
 	const paginatedHouseholds = useMemo(() => {
@@ -123,7 +114,6 @@ export function useHouseholdStore() {
 		return searchedHouseholds.slice(start, start + limit);
 	}, [searchedHouseholds, page, limit]);
 
-	// Thống kê 4 KPI
 	const kpiStats = useMemo<KpiStats>(() => {
 		let totalMembers = 0;
 		let maleCount = 0;
@@ -162,7 +152,6 @@ export function useHouseholdStore() {
 		};
 	}, [activeHouseholds]);
 
-	// Thống kê cơ cấu 14 Dân tộc
 	const ethnicStats = useMemo<EthnicDistribution[]>(() => {
 		const counts: Record<string, number> = {};
 		ETHNIC_GROUPS.forEach((g) => {
@@ -191,7 +180,6 @@ export function useHouseholdStore() {
 		}).sort((a, b) => b.count - a.count);
 	}, [activeHouseholds]);
 
-	// Thống kê phân bổ theo Thôn
 	const villageStats = useMemo<VillageStatRow[]>(() => {
 		type VillageAcc = {
 			households_count: number;
@@ -251,7 +239,6 @@ export function useHouseholdStore() {
 		});
 	}, [activeHouseholds]);
 
-	// Thêm hộ mới
 	const addHousehold = useCallback((newH: any) => {
 		const village =
 			VILLAGES.find((v) => v.id === newH.village_id) || VILLAGES[0];

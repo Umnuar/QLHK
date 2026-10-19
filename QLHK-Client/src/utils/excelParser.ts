@@ -21,13 +21,6 @@ export interface ParsedExcelRow {
 
 export type ExcelFormatType = "dak_ha_merged" | "standard_11_columns";
 
-/**
- * Chuẩn hóa ngày sinh từ dữ liệu thô Excel:
- * - Hỗ trợ Excel serial date number (ví dụ: 37121 -> 18/08/2001)
- * - Tự động chuẩn hóa năm 3 chữ số lỗi gõ phím (ví dụ: 11/01/976 -> 11/01/1976)
- * - Hỗ trợ định dạng M/D/YYYY kiểu Mỹ (ví dụ: 8/18/2001 -> 18/08/2001)
- * - Phát hiện ngày/tháng không hợp lệ (ví dụ: 15/17/1989 có tháng 17)
- */
 export function normalizeExcelDob(rawVal: any): {
 	dob: string;
 	warning?: string;
@@ -36,7 +29,6 @@ export function normalizeExcelDob(rawVal: any): {
 		return { dob: "" };
 	}
 
-	// Trường hợp 0: Đối tượng Date hợp lệ
 	if (rawVal instanceof Date && !isNaN(rawVal.getTime())) {
 		const day = String(rawVal.getUTCDate()).padStart(2, "0");
 		const month = String(rawVal.getUTCMonth() + 1).padStart(2, "0");
@@ -504,9 +496,6 @@ export function sanitizeExcelCellValue<T>(val: T): T {
 	return val;
 }
 
-/**
- * Làm sạch toàn bộ một hàng dữ liệu bảng tính trước khi xuất (aoa_to_sheet) để chống Formula Injection.
- */
 export function sanitizeExcelRow(row: any[]): any[] {
 	if (!Array.isArray(row)) return row;
 	return row.map((cell) => sanitizeExcelCellValue(cell));

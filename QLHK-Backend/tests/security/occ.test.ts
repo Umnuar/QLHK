@@ -11,11 +11,9 @@ describe('Khóa lạc quan (Optimistic Concurrency Control - OCC)', () => {
   let testCitizenId: string;
 
   beforeAll(async () => {
-    // Lấy thôn đầu tiên
     const village = await prisma.villages.findFirst();
     testVillageId = village!.id;
 
-    // Sinh admin token
     adminToken = generateAccessToken({
       id: 'admin-test-id',
       username: 'admin',
@@ -23,7 +21,6 @@ describe('Khóa lạc quan (Optimistic Concurrency Control - OCC)', () => {
       village_id: null,
     });
 
-    // Tạo hộ khẩu mẫu
     const hh = await prisma.households.create({
       data: {
         village_id: testVillageId,
@@ -34,7 +31,6 @@ describe('Khóa lạc quan (Optimistic Concurrency Control - OCC)', () => {
     });
     testHouseholdId = hh.id;
 
-    // Tạo nhân khẩu mẫu
     const ct = await prisma.citizens.create({
       data: {
         household_id: testHouseholdId,

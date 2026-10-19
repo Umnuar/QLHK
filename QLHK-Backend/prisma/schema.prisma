@@ -27,7 +27,7 @@ model users {
   username       String           @unique @db.VarChar(50)
   password_hash  String           @db.VarChar(255)
   full_name      String?          @db.VarChar(255)
-  role           String           @default("user") @db.VarChar(20) // 'admin' | 'user'
+  role           String           @default("user") @db.VarChar(20)
   village_id     String?          @db.Uuid
   created_at     DateTime?        @default(now()) @db.Timestamptz
   updated_at     DateTime?        @default(now()) @updatedAt @db.Timestamptz
@@ -50,7 +50,7 @@ model households {
   village_id  String     @db.Uuid
   book_number String     @db.VarChar(100)
   address     String?    @db.VarChar(255)
-  status      String     @default("active") @db.VarChar(50) // 'active' | 'moved' | 'archived'
+  status      String     @default("active") @db.VarChar(50)
   version     Int        @default(1)
   is_deleted  Boolean    @default(false)
   deleted_at  DateTime?  @db.Timestamptz
@@ -73,16 +73,16 @@ model citizens {
   full_name       String     @db.VarChar(255)
   name_unaccented String?    @db.VarChar(255)
   dob             String?    @db.VarChar(20)
-  gender          String?    @db.VarChar(10) // 'Nam' | 'Nữ'
-  cccd            String?    // encrypted AES-256-GCM iv:authTag:encryptedHex
-  cccd_hash       String?    @db.VarChar(64) // SHA-256 hash for exact match lookup
-  cccd_last4      String?    @db.VarChar(4) // Last 4 digits for quick display
+  gender          String?    @db.VarChar(10)
+  cccd            String?
+  cccd_hash       String?    @db.VarChar(64)
+  cccd_last4      String?    @db.VarChar(4)
   ethnicity       String?    @db.VarChar(50)
   religion        String?    @db.VarChar(50)
-  education       String?    @db.VarChar(100) // Trình độ học vấn
-  military_status String?    @db.VarChar(255) // Tình hình thực hiện NVQS
-  occupation      String?    @db.VarChar(100) // Nghề nghiệp
-  native_place    String?    @db.VarChar(255) // Quê quán
+  education       String?    @db.VarChar(100)
+  military_status String?    @db.VarChar(255)
+  occupation      String?    @db.VarChar(100)
+  native_place    String?    @db.VarChar(255)
   notes           String?
   version         Int        @default(1)
   is_deleted      Boolean    @default(false)
@@ -102,8 +102,8 @@ model audit_logs {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   village_id  String?   @db.Uuid
   user_id     String?   @db.Uuid
-  action      String    @db.VarChar(50) // 'CREATE' | 'UPDATE' | 'DELETE' | 'RESTORE' | 'IMPORT'
-  entity_type String    @db.VarChar(50) // 'household' | 'citizen' | 'excel_import'
+  action      String    @db.VarChar(50)
+  entity_type String    @db.VarChar(50)
   entity_id   String?   @db.VarChar(255)
   old_values  String?
   new_values  String?

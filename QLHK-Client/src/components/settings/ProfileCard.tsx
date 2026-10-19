@@ -105,7 +105,6 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ user, communeName }) =
 	return (
 		<div className="space-y-6 animate-in fade-in">
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-				{/* Card 1: Thông tin tài khoản */}
 				<div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-6">
 					<div>
 						<div className="flex items-center gap-4 pb-5 border-b border-slate-100 dark:border-slate-800">
@@ -177,7 +176,6 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ user, communeName }) =
 					</div>
 				</div>
 
-				{/* Card 2: Đổi mật khẩu cá nhân */}
 				<form
 					onSubmit={handleChangeOwnPassword}
 					className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-5"

@@ -3,9 +3,6 @@ import type { Response } from "express";
 import { prisma } from "../config/prisma";
 import type { AuthRequest } from "../middlewares/auth.middleware";
 
-/**
- * Lấy danh sách tất cả tài khoản người dùng (ẩn mật khẩu hash)
- */
 export const getUsers = async (
 	_req: AuthRequest,
 	res: Response,
@@ -41,9 +38,6 @@ export const getUsers = async (
 	}
 };
 
-/**
- * Tạo tài khoản người dùng mới (băm mật khẩu với bcryptjs, gán role, village_id)
- */
 export const createUser = async (
 	req: AuthRequest,
 	res: Response,
@@ -69,7 +63,6 @@ export const createUser = async (
 			return;
 		}
 
-		// Kiểm tra tên đăng nhập đã tồn tại chưa
 		const existingUser = await prisma.users.findUnique({
 			where: { username: trimmedUsername },
 		});
@@ -79,7 +72,6 @@ export const createUser = async (
 			return;
 		}
 
-		// Băm mật khẩu với bcryptjs
 		const password_hash = await bcrypt.hash(password, 10);
 
 		const newUser = await prisma.users.create({
@@ -119,9 +111,6 @@ export const createUser = async (
 	}
 };
 
-/**
- * Đổi mật khẩu tài khoản theo id (băm mật khẩu mới với bcryptjs)
- */
 export const updatePassword = async (
 	req: AuthRequest,
 	res: Response,
@@ -144,7 +133,6 @@ export const updatePassword = async (
 			return;
 		}
 
-		// Quyền: Quản trị viên xã (admin) hoặc chính chủ tài khoản mới được đổi
 		if (req.user?.role !== "admin" && req.user?.id !== id) {
 			res
 				.status(403)
@@ -174,9 +162,6 @@ export const updatePassword = async (
 	}
 };
 
-/**
- * Xóa tài khoản (chặn xóa tài khoản admin mặc định và tài khoản đang đăng nhập)
- */
 export const deleteUser = async (
 	req: AuthRequest,
 	res: Response,
@@ -193,7 +178,6 @@ export const deleteUser = async (
 			return;
 		}
 
-		// Chặn xóa tài khoản admin mặc định
 		if (user.username === "admin") {
 			res.status(400).json({
 				error: "Không thể xóa tài khoản Quản trị viên mặc định (admin)",
@@ -201,7 +185,6 @@ export const deleteUser = async (
 			return;
 		}
 
-		// Chặn xóa chính mình
 		if (req.user?.id === id) {
 			res
 				.status(400)
@@ -209,7 +192,6 @@ export const deleteUser = async (
 			return;
 		}
 
-		// Xóa an toàn: dọn refresh tokens và nullify audit logs trước khi xóa user
 		await prisma.$transaction([
 			prisma.refresh_tokens.deleteMany({ where: { user_id: id } }),
 			prisma.audit_logs.updateMany({
@@ -229,9 +211,6 @@ export const deleteUser = async (
 	}
 };
 
-/**
- * Cập nhật thông tin tài khoản và phân công thôn
- */
 export const updateUser = async (
 	req: AuthRequest,
 	res: Response,

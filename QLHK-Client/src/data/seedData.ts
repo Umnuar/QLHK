@@ -40,7 +40,6 @@ function createMember(data: {
 }
 
 export const INITIAL_HOUSEHOLDS: Household[] = [
-	// 1. Thôn 1 - Hộ Kinh
 	{
 		id: "hh-th1-001",
 		code: "HK-TH1-001",
@@ -116,7 +115,6 @@ export const INITIAL_HOUSEHOLDS: Household[] = [
 		],
 	},
 
-	// 2. Thôn 2 - Hộ Dân tộc Xơ Đăng
 	{
 		id: "hh-th2-001",
 		code: "HK-TH2-001",
@@ -206,7 +204,6 @@ export const INITIAL_HOUSEHOLDS: Household[] = [
 		],
 	},
 
-	// 3. Thôn 5 - Hộ Dân tộc Gia Rai
 	{
 		id: "hh-th5-001",
 		code: "HK-TH5-001",
@@ -268,7 +265,6 @@ export const INITIAL_HOUSEHOLDS: Household[] = [
 		],
 	},
 
-	// 4. Thôn Kon Đao Yôp - Dân tộc Giẻ Triêng & Ha Lăng
 	{
 		id: "hh-kdy-001",
 		code: "HK-KDY-001",
@@ -343,7 +339,6 @@ export const INITIAL_HOUSEHOLDS: Household[] = [
 		],
 	},
 
-	// 5. Làng Kon Hnông Bách - Dân tộc Giơ Lâng & Ê Đê
 	{
 		id: "hh-khb-001",
 		code: "HK-KHB-001",
@@ -404,7 +399,6 @@ export const INITIAL_HOUSEHOLDS: Household[] = [
 		],
 	},
 
-	// 6. Thôn 3 - Hộ Dân tộc Dao & Dìu & Hoa
 	{
 		id: "hh-th3-001",
 		code: "HK-TH3-001",
@@ -479,7 +473,6 @@ export const INITIAL_HOUSEHOLDS: Household[] = [
 		],
 	},
 
-	// 7. Thôn 4 - Dân tộc Cor, Cơ Ho, Hrê, Khách Gia
 	{
 		id: "hh-th4-001",
 		code: "HK-TH4-001",
@@ -540,7 +533,6 @@ export const INITIAL_HOUSEHOLDS: Household[] = [
 		],
 	},
 
-	// 8. Hộ mẫu thêm: Dân tộc Cor & Khách Gia (Thôn 4)
 	{
 		id: "hh-th4-002",
 		code: "HK-TH4-002",
@@ -587,7 +579,6 @@ export const INITIAL_HOUSEHOLDS: Household[] = [
 		],
 	},
 
-	// 9. Hộ mẫu đã xóa mềm (Trash) để kiểm tra Màn hình 5 Thùng rác & Khôi phục
 	{
 		id: "hh-trash-001",
 		code: "HK-TH1-999",

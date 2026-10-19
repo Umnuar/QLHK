@@ -156,13 +156,11 @@ describe("Kiểm thử ánh xạ thống kê thời gian thực các thôn (Vill
 		expect(dttsCount).toBe(150);
 		expect(dttsPercentage).toBe("71.4");
 
-		// Trường hợp totalCitizens = 0
 		const zeroCitizens = 0;
 		const emptyPct =
 			zeroCitizens > 0 ? ((dttsCount / zeroCitizens) * 100).toFixed(1) : "0.0";
 		expect(emptyPct).toBe("0.0");
 
-		// Trường hợp chỉ có dân tộc Kinh
 		const onlyKinh = [{ name: "Kinh", count: 100 }];
 		const dttsZero = onlyKinh
 			.filter((e) => e.name.toLowerCase().trim() !== "kinh")
@@ -200,10 +198,8 @@ describe("Kiểm thử tính năng Tự Động Cập Nhật (Tauri Auto-Updater
 			"@/components/common/AppUpdateModal"
 		);
 
-		// Trong môi trường Node (không có window), gọi hàm không bao giờ gây crash
 		expect(() => checkAppUpdateManually()).not.toThrow();
 
-		// Nếu có window (Browser/jsdom)
 		if (typeof window !== "undefined") {
 			let eventFired = false;
 			const listener = () => {

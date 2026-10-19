@@ -55,30 +55,25 @@ export const SettingsPage: React.FC = () => {
 
 	const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
 
-	// --- TAB 2: QUẢN LÝ CÁN BỘ THÔN ---
 	const [usersList, setUsersList] = useState<User[]>([]);
 	const [loadingUsers, setLoadingUsers] = useState(false);
 
-	// Modal thêm cán bộ
 	const [isAddUserOpen, setIsAddUserOpen] = useState(false);
 	const [newUsername, setNewUsername] = useState("");
 	const [newUserPassword, setNewUserPassword] = useState("");
 	const [newUserVillageId, setNewUserVillageId] = useState("");
 	const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
 
-	// Modal đặt lại mật khẩu cán bộ
 	const [resetPwdUser, setResetPwdUser] = useState<User | null>(null);
 	const [resetPwdValue, setResetPwdValue] = useState("");
 	const [showResetPwd, setShowResetPwd] = useState(false);
 	const [loadingResetPwd, setLoadingResetPwd] = useState(false);
 
-	// --- TAB 4: THÔNG TIN ĐƠN VỊ & HỆ THỐNG ---
 	const [communeInfo, setCommuneInfo] = useState<CommuneInfo>(() => {
 		try {
 			const saved = localStorage.getItem(COMMUNE_INFO_KEY);
 			if (saved) return JSON.parse(saved);
 		} catch {
-			// ignore
 		}
 		return DEFAULT_COMMUNE_INFO;
 	});
@@ -102,7 +97,6 @@ export const SettingsPage: React.FC = () => {
 		}
 	}, [activeTab, isAdmin]);
 
-	// Tạo tài khoản cán bộ mới
 	const handleCreateUser = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!newUsername.trim() || !newUserPassword.trim()) {
@@ -152,7 +146,6 @@ export const SettingsPage: React.FC = () => {
 		}
 	};
 
-	// Đặt lại mật khẩu cán bộ
 	const handleResetPassword = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!resetPwdUser || !resetPwdValue.trim()) return;
@@ -189,7 +182,6 @@ export const SettingsPage: React.FC = () => {
 		}
 	};
 
-	// Xóa tài khoản cán bộ
 	const handleDeleteUser = (u: User) => {
 		if (u.username === "admin") {
 			showModal({
@@ -238,13 +230,11 @@ export const SettingsPage: React.FC = () => {
 		});
 	};
 
-	// Lưu thông tin đơn vị
 	const handleSaveCommune = (e: React.FormEvent) => {
 		e.preventDefault();
 		try {
 			localStorage.setItem(COMMUNE_INFO_KEY, JSON.stringify(communeInfo));
 		} catch {
-			// ignore
 		}
 		setSavedCommune(true);
 		setTimeout(() => setSavedCommune(false), 3000);
@@ -257,7 +247,6 @@ export const SettingsPage: React.FC = () => {
 
 	return (
 		<div className="space-y-6 max-w-5xl mx-auto pb-12 select-none animate-in fade-in">
-			{/* 4 Tabs Điều Hướng Chuẩn QLCS */}
 			<div className="flex items-center gap-1.5 sm:gap-2 p-1.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-x-auto scrollbar-none w-full max-w-full">
 				<button
 					type="button"

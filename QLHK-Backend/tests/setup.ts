@@ -1,7 +1,3 @@
-/**
- * Test Environment Setup for QLHK-Backend
- * Khởi tạo biến môi trường test chuẩn trước khi chạy bất kỳ test suite nào.
- */
 process.env.NODE_ENV = 'test';
 process.env.PORT = '5002';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'qlhk-dakha-jwt-access-secret-32-chars-min';

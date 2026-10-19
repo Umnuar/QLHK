@@ -50,7 +50,6 @@ export const VillagesPage: React.FC = () => {
 	const [newName, setNewName] = useState("");
 	const [userList, setUserList] = useState<User[]>([]);
 
-	// Số liệu thống kê động thời gian thực từ CSDL Backend kèm Offline Cache
 	const [overview, setOverview] = useState<AnalyticsOverviewData | null>(null);
 	const [villageStats, setVillageStats] = useState<
 		Record<string, VillageAnalyticsRow>

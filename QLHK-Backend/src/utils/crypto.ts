@@ -9,10 +9,6 @@ function getKeyBuffer(): Buffer {
 	return crypto.createHash("sha256").update(hexKey).digest();
 }
 
-/**
- * Mã hóa AES-256-GCM theo chuẩn Hệ sinh thái Đăk Hà:
- * Lưu trữ dạng "ivHex:authTagHex:encryptedHex"
- */
 export function encryptCCCD(plainCCCD: string): {
 	encrypted: string;
 	hash: string;

@@ -4,7 +4,6 @@ import { householdApi } from "../../../api/householdApi";
 import type { Person } from "../../../types";
 import { CitizenModal } from "../CitizenModal";
 
-// Mock API
 vi.mock("../../../api/householdApi", () => ({
 	householdApi: {
 		revealCitizenCCCD: vi.fn(),
@@ -34,7 +33,6 @@ describe("CitizenModal Component", () => {
 			screen.getByText("Nhập đầy đủ thông tin nhân khẩu thuộc xã Đăk Hà"),
 		).toBeInTheDocument();
 
-		// Bấm Lưu nhân khẩu khi form trống họ tên
 		const submitBtn = screen.getByRole("button", { name: /Lưu nhân khẩu/i });
 		fireEvent.click(submitBtn);
 
@@ -58,7 +56,6 @@ describe("CitizenModal Component", () => {
 		const dobInput = screen.getByLabelText(/Ngày sinh/i);
 		const submitBtn = screen.getByRole("button", { name: /Lưu nhân khẩu/i });
 
-		// Nhập tên nhưng bỏ trống ngày sinh
 		fireEvent.change(nameInput, { target: { value: "A Đôi" } });
 		fireEvent.click(submitBtn);
 
@@ -69,7 +66,6 @@ describe("CitizenModal Component", () => {
 		).toBeInTheDocument();
 		expect(mockOnSave).not.toHaveBeenCalled();
 
-		// Nhập ngày sinh sai định dạng (tháng 17)
 		fireEvent.change(dobInput, { target: { value: "15/17/1990" } });
 		fireEvent.click(submitBtn);
 
@@ -78,7 +74,6 @@ describe("CitizenModal Component", () => {
 		).toBeInTheDocument();
 		expect(mockOnSave).not.toHaveBeenCalled();
 
-		// Nhập ngày sinh sai (ngày 35)
 		fireEvent.change(dobInput, { target: { value: "35/05/1990" } });
 		fireEvent.click(submitBtn);
 
@@ -106,14 +101,12 @@ describe("CitizenModal Component", () => {
 		fireEvent.change(nameInput, { target: { value: "A Đôi" } });
 		fireEvent.change(dobInput, { target: { value: "15/08/1990" } });
 
-		// Nhập CCCD sai độ dài (chỉ có 8 số)
 		fireEvent.change(cccdInput, { target: { value: "06009800" } });
 		fireEvent.click(submitBtn);
 
 		expect(screen.getByText(/Lỗi số CCCD/i)).toBeInTheDocument();
 		expect(mockOnSave).not.toHaveBeenCalled();
 
-		// Sửa thành 12 chữ số hợp lệ
 		fireEvent.change(cccdInput, { target: { value: "060098001234" } });
 		fireEvent.click(submitBtn);
 
@@ -149,7 +142,6 @@ describe("CitizenModal Component", () => {
 		const revealBtn = screen.getByRole("button", { name: /Xem đầy đủ/i });
 		expect(revealBtn).toBeInTheDocument();
 
-		// Click Xem đầy đủ
 		fireEvent.click(revealBtn);
 
 		await waitFor(() => {
@@ -158,18 +150,15 @@ describe("CitizenModal Component", () => {
 			);
 		});
 
-		// Sau khi mở khóa thành công, nút chuyển thành Ẩn bớt
 		await waitFor(() => {
 			expect(
 				screen.getByRole("button", { name: /Ẩn bớt/i }),
 			).toBeInTheDocument();
 		});
 
-		// Click lại để che giấu
 		const hideBtn = screen.getByRole("button", { name: /Ẩn bớt/i });
 		fireEvent.click(hideBtn);
 
-		// Nút quay lại trạng thái Xem đầy đủ
 		expect(
 			screen.getByRole("button", { name: /Xem đầy đủ/i }),
 		).toBeInTheDocument();
@@ -213,7 +202,7 @@ describe("CitizenModal Component", () => {
 		expect(savedData.cccd_last4).toBe("1234");
 		expect(savedData.cccd_masked).toBe("••••••••1234");
 		expect(savedData.is_head).toBe(false);
-		expect(savedData.is_minority).toBe(false); // Dân tộc Kinh
+		expect(savedData.is_minority).toBe(false);
 		expect(savedData.notes).toBe("Kỹ sư nông nghiệp");
 		expect(mockOnClose).toHaveBeenCalledTimes(1);
 	});
@@ -264,7 +253,6 @@ describe("CitizenModal Component", () => {
 		fireEvent.click(closeBtn);
 		expect(mockOnClose).toHaveBeenCalledTimes(2);
 
-		// Khi isOpen = false thì không render gì
 		rerender(
 			<CitizenModal
 				isOpen={false}

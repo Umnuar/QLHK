@@ -20,10 +20,8 @@ export const TimeCard: React.FC = () => {
 	const [isSyncing, setIsSyncing] = useState<boolean>(false);
 	const deltaRef = useRef<number>(0);
 
-	// Tải thời gian chuẩn từ Backend và dọn dẹp cấu hình cũ
 	const fetchSystemTime = useCallback(async () => {
 		try {
-			// Xóa sạch tàn dư cấu hình offset cũ nếu còn lưu trong localStorage
 			localStorage.removeItem("app_time_config");
 
 			const data = await settingsApi.getSystemTime();
@@ -39,7 +37,6 @@ export const TimeCard: React.FC = () => {
 		}
 	}, [setCalculationYear]);
 
-	// Kích hoạt đồng bộ lại tức thì
 	const handleSync = async () => {
 		if (isSyncing) return;
 		setIsSyncing(true);
@@ -62,7 +59,6 @@ export const TimeCard: React.FC = () => {
 	useEffect(() => {
 		fetchSystemTime();
 
-		// Đồng hồ kỹ thuật số nhảy giây liên tục theo giờ thực Backend
 		const timer = setInterval(() => {
 			setCurrentClock(new Date(Date.now() + deltaRef.current));
 		}, 1000);
@@ -70,7 +66,6 @@ export const TimeCard: React.FC = () => {
 		return () => clearInterval(timer);
 	}, [fetchSystemTime]);
 
-	// Format ngày giờ hiển thị chi tiết theo chuẩn hành chính Việt Nam
 	const formatFullDate = (d: Date) => {
 		const days = [
 			"Chủ Nhật",

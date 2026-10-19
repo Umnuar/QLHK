@@ -24,14 +24,11 @@ describe("AgeFilterPopover Component", () => {
 			<AgeFilterPopover currentFilter={null} onSelectFilter={handleSelect} />,
 		);
 
-		// Click mở popover
 		const trigger = screen.getByRole("button", { name: /Lọc Độ Tuổi/i });
 		fireEvent.click(trigger);
 
-		// Tiêu đề popover
 		expect(screen.getByText("Lọc Theo Nhóm Tuổi")).toBeDefined();
 
-		// Tìm preset '18 - 27 tuổi'
 		const presetBtn = screen.getByText("18 - 27 tuổi");
 		fireEvent.click(presetBtn);
 
@@ -48,11 +45,9 @@ describe("AgeFilterPopover Component", () => {
 			<AgeFilterPopover currentFilter={null} onSelectFilter={handleSelect} />,
 		);
 
-		// Mở popover
 		const trigger = screen.getByRole("button", { name: /Lọc Độ Tuổi/i });
 		fireEvent.click(trigger);
 
-		// Nhập từ 20 đến 35
 		const minInput = screen.getByPlaceholderText(/Từ \(ví dụ: 18\)/i);
 		const maxInput = screen.getByPlaceholderText(/Đến \(ví dụ: 60\)/i);
 
@@ -78,10 +73,8 @@ describe("AgeFilterPopover Component", () => {
 			/>,
 		);
 
-		// Hiển thị nhãn bộ lọc
 		expect(screen.getByText("18 - 60 tuổi")).toBeDefined();
 
-		// Nút Xóa lọc
 		const clearBtn = screen.getByRole("button", { name: /Xóa lọc độ tuổi/i });
 		fireEvent.click(clearBtn);
 

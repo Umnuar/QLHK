@@ -60,7 +60,6 @@ export const LoginView: React.FC = () => {
 	return (
 		<div className="min-h-screen w-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 sm:p-6 font-sans text-slate-900 dark:text-slate-100 select-none">
 			<div className="max-w-md w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 shadow-xl border-t-4 border-t-emerald-600">
-				{/* Header Branding */}
 				<div className="text-center mb-8">
 					<div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-950/60 border-[3px] border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full mx-auto flex items-center justify-center mb-5 shadow-sm">
 						<Users className="w-10 h-10" strokeWidth={2.5} />
@@ -73,7 +72,6 @@ export const LoginView: React.FC = () => {
 					</p>
 				</div>
 
-				{/* Error Alert */}
 				{error && (
 					<div className="mb-6 p-3.5 bg-rose-950/40 border border-rose-800/60 rounded-xl flex items-start gap-3 text-rose-300 text-xs leading-relaxed">
 						<AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
@@ -81,7 +79,6 @@ export const LoginView: React.FC = () => {
 					</div>
 				)}
 
-				{/* Form */}
 				<form onSubmit={handleLogin} className="space-y-5">
 					<div>
 						<label htmlFor="login-username" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">

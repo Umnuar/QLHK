@@ -9,7 +9,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
   let thon1VillageId: string;
 
   beforeAll(async () => {
-    // Đảm bảo dữ liệu ban đầu
     let thon1User = await prisma.users.findUnique({
       where: { username: 'thon1' },
       include: { village: true },
@@ -105,11 +104,9 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(login2.body.refreshToken).toBeDefined();
       expect(login1.body.refreshToken).not.toBe(login2.body.refreshToken);
 
-      // Cập nhật lại adminToken và refreshToken mới nhất
       adminToken = login2.body.accessToken;
       refreshToken = login2.body.refreshToken;
 
-      // Cả 2 token đều tồn tại hợp lệ và khác nhau trong CSDL (không bị conflict P2002)
       const token1InDb = await prisma.refresh_tokens.findUnique({
         where: { token: login1.body.refreshToken },
       });
@@ -581,7 +578,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(res.body.data.village).toBeDefined();
       expect(res.body.data.village.id).toBe(targetVillage?.id);
     });
-
 
     it('DELETE /api/users/:id: Chặn xóa tài khoản admin mặc định', async () => {
       const adminUser = await prisma.users.findUnique({ where: { username: 'admin' } });

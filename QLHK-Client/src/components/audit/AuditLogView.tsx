@@ -762,9 +762,7 @@ export const AuditLogView: React.FC = () => {
 				})}
 			</div>
 
-			{/* Thanh Tìm Kiếm & Lọc Chi Tiết */}
 			<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-				{/* Tìm kiếm từ khóa */}
 				<div className="relative">
 					<Search
 						className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
@@ -779,7 +777,6 @@ export const AuditLogView: React.FC = () => {
 					/>
 				</div>
 
-				{/* Lọc theo Thôn */}
 				{selectedVillageId ? (
 					<div className="flex items-center justify-between px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 rounded-2xl text-xs">
 						<div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-200 truncate">
@@ -836,7 +833,6 @@ export const AuditLogView: React.FC = () => {
 					</div>
 				)}
 
-				{/* Lọc theo người thực hiện */}
 				<CustomSelect
 					value={userFilter}
 					onChange={(val) => setUserFilter(String(val))}

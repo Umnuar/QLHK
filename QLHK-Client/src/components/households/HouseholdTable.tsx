@@ -24,7 +24,6 @@ import {
 } from "../common/tableStyles";
 import type { AgeFilter } from "./AgeFilterPopover";
 
-// Re-export để tương thích ngược với các module khác
 export { formatHouseholdStatus, getHouseholdStatusBadgeClass };
 
 interface HouseholdTableProps {
@@ -70,15 +69,12 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 	ageFilter,
 	calculationYear,
 }) => {
-	// Trạng thái bung mở accordion cho từng hộ
 	const [expandedHouseholdIds, setExpandedHouseholdIds] = useState<string[]>(
 		[],
 	);
-	// Trạng thái hiển thị đầy đủ CCCD cho từng nhân khẩu
 	const [revealedCccdIds, setRevealedCccdIds] = useState<string[]>([]);
 	const [decryptedCccds, setDecryptedCccds] = useState<Record<string, string>>({});
 	const [revealingCccdIds, setRevealingCccdIds] = useState<string[]>([]);
-	// Trạng thái xem toàn bộ thành viên (bỏ qua lọc độ tuổi cục bộ cho từng hộ)
 	const [showAllMembersHhIds, setShowAllMembersHhIds] = useState<string[]>([]);
 
 	const toggleAccordion = (hhId: string) => {
@@ -93,13 +89,11 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 			return;
 		}
 
-		// Nếu đã có trong cache decryptedCccds
 		if (decryptedCccds[personId]) {
 			setRevealedCccdIds((prev) => [...prev, personId]);
 			return;
 		}
 
-		// Nếu bản ghi đã có plaintext không bị mask
 		if (fallbackCccd && !fallbackCccd.includes("•") && fallbackCccd.length >= 9) {
 			setDecryptedCccds((prev) => ({ ...prev, [personId]: fallbackCccd }));
 			setRevealedCccdIds((prev) => [...prev, personId]);
@@ -130,7 +124,6 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 
 	return (
 		<div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col transition-colors duration-150">
-			{/* Top Controls Info: Tiêu đề bên trái, Dòng Mẹo bên phải */}
 			<div className="p-3 sm:px-4 bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap text-xs">
 				<div className="flex items-center gap-2.5 text-slate-700 dark:text-slate-300 font-bold">
 					<Users
@@ -150,7 +143,6 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 				</div>
 			</div>
 
-			{/* Table Container - Cuộn dọc tối đa 640px, thead cố định sticky top-0 */}
 			<div className="overflow-x-auto overflow-y-auto max-h-[640px] relative custom-scrollbar">
 				<table className="w-full text-left border-collapse text-xs">
 					<thead className={TABLE_HEADER_CLASSES.thead}>

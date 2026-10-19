@@ -20,17 +20,14 @@ const server = app.listen(PORT, () => {
 	}
 });
 
-// Giữ kết nối Cloudflare Tunnel luôn ấm (Keep-Alive)
-server.keepAliveTimeout = 65000; // 65s (lớn hơn Cloudflare 60s để tránh ngắt kết nối đột ngột)
+server.keepAliveTimeout = 65000;
 server.headersTimeout = 66000;
 
-// Xử lý lỗi khởi động và xung đột cổng (EADDRINUSE)
 server.on("error", (err: NodeJS.ErrnoException) => {
 	logError(err.code || "SERVER_ERROR", err.message || "Không thể khởi động máy chủ");
 	process.exit(1);
 });
 
-// Xử lý đóng máy chủ an toàn (Graceful Shutdown)
 const gracefulShutdown = async (_signal: string) => {
 	stopAutoTimeSync();
 	server.close(async () => {
@@ -43,7 +40,6 @@ const gracefulShutdown = async (_signal: string) => {
 		}
 	});
 
-	// Đảm bảo không bị treo vô hạn nếu socket đóng chậm
 	setTimeout(() => {
 		logError("TIMEOUT", "Buộc dừng tiến trình sau 5 giây chờ đóng kết nối.");
 		process.exit(1);

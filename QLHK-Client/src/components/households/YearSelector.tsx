@@ -19,12 +19,10 @@ export const YearSelector: React.FC<YearSelectorProps> = ({
 	const currentYear = new Date().getFullYear();
 	const isFilteredYear = year !== currentYear;
 
-	// Sync input value whenever year changes or popover opens
 	useEffect(() => {
 		setInputValue(String(year));
 	}, [year, isOpen]);
 
-	// Click outside listener
 	useEffect(() => {
 		const handleClickOutside = (e: MouseEvent) => {
 			if (

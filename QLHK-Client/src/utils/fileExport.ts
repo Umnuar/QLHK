@@ -9,17 +9,10 @@ export interface FileExportResult {
 	error?: string;
 }
 
-/**
- * Xuất file Excel hỗ trợ chọn nơi lưu file đa nền tảng:
- * 1. Tauri Desktop: @tauri-apps/plugin-dialog (save) + @tauri-apps/plugin-fs (writeFile)
- * 2. Trình duyệt hiện đại: window.showSaveFilePicker (File System Access API)
- * 3. Trình duyệt truyền thống: XLSX.writeFile tải xuống tự động
- */
 export async function exportExcelWithDialog(
 	workbook: XLSX.WorkBook,
 	defaultFilename: string,
 ): Promise<FileExportResult> {
-	// 1. Môi trường Tauri Desktop
 	if (typeof window !== "undefined" && isTauri()) {
 		try {
 			const { save } = await import("@tauri-apps/plugin-dialog");
@@ -53,7 +46,6 @@ export async function exportExcelWithDialog(
 		}
 	}
 
-	// 2. Môi trường Trình duyệt hỗ trợ File System Access API
 	if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
 		try {
 			const handle = await (window as any).showSaveFilePicker({
@@ -94,7 +86,6 @@ export async function exportExcelWithDialog(
 		}
 	}
 
-	// 3. Fallback trình duyệt thông thường
 	try {
 		XLSX.writeFile(workbook, defaultFilename);
 		return {

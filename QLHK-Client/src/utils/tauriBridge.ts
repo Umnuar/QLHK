@@ -107,7 +107,6 @@ export function initTauriBridge(): void {
 		},
 		setZoom: async (level: number) => {
 			try {
-				// CSS zoom trong WebView2
 				document.documentElement.style.zoom = `${level}%`;
 				// WebviewWindow zoom trong Tauri
 				const win = getCurrentWebviewWindow();

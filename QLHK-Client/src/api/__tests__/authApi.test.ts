@@ -100,7 +100,6 @@ describe("authApi - Quản lý Xác thực & Phiên làm việc Ngoại tuyến 
 			savedAt: new Date().toISOString(),
 		});
 
-		// Giả lập rớt mạng (network error)
 		vi.spyOn(apiClient, "post").mockRejectedValueOnce(new Error("Network Error"));
 
 		const res = await authApi.login({
@@ -113,7 +112,6 @@ describe("authApi - Quản lý Xác thực & Phiên làm việc Ngoại tuyến 
 	});
 
 	it("từ chối đăng nhập offline nếu người dùng chưa từng đăng nhập trên máy này", async () => {
-		// Giả lập rớt mạng
 		vi.spyOn(apiClient, "post").mockRejectedValueOnce(new Error("Network Error"));
 
 		await expect(

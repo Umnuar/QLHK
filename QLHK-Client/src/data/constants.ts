@@ -42,8 +42,6 @@ export const VILLAGES: Village[] = [
 	},
 ];
 
-// Đúng chuẩn 14 Dân tộc Xã Đăk Hà:
-// Cor, Cơ Ho, Dao, Dìu, Ê Đê, Gia Rai, Xơ Đăng, Giẻ Triêng, Giơ Lâng, Ha Lăng, Hoa, Hrê, Khách Gia, Kinh
 export const ETHNIC_GROUPS = [
 	"Kinh",
 	"Xơ Đăng",

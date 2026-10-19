@@ -1,8 +1,3 @@
-/**
- * Bộ nhớ đệm ngoại tuyến (Offline Cache) cho QLHK-Client
- * Sử dụng Native IndexedDB bất đồng bộ chuẩn HTML5, phá vỡ giới hạn 5MB của localStorage.
- * Hỗ trợ lưu trữ tập dữ liệu lớn 23.000+ nhân khẩu (~30MB) mà không chặn UI thread.
- */
 
 export interface CacheItem<T = any> {
 	key: string;
@@ -24,7 +19,6 @@ function getIDBFactory(): IDBFactory | null {
 			return (globalThis as any).indexedDB;
 		}
 	} catch {
-		// Access denied
 	}
 	return null;
 }
@@ -37,7 +31,6 @@ export function resetDBConnection(): void {
 		try {
 			dbInstance.close();
 		} catch {
-			// ignore
 		}
 		dbInstance = null;
 	}
@@ -85,7 +78,6 @@ function openDatabase(): Promise<IDBDatabase> {
 	return dbPromise;
 }
 
-// Fallback Memory Store (khi IndexedDB bị chặn hoặc trong môi trường test không có IDB)
 const memoryFallback = new Map<string, CacheItem>();
 
 function getLocalStorage(): Storage | null {
@@ -97,14 +89,10 @@ function getLocalStorage(): Storage | null {
 			return localStorage;
 		}
 	} catch {
-		// Restricted
 	}
 	return null;
 }
 
-/**
- * Lưu dữ liệu vào cache kèm thời gian cập nhật
- */
 export async function setCache(key: string, data: any): Promise<void> {
 	const item: CacheItem = {
 		key,
@@ -124,7 +112,6 @@ export async function setCache(key: string, data: any): Promise<void> {
 			tx.onerror = () => reject(tx.error);
 		});
 	} catch {
-		// Fallback sang memory & localStorage
 		memoryFallback.set(key, item);
 		const ls = getLocalStorage();
 		if (ls) {

@@ -1,20 +1,3 @@
-/**
- * Modal.tsx
- * Component Modal dùng chung chuẩn cho toàn bộ hệ thống Đăk Hà.
- * 
- * QUY ƯỚC CHUNG:
- * 1. Lớp phủ (Overlay): Phủ ĐỀU 100% cửa sổ qua createPortal(..., document.body).
- *    Bỏ hoàn toàn backdrop-blur. Màu đặc: light rgba(15,23,42,0.45), dark rgba(0,0,0,0.6).
- * 2. Cấu trúc 3 phần: Tiêu đề (ô icon + tên + mô tả + nút đóng X), Thân cuộn bên trong, Chân cố định.
- * 3. Kích cỡ:
- *    - sm: ~420px (hộp thoại ngắn: xác nhận, phân công thôn)
- *    - md: ~640px (chọn tệp, form đơn)
- *    - lg: ~880px (form nhiều cột)
- *    - xl: min(1200px, 92vw) (bảng xem trước Excel, dữ liệu lớn)
- *    - Chiều cao tối đa: ~85vh.
- * 4. Truy cập (A11y): role="dialog", aria-modal="true", aria-labelledby, khóa focus (useFocusTrap), Esc đóng, vùng bấm >= 44px.
- * 5. Nhãn nút Sentence case: "Hủy", "Quay lại", "Tiếp tục", "Xác nhận"...
- */
 
 import React, { useEffect, useId } from "react";
 import { createPortal } from "react-dom";

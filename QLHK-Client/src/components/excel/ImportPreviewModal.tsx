@@ -23,7 +23,7 @@ export interface ImportPreviewModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	file?: File | null;
-	parsedData?: any[]; // Mỗi phần tử là ParsedExcelRow hoặc mảng 11 cột thô
+	parsedData?: any[];
 	onConfirm?: (validRows: any[]) => Promise<void> | void;
 	importing?: boolean;
 }

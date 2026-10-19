@@ -60,10 +60,6 @@ export const INSECURE_DEFAULT_SECRETS = new Set([
 	"dev-refresh-secret",
 ]);
 
-/**
- * Thẩm định tính an toàn của cấu hình biến môi trường theo chuẩn ASVS V14 & CWE-798.
- * Trong môi trường production: Bắt buộc fail-fast nếu thiếu hoặc dùng secret mặc định.
- */
 export function validateEnvironmentSecurity(env: NodeJS.ProcessEnv = process.env): void {
 	const nodeEnv = env.NODE_ENV || "development";
 	if (nodeEnv === "production") {

@@ -39,22 +39,18 @@ interface AppContextType {
 	removeVillage: (idOrName: string) => Promise<void>;
 	checkServerHealth: () => Promise<boolean>;
 
-	// 1. Sidebar state
 	isSidebarCollapsed: boolean;
 	toggleSidebar: () => void;
 	setSidebarCollapsed: (collapsed: boolean) => void;
 
-	// 2. Theme state (Dark / Light mode)
 	theme: "light" | "dark";
 	toggleTheme: () => void;
 
-	// 3. Zoom state
 	zoomLevel: number;
 	zoomIn: () => void;
 	zoomOut: () => void;
 	resetZoom: () => void;
 
-	// 4. Calculation Year
 	calculationYear: number;
 	setCalculationYear: (year: number) => void;
 }
@@ -62,7 +58,6 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 let lastFetchedVillagesTime = 0;
-
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 	children,
@@ -94,7 +89,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 	const [latency] = useState<number | null>(null);
 	const [isInitializing, setIsInitializing] = useState<boolean>(true);
 
-	// 1. Sidebar Collapsed State
 	const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
 		try {
 			if (typeof window !== "undefined" && window.innerWidth < 768) {
@@ -122,7 +116,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 			try {
 				localStorage.setItem("qlhk_sidebar_collapsed", String(next));
 			} catch {
-				// Ignore
 			}
 			return next;
 		});
@@ -133,11 +126,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 		try {
 			localStorage.setItem("qlhk_sidebar_collapsed", String(collapsed));
 		} catch {
-			// Ignore
 		}
 	};
 
-	// 2. Theme State (Dark / Light)
 	const [theme, setTheme] = useState<"light" | "dark">(() => {
 		try {
 			const saved = localStorage.getItem("qlhk_theme");
@@ -160,7 +151,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 		try {
 			localStorage.setItem("qlhk_theme", theme);
 		} catch {
-			// Ignore
 		}
 	}, [theme]);
 
@@ -168,7 +158,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 		setTheme((prev) => (prev === "light" ? "dark" : "light"));
 	};
 
-	// 3. Zoom State (80% to 140%, step 10%)
 	const [zoomLevel, setZoomLevel] = useState<number>(() => {
 		try {
 			const saved = localStorage.getItem("qlhk_zoom");
@@ -180,7 +169,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 	});
 
 	useEffect(() => {
-		// Zoom qua IPC của Electron
 		if (window.electronAPI?.setZoom) {
 			window.electronAPI.setZoom(zoomLevel);
 		} else if (window.api?.app?.setZoom) {
@@ -201,7 +189,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 		setZoomLevel(100);
 	};
 
-	// Keyboard Shortcuts for Zoom (Ctrl +, Ctrl -, Ctrl 0)
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.ctrlKey || e.metaKey) {
@@ -222,7 +209,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, []);
 
-	// 4. Calculation Year
 	const [calculationYear, setCalculationYearState] = useState<number>(() => {
 		try {
 			const saved = localStorage.getItem("globalCalculationYear");
@@ -231,7 +217,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 				if (!isNaN(parsed) && parsed >= 1900 && parsed <= 2100) return parsed;
 			}
 		} catch {
-			// Ignore
 		}
 		return new Date().getFullYear();
 	});
@@ -241,7 +226,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 		try {
 			localStorage.setItem("globalCalculationYear", String(year));
 		} catch {
-			// Ignore
 		}
 	}, []);
 
@@ -252,7 +236,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 				await authApi.logout(refreshToken);
 			}
 		} catch {
-			// Ignore
 		} finally {
 			setCachedAccessToken(null);
 			await secureStorage.clear();
@@ -261,7 +244,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 		}
 	};
 
-	// 30 phút tự động đăng xuất nếu không có tương tác
 	useInactivityTimeout(() => {
 		logout();
 	}, !!user);

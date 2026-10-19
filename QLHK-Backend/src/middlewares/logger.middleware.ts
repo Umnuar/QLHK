@@ -1,9 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { logHttp } from "../utils/logger";
 
-/**
- * Trích xuất địa chỉ IP thực của client hỗ trợ qua Cloudflare Tunnel và reverse proxies
- */
 export const getClientIp = (req: Request): string => {
 	let ip = "";
 	const cfIp = req.headers["cf-connecting-ip"];
@@ -24,10 +21,6 @@ export const getClientIp = (req: Request): string => {
 	return ip;
 };
 
-/**
- * Kiểm tra xem endpoint có phải là liveness/heartbeat cần bỏ qua log hay không:
- * /api/health, /api/ping, /favicon.ico
- */
 export const isLivenessEndpoint = (url: string): boolean => {
 	const cleanUrl = url.split("?")[0].trim();
 	return (
@@ -39,10 +32,6 @@ export const isLivenessEndpoint = (url: string): boolean => {
 	);
 };
 
-/**
- * Middleware ghi log HTTP request chuẩn 1 dòng tối ưu cho Docker container:
- * [HH:mm:ss] [HTTP] <METHOD> <PATH> <STATUS> <DURATION>ms | IP: <IP>
- */
 export const requestLogger = (
 	req: Request,
 	res: Response,
@@ -54,7 +43,6 @@ export const requestLogger = (
 	res.on("finish", () => {
 		const url = req.originalUrl || req.url;
 
-		// Bỏ qua log [HTTP] cho endpoint liveness: /api/health, /api/ping, /favicon.ico
 		if (isLivenessEndpoint(url)) {
 			return;
 		}

@@ -1,8 +1,3 @@
-/**
- * Secure Storage wrapper for token and sensitive session data.
- * Ưu tiên sử dụng Electron Store (được mã hóa AES) qua IPC (window.electronAPI.secureStore).
- * Fallback sang localStorage nếu chạy trong môi trường trình duyệt web đơn thuần hoặc kiểm thử.
- */
 
 export const secureStorage = {
 	async getItem(key: string): Promise<string | null> {

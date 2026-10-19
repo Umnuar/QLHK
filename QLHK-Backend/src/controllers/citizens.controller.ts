@@ -45,7 +45,6 @@ export const getCitizens = async (
 			where.household_id = householdId as string;
 		}
 
-		// Village scoping through household
 		const effectiveVillageId = req.user?.village_id || (villageId as string);
 		if (effectiveVillageId) {
 			where.household = { village_id: effectiveVillageId, is_deleted: false };
@@ -67,13 +66,11 @@ export const getCitizens = async (
 			where.is_head = isHead === "true";
 		}
 
-		// Tìm kiếm chính xác theo CCCD thông qua hash
 		if (cccd && typeof cccd === "string" && cccd.trim()) {
 			const cccdHash = hashCCCD(cccd.trim());
 			where.cccd_hash = cccdHash;
 		}
 
-		// Tìm kiếm họ tên không dấu, 4 số cuối hoặc băm CCCD
 		if (search && typeof search === "string" && search.trim()) {
 			const rawSearch = search.trim();
 			const cleanSearch = removeAccents(rawSearch);
@@ -110,7 +107,6 @@ export const getCitizens = async (
 			}),
 		]);
 
-		// Format output: không trả về chuỗi mã hóa cccd thô, chỉ trả cccd_last4
 		const sanitized = citizens.map((c) => ({
 			id: c.id,
 			household_id: c.household_id,
@@ -171,7 +167,6 @@ export const getCitizenById = async (
 			return;
 		}
 
-		// RBAC Check
 		if (
 			req.user?.village_id &&
 			citizen.household.village_id !== req.user.village_id
@@ -185,7 +180,7 @@ export const getCitizenById = async (
 		res.json({
 			data: {
 				...citizen,
-				cccd: undefined, // Không để lộ raw ciphertext
+				cccd: undefined,
 				has_cccd: !!citizen.cccd,
 			},
 		});
@@ -300,7 +295,6 @@ export const createCitizen = async (
 			return;
 		}
 
-		// RBAC Check
 		if (req.user?.village_id && household.village_id !== req.user.village_id) {
 			res
 				.status(403)
@@ -424,7 +418,6 @@ export const updateCitizen = async (
 			return;
 		}
 
-		// RBAC Check
 		if (
 			req.user?.village_id &&
 			current.household.village_id !== req.user.village_id
@@ -435,7 +428,6 @@ export const updateCitizen = async (
 			return;
 		}
 
-		// Optimistic Concurrency Control (OCC)
 		const expectedVersion =
 			version !== undefined && version !== null
 				? Number(version)

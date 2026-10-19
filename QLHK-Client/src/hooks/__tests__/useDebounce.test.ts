@@ -24,10 +24,8 @@ describe("useDebounce Hook", () => {
 
 		expect(result.current).toBe("initial");
 
-		// Cập nhật prop
 		rerender({ value: "updated", delay: 300 });
 
-		// Trôi 150ms (< 300ms)
 		act(() => {
 			vi.advanceTimersByTime(150);
 		});

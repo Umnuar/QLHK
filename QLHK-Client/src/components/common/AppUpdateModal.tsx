@@ -97,12 +97,10 @@ export const AppUpdateModal: React.FC = () => {
 	);
 
 	useEffect(() => {
-		// Tự động kiểm tra một lần khi khởi động
 		const timer = setTimeout(() => {
 			checkForUpdates(false);
 		}, 2000);
 
-		// Lắng nghe sự kiện kích hoạt thủ công từ SettingsPage hoặc nơi khác
 		const handleManualTrigger = (e: any) => {
 			checkForUpdates(e.detail?.manual ?? true);
 		};

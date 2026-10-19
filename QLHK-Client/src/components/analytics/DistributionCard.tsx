@@ -31,7 +31,6 @@ export const DistributionCard: React.FC<DistributionCardProps> = ({
 	return (
 		<CardShell icon={icon} title={title} badge={badge}>
 			<div className="grid min-h-0 flex-1 grid-cols-1 items-center gap-4 px-4 py-3 sm:grid-cols-2">
-				{/* Cột trái: Donut SVG 176px */}
 				<div className="flex justify-center">
 					<DonutChart
 						segments={segments}
@@ -52,7 +51,6 @@ export const DistributionCard: React.FC<DistributionCardProps> = ({
 					/>
 				</div>
 
-				{/* Cột phải: Vùng cuộn danh sách thanh tiến độ h-[184px] */}
 				<div className="h-[184px] overflow-y-auto scrollbar-thin pr-2">
 					<ul className="flex flex-col gap-2.5">
 						{segments.map((segment) => (

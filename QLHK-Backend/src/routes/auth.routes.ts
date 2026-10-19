@@ -4,7 +4,6 @@ import { authenticateToken } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-// Ngăn chặn trình duyệt hoặc proxy cache phản hồi 304 trên các endpoint xác thực
 router.use((_req, res, next) => {
 	res.setHeader(
 		"Cache-Control",

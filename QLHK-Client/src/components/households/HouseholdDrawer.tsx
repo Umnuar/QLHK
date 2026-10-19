@@ -44,7 +44,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 	const [notes, setNotes] = useState("");
 	const [members, setMembers] = useState<Person[]>([]);
 
-	// State Sub-modal Citizen
 	const [isCitizenModalOpen, setIsCitizenModalOpen] = useState(false);
 	const [editingMemberIndex, setEditingMemberIndex] = useState<number | null>(
 		null,
@@ -59,20 +58,17 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 			return;
 		}
 
-		// 1. Nếu đã có trong cache decryptedCccds
 		if (decryptedCccds[memId]) {
 			setRevealedCccdIds((prev) => [...prev, memId]);
 			return;
 		}
 
-		// 2. Nếu đã có sẵn plaintext không bị mask
 		if (fallbackCccd && !fallbackCccd.includes("•") && fallbackCccd.length >= 9) {
 			setDecryptedCccds((prev) => ({ ...prev, [memId]: fallbackCccd }));
 			setRevealedCccdIds((prev) => [...prev, memId]);
 			return;
 		}
 
-		// 3. Nếu là nhân khẩu đã lưu trong DB (UUID)
 		if (memId && !memId.startsWith("mem-")) {
 			try {
 				setRevealingCccdIds((prev) => [...prev, memId]);

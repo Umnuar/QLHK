@@ -2,10 +2,6 @@ import { Router, type Request, type Response } from "express";
 
 const router = Router();
 
-/**
- * GET /api/updates/latest
- * Trả về thông tin cập nhật chuẩn mực Tauri v2
- */
 router.get("/latest", (req: Request, res: Response) => {
 	const currentVersion = req.query.current_version as string | undefined;
 
@@ -32,10 +28,6 @@ router.get("/latest", (req: Request, res: Response) => {
 	return res.json(updatePayload);
 });
 
-/**
- * GET /api/updates/:target/:current_version
- * Hỗ trợ định dạng dynamic route của Tauri updater
- */
 router.get("/:target/:current_version", (req: Request, res: Response) => {
 	const { current_version } = req.params;
 

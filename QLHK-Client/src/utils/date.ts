@@ -9,17 +9,6 @@ export interface DobValidationResult {
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-/**
- * Phân tích và kiểm tra tính hợp lệ của ngày tháng năm sinh linh hoạt:
- * - Hỗ trợ DD/MM/YYYY (ví dụ: 15/08/1990)
- * - Hỗ trợ MM/YYYY (ví dụ: 05/1985)
- * - Hỗ trợ YYYY (ví dụ: 1960)
- *
- * Bắt các lỗi điển hình:
- * - Năm thiếu số (ví dụ: 11/01/976)
- * - Tháng sai (ví dụ: 15/17/1989 có tháng 17)
- * - Ngày sai (ví dụ: 32/01/2000, 31/04/1995)
- */
 export function parseAndValidateDob(
 	rawInput: string | number | null | undefined,
 ): DobValidationResult {
@@ -34,7 +23,6 @@ export function parseAndValidateDob(
 	const str = String(rawInput).trim().replace(/[-.]/g, "/");
 	const parts = str.split("/");
 
-	// Trường hợp 1: Chỉ có năm sinh (YYYY)
 	if (parts.length === 1) {
 		const yearStr = parts[0].trim();
 		if (!/^\d+$/.test(yearStr)) {

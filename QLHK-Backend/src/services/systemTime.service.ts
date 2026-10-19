@@ -23,9 +23,6 @@ const SOURCE_LABELS: Record<TimeSource, string> = {
 	machine: "Đồng hồ máy chủ",
 };
 
-/**
- * Cấp 1: Cố gắng đồng bộ thời gian từ Internet NTP / HTTP Date
- */
 async function syncFromInternet(): Promise<{ offset: number; timestamp: number } | null> {
 	const endpoints = ["https://time.google.com", "https://1.1.1.1"];
 	for (const url of endpoints) {
@@ -47,15 +44,11 @@ async function syncFromInternet(): Promise<{ offset: number; timestamp: number }
 				}
 			}
 		} catch {
-			// Thử endpoint tiếp theo
 		}
 	}
 	return null;
 }
 
-/**
- * Cấp 2: Cố gắng lấy thời gian thực từ cơ sở dữ liệu PostgreSQL
- */
 async function syncFromDatabase(): Promise<{ offset: number; timestamp: number } | null> {
 	try {
 		const rows = await prisma.$queryRaw<Array<{ now: Date }>>`SELECT NOW() as now`;
@@ -69,16 +62,11 @@ async function syncFromDatabase(): Promise<{ offset: number; timestamp: number }
 			}
 		}
 	} catch {
-		// Bỏ qua nếu mất kết nối CSDL
 	}
 	return null;
 }
 
-/**
- * Thực thi chuỗi Fallback 3 Cấp độ: Internet -> Database -> Machine
- */
 export async function syncSystemTime(): Promise<SystemTimeInfo> {
-	// Cấp 1: Internet
 	const internetSync = await syncFromInternet();
 	if (internetSync) {
 		cachedOffset = internetSync.offset;
@@ -88,7 +76,6 @@ export async function syncSystemTime(): Promise<SystemTimeInfo> {
 		return getSystemTime();
 	}
 
-	// Cấp 2: Database PostgreSQL
 	const dbSync = await syncFromDatabase();
 	if (dbSync) {
 		cachedOffset = dbSync.offset;
@@ -98,7 +85,6 @@ export async function syncSystemTime(): Promise<SystemTimeInfo> {
 		return getSystemTime();
 	}
 
-	// Cấp 3: Máy chủ nội bộ
 	cachedOffset = 0;
 	currentSource = "machine";
 	currentSourceLabel = SOURCE_LABELS.machine;
@@ -106,9 +92,6 @@ export async function syncSystemTime(): Promise<SystemTimeInfo> {
 	return getSystemTime();
 }
 
-/**
- * Lấy thông tin thời gian chuẩn hệ thống hiện tại
- */
 export function getSystemTime(): SystemTimeInfo {
 	const currentEffectiveMs = Date.now() + cachedOffset;
 	const effectiveDate = new Date(currentEffectiveMs);
@@ -123,18 +106,13 @@ export function getSystemTime(): SystemTimeInfo {
 	};
 }
 
-/**
- * Bắt đầu tác vụ ngầm tự động quét và đồng bộ lại mỗi 15 phút
- */
 export function startAutoTimeSync(): void {
 	if (syncInterval) return;
 
-	// Kích hoạt đồng bộ lần đầu ngay khi khởi động
 	syncSystemTime().catch((err) => {
 		console.warn("[SystemTimeService] Đồng bộ khởi động thất bại:", err);
 	});
 
-	// Quét lại mỗi 15 phút
 	syncInterval = setInterval(() => {
 		syncSystemTime().catch((err) => {
 			console.warn("[SystemTimeService] Đồng bộ định kỳ thất bại:", err);
@@ -146,9 +124,6 @@ export function startAutoTimeSync(): void {
 	}
 }
 
-/**
- * Dừng tác vụ ngầm (dùng cho test/shutdown)
- */
 export function stopAutoTimeSync(): void {
 	if (syncInterval) {
 		clearInterval(syncInterval);

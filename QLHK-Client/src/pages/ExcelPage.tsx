@@ -37,19 +37,15 @@ export const ExcelPage: React.FC = () => {
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	// Mở hộp thoại chọn tệp (Ưu tiên Electron Native Windows File Dialog, fallback sang HTML input)
 	const handleSelectFile = async () => {
 		try {
 			if (window.electronAPI?.openFileDialog) {
 				const filePath = await window.electronAPI.openFileDialog();
 				if (filePath) {
-					// File path nhận được từ Electron IPC
 					console.log("Selected file via Electron IPC:", filePath);
-					// Trong môi trường web preview hoặc khi electron preload trả về đường dẫn
 				}
 			}
 		} catch {
-			// Fallback sang input thông thường
 		}
 		fileInputRef.current?.click();
 	};
@@ -111,11 +107,9 @@ export const ExcelPage: React.FC = () => {
 		}
 	};
 
-	// Xác nhận nhập dữ liệu vào CSDL
 	const handleConfirmImport = async (validRows: any[]) => {
 		setIsImporting(true);
 		try {
-			// Gom các dòng theo Mã Sổ / Mã Hộ
 			const householdMap: Record<
 				string,
 				{ code: string; address: string; notes: string; members: Person[] }

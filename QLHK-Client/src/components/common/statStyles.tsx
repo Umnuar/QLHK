@@ -1,28 +1,9 @@
-/**
- * statStyles.tsx
- * Quy ước và component giao diện thống kê dùng chung cho 3 phân hệ dữ liệu Đăk Hà
- * (Hộ khẩu & Nhân khẩu, Quản lý Nông nghiệp, Chính sách & Chúc thọ).
- *
- * QUY ƯỚC CHUNG:
- * 1. Màu chủ đạo mỗi màn định nghĩa qua --stat-accent (Hộ khẩu: #14b8a6, Nông nghiệp: #22c55e, Chính sách: #8b5cf6).
- * 2. 4 thẻ KPI cùng chiều cao, lưới 4 cột (dưới ~1100px thành 2 cột, mobile 1 cột).
- *    Số lớn màu trắng (dark) / chữ chính (light), KHÔNG font mono, không số nào tô màu, không dòng phụ nào tô màu cả dòng.
- * 3. Panel biểu đồ cùng kiểu khung, tiêu đề = icon nét đơn + tên (đậm vừa) + mô tả xám bên dưới.
- *    Bỏ chữ mono nhỏ góc phải; hai panel cùng hàng cao bằng nhau.
- * 4. Dòng có thanh tiến độ: Mỗi dòng có KHUNG riêng (bo 12px, viền mảnh, nền sáng hơn panel, padding đều, cách nhau 8px).
- *    Trái: tên + (phần trăm xám nhỏ); Phải: giá trị + đơn vị nhỏ xám; Dưới: thanh 6px bo tròn.
- * 5. Donut SVG cùng kích thước (~104px), vòng mảnh, số + nhãn ở giữa, đặt bên trái legend.
- * 6. Bảng so sánh: Chuẩn bảng dùng chung, header trung tính (không chữ tô màu, không nền màu riêng ở ô %), số tabular-nums.
- */
 
 import React, { useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import type { Segment } from "../analytics/DonutChart";
 import { formatVietnameseNumber } from "./tableStyles";
 
-/**
- * Kiểu component icon thống kê hỗ trợ LucideIcon
- */
 export type StatIconType =
 	| LucideIcon
 	| React.ComponentType<{
@@ -31,44 +12,25 @@ export type StatIconType =
 			style?: React.CSSProperties;
 	  }>;
 
-/**
- * Màu chủ đạo mặc định cho phân hệ Hộ khẩu & Nhân khẩu
- */
-export const DEFAULT_STAT_ACCENT = "#14b8a6"; // Xanh ngọc (teal-500)
+export const DEFAULT_STAT_ACCENT = "#14b8a6";
 
-/**
- * Bảng màu phân loại danh mục (category colors) độ tương phản cao đạt chuẩn WCAG (>= 3:1)
- * Token cat1..cat5 và other cho biểu đồ thống kê
- */
 export const STAT_CATEGORY_COLORS = {
-	cat1: "#14b8a6", // Teal - Nhóm 1 (Kinh / Công giáo)
-	cat2: "#f59e0b", // Amber - Nhóm 2 (DTTS / Tin lành)
-	cat3: "#38bdf8", // Sky - Nhóm 3 (Phật giáo)
-	cat4: "#c084fc", // Purple - Nhóm 4 (Tôn giáo khác)
-	cat5: "#f472b6", // Pink - Nhóm 5
-	other: "#94a3b8", // Slate - Không tôn giáo / Còn lại
+	cat1: "#14b8a6",
+	cat2: "#f59e0b",
+	cat3: "#38bdf8",
+	cat4: "#c084fc",
+	cat5: "#f472b6",
+	other: "#94a3b8",
 };
 
-/**
- * Grid 4 thẻ KPI: 4 cột trên màn hình rộng, 2 cột dưới ~1100px, 1 cột trên mobile
- */
 export const STAT_KPI_GRID_CLASS =
 	"grid grid-cols-1 sm:grid-cols-2 min-[1100px]:grid-cols-4 gap-4";
 
-/**
- * Grid 2 panel biểu đồ: 2 cột trên desktop, 1 cột trên màn hình nhỏ, cách nhau 16-20px
- */
 export const STAT_PANEL_GRID_CLASS = "grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5";
 
-/**
- * Khung vùng cuộn danh sách thanh tiến độ kèm hiệu ứng mờ mép
- */
 export const STAT_SCROLL_CONTAINER_CLASS =
 	"space-y-2 max-h-[200px] sm:max-h-[220px] overflow-y-auto pr-1 scrollbar-thin scroll-mask-bottom";
 
-/**
- * Interface cho Props của thẻ KPI
- */
 export interface StatKpiCardProps {
 	label: string;
 	value: React.ReactNode;
@@ -78,9 +40,6 @@ export interface StatKpiCardProps {
 	className?: string;
 }
 
-/**
- * Component Thẻ KPI dùng chung
- */
 export const StatKpiCard: React.FC<StatKpiCardProps> = ({
 	label,
 	value,

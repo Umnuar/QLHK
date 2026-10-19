@@ -4,7 +4,6 @@ import { hashCCCD } from "../../src/utils/crypto";
 
 describe("QLHK Large Dataset Benchmark (23,000+ Record Simulation & Query Plan)", () => {
 	it("1. Kiểm tra PostgreSQL EXPLAIN cho truy vấn danh sách hộ có phân trang & sắp xếp", async () => {
-		// Kiểm tra truy vấn chính: lấy danh sách hộ theo village_id, is_deleted = false, ORDER BY created_at DESC
 		const queryPlan: Array<{ "QUERY PLAN": string }> =
 			await prisma.$queryRawUnsafe(
 				`EXPLAIN SELECT * FROM households WHERE village_id = '00000000-0000-0000-0000-000000000000' AND is_deleted = false ORDER BY created_at DESC LIMIT 20;`

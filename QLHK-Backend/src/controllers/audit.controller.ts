@@ -2,25 +2,6 @@ import type { Response } from "express";
 import { prisma } from "../config/prisma";
 import type { AuthRequest } from "../middlewares/auth.middleware";
 
-/**
- * GET /api/audit-logs
- * Lấy danh sách nhật ký kiểm toán (Audit Logs)
- *
- * Query params:
- * - limit: số lượng bản ghi (mặc định 50)
- * - offset / page: vị trí bắt đầu hoặc trang
- * - action: lọc theo hành động (CREATE | UPDATE | DELETE | RESTORE | IMPORT)
- * - entity_type: lọc theo loại đối tượng (household | citizen | excel_import)
- * - search: tìm kiếm theo entity_id, action, entity_type, old_values, new_values, ip_address
- * - village_id / villageId: lọc theo thôn (chỉ dành cho admin)
- *
- * RBAC:
- * - Admin: xem toàn xã hoặc lọc theo thôn nếu có
- * - Non-admin: chỉ xem nhật ký do cán bộ thuộc thôn mình thực hiện
- *
- * Nguyên tắc bất biến (Immutability):
- * - Không cung cấp API xóa, sửa hoặc phục hồi audit_logs
- */
 export const getAuditLogs = async (
 	req: AuthRequest,
 	res: Response,
@@ -49,7 +30,6 @@ export const getAuditLogs = async (
 			where.entity_type = entity_type.trim();
 		}
 
-		// Xử lý phân quyền (RBAC) theo phạm vi thôn/xã
 		let targetVillageId: string | undefined;
 		let villageCondition: any;
 

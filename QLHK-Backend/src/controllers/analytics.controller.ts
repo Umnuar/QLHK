@@ -2,9 +2,6 @@ import type { Response } from "express";
 import { prisma } from "../config/prisma";
 import type { AuthRequest } from "../middlewares/auth.middleware";
 
-/**
- * 14 dân tộc đặc thù theo danh mục hệ sinh thái Xã Đăk Hà
- */
 export const DAKHA_ETHNICITIES = [
 	"Kinh",
 	"Xơ Đăng",
@@ -23,10 +20,6 @@ export const DAKHA_ETHNICITIES = [
 	"Khách Gia",
 ];
 
-/**
- * Thuật toán Hare-Niemeyer (Largest Remainder Method)
- * Đảm bảo tổng các phần trăm luôn bằng chính xác 100.0% (với 1 chữ số thập phân)
- */
 export function calculatePercentagesWithLargestRemainder<T extends { count: number }>(
 	items: T[],
 	totalOverride?: number,
@@ -72,10 +65,6 @@ export function calculatePercentagesWithLargestRemainder<T extends { count: numb
 	}));
 }
 
-/**
- * GET /api/analytics/overview
- * Tổng số hộ, tổng nhân khẩu, tỷ lệ nam/nữ, cơ cấu theo 14 dân tộc, cơ cấu tôn giáo
- */
 export const getOverview = async (
 	req: AuthRequest,
 	res: Response,
@@ -147,7 +136,6 @@ export const getOverview = async (
 			}),
 		]);
 
-		// 1. Tỷ lệ Nam / Nữ (Chuẩn 100.0%)
 		let maleCount = 0;
 		let femaleCount = 0;
 		genderGroups.forEach((g) => {
@@ -179,7 +167,6 @@ export const getOverview = async (
 			},
 		};
 
-		// 2. Cơ cấu theo dân tộc (bao gồm 14 dân tộc chuẩn 100.0%)
 		const ethnicityCounts: Record<string, number> = {};
 		DAKHA_ETHNICITIES.forEach((eth) => {
 			ethnicityCounts[eth] = 0;
@@ -198,7 +185,6 @@ export const getOverview = async (
 			totalCitizens,
 		);
 
-		// 3. Cơ cấu tôn giáo (Chuẩn 100.0%)
 		const religionCounts: Record<string, number> = {};
 		religionGroups.forEach((g) => {
 			const rel = g.religion?.trim() || "Không";
@@ -214,14 +200,13 @@ export const getOverview = async (
 			totalCitizens,
 		);
 
-		// 4. Thống kê theo Dải tuổi (Tháp tuổi MECE chuẩn 100.0%)
 		const currentYear = new Date().getFullYear();
-		let under16Count = 0; // < 16 tuổi (Thiếu nhi)
-		let youthCount = 0; // 16 - 27 tuổi (Thanh niên & NVQS)
-		let adultCount = 0; // 28 - 60 tuổi (Lao động chính)
-		let over60Count = 0; // > 60 tuổi (Người cao tuổi)
-		let unknownAgeCount = 0; // Chưa rõ năm sinh
-		let workingAgeCount = 0; // 18 - 60 tuổi (Độ tuổi LĐ theo luật, hiển thị ở tâm Donut)
+		let under16Count = 0;
+		let youthCount = 0;
+		let adultCount = 0;
+		let over60Count = 0;
+		let unknownAgeCount = 0;
+		let workingAgeCount = 0;
 
 		dobList.forEach((c) => {
 			if (!c.dob) {
@@ -319,7 +304,6 @@ export const getOverview = async (
 			},
 		};
 
-		// 5. Thống kê Tình hình NVQS (Chuẩn 100.0% trên số người có khai báo)
 		const rawMilitary = militaryGroups
 			.filter((g) => g.military_status && g.military_status.trim())
 			.map((g) => ({
@@ -337,7 +321,6 @@ export const getOverview = async (
 			totalMilitaryRecorded,
 		);
 
-		// 6. Thống kê Trình độ học vấn (Chuẩn 100.0% trên số người có khai báo)
 		const rawEducation = educationGroups
 			.filter((g) => g.education && g.education.trim())
 			.map((g) => ({
@@ -355,7 +338,6 @@ export const getOverview = async (
 			totalEducationRecorded,
 		);
 
-		// 7. Thống kê Cơ cấu Nghề nghiệp (Chuẩn 100.0% trên số người có khai báo)
 		const rawOccupation = occupationGroups
 			.filter((g) => g.occupation && g.occupation.trim())
 			.map((g) => ({
@@ -397,10 +379,6 @@ export const getOverview = async (
 	}
 };
 
-/**
- * GET /api/analytics/by-village
- * Bảng thống kê so sánh giữa các thôn
- */
 export const getByVillage = async (
 	req: AuthRequest,
 	res: Response,
@@ -453,7 +431,6 @@ export const getByVillage = async (
 				});
 			});
 
-			// Tìm dân tộc chiếm tỷ lệ cao nhất
 			const topEthnicity =
 				Object.entries(ethnicityMap).sort((a, b) => b[1] - a[1])[0]?.[0] ||
 				"Kinh";

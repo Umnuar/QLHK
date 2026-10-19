@@ -84,7 +84,6 @@ export const ExportSettingsModal: React.FC<ExportSettingsModalProps> = ({
 	const [activeTab, setActiveTab] = useState<ExportTab>("traditional");
 	const [exportScope, setExportScope] = useState<"all" | "selected">("all");
 
-	// Bộ lọc Tab 2 (Chuyên đề)
 	const [ageMode, setAgeMode] = useState<AgeFilterMode>("range");
 	const [minAge, setMinAge] = useState<string>("");
 	const [maxAge, setMaxAge] = useState<string>("");
@@ -94,7 +93,6 @@ export const ExportSettingsModal: React.FC<ExportSettingsModalProps> = ({
 	const [educationKeyword, setEducationKeyword] = useState<string>("");
 	const [occupationKeyword, setOccupationKeyword] = useState<string>("");
 
-	// Tùy biến cột xuất (16 cột, mặc định chọn hết)
 	const [selectedColumns, setSelectedColumns] = useState<Set<CustomColumnKey>>(
 		new Set(EXPORT_COLUMNS.map((c) => c.key)),
 	);
@@ -156,7 +154,6 @@ export const ExportSettingsModal: React.FC<ExportSettingsModalProps> = ({
 				className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden text-slate-900 dark:text-slate-100"
 				onClick={(e) => e.stopPropagation()}
 			>
-				{/* Modal Header */}
 				<div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
 					<div className="flex items-center gap-3">
 						<div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/80 dark:text-emerald-400 flex items-center justify-center">
@@ -187,7 +184,6 @@ export const ExportSettingsModal: React.FC<ExportSettingsModalProps> = ({
 					</button>
 				</div>
 
-				{/* Tab Selector */}
 				<div className="px-5 pt-3 border-b border-slate-200 dark:border-slate-800 flex gap-2 bg-slate-50/50 dark:bg-slate-900/40">
 					<button
 						type="button"

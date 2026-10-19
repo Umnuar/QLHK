@@ -125,8 +125,6 @@ describe("Standardized 1-Line Logger & Observability Engine", () => {
 			expect(isColorEnabled()).toBe(false);
 
 			const line = logStart(5002, "production");
-			// Kiểm tra không có chuỗi escape \x1b
-			// biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI check
 			expect(line).not.toMatch(/\x1b\[[0-9;]*[a-zA-Z]/);
 		});
 
@@ -137,7 +135,6 @@ describe("Standardized 1-Line Logger & Observability Engine", () => {
 			expect(isColorEnabled()).toBe(false);
 
 			const line = logHttp("POST", "/api/auth/login", 200, 32, "10.0.0.1");
-			// biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI check
 			expect(line).not.toMatch(/\x1b\[[0-9;]*[a-zA-Z]/);
 		});
 	});

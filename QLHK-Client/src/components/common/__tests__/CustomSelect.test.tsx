@@ -20,18 +20,15 @@ describe("CustomSelect Component", () => {
 			/>,
 		);
 
-		// Kiểm tra trigger hiển thị đúng option string đang chọn
 		const trigger = screen.getByRole("button");
 		expect(trigger.textContent).toContain("Nam");
 
-		// Mở dropdown để xem danh sách options dạng string
 		fireEvent.click(trigger);
 		const optionsRendered = screen.getAllByRole("option");
 		expect(optionsRendered).toHaveLength(2);
 		expect(optionsRendered[0].textContent).toContain("Nam");
 		expect(optionsRendered[1].textContent).toContain("Nữ");
 
-		// Rerender với options dạng object có badge và subLabel
 		const objectOptions = [
 			{ value: "thon1", label: "Thôn 1", badge: "Trung tâm" },
 			{ value: "thon2", label: "Thôn 2", subLabel: "Khu vực phía Nam" },
@@ -65,12 +62,10 @@ describe("CustomSelect Component", () => {
 		const trigger = screen.getByRole("button");
 		expect(screen.queryByRole("listbox")).toBeNull();
 
-		// Click lần 1: Mở dropdown
 		fireEvent.click(trigger);
 		expect(screen.getByRole("listbox")).toBeTruthy();
 		expect(trigger.getAttribute("aria-expanded")).toBe("true");
 
-		// Click lần 2: Đóng dropdown
 		fireEvent.click(trigger);
 		expect(screen.queryByRole("listbox")).toBeNull();
 		expect(trigger.getAttribute("aria-expanded")).toBe("false");
@@ -90,15 +85,12 @@ describe("CustomSelect Component", () => {
 		const trigger = screen.getByRole("button");
 		fireEvent.click(trigger);
 
-		// Chọn option 'Cán bộ Xã (Admin)'
 		const adminOption = screen.getByText("Cán bộ Xã (Admin)");
 		fireEvent.click(adminOption);
 
-		// Kiểm tra gọi onChange với đúng value 'admin'
 		expect(handleChange).toHaveBeenCalledTimes(1);
 		expect(handleChange).toHaveBeenCalledWith("admin");
 
-		// Dropdown tự động đóng sau khi chọn
 		expect(screen.queryByRole("listbox")).toBeNull();
 	});
 
@@ -115,7 +107,7 @@ describe("CustomSelect Component", () => {
 			"Mường",
 			"Tày",
 			"Nùng",
-		]; // 10 items > 8 => auto hiện search
+		];
 
 		render(
 			<CustomSelect
@@ -128,19 +120,15 @@ describe("CustomSelect Component", () => {
 
 		fireEvent.click(screen.getByRole("button"));
 
-		// Tìm input search
 		const searchInput = screen.getByPlaceholderText("Tìm kiếm...");
 		expect(searchInput).toBeTruthy();
 
-		// Nhập từ khóa 'Xơ Đăng'
 		fireEvent.change(searchInput, { target: { value: "Xơ" } });
 
-		// Chỉ còn hiển thị 'Xơ Đăng'
 		const visibleOptions = screen.getAllByRole("option");
 		expect(visibleOptions).toHaveLength(1);
 		expect(visibleOptions[0].textContent).toContain("Xơ Đăng");
 
-		// Tìm từ khóa không tồn tại
 		fireEvent.change(searchInput, { target: { value: "KhôngTồnTại" } });
 		expect(screen.queryByRole("option")).toBeNull();
 		expect(screen.getByText("Không tìm thấy kết quả")).toBeTruthy();
@@ -157,7 +145,6 @@ describe("CustomSelect Component", () => {
 		fireEvent.click(screen.getByRole("button"));
 		expect(screen.getByRole("listbox")).toBeTruthy();
 
-		// Bấm phím Escape
 		fireEvent.keyDown(document, { key: "Escape" });
 		expect(screen.queryByRole("listbox")).toBeNull();
 	});
@@ -176,7 +163,6 @@ describe("CustomSelect Component", () => {
 		fireEvent.click(screen.getByRole("button"));
 		expect(screen.getByRole("listbox")).toBeTruthy();
 
-		// Click ra ngoài container
 		fireEvent.mouseDown(screen.getByTestId("outside"));
 		expect(screen.queryByRole("listbox")).toBeNull();
 	});
@@ -204,7 +190,6 @@ describe("CustomSelect Component", () => {
 		expect(screen.getByTestId("test-icon")).toBeTruthy();
 		expect(trigger.textContent).toContain("Giới tính");
 
-		// Kiểm tra placeholder có class font-bold khi size="sm" hoặc có icon
 		const placeholderSpan = screen.getByText("Giới tính");
 		expect(placeholderSpan.className).toContain("font-bold");
 	});
@@ -225,7 +210,6 @@ describe("CustomSelect Component", () => {
 			/>,
 		);
 
-		// Mở dropdown và chọn lại mục rỗng
 		const trigger = screen.getByRole("button");
 		fireEvent.click(trigger);
 		const emptyOption = screen.getByText("Toàn xã (Tất cả thôn)");

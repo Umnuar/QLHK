@@ -18,25 +18,25 @@ export interface WelfareCardProps {
 }
 
 const MILITARY_COLORS = [
-	"#14b8a6", // teal
-	"#38bdf8", // sky
-	"#f59e0b", // amber
-	"#a855f7", // purple
-	"#ec4899", // pink
+	"#14b8a6",
+	"#38bdf8",
+	"#f59e0b",
+	"#a855f7",
+	"#ec4899",
 ];
 
 const EDU_COLORS = [
-	"#14b8a6", // teal
-	"#38bdf8", // sky
-	"#f59e0b", // amber
-	"#a855f7", // purple
+	"#14b8a6",
+	"#38bdf8",
+	"#f59e0b",
+	"#a855f7",
 ];
 
 const OCC_COLORS = [
-	"#f59e0b", // amber
-	"#38bdf8", // sky
-	"#14b8a6", // teal
-	"#a855f7", // purple
+	"#f59e0b",
+	"#38bdf8",
+	"#14b8a6",
+	"#a855f7",
 ];
 
 export const WelfareCard: React.FC<WelfareCardProps> = ({

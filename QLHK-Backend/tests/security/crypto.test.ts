@@ -9,13 +9,10 @@ describe('Bảo mật dữ liệu CCCD & Mã hóa (Crypto Utility)', () => {
 
     expect(result.encrypted).toBeDefined();
     const parts = result.encrypted.split(':');
-    expect(parts.length).toBe(3); // [ivHex, authTagHex, encryptedHex]
+    expect(parts.length).toBe(3);
 
-    // IV 12 bytes = 24 hex characters
     expect(parts[0].length).toBe(24);
-    // AuthTag 16 bytes = 32 hex characters
     expect(parts[1].length).toBe(32);
-    // Encrypted text hex
     expect(parts[2].length).toBeGreaterThan(0);
   });
 
@@ -29,7 +26,7 @@ describe('Bảo mật dữ liệu CCCD & Mã hóa (Crypto Utility)', () => {
     const hash1 = hashCCCD(sampleCCCD);
     const hash2 = hashCCCD(sampleCCCD);
     expect(hash1).toBe(hash2);
-    expect(hash1.length).toBe(64); // SHA-256 hex string length
+    expect(hash1.length).toBe(64);
   });
 
   it('phải băm HMAC-SHA256 với pepper hệ thống, khác với SHA-256 thô', async () => {
@@ -56,14 +53,12 @@ describe('Bảo mật dữ liệu CCCD & Mã hóa (Crypto Utility)', () => {
     it('phải ném ngoại lệ Fail-fast ở production nếu thiếu biến môi trường hoặc dùng fallback mặc định', async () => {
       const { validateEnvironmentSecurity } = await import('../../src/config/env');
 
-      // Test 1: Production thiếu biến
       expect(() => {
         validateEnvironmentSecurity({
           NODE_ENV: 'production',
         });
       }).toThrow(/\[Security Hardening Failure\]/);
 
-      // Test 2: Production dùng khóa fallback không an toàn
       expect(() => {
         validateEnvironmentSecurity({
           NODE_ENV: 'production',
@@ -74,7 +69,6 @@ describe('Bảo mật dữ liệu CCCD & Mã hóa (Crypto Utility)', () => {
         });
       }).toThrow(/cannot use default dev values/);
 
-      // Test 3: Production với khóa mạnh hợp lệ độc lập phải vượt qua an toàn
       expect(() => {
         validateEnvironmentSecurity({
           NODE_ENV: 'production',
@@ -85,7 +79,6 @@ describe('Bảo mật dữ liệu CCCD & Mã hóa (Crypto Utility)', () => {
         });
       }).not.toThrow();
 
-      // Test 4: Development / Test không ném ngoại lệ
       expect(() => {
         validateEnvironmentSecurity({
           NODE_ENV: 'development',

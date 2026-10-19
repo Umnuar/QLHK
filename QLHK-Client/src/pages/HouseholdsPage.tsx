@@ -56,7 +56,6 @@ export const HouseholdsPage: React.FC = () => {
 	const { showToast } = useToast();
 	const { addHousehold } = useHouseholds();
 
-	// State dữ liệu & phân trang
 	const [households, setHouseholds] = useState<Household[]>([]);
 	const [total, setTotal] = useState(0);
 	const [page, setPage] = useState(1);
@@ -71,7 +70,6 @@ export const HouseholdsPage: React.FC = () => {
 	const [loading, setLoading] = useState(false);
 	const [isUsingCachedData, setIsUsingCachedData] = useState(false);
 
-	// Selection & modals
 	const [selectedIds, setSelectedIds] = useState<string[]>([]);
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editingHousehold, setEditingHousehold] = useState<Household | null>(
@@ -82,13 +80,11 @@ export const HouseholdsPage: React.FC = () => {
 	const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 	const [isImportingModal, setIsImportingModal] = useState(false);
 
-	// Conflict resolution state (OCC HTTP 409)
 	const [conflictModalOpen, setConflictModalOpen] = useState(false);
 	const [conflictServerData, setConflictServerData] = useState<Household | null>(null);
 	const [conflictClientData, setConflictClientData] = useState<Partial<Household> | null>(null);
 	const [isResolvingConflict, setIsResolvingConflict] = useState(false);
 
-	// Fetch danh sách hộ từ API thật kèm cơ chế Offline Cache
 	const fetchHouseholds = useCallback(async () => {
 		setLoading(true);
 		const targetVillageId =

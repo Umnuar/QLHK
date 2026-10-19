@@ -1,6 +1,3 @@
-/**
- * Chuẩn hóa chuỗi tiếng Việt: loại bỏ dấu thanh, chuyển chữ thường, thay thế đ/Đ -> d
- */
 export function normalizeUnaccented(str: string | null | undefined): string {
 	if (!str) return "";
 	return str
@@ -11,14 +8,6 @@ export function normalizeUnaccented(str: string | null | undefined): string {
 		.trim();
 }
 
-/**
- * Tự động tách Họ và tên đệm vs Tên chính
- * Ví dụ:
- *  - "Nguyễn Văn An" -> lastName: "Nguyễn Văn", firstName: "An"
- *  - "Trần Nam" -> lastName: "Trần", firstName: "Nam"
- *  - "A Tik" -> lastName: "A", firstName: "Tik"
- *  - "An" -> lastName: "", firstName: "An"
- */
 export function splitFullName(fullName: string): {
 	lastName: string;
 	firstName: string;
@@ -34,9 +23,6 @@ export function splitFullName(fullName: string): {
 	return { lastName, firstName };
 }
 
-/**
- * Ghép Họ lót và Tên thành Họ và tên hoàn chỉnh
- */
 export function joinFullName(lastName: string, firstName: string): string {
 	const l = (lastName || "").trim();
 	const f = (firstName || "").trim();

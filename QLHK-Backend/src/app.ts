@@ -11,11 +11,6 @@ const app = express();
 
 app.set("trust proxy", 1);
 
-/**
- * Ultra-low latency Ping — zero middleware overhead.
- * Đặt TRƯỚC toàn bộ middleware (helmet, compression, cors, logger)
- * để request được phản hồi 204 ngay lập tức.
- */
 app.all("/api/ping", (req: Request, res: Response) => {
 	const origin = req.headers.origin;
 	if (origin) {
@@ -42,13 +37,12 @@ app.all("/api/ping", (req: Request, res: Response) => {
 	res.status(204).end();
 });
 
-// Bảo mật HTTP Headers & CORS
 app.use(helmet({ contentSecurityPolicy: false }));
 
 app.use(
 	compression({
-		threshold: 512, // Nén mọi response lớn hơn 512 bytes
-		level: 6, // Cân bằng tối ưu giữa CPU và tỷ lệ nén
+		threshold: 512,
+		level: 6,
 	}),
 );
 
@@ -57,7 +51,7 @@ const envCorsOrigins = config.corsOrigin
 	: [];
 
 const isOriginAllowed = (origin: string | undefined): boolean => {
-	if (!origin || origin === "null") return true; // Hỗ trợ Desktop (file://), mobile, cURL
+	if (!origin || origin === "null") return true;
 	if (
 		origin === "https://qlhk.dulieudakha.vn" ||
 		origin.endsWith(".dulieudakha.vn") ||
@@ -102,10 +96,6 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(requestLogger);
 
-/**
- * Health Check Endpoint theo chuẩn Hệ sinh thái Đăk Hà:
- * GET /api/health
- */
 app.head("/api/health", (_req: Request, res: Response) =>
 	res.status(200).end(),
 );
@@ -119,10 +109,8 @@ app.get("/api/health", (_req: Request, res: Response) => {
 	});
 });
 
-// Gắn toàn bộ API routes
 app.use("/api", routes);
 
-// 404 handler
 app.use((req: Request, res: Response) => {
 	res.status(404).json({
 		error: `Đường dẫn không tồn tại: ${req.method} ${req.originalUrl}`,

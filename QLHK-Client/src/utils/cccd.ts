@@ -1,7 +1,3 @@
-/**
- * Che giấu số CCCD, chỉ hiển thị 4 số cuối
- * Ví dụ: '060098001234' -> '••••••••1234'
- */
 export function maskCccd(
 	cccd: string | null | undefined,
 	showFull = false,
@@ -20,7 +16,6 @@ export function maskCccd(
 	}
 	if (showFull) return cleaned;
 
-	// Nếu chuỗi chứa chữ cái hoặc không phải số thuần túy, trả về "Chưa có"
 	if (/[a-zA-ZÀ-ỹ]/.test(cleaned) || !/^\d+$/.test(cleaned)) {
 		return "Chưa có";
 	}

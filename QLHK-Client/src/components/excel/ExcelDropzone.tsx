@@ -30,13 +30,11 @@ export const ExcelDropzone: React.FC<Props> = ({
 			const firstSheetName = workbook.SheetNames[0];
 			const worksheet = workbook.Sheets[firstSheetName];
 
-			// Parse to json array of objects
 			const rawRows = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, {
 				defval: "",
 			});
 
 			const parsedRows: ExcelImportRow[] = rawRows.map((row, idx) => {
-				// Bóc tách linh hoạt các cột theo nhiều biến thể tên cột Excel tiếng Việt
 				const stt = row["STT"] || row["stt"] || idx + 1;
 				const code =
 					row["Mã hộ"] ||

@@ -25,9 +25,6 @@ export interface HouseholdsResponse {
 	};
 }
 
-/**
- * Chuẩn hóa đối tượng Household từ Backend Prisma sang Client Type
- */
 export function normalizeHousehold(item: any): Household {
 	const citizens = item.citizens || item.members || [];
 	const head = citizens.find((c: any) => c.is_head) || citizens[0];

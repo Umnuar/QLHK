@@ -89,7 +89,6 @@ describe("householdApi - Chuẩn hóa dữ liệu Household", () => {
 					stt: 2,
 					is_head: false,
 					full_name: "Y Lan",
-					// Các trường null/undefined phải fallback về rỗng
 					education: null,
 					military_status: undefined,
 					occupation: "",

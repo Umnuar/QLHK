@@ -47,9 +47,6 @@ export interface ExcelParseResult {
 	}>;
 }
 
-/**
- * Trích xuất giá trị ô an toàn từ ô tính ExcelJS.
- */
 export function getCellValue(val: any): any {
 	if (val === undefined || val === null) return "";
 	if (val instanceof Date) return val;
@@ -67,12 +64,6 @@ export function getCellValue(val: any): any {
 	return val;
 }
 
-/**
- * Chuẩn hóa ngày tháng năm sinh:
- * - Xử lý Excel serial date number -> DD/MM/YYYY
- * - Nhận diện năm 3 chữ số như "11/01/976" -> "11/01/1976"
- * - Kiểm tra tính hợp lệ ngày/tháng (ví dụ 15/17/1989 sẽ cảnh báo lỗi)
- */
 export function normalizeDob(rawVal: any): {
 	dob: string;
 	age?: number | null;
@@ -82,7 +73,6 @@ export function normalizeDob(rawVal: any): {
 		return { dob: "", age: null };
 	}
 
-	// Trường hợp 0: Đối tượng Date hợp lệ
 	if (rawVal instanceof Date && !isNaN(rawVal.getTime())) {
 		const day = String(rawVal.getUTCDate()).padStart(2, "0");
 		const month = String(rawVal.getUTCMonth() + 1).padStart(2, "0");

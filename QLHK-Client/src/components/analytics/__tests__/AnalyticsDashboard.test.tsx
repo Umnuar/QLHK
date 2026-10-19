@@ -2,19 +2,16 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AnalyticsDashboard } from "../AnalyticsDashboard";
 
-// Mock AppContext
 const mockUseApp = vi.fn();
 vi.mock("../../../AppContext", () => ({
 	useApp: () => mockUseApp(),
 }));
 
-// Mock HouseholdContext
 const mockUseHouseholds = vi.fn();
 vi.mock("../../../context/HouseholdContext", () => ({
 	useHouseholds: () => mockUseHouseholds(),
 }));
 
-// Mock Analytics API
 const mockGetOverview = vi.fn();
 const mockGetByVillage = vi.fn();
 vi.mock("../../../api/analyticsApi", () => ({
@@ -24,7 +21,6 @@ vi.mock("../../../api/analyticsApi", () => ({
 	},
 }));
 
-// Mock IndexedDB cache
 vi.mock("../../../db/indexedDB", () => ({
 	getCache: vi.fn().mockResolvedValue(null),
 	setCache: vi.fn().mockResolvedValue(true),
@@ -127,10 +123,8 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 			expect(screen.getAllByText("150").length).toBeGreaterThan(0);
 		});
 
-		// Kiểm tra tiêu đề chính
 		expect(screen.getByText("Thống Kê Dân Cư & Dân Tộc")).toBeInTheDocument();
 
-		// Kiểm tra nhãn các thẻ KPI
 		expect(screen.getByText("Tổng Hộ Gia Đình")).toBeInTheDocument();
 		expect(screen.getAllByText("Tổng Nhân Khẩu").length).toBeGreaterThan(0);
 		expect(screen.getAllByText("600").length).toBeGreaterThan(0);
@@ -145,14 +139,12 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 			).toBeInTheDocument();
 		});
 
-		// Kiểm tra tên các dân tộc thiểu số Đăk Hà
 		expect(screen.getByText("Dân tộc Kinh")).toBeInTheDocument();
 		expect(screen.getByText("Dân tộc Xơ Đăng")).toBeInTheDocument();
 		expect(screen.getByText("Dân tộc Gia Rai")).toBeInTheDocument();
 		expect(screen.getByText("Dân tộc Giẻ Triêng")).toBeInTheDocument();
 		expect(screen.getByText("Dân tộc Ê Đê")).toBeInTheDocument();
 
-		// Tổng DTTS: 600 - 240 (Kinh) = 360 (60%)
 		expect(screen.getAllByText("60%").length).toBeGreaterThan(0);
 	});
 
@@ -178,7 +170,6 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 			expect(screen.getByText("Cơ Cấu Giới Tính")).toBeInTheDocument();
 		});
 
-		// Kiểm tra % nam và nữ theo định dạng chuẩn Việt Nam (48,3% / 51,7%)
 		expect(screen.getByText(/48,3%/)).toBeInTheDocument();
 		expect(screen.getByText(/51,7%/)).toBeInTheDocument();
 		expect(screen.getByText(/290 Nam • 310 Nữ/)).toBeInTheDocument();
@@ -217,17 +208,14 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 			expect(screen.getByText("Cơ Cấu Nghề Nghiệp")).toBeInTheDocument();
 		});
 
-		// Tháp tuổi
 		expect(screen.getByText("Thiếu nhi (< 16 tuổi)")).toBeInTheDocument();
 		expect(screen.getByText("Thanh niên & NVQS (16 - 27 tuổi)")).toBeInTheDocument();
 		expect(screen.getByText("Lao động chính (28 - 60 tuổi)")).toBeInTheDocument();
 		expect(screen.getByText("Người cao tuổi (> 60 tuổi)")).toBeInTheDocument();
 
-		// NVQS
 		expect(screen.getAllByText("Đủ điều kiện").length).toBeGreaterThan(0);
 		expect(screen.getAllByText("Xuất ngũ").length).toBeGreaterThan(0);
 
-		// Học vấn & Nghề nghiệp
 		expect(screen.getByText("12/12")).toBeInTheDocument();
 		expect(screen.getByText("Đại học")).toBeInTheDocument();
 		expect(screen.getByText("Làm nông")).toBeInTheDocument();

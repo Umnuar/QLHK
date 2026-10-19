@@ -56,7 +56,6 @@ export async function logAudit(params: AuditParams) {
 			},
 		});
 	} catch (error) {
-		// Audit logging should not crash the primary operation
 		console.error("Lỗi khi ghi audit log:", error);
 	}
 }

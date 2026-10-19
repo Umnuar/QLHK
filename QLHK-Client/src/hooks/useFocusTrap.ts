@@ -19,18 +19,15 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
 	useEffect(() => {
 		if (!isActive) return;
 
-		// Save previously focused element to restore when closed
 		if (typeof document !== "undefined") {
 			previousActiveElement.current = document.activeElement as HTMLElement | null;
 		}
 
-		// Lock body scroll
 		const originalOverflow = document.body.style.overflow;
 		if (lockScroll) {
 			document.body.style.overflow = "hidden";
 		}
 
-		// Initial focus
 		const timeoutId = setTimeout(() => {
 			if (initialFocusRef?.current) {
 				initialFocusRef.current.focus();
@@ -51,7 +48,6 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
 			}
 		}, 30);
 
-		// Handle Tab trapping and Escape
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "Escape" && onEscape) {
 				e.stopPropagation();
@@ -79,13 +75,11 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
 				const lastElement = focusableElements[focusableElements.length - 1];
 
 				if (e.shiftKey) {
-					// Shift + Tab
 					if (document.activeElement === firstElement) {
 						e.preventDefault();
 						lastElement.focus();
 					}
 				} else {
-					// Tab
 					if (document.activeElement === lastElement) {
 						e.preventDefault();
 						firstElement.focus();

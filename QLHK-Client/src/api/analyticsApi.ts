@@ -53,9 +53,6 @@ export interface VillageAnalyticsRow {
 }
 
 export const analyticsApi = {
-	/**
-	 * Báo cáo thống kê tổng quan (toàn xã hoặc theo thôn)
-	 */
 	async getOverview(villageId?: string): Promise<AnalyticsOverviewData> {
 		const res = await apiClient.get("/analytics/overview", {
 			params: villageId ? { villageId } : undefined,
@@ -63,9 +60,6 @@ export const analyticsApi = {
 		return res.data?.data || res.data;
 	},
 
-	/**
-	 * Bảng thống kê so sánh giữa các thôn
-	 */
 	async getByVillage(): Promise<VillageAnalyticsRow[]> {
 		const res = await apiClient.get("/analytics/by-village");
 		return res.data?.data || res.data;

@@ -27,7 +27,7 @@ export interface CustomSelectProps<T = string | number> {
 	isActive?: boolean;
 	variant?: "form" | "filter";
 	defaultValue?: T;
-	className?: string; // Custom class cho Trigger button
+	className?: string;
 	containerClassName?: string;
 	dropdownClassName?: string;
 	id?: string;
@@ -63,7 +63,6 @@ export function CustomSelect<T extends string | number = string | number>({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const searchInputRef = useRef<HTMLInputElement>(null);
 
-	// Chuẩn hóa options: Hỗ trợ cả mảng chuỗi ['Nam', 'Nữ'] hoặc mảng object { value, label }
 	const normalizedOptions = useMemo<SelectOption<T>[]>(() => {
 		return options.map((opt) => {
 			if (
@@ -81,15 +80,12 @@ export function CustomSelect<T extends string | number = string | number>({
 		});
 	}, [options]);
 
-	// Tìm option đang được chọn
 	const selectedOption = useMemo(() => {
 		return normalizedOptions.find((opt) => opt.value === value);
 	}, [normalizedOptions, value]);
 
-	// Tự động bật search filter nếu danh sách trên 8 mục hoặc prop searchable = true
 	const shouldShowSearch = searchable || normalizedOptions.length > 8;
 
-	// Lọc options theo từ khóa tìm kiếm
 	const filteredOptions = useMemo(() => {
 		if (!shouldShowSearch || !searchQuery.trim()) {
 			return normalizedOptions;
@@ -103,7 +99,6 @@ export function CustomSelect<T extends string | number = string | number>({
 		});
 	}, [normalizedOptions, searchQuery, shouldShowSearch]);
 
-	// Tính toán hướng mở (đảo lên trên nếu gần đáy màn hình < 240px)
 	useEffect(() => {
 		if (isOpen && containerRef.current) {
 			const rect = containerRef.current.getBoundingClientRect();
@@ -112,7 +107,6 @@ export function CustomSelect<T extends string | number = string | number>({
 		}
 	}, [isOpen]);
 
-	// Tự động focus vào ô tìm kiếm khi dropdown mở
 	useEffect(() => {
 		if (isOpen && shouldShowSearch) {
 			const timer = setTimeout(() => {
@@ -122,7 +116,6 @@ export function CustomSelect<T extends string | number = string | number>({
 		}
 	}, [isOpen, shouldShowSearch]);
 
-	// Đóng khi click ngoài hoặc bấm Escape
 	useEffect(() => {
 		if (!isOpen) return;
 
@@ -166,7 +159,6 @@ export function CustomSelect<T extends string | number = string | number>({
 		}
 	};
 
-	// Rule 2: Dropdown trong form nhập liệu là trường dữ liệu cố định, không phải bộ lọc tạm thời -> luôn dùng kiểu trung tính.
 	const isFormVariant =
 		variant === "form" || (variant === undefined && Boolean(label));
 
@@ -178,7 +170,6 @@ export function CustomSelect<T extends string | number = string | number>({
 		value === null ||
 		(defaultValue !== undefined && value === defaultValue);
 
-	// Chỉ kích hoạt tô xanh khi là bộ lọc VÀ giá trị KHÁC mặc định (đang lọc thật):
 	const isEffectiveActive =
 		!isFormVariant && (isActive !== undefined ? isActive : !isDefaultVal);
 
@@ -193,7 +184,6 @@ export function CustomSelect<T extends string | number = string | number>({
 						(defaultValue === undefined || selectedOption.value !== defaultValue),
 				));
 
-	// Cấu hình class kích thước
 	const sizeStyles = {
 		sm: {
 			trigger: "h-8 sm:h-9 px-2.5 text-xs font-semibold rounded-xl",

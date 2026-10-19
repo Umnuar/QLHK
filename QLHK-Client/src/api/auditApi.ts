@@ -48,7 +48,6 @@ export interface AuditLogResponse {
 	};
 }
 
-// Danh sách nhật ký biến động mẫu chuẩn thực tế hành chính Xã Đăk Hà
 const SAMPLE_AUDIT_LOGS: AuditLogItem[] = [
 	{
 		id: "aud-001",

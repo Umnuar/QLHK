@@ -25,14 +25,12 @@ export const apiClient = axios.create({
 export const detectAndSetOptimalApiGateway = async (): Promise<string> => {
 	const domainUrl = API_BASE_URL;
 	try {
-		// Thử kết nối gateway domain chính thức
 		const res = await apiClient.get("/ping", { timeout: 2000 });
 		if (res.status === 204 || res.status === 200) {
 			setApiBaseUrl(domainUrl);
 			return domainUrl;
 		}
 	} catch {
-		// Nếu domain không phản hồi, thử kết nối local backend cổng 5002
 		try {
 			const localUrl = "http://localhost:5002/api";
 			const testClient = axios.create({
@@ -46,24 +44,20 @@ export const detectAndSetOptimalApiGateway = async (): Promise<string> => {
 				return localUrl;
 			}
 		} catch {
-			// Không kết nối được cả hai, giữ mặc định domainUrl
 		}
 	}
 	setApiBaseUrl(domainUrl);
 	return domainUrl;
 };
 
-// Khởi chạy đảm bảo Gateway luôn trỏ về Domain chính thức
 detectAndSetOptimalApiGateway().catch(() => {});
 
-// In-memory token cache: tránh gọi async secureStorage trên mỗi request
 let cachedAccessToken: string | null = null;
 
 export const setCachedAccessToken = (token: string | null): void => {
 	cachedAccessToken = token;
 };
 
-// Request Interceptor: Gắn Bearer Token nếu có trong secureStorage
 apiClient.interceptors.request.use(
 	async (config) => {
 		try {

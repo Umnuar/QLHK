@@ -7,7 +7,6 @@ import ExcelJS from 'exceljs';
 describe('Bộ bóc tách Excel thông minh (Excel Parser Engine)', () => {
   describe('Chuẩn hóa ngày sinh (normalizeDob)', () => {
     it('phải chuyển đổi số serial Excel thành định dạng DD/MM/YYYY chuẩn', () => {
-      // 37121 trong Excel là 18/08/2001
       const res = normalizeDob(37121);
       expect(res.dob).toBe('18/08/2001');
       expect(res.warning).toBeUndefined();
@@ -61,7 +60,6 @@ describe('Bộ bóc tách Excel thông minh (Excel Parser Engine)', () => {
       expect(result.total_citizens).toBe(14);
       expect(result.households.length).toBe(4);
 
-      // Hộ 1: Chủ hộ NGUYỄN VĂN A, 3 thành viên
       const h1 = result.households[0];
       expect(h1.head_name).toBe('NGUYỄN VĂN A');
       expect(h1.member_count).toBe(3);
@@ -69,29 +67,24 @@ describe('Bộ bóc tách Excel thông minh (Excel Parser Engine)', () => {
       expect(h1.members[0].relationship).toBe('Chủ hộ');
       expect(h1.members[1].relationship).toBe('Thành viên');
       expect(h1.members[2].relationship).toBe('Thành viên');
-      expect(h1.members[0].gender).toBe('Nữ'); // Cột Nữ có 'X'
+      expect(h1.members[0].gender).toBe('Nữ');
       expect(h1.members[0].ethnicity).toBe('Cor');
 
-      // Hộ 2: Chủ hộ NGUYỄN VĂN B, 4 thành viên
       const h2 = result.households[1];
       expect(h2.head_name).toBe('NGUYỄN VĂN B');
       expect(h2.member_count).toBe(4);
-      // Kiểm tra thành viên có năm 3 chữ số 976 -> 1976
       const citizen976 = h2.members.find((m) => m.full_name === 'NGUYỄN VĂN A' && m.stt === 5);
       expect(citizen976).toBeDefined();
       expect(citizen976?.dob).toBe('11/01/1976');
 
-      // Hộ 3: Chủ hộ ĐINH THANH HIỂU, 3 thành viên
       const h3 = result.households[2];
       expect(h3.head_name).toBe('ĐINH THANH HIỂU');
       expect(h3.member_count).toBe(3);
       expect(h3.members[0].religion).toBe('Công giáo');
-      // Kiểm tra thành viên TRẦN VĂN BẢO có ngày sinh 15/12/1989
       const citizenBao = h3.members.find((m) => m.full_name === 'TRẦN VĂN BẢO');
       expect(citizenBao).toBeDefined();
       expect(citizenBao?.dob).toBe('15/12/1989');
 
-      // Hộ 4: Chủ hộ TRƯƠNG VĂN THÀNH, 4 thành viên
       const h4 = result.households[3];
       expect(h4.head_name).toBe('TRƯƠNG VĂN THÀNH');
       expect(h4.member_count).toBe(4);
@@ -130,7 +123,6 @@ describe('Bộ bóc tách Excel thông minh (Excel Parser Engine)', () => {
     it('phải bóc tách chính xác biểu mẫu 11 cột phẳng tiêu chuẩn từ Buffer/Stream', async () => {
       const workbook = new ExcelJS.Workbook();
       const sheet = workbook.addWorksheet('Mau11Cot');
-      // Thêm header 11 cột
       sheet.addRow([
         'STT',
         'Mã hộ khẩu',
@@ -144,7 +136,6 @@ describe('Bộ bóc tách Excel thông minh (Excel Parser Engine)', () => {
         'Địa chỉ thường trú',
         'Ghi chú',
       ]);
-      // Thêm dữ liệu 2 hộ gia đình
       sheet.addRow([1, 'HK-1001', 'A Thui', 'Chủ hộ', '1985', 'Nam', 'Xơ Đăng', 'Không', '064085000123', 'Thôn 1, Đăk Hà', 'Chính sách']);
       sheet.addRow([2, 'HK-1001', 'Y Mới', 'Vợ', '1988', 'Nữ', 'Xơ Đăng', 'Không', '064088000456', 'Thôn 1, Đăk Hà', '']);
       sheet.addRow([3, 'HK-1002', 'Nguyễn Thị Hoa', 'Chủ hộ', '1992', 'Nữ', 'Kinh', 'Công giáo', '064092000789', 'Thôn 2, Đăk Hà', '']);

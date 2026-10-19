@@ -22,10 +22,10 @@ export interface ToastOptions {
 	id?: string;
 	message: string;
 	type?: ToastType;
-	duration?: number; // default 5000ms
+	duration?: number;
 	onUndo?: () => Promise<void> | void;
-	undoLabel?: string; // default "Hoàn tác"
-	actionKey?: string; // Khi cùng actionKey lặp lại -> thay thế toast cũ
+	undoLabel?: string;
+	actionKey?: string;
 }
 
 export interface ToastItem extends ToastOptions {
@@ -55,11 +55,10 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss }) => {
 		typeof window !== "undefined" &&
 		window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-	// Timer đếm ngược, tự động dừng khi hover hoặc focus
 	useEffect(() => {
 		if (isPaused) return;
 
-		const interval = 25; // tick 25ms cho thanh progress mượt mà
+		const interval = 25;
 		const timer = setInterval(() => {
 			setTimeLeft((prev) => {
 				if (prev <= interval) {
@@ -147,17 +146,14 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss }) => {
 			onFocus={() => setIsPaused(true)}
 			onBlur={() => setIsPaused(false)}
 		>
-			{/* Icon trạng thái */}
 			<div className="shrink-0">{renderIcon()}</div>
 
-			{/* Nội dung thông báo (tối đa 2 dòng, cắt bằng ...) */}
 			<div className="flex-1 min-w-0 pr-1">
 				<p className="text-xs sm:text-sm font-medium leading-snug line-clamp-2 break-words">
 					{toast.message}
 				</p>
 			</div>
 
-			{/* Cụm hành động: Hoàn tác (nếu có) và Đóng */}
 			<div className="flex items-center gap-1.5 shrink-0">
 				{toast.onUndo && (
 					<button
@@ -179,7 +175,6 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss }) => {
 				</button>
 			</div>
 
-			{/* Thanh đếm ngược mảnh ở mép dưới toast (~5s, tạm dừng khi hover/focus, tôn trọng prefers-reduced-motion) */}
 			{!prefersReducedMotion && (
 				<div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-100 dark:bg-slate-800">
 					<div

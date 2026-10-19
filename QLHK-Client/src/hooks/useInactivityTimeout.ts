@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-const TIMEOUT_MS = 30 * 60 * 1000; // 30 phút
+const TIMEOUT_MS = 30 * 60 * 1000;
 
 export function useInactivityTimeout(
 	onTimeout: () => void,

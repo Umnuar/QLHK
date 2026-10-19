@@ -36,7 +36,6 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
 	return createPortal(
 		<div className="fixed inset-0 !m-0 z-[70] flex items-center justify-center p-4 bg-slate-950/45 dark:bg-black/60 backdrop-blur-sm select-none animate-in fade-in duration-150">
 			<div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
-				{/* Top Bar */}
 				<div className="p-5 px-6 border-b border-slate-200 dark:border-slate-800 bg-amber-50/70 dark:bg-amber-950/30 flex items-center justify-between shrink-0">
 					<div className="flex items-center gap-3">
 						<div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20">
@@ -61,14 +60,12 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
 					</button>
 				</div>
 
-				{/* Body Đối Soát 2 Cột */}
 				<div className="p-6 space-y-5 overflow-y-auto max-h-[60vh]">
 					<div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
 						Để chống mất mát dữ liệu đồng thời, hệ thống giữ nguyên các nội dung đồng chí vừa nhập. Đồng chí có thể lựa chọn <strong>nạp lại dữ liệu máy chủ</strong> để cập nhật phiên bản mới nhất hoặc <strong>ghi đè dữ liệu của tôi</strong>.
 					</div>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						{/* Cột 1: Dữ liệu hiện tại trên Máy Chủ */}
 						<div className="p-4 rounded-2xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/40 dark:bg-blue-950/20 space-y-3">
 							<div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-bold text-xs uppercase tracking-wider">
 								<Database className="w-3.5 h-3.5" />
@@ -103,7 +100,6 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
 							</div>
 						</div>
 
-						{/* Cột 2: Dữ liệu vừa nhập của Client */}
 						<div className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-3">
 							<div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-bold text-xs uppercase tracking-wider">
 								<Check className="w-3.5 h-3.5" />
@@ -140,7 +136,6 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
 					</div>
 				</div>
 
-				{/* Bottom Bar Hành Động */}
 				<div className="p-4 px-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
 					<button
 						type="button"

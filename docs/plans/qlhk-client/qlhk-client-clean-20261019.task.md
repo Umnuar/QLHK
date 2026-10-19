@@ -2,16 +2,16 @@
 
 - **Project**: QLHK-Client
 - **Intended Base Branch**: `clean/client-clean-20261018`
-- **Base Branch**: `<BASE_BRANCH>`
+- **Base Branch**: `clean/client-clean-20261018`
 - **Branch**: `clean/qlhk-client-clean-20261019`
 - **Plan Reference**: `N/A (direct clean hygiene remediation)`
 - **Clean Prompt Reference**: `docs/plans/qlhk-client/qlhk-client-clean-20261019.clean.md`
-- **Baseline Checkpoint**: `<BASELINE_HASH>` (<PASS_COUNT> passing, verified across 2 baseline runs)
+- **Baseline Checkpoint**: `c9587f7c17dffccc1a7ff0f6cde02f3e390e0466` (162 passing, verified across 2 baseline runs)
 - **Known Baseline / Flaky Failures (Failed in Either Baseline Run)**:
   - None (162/162 passing across 17 test files)
 - **Typecheck Baseline**: 0 errors (`cd QLHK-Client && npx tsc --noEmit`)
-- **API Surface Snapshot**: Baseline captured (0 public breaks permitted)
-- **Ignored Files Baseline**: Recorded in $(git rev-parse --git-common-dir)/roadmap-ignored-baseline-qlhk-client-clean-20261019.txt (0 missing ignored files permitted)
+- **API Surface Snapshot**: Baseline captured (tabs: households, analytics, sync, settings, recycle-bin; 0 public breaks permitted)
+- **Ignored Files Baseline**: Recorded in $(git rev-parse --git-common-dir)/roadmap-ignored-baseline-qlhk-client-clean-20261019.txt (16 items recorded; 0 missing ignored files permitted)
 - **Status Legend**: 
   - `[ ]` Pending
   - `[/]` In Progress

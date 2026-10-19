@@ -22,7 +22,7 @@
 
 ## Execution Checklist
 
-- [ ] Step 1: Delete unreferenced orphan dashboard utility [CLN-001]
+- [x] Step 1: Delete unreferenced orphan dashboard utility [CLN-001]
   - Finding IDs: `CLN-001` (Root Cause Key: `SRC-03:QLHK-Backend/src/utils/dashboard.ts:orphan-ansi-terminal-dashboard`; Class: `SRC-03`)
   - Target Files: `QLHK-Backend/src/utils/dashboard.ts`
   - Role Focus: Preserving external behavior, dead-code elimination, caller-callee blast radius verification
@@ -30,7 +30,7 @@
   - Diff Budget: <= 200 gross LOC (modified/added), <= 25 files outside target directories
   - Verification: `cd QLHK-Backend && npm test -- tests/unit/logger.test.ts && npx tsc --noEmit`
   - Equivalence Check: API Surface unchanged vs Step 0 snapshot (n/a for non-code); scoped tests pass
-  - Evidence: BEFORE `<pass summary>` / AFTER `<pass summary>`
+  - Evidence: BEFORE 14 passed (tests/unit/logger.test.ts) & tsc ok / AFTER 14 passed & tsc ok; API-SURFACE: n/a (non-code)
 
 - [ ] Step 2: Delete obsolete orphan re-export shim [CLN-002]
   - Finding IDs: `CLN-002` (Root Cause Key: `SRC-03:QLHK-Backend/src/utils/excel-parser.ts:orphan-reexport-shim`; Class: `SRC-03`)

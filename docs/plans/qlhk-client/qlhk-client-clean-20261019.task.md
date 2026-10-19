@@ -92,7 +92,7 @@
   - Equivalence Check: API Surface unchanged vs Step 0 snapshot; scoped tests pass
   - Evidence: BEFORE 16 passed, 0 tsc errors / AFTER 16 passed, 0 tsc errors; API Surface unchanged
 
-- [ ] Step 8: Full Suite Verification, Equivalence & Zero-Regression Gate
+- [x] Step 8: Full Suite Verification, Equivalence & Zero-Regression Gate
   - Full Test Suite: `cd QLHK-Client && npm test` (162 passing, zero new failures vs baseline)
   - Typecheck: `cd QLHK-Client && npx tsc --noEmit` (0 new errors vs baseline)
   - API Surface Check: Unchanged vs Step 0 snapshot
@@ -101,9 +101,17 @@
 
 ## Deferred / Needs Human Decision
 <!-- Append `Step K | Finding ID | Reason Code | exact blocker or decision needed | files:lines` for every [~] step -->
+None (all 7 planned steps executed and verified).
 
 ## Finding Closure Mapping
-<!-- Populate at Step 8: `CLN-001 -> <commit_hash> (Step 1)`, etc. -->
+- `CLN-001` -> `b1660f6` (Step 1: Remove Dead Latency State and File-Scope Constants in AppContext)
+- `CLN-002` -> `d95a6be` (Step 2: Remove Unused State Setter setLoading in Household Store)
+- `CLN-003` -> `d9b7e64` (Step 3: Remove Unused Icons and Dead State in AnalyticsDashboard)
+- `CLN-004` -> `08018e8` (Step 4: Remove Unused Icons, Dead Hook and State Setter in AuditLogView)
+- `CLN-005` -> `3c4eb84` (Step 5: Remove Unused Imports and Dead Local in Common, Layout, and Settings Components)
+- `CLN-006` -> `44914cd` (Step 6: Remove Unused Imports and Dead Local Variable in Page Components)
+- `CLN-007` -> `0fc67f7` (Step 7: Remove Redundant React and FireEvent Imports in Test Suites)
 
 ## Project Gotchas & Learned Invariants
-<!-- Append verified gotchas here when encountering subtle bugs -->
+- Vite 5 with automatic JSX transform does not require default `React` imports in `.test.tsx` files.
+- `statStyles.tsx` accesses `createContext` and `useContext` via namespace `React.createContext` and `React.useContext`, rendering named imports redundant while keeping `React` import required.

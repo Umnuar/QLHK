@@ -42,7 +42,7 @@
   - Equivalence Check: API Surface unchanged vs Step 0 snapshot; scoped tests pass
   - Evidence: BEFORE 4 passed, 0 tsc errors / AFTER 4 passed, 0 tsc errors; API Surface unchanged
 
-- [ ] Step 3: Remove Unused Icons and Dead State in AnalyticsDashboard [CLN-003]
+- [x] Step 3: Remove Unused Icons and Dead State in AnalyticsDashboard [CLN-003]
   - Finding IDs: `CLN-003` (Root Cause Key: `CL-01:QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx:unused-icons-and-state`; Class: `CL-01`)
   - Target Files: `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`
   - Role Focus: Preserving external behavior, dead-code elimination, caller-callee blast radius verification
@@ -50,7 +50,7 @@
   - Diff Budget: <= 200 gross LOC (modified/added), <= 25 files outside target directories
   - Verification: `cd QLHK-Client && npm test -- src/components/analytics/__tests__/AnalyticsDashboard.test.tsx && cd QLHK-Client && npx tsc --noEmit`
   - Equivalence Check: API Surface unchanged vs Step 0 snapshot; scoped tests pass
-  - Evidence: BEFORE `<pass summary>` / AFTER `<pass summary>`
+  - Evidence: BEFORE 8 passed, 0 tsc errors / AFTER 8 passed, 0 tsc errors; API Surface unchanged
 
 - [ ] Step 4: Remove Unused Icons, Dead Hook and State Setter in AuditLogView [CLN-004]
   - Finding IDs: `CLN-004` (Root Cause Key: `CL-01:QLHK-Client/src/components/audit/AuditLogView.tsx:unused-imports-and-state`; Class: `CL-01`)

@@ -1,16 +1,11 @@
 import {
 	ArrowLeft,
 	BarChart3,
-	Briefcase,
 	Building2,
 	Download,
-	GraduationCap,
-	HeartHandshake,
 	PieChart,
 	Shield,
-	UserCheck,
 	Users,
-	Users2,
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -52,7 +47,6 @@ export const AnalyticsDashboard: React.FC = () => {
 	} = useApp();
 	const { activeHouseholds } = useHouseholds();
 
-	const [refreshing, setRefreshing] = useState(false);
 	const [isUsingCachedData, setIsUsingCachedData] = useState(false);
 	const [apiOverview, setApiOverview] = useState<AnalyticsOverviewData | null>(
 		null,
@@ -346,7 +340,6 @@ export const AnalyticsDashboard: React.FC = () => {
 
 	// Nạp dữ liệu từ backend API kèm Offline Cache
 	const fetchAnalytics = useCallback(async () => {
-		setRefreshing(true);
 		const overviewCacheKey = `analytics_overview_${selectedVillageId || "all"}`;
 		const villageCacheKey = "analytics_by_village";
 
@@ -386,8 +379,6 @@ export const AnalyticsDashboard: React.FC = () => {
 				if (cachedOverview) setApiOverview(cachedOverview);
 				if (cachedVillage) setApiVillageBreakdown(cachedVillage);
 			}
-		} finally {
-			setRefreshing(false);
 		}
 	}, [selectedVillageId, isBackendHealthy]);
 

@@ -39,7 +39,7 @@ export function useHouseholdStore() {
 
 	const [isBackendOnline, setIsBackendOnline] = useState<boolean>(false);
 	const [isCheckingBackend, setIsCheckingBackend] = useState<boolean>(false);
-	const [loading, setLoading] = useState<boolean>(false);
+	const [loading] = useState<boolean>(false);
 
 	// Tìm kiếm & phân trang
 	const [search, setSearch] = useState<string>("");

@@ -314,7 +314,6 @@ export function useHouseholdStore() {
 		return created;
 	}, []);
 
-	// Sửa thông tin hộ
 	const updateHousehold = useCallback(
 		(id: string, updates: Partial<Household>) => {
 			setHouseholds((prev) =>
@@ -331,7 +330,6 @@ export function useHouseholdStore() {
 		[],
 	);
 
-	// Xóa mềm vào Thùng rác
 	const softDeleteHousehold = useCallback((id: string) => {
 		setHouseholds((prev) =>
 			prev.map((h) => {
@@ -346,7 +344,6 @@ export function useHouseholdStore() {
 		);
 	}, []);
 
-	// Khôi phục từ Thùng rác
 	const restoreHousehold = useCallback(async (id: string) => {
 		setHouseholds((prev) =>
 			prev.map((h) => {
@@ -366,7 +363,6 @@ export function useHouseholdStore() {
 		}
 	}, []);
 
-	// Xóa vĩnh viễn
 	const hardDeleteHousehold = useCallback(async (id: string) => {
 		setHouseholds((prev) => prev.filter((h) => h.id !== id));
 		try {
@@ -376,12 +372,10 @@ export function useHouseholdStore() {
 		}
 	}, []);
 
-	// Dọn sạch thùng rác
 	const emptyTrash = useCallback(() => {
 		setHouseholds((prev) => prev.filter((h) => !h.is_deleted));
 	}, []);
 
-	// Thêm hoặc Cập nhật Nhân khẩu
 	const saveMember = useCallback(
 		(householdId: string, memberData: Partial<Person>) => {
 			setHouseholds((prev) =>
@@ -400,10 +394,8 @@ export function useHouseholdStore() {
 					let updatedMembers = [...h.members];
 
 					if (memberData.id) {
-						// Edit existing member
 						updatedMembers = updatedMembers.map((m) => {
 							if (m.id !== memberData.id) {
-								// Nếu nhân khẩu này được gán làm Chủ hộ thì bỏ cờ Chủ hộ của người cũ
 								if (isHead && m.is_head) {
 									return {
 										...m,
@@ -432,14 +424,12 @@ export function useHouseholdStore() {
 							} as Person;
 						});
 					} else {
-						// Add new member
 						const newId =
 							"mem-" +
 							Date.now() +
 							"-" +
 							Math.random().toString(36).substring(2, 6);
 						if (isHead) {
-							// Gỡ chủ hộ cũ nếu thêm chủ hộ mới
 							updatedMembers = updatedMembers.map((m) =>
 								m.is_head
 									? {
@@ -480,7 +470,6 @@ export function useHouseholdStore() {
 						updatedMembers.push(newPerson);
 					}
 
-					// Cập nhật tên chủ hộ của Sổ hộ khẩu nếu cần
 					const currentHead = updatedMembers.find((m) => m.is_head);
 					const headName = currentHead ? currentHead.full_name : h.head_name;
 					const headCccd = currentHead ? currentHead.cccd : h.head_cccd;
@@ -499,7 +488,6 @@ export function useHouseholdStore() {
 		[],
 	);
 
-	// Xóa nhân khẩu
 	const deleteMember = useCallback((householdId: string, memberId: string) => {
 		setHouseholds((prev) =>
 			prev.map((h) => {
@@ -515,7 +503,6 @@ export function useHouseholdStore() {
 		);
 	}, []);
 
-	// Lưu hàng loạt từ Import Excel
 	const importHouseholdsFromExcel = useCallback(
 		(importedHouseholds: Household[]) => {
 			setHouseholds((prev) => [...importedHouseholds, ...prev]);
@@ -523,7 +510,6 @@ export function useHouseholdStore() {
 		[],
 	);
 
-	// Xóa hàng loạt
 	const batchDeleteHouseholds = useCallback((ids: string[]) => {
 		setHouseholds((prev) =>
 			prev.map((h) => {
@@ -538,7 +524,6 @@ export function useHouseholdStore() {
 		);
 	}, []);
 
-	// Khôi phục dữ liệu gốc
 	const resetToInitialData = useCallback(() => {
 		setHouseholds(INITIAL_HOUSEHOLDS);
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_HOUSEHOLDS));
@@ -570,7 +555,6 @@ export function useHouseholdStore() {
 		deleteMember,
 		importHouseholdsFromExcel,
 		resetToInitialData,
-		// Search & Pagination
 		search,
 		setSearch,
 		page,

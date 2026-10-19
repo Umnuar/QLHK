@@ -108,12 +108,10 @@ describe("ExportSettingsModal Component", () => {
 			/>,
 		);
 
-		// Tab 2
 		fireEvent.click(
 			screen.getByRole("tab", { name: /Báo cáo chuyên đề tùy chọn/i }),
 		);
 
-		// Nhập tuổi
 		fireEvent.change(screen.getByLabelText(/Từ tuổi/i), {
 			target: { value: "18" },
 		});
@@ -121,7 +119,6 @@ describe("ExportSettingsModal Component", () => {
 			target: { value: "27" },
 		});
 
-		// Nhập từ khóa NVQS
 		fireEvent.change(
 			screen.getByPlaceholderText(/VD: Đủ điều kiện, Xuất ngũ/i),
 			{
@@ -129,7 +126,6 @@ describe("ExportSettingsModal Component", () => {
 			},
 		);
 
-		// Bấm xuất
 		const exportBtn = screen.getByRole("button", { name: /Xuất tệp Excel/i });
 		fireEvent.click(exportBtn);
 

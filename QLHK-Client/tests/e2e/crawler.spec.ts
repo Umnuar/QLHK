@@ -21,7 +21,6 @@ class ClickCoverageTracker {
 		return `[${screen}] [${type}] ${this.normalize(label)}`;
 	}
 
-	// Loại trừ các nút tiện ích toàn cục lặp lại khỏi danh sách missed
 	public isGlobalUtility(label: string): boolean {
 		const utilityRegex =
 			/thu nhỏ giao diện|phóng to giao diện|đặt lại kích thước|100%|chuyển sang giao diện tối|chuyển sang giao diện sáng|giao diện tối|giao diện sáng|chẩn đoán kết nối|ping server|kiểm tra kết nối/i;
@@ -85,7 +84,6 @@ class ClickCoverageTracker {
 		const guardedSet = new Set(this.guardedMap.keys());
 		const clickedSet = this.clickedSet;
 
-		// missedSet = (discoveredSet - guardedSet) - clickedSet
 		const missedItems = allItems.filter(
 			(item) => !this.guardedMap.has(item.id) && !this.clickedSet.has(item.id)
 		);
@@ -121,7 +119,6 @@ class ClickCoverageTracker {
 		console.log(`• TỶ LỆ ĐỘ PHỦ KHẢ THI (Coverage):            ${r.coveragePercent}`);
 		console.log("-------------------------------------------------------");
 
-		// BẢNG 1: DANH SÁCH PHẦN TỬ CHƯA BẤM (MISSED)
 		console.log("\n📋 BẢNG 1: DANH SÁCH PHẦN TỬ CHƯA BẤM (MISSED):");
 		console.table(
 			r.missedItems.map((m, idx) => ({
@@ -132,7 +129,6 @@ class ClickCoverageTracker {
 			}))
 		);
 
-		// BẢNG 2: DANH SÁCH PHẦN TỬ BẢO VỆ AN TOÀN (GUARDED)
 		console.log("\n🛡️ BẢNG 2: DANH SÁCH PHẦN TỬ BẢO VỆ AN TOÀN (GUARDED):");
 		console.table(
 			r.guardedItems.map((g, idx) => ({
@@ -147,9 +143,6 @@ class ClickCoverageTracker {
 	}
 }
 
-// =============================================================================
-// TRỤ CỘT 1: KIẾN TRÚC TEST SUITE VÀ BẪY LỖI TOÀN DIỆN
-// =============================================================================
 test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () => {
 	const apiErrors: {
 		method: string;
@@ -186,11 +179,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		return dangerousRegex.test(text);
 	};
 
-	// -------------------------------------------------------------------------
-	// TRỤ CỘT 2: CÁC HÀM TIỆN ÍCH GIAO DIỆN & HELPER BEST-OF-3
-	// -------------------------------------------------------------------------
-
-	// Helper 1: Tự động đóng SweetAlert2, Toast hoặc Radix Dialog trước khi chuyển route
 	const closeSuccessAlertIfPresent = async (p: Page): Promise<void> => {
 		const dialogSelectors = [
 			'div[role="alertdialog"]',
@@ -218,7 +206,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		}
 	};
 
-	// Helper 2: Pattern closure chống Stale Element Reference cho Dropdown CustomSelect (Tối ưu <300ms/option)
 	interface SweepSelectConfig {
 		screenName: string;
 		dropdownName: string;
@@ -263,12 +250,10 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			`      ✓ [Dynamic Sweep] ${dropdownName}: Phát hiện ${optionLabels.length} options thực tế trên DOM.`
 		);
 
-		// Vòng lặp click lần lượt 100% options (<300ms mỗi option)
 		for (let i = 0; i < optionLabels.length; i++) {
 			const optLabel = optionLabels[i];
 			currentAction = `Quét cạn option [${optLabel}] của dropdown [${dropdownName}]`;
 
-			// Mở lại dropdown nếu đang đóng (Closure pattern getTrigger() chống Stale DOM)
 			const isListboxVisible = await listbox.isVisible().catch(() => false);
 			if (!isListboxVisible) {
 				await getTrigger().click();
@@ -305,7 +290,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			}
 		}
 
-		// Khôi phục về option mặc định (option đầu tiên "Tất cả...")
 		if (optionLabels.length > 0) {
 			const defaultLabel = optionLabels[0];
 			const isListboxVisible = await listbox.isVisible().catch(() => false);
@@ -334,7 +318,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		);
 	};
 
-	// Helper 3: Quét cạn động 100% preset thực tế trên DOM của AgeFilterPopover
 	const sweepAgeFilterPopover = async (
 		page: Page,
 		t: ClickCoverageTracker,
@@ -350,7 +333,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		const initialTrigger = getAgeTrigger();
 		if (!(await initialTrigger.isVisible().catch(() => false))) return;
 
-		// 1. Mở popover lần đầu để lấy toàn bộ preset trên DOM
 		await initialTrigger.click();
 		interactionCount++;
 		t.recordClick(screenName, "button", "Mở popover: Lọc Độ Tuổi");
@@ -381,7 +363,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			`      ✓ [Dynamic Sweep] Lọc Độ Tuổi: Phát hiện ${presetLabels.length} presets thực tế trên DOM.`
 		);
 
-		// 2. Vòng lặp click lần lượt 100% các preset đó
 		for (const preset of presetLabels) {
 			currentAction = `Quét cạn preset độ tuổi [${preset}]`;
 
@@ -414,7 +395,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			}
 		}
 
-		// 3. Xóa lọc để trả về trạng thái bình thường
 		const clearBtn = page
 			.locator('button[title*="Xóa lọc độ tuổi"], button:has-text("Xóa lọc")')
 			.first();
@@ -429,7 +409,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		);
 	};
 
-	// Helper 4: Rà soát và phân loại các phần tử xuất hiện trên màn hình
 	const discoverVisibleButtons = async (page: Page, screenName: string) => {
 		const elements = await page
 			.locator('button, div[role="button"], [role="tab"]')
@@ -483,7 +462,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		}
 	};
 
-	// Helper 5: Tự dò và tương tác an toàn với các nút tiện ích
 	const crawlSafeButtons = async (page: Page, screenName: string) => {
 		currentAction = `[Spider] Rà soát các nút an toàn trên [${screenName}]`;
 		await discoverVisibleButtons(page, screenName);
@@ -532,7 +510,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 	};
 
 	test.beforeEach(async ({ page }) => {
-		// Bắt lỗi HTTP status >= 400 (bỏ qua favicon, fonts, extensions)
 		page.on("response", async (response) => {
 			const url = response.url();
 			if (
@@ -563,7 +540,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			}
 		});
 
-		// Bắt lỗi Browser Console (Lọc sạch noise, giữ lại lỗi React Crash)
 		page.on("console", (msg) => {
 			if (msg.type() === "error") {
 				const text = msg.text();
@@ -586,7 +562,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			}
 		});
 
-		// Bắt lỗi Unhandled Exceptions / Page Errors
 		page.on("pageerror", (err) => {
 			unhandledErrors.push({
 				message: `${err.name}: ${err.message}`,
@@ -596,9 +571,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		});
 	});
 
-	// =========================================================================
-	// 3. KỊCH BẢN THỰC THI CHÍNH
-	// =========================================================================
 	test("Smart Crawler: Quét cạn toàn bộ Filter & Vòng đời CRUD THẬT an toàn 100%", async ({
 		page,
 	}) => {
@@ -608,9 +580,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		console.log("🚀 BẮT ĐẦU SMART CRAWLER QUÉT CẠN DYNAMIC SWEEP & CRUD THẬT");
 		console.log("=======================================================\n");
 
-		// ---------------------------------------------------------------------
-		// GIAI ĐOẠN 1: ĐĂNG NHẬP HỆ THỐNG
-		// ---------------------------------------------------------------------
 		currentAction = "Giai đoạn 1: Đăng nhập hệ thống";
 		console.log("🔑 [1/7] Điều hướng & Đăng nhập tài khoản admin...");
 		await page.goto("/", { waitUntil: "load", timeout: 60_000 });
@@ -638,7 +607,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		visitedRoutes.push("Login -> Main Layout");
 		console.log("   ✓ Đăng nhập thành công! Giao diện chính sẵn sàng.");
 
-		// Đăng ký các nút an toàn và nút nguy hiểm trên Sidebar
 		const sidebar = page.locator("aside").first();
 		tracker.recordGuarded(
 			"Sidebar",
@@ -647,9 +615,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			"SafeGuard (Chặn thao tác phá hủy / đăng xuất)"
 		);
 
-		// ---------------------------------------------------------------------
-		// GIAI ĐOẠN 2: QUẢN LÝ THÔN (VILLAGES PAGE)
-		// ---------------------------------------------------------------------
 		currentAction = "Giai đoạn 2: Quét cạn màn hình Quản Lý Thôn";
 		console.log("📍 [2/7] Dò quét Màn hình: Quản Lý Thôn...");
 
@@ -663,14 +628,12 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		}
 		visitedRoutes.push("Quản Lý Thôn");
 
-		// Kiểm tra Banner và Thẻ KPI
 		const banner = page
 			.locator('div:has-text("Tổng Quan Dân Cư & Hộ Gia Đình Toàn Xã")')
 			.first();
 		await expect(banner).toBeVisible({ timeout: 15_000 });
 		console.log("   ✓ Xác nhận Banner Tổng quan và các thẻ KPI hiển thị đầy đủ.");
 
-		// Kiểm tra ô tìm kiếm thôn
 		const villageSearch = page
 			.locator('input[placeholder*="Tìm kiếm nhanh tên thôn"]')
 			.first();
@@ -681,7 +644,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			console.log("   ✓ Đã kiểm tra ô tìm kiếm thôn.");
 		}
 
-		// Duyệt và quét cạn toàn bộ các thẻ thôn trên địa bàn
 		const villageCards = page.locator('div[role="button"][aria-label*="Thôn"]');
 		const villageCardCount = await villageCards.count();
 		console.log(`   ✓ Phát hiện ${villageCardCount} thẻ thôn trên địa bàn.`);
@@ -703,7 +665,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 
 			await expect(page.locator("aside")).toBeVisible({ timeout: 10_000 });
 
-			// Quay lại trang Quản Lý Thôn
 			const changeVillageBtn = page.locator('button:has-text("Đổi thôn")').first();
 			if (await changeVillageBtn.isVisible().catch(() => false)) {
 				tracker.discover("Quản Lý Thôn", "button", "Đổi thôn");
@@ -722,7 +683,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		}
 		console.log("   ✓ Đã hoàn tất quét cạn toàn bộ các thôn trên địa bàn!");
 
-		// Chọn Thôn 1 để kích hoạt phạm vi làm việc
 		if (villageCardCount > 0) {
 			console.log("   ✓ Click chọn thôn đầu tiên để kích hoạt phạm vi thôn...");
 			await page.locator('div[role="button"][aria-label*="Thôn"]').first().click();
@@ -734,7 +694,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		await crawlSafeButtons(page, "Quản Lý Thôn");
 		await closeSuccessAlertIfPresent(page);
 
-		// Chuyển sang màn hình Hộ Gia Đình
 		const householdsNav = sidebar.locator('button:has-text("Hộ Gia Đình")').first();
 		await expect(householdsNav).toBeVisible({ timeout: 10_000 });
 		tracker.discover("Sidebar", "button", "Hộ Gia Đình");
@@ -748,9 +707,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			timeout: 15_000,
 		});
 
-		// ---------------------------------------------------------------------
-		// GIAI ĐOẠN 3: HỘ GIA ĐÌNH & NHÂN KHẨU (HOUSEHOLDS PAGE) - FILTER & CRUD
-		// ---------------------------------------------------------------------
 		currentAction = "Giai đoạn 3: Quét cạn toàn bộ Filter Dynamic Sweep & Vòng đời CRUD THẬT";
 		console.log("👨‍👩‍👧‍👦 [3/7] Dò quét Màn hình: Hộ Gia Đình & Nhân Khẩu...");
 
@@ -758,7 +714,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			'input[placeholder*="Tìm theo họ tên chủ hộ, CCCD"]'
 		);
 
-		// 3.0. TỰ DỌN RÁC PHIÊN TRƯỚC
 		console.log("   -> 3.0. Tự dọn rác phiên trước (Pre-test Cleanup)...");
 		if (await searchInput.isVisible()) {
 			await searchInput.fill("[TEST-CRAWLER]");
@@ -808,10 +763,8 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 
 		await discoverVisibleButtons(page, "Hộ Gia Đình & Nhân Khẩu");
 
-		// 3.1. QUÉT CẠN ĐỘNG TOÀN BỘ FILTER
 		console.log("   -> 3.1. Quét cạn động toàn bộ thanh bộ lọc (HouseholdFilterBar)...");
 
-		// (a) Bộ chọn năm (YearSelector)
 		const yearTrigger = page
 			.locator('div:has-text("Năm ")')
 			.filter({ hasText: /^Năm \d+/ })
@@ -854,10 +807,8 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			console.log("      ✓ Đã kiểm tra YearSelector (Bộ chọn năm).");
 		}
 
-		// (b) Quét cạn động 100% mốc tuổi trong AgeFilterPopover
 		await sweepAgeFilterPopover(page, tracker, "Hộ Gia Đình & Nhân Khẩu");
 
-		// (c) Quét cạn động 100% options Giới tính
 		await sweepCustomSelect(page, tracker, {
 			screenName: "Hộ Gia Đình & Nhân Khẩu",
 			dropdownName: "Giới tính",
@@ -865,7 +816,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 				page.locator("div.w-36").nth(0).locator('button[aria-haspopup="listbox"]').first(),
 		});
 
-		// (d) Quét cạn động 100% options Dân tộc
 		await sweepCustomSelect(page, tracker, {
 			screenName: "Hộ Gia Đình & Nhân Khẩu",
 			dropdownName: "Dân tộc",
@@ -873,7 +823,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 				page.locator("div.w-40").locator('button[aria-haspopup="listbox"]').first(),
 		});
 
-		// (e) Quét cạn động 100% options Cư trú
 		await sweepCustomSelect(page, tracker, {
 			screenName: "Hộ Gia Đình & Nhân Khẩu",
 			dropdownName: "Cư trú",
@@ -881,7 +830,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 				page.locator("div.w-36").nth(1).locator('button[aria-haspopup="listbox"]').first(),
 		});
 
-		// (f) Quét cạn động 100% options Phân trang
 		const getPaginationTrigger = () =>
 			page.locator('div:has-text("Số dòng:") button[aria-haspopup="listbox"]').first();
 		if (await getPaginationTrigger().isVisible().catch(() => false)) {
@@ -892,7 +840,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			});
 		}
 
-		// (g) Nút Làm Mới bảng dữ liệu
 		const refreshBtn = page
 			.locator('button:has(svg.lucide-refresh-cw), button:has-text("Làm Mới")')
 			.first();
@@ -905,7 +852,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			console.log("      ✓ Đã kiểm tra nút Làm Mới bảng dữ liệu.");
 		}
 
-		// (h) Nút Xóa tất cả bộ lọc nếu đang hiển thị
 		const clearAllFiltersBtn = page
 			.locator('button:has-text("Xóa lọc"), button:has-text("Xóa tất cả bộ lọc")')
 			.first();
@@ -917,7 +863,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			await page.waitForTimeout(300);
 		}
 
-		// (i) Kiểm tra Accordion và Nút Mắt Xem CCCD
 		const firstHouseholdRow = page.locator("table tbody tr").first();
 		if (await firstHouseholdRow.isVisible()) {
 			tracker.discover("Hộ Gia Đình & Nhân Khẩu", "button", "Mở rộng danh sách nhân khẩu");
@@ -944,7 +889,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			console.log("      ✓ Đã kiểm tra Accordion và nút mắt giải mã CCCD.");
 		}
 
-		// Ghi nhận các nút Xóa trên các dòng thật vào GuardedSet
 		const realDeleteButtons = await page
 			.locator('table tbody tr:not(:has-text("[TEST-CRAWLER]")) button[aria-label*="Xóa"]')
 			.all();
@@ -958,9 +902,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			);
 		}
 
-		// -----------------------------------------------------------------
-		// 3.2. VÒNG ĐỜI CRUD THẬT (AN TOÀN VỚI TAG [TEST-CRAWLER])
-		// -----------------------------------------------------------------
 		console.log("\n   -> 3.2. BẮT ĐẦU VÒNG ĐỜI CRUD THẬT (An toàn 100% với tag [TEST-CRAWLER])...");
 
 		const addHouseholdBtn = page
@@ -980,13 +921,11 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			.first();
 		await expect(drawer).toBeVisible({ timeout: 10_000 });
 
-		// Nhập thông tin hộ test
 		const testAddress = page.locator('input[placeholder*="Số nhà, đường"]').first();
 		if (await testAddress.isVisible()) {
 			await testAddress.fill("Thôn 1, Xã Đăk Hà [TEST]");
 		}
 
-		// Mở sub-modal thêm nhân khẩu chủ hộ
 		const addMemberBtn = page
 			.locator('button:has-text("Thêm Nhân Khẩu Mới"), button:has-text("Thêm Nhân Khẩu")')
 			.first();
@@ -997,7 +936,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		interactionCount++;
 		await page.waitForTimeout(300);
 
-		// Điền thông tin nhân khẩu test
 		const citizenModal = page
 			.locator(
 				'div[aria-labelledby="citizen-modal-title"], div[role="dialog"]:has(#citizen-modal-title)'
@@ -1025,7 +963,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			await cccdInput.fill("064090009999");
 		}
 
-		// Lưu nhân khẩu vào Drawer
 		const saveMemberBtn = citizenModal
 			.locator('button:has-text("Lưu Nhân Khẩu"), button:has-text("Thêm Vào Hộ")')
 			.first();
@@ -1036,7 +973,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		await page.waitForTimeout(300);
 		console.log("      ✓ Đã điền và lưu nhân khẩu [TEST-CRAWLER] vào Drawer.");
 
-		// Bấm nút LƯU THẬT hộ gia đình
 		console.log("      -> Bấm nút LƯU THẬT hộ gia đình...");
 		const saveHouseholdSubmit = page
 			.locator(
@@ -1061,7 +997,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		await page.waitForTimeout(250);
 		await closeSuccessAlertIfPresent(page);
 
-		// Xác nhận dòng [TEST-CRAWLER] xuất hiện trên bảng
 		if (await searchInput.isVisible()) {
 			await searchInput.fill("[TEST-CRAWLER]");
 			await page.waitForTimeout(250);
@@ -1071,7 +1006,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		await expect(createdRow).toBeVisible({ timeout: 15_000 });
 		console.log("      ✓ XÁC NHẬN: Bản ghi [TEST-CRAWLER] đã được lưu thành công vào CSDL!");
 
-		// Bấm nút SỬA bản ghi [TEST-CRAWLER]
 		console.log("      -> Bấm nút SỬA bản ghi [TEST-CRAWLER]...");
 		const editTestBtn = createdRow.locator('button[aria-label*="Sửa"]').first();
 		await expect(editTestBtn).toBeVisible({ timeout: 10_000 });
@@ -1081,7 +1015,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		interactionCount++;
 		await page.waitForTimeout(200);
 
-		// Sửa thông tin địa chỉ trong Drawer
 		const editAddressInput = page.locator('input[placeholder*="Số nhà, đường"]').first();
 		if (await editAddressInput.isVisible()) {
 			await editAddressInput.fill("Thôn 1, Xã Đăk Hà [ĐÃ CẬP NHẬT E2E]");
@@ -1111,7 +1044,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		await closeSuccessAlertIfPresent(page);
 		console.log("      ✓ XÁC NHẬN: Dữ liệu sửa đổi đã được lưu và hiển thị chuẩn xác!");
 
-		// Bấm nút XÓA DỌN DẸP
 		console.log("      -> Bấm nút XÓA DỌN DẸP (Chỉ nhắm mục tiêu vào hàng [TEST-CRAWLER])...");
 		const deleteTargetRow = page.locator('table tbody tr:has-text("[TEST-CRAWLER]")').first();
 		const deleteTestBtn = deleteTargetRow
@@ -1124,7 +1056,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		interactionCount++;
 		await page.waitForTimeout(250);
 
-		// Xác nhận chuyển vào thùng rác
 		const confirmDeleteBtn = page
 			.locator('button:has-text("Chuyển Vào Thùng Rác")')
 			.first();
@@ -1152,7 +1083,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		).toBeHidden({ timeout: 10_000 });
 		console.log("      ✓ XÁC NHẬN: Bản ghi [TEST-CRAWLER] đã được dọn sạch khỏi danh sách hộ gia đình!");
 
-		// Xóa trắng ô tìm kiếm để khôi phục danh sách
 		if (await searchInput.isVisible()) {
 			await searchInput.fill("");
 			await page.waitForTimeout(300);
@@ -1161,9 +1091,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		await crawlSafeButtons(page, "Hộ Gia Đình & Nhân Khẩu");
 		await closeSuccessAlertIfPresent(page);
 
-		// ---------------------------------------------------------------------
-		// GIAI ĐOẠN 4: THỐNG KÊ BÁO CÁO (ANALYTICS PAGE)
-		// ---------------------------------------------------------------------
 		currentAction = "Giai đoạn 4: Quét màn hình Thống Kê Báo Cáo";
 		console.log("\n📊 [4/7] Dò quét Màn hình: Thống Kê Báo Cáo...");
 		const analyticsNav = sidebar.locator('button:has-text("Thống Kê")').first();
@@ -1180,9 +1107,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		visitedRoutes.push("Thống Kê Báo Cáo");
 		await closeSuccessAlertIfPresent(page);
 
-		// ---------------------------------------------------------------------
-		// GIAI ĐOẠN 5: THÙNG RÁC (RECYCLE BIN PAGE)
-		// ---------------------------------------------------------------------
 		currentAction = "Giai đoạn 5: Quét màn hình Thùng Rác & Xóa vĩnh viễn [TEST-CRAWLER]";
 		console.log("🗑️ [5/7] Dò quét Màn hình: Thùng Rác...");
 		const trashNav = sidebar.locator('button:has-text("Thùng Rác")').first();
@@ -1198,7 +1122,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			});
 			console.log("   ✓ Màn hình Thùng rác tải dữ liệu an toàn (Bảo vệ dữ liệu thật).");
 
-			// Xóa vĩnh viễn bản ghi [TEST-CRAWLER] trong thùng rác
 			const testRowInTrash = page
 				.locator('table tbody tr:has-text("[TEST-CRAWLER]")')
 				.first();
@@ -1240,7 +1163,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 				}
 			}
 
-			// Ghi nhận bảo vệ an toàn các bản ghi thật trong thùng rác
 			const realTrashRows = await page
 				.locator('table tbody tr:not(:has-text("[TEST-CRAWLER]")) button:has-text("Xóa vĩnh viễn")')
 				.all();
@@ -1258,9 +1180,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		visitedRoutes.push("Thùng Rác");
 		await closeSuccessAlertIfPresent(page);
 
-		// ---------------------------------------------------------------------
-		// GIAI ĐOẠN 6: NHẬT KÝ HOẠT ĐỘNG (AUDIT LOG VIEW)
-		// ---------------------------------------------------------------------
 		currentAction = "Giai đoạn 6: Quét màn hình Nhật Ký Hoạt Động";
 		console.log("📜 [6/7] Dò quét Màn hình: Nhật Ký Hoạt Động (Audit Log)...");
 		const auditNav = sidebar.locator('button:has-text("Nhật Ký Hoạt Động")').first();
@@ -1276,7 +1195,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			});
 			console.log("   ✓ Nhật ký hoạt động nạp dữ liệu hoàn chỉnh.");
 
-			// Quét cạn 5/5 pills bộ lọc sự kiện
 			const auditPills = ["Tất Cả", "Thêm Mới", "Cập Nhật", "Xóa", "Khôi Phục"];
 			for (const pill of auditPills) {
 				const pillBtn = page.locator(`button:has-text("${pill}")`).first();
@@ -1290,7 +1208,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			}
 			console.log("   ✓ Đã quét cạn 5/5 pill bộ lọc sự kiện trong Nhật ký.");
 
-			// Bấm Xem Toàn Xã nếu có
 			const viewCommuneBtn = page.locator('button:has-text("Xem Toàn Xã")').first();
 			if (await viewCommuneBtn.isVisible().catch(() => false)) {
 				tracker.discover("Nhật Ký Hoạt Động", "button", "Xem Toàn Xã");
@@ -1300,7 +1217,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 				await page.waitForTimeout(200);
 			}
 
-			// Quét cạn Dropdown lọc thôn
 			const getAuditVillageTrigger = () =>
 				page
 					.locator("div.grid.grid-cols-1.sm\\:grid-cols-3 > div")
@@ -1316,7 +1232,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 				});
 			}
 
-			// Quét cạn Dropdown lọc cán bộ
 			const getAuditUserTrigger = () =>
 				page
 					.locator("div.grid.grid-cols-1.sm\\:grid-cols-3 > div")
@@ -1337,9 +1252,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		visitedRoutes.push("Nhật Ký Hoạt Động");
 		await closeSuccessAlertIfPresent(page);
 
-		// ---------------------------------------------------------------------
-		// GIAI ĐOẠN 7: CÀI ĐẶT HỆ THỐNG (SETTINGS PAGE) - QUÉT CẢ 4 TABS
-		// ---------------------------------------------------------------------
 		currentAction = "Giai đoạn 7: Quét trang Cài Đặt Hệ Thống (4 Tabs)";
 		console.log("⚙️ [7/7] Dò quét Màn hình: Cài Đặt Hệ Thống (4 Tabs)...");
 		const settingsNav = sidebar
@@ -1353,7 +1265,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 
 			await discoverVisibleButtons(page, "Cài Đặt Hệ Thống");
 
-			// Tab 1: Tài Khoản Của Tôi
 			console.log("   -> Tab 1: Tài Khoản Của Tôi...");
 			const profileTab = page.locator('button:has-text("Tài Khoản Của Tôi")').first();
 			await expect(profileTab).toBeVisible({ timeout: 25_000 });
@@ -1363,7 +1274,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			interactionCount++;
 			await page.waitForTimeout(200);
 
-			// Tab 2: Quản Lý Cán Bộ Thôn (Kiểm thử Vòng đời Cán bộ)
 			console.log("   -> Tab 2: Quản Lý Cán Bộ Thôn (Kiểm thử Vòng đời Cán bộ)...");
 			const usersTab = page
 				.locator('button:has-text("Quản Lý Cán Bộ Thôn")')
@@ -1379,7 +1289,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 					page.locator('h3:has-text("Danh Sách Tài Khoản Cán Bộ")')
 				).toBeVisible({ timeout: 15_000 });
 
-				// Đưa các nút xóa tài khoản admin và tài khoản đang đăng nhập hiện tại vào guardedSet
 				tracker.recordGuarded(
 					"Quản Lý Cán Bộ",
 					"button",
@@ -1393,7 +1302,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 					"SafeGuard CSDL (Tài khoản cán bộ phiên hiện tại)"
 				);
 
-				// 2.1. PRE-CLEANUP: Tìm và xóa tài khoản test crawler_test_user nếu còn sót từ phiên trước
 				console.log(
 					"      -> [Pre-cleanup] Kiểm tra tài khoản test 'crawler_test_user'..."
 				);
@@ -1437,7 +1345,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 					}
 				}
 
-				// 2.2. Bấm nút "Thêm Cán Bộ" để hiển thị modal thêm mới
 				console.log("      -> Bấm nút 'Thêm Cán Bộ'...");
 				const addUserBtn = page.locator('button:has-text("Thêm Cán Bộ")').first();
 				await expect(addUserBtn).toBeVisible({ timeout: 10_000 });
@@ -1452,7 +1359,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 					.first();
 				await expect(userForm).toBeVisible({ timeout: 10_000 });
 
-				// Điền form: username crawler_test_user, password pass123456
 				const usernameInput = userForm
 					.locator('input[placeholder*="canbothon1"], input[type="text"]')
 					.first();
@@ -1463,7 +1369,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 					.first();
 				await passwordInput.fill("pass123456");
 
-				// Chọn một thôn từ danh sách phân công
 				const villageSelectTrigger = userForm
 					.locator('button[aria-haspopup="listbox"]')
 					.last();
@@ -1481,7 +1386,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 					}
 				}
 
-				// Bấm "Tạo Tài Khoản", bắt phản hồi API POST status 200 hoặc 201
 				console.log("      -> Bấm 'Tạo Tài Khoản' và bắt phản hồi API...");
 				const createSubmitBtn = userForm
 					.locator('button[type="submit"]:has-text("Tạo Tài Khoản")')
@@ -1507,7 +1411,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 				await page.waitForTimeout(200);
 				await closeSuccessAlertIfPresent(page);
 
-				// Kiểm tra tài khoản crawler_test_user xuất hiện trong bảng danh sách cán bộ
 				console.log("      -> Kiểm tra crawler_test_user trong bảng...");
 				const createdUserRow = page
 					.locator('table tbody tr:has-text("crawler_test_user")')
@@ -1517,7 +1420,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 					"      ✓ XÁC NHẬN: Tài khoản 'crawler_test_user' đã hiển thị trong bảng cán bộ!"
 				);
 
-				// Bấm nút "Xóa" trên dòng của crawler_test_user
 				console.log("      -> Bấm nút 'Xóa' trên dòng crawler_test_user...");
 				const deleteUserBtn = createdUserRow
 					.locator(
@@ -1530,7 +1432,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 				interactionCount++;
 				await page.waitForTimeout(200);
 
-				// Xác nhận trên hộp thoại cảnh báo xóa
 				const confirmDeleteModalBtn = page
 					.locator(
 						'div[role="dialog"] button:has-text("Xóa Tài Khoản"), div[role="alertdialog"] button:has-text("Xóa Tài Khoản")'
@@ -1557,7 +1458,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 				await page.waitForTimeout(200);
 				await closeSuccessAlertIfPresent(page);
 
-				// Kiểm tra dòng crawler_test_user biến mất khỏi bảng
 				await expect(
 					page.locator('table tbody tr:has-text("crawler_test_user")')
 				).toBeHidden({ timeout: 10_000 });
@@ -1566,7 +1466,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 				);
 			}
 
-			// Tab 3: Sao Lưu CSDL
 			console.log("   -> Tab 3: Sao Lưu CSDL...");
 			const backupTab = page.locator('button:has-text("Sao Lưu CSDL")').first();
 			if (await backupTab.isVisible()) {
@@ -1577,7 +1476,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 				await page.waitForTimeout(200);
 			}
 
-			// Tab 4: Thông Tin Đơn Vị & Hệ Thống
 			console.log("   -> Tab 4: Thông Tin Đơn Vị & Hệ Thống...");
 			const systemTab = page
 				.locator('button:has-text("Thông Tin Đơn Vị & Hệ Thống")')
@@ -1595,9 +1493,6 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		visitedRoutes.push("Cài Đặt Hệ Thống");
 		await closeSuccessAlertIfPresent(page);
 
-		// =====================================================================
-		// 4. BÁO CÁO ĐỘ PHỦ TƯƠNG TÁC & TIÊU CHÍ NGHIỆM THU CHẤT LƯỢNG
-		// =====================================================================
 		console.log("\n=======================================================");
 		console.log("📊 KẾT QUẢ GIÁM SÁT VÀ KIỂM ĐỊNH SMART CRAWLER QLHK:");
 		console.log("=======================================================");
@@ -1611,10 +1506,8 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		console.log(`• Lỗi Browser Console Crash: ${consoleErrors.length}`);
 		console.log(`• Lỗi HTTP API (code >= 400): ${apiErrors.length}`);
 
-		// IN BÁO CÁO ĐỘ PHỦ TƯƠNG TÁC (CHỨA ĐÚNG 2 BẢNG CONSOLE.TABLE: MISSED VÀ GUARDED)
 		tracker.printReport();
 
-		// KHẲNG ĐỊNH CHẤT LƯỢNG NGHIỆM THU TUYỆT ĐỐI (ZERO TOLERANCE)
 		expect(
 			unhandledErrors,
 			"Không được có unhandled exception gây crash UI"

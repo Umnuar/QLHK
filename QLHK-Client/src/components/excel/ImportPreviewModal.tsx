@@ -99,7 +99,6 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 		}
 	}, [file]);
 
-	// Chuẩn hóa activeData từ parsedData prop hoặc từ file đã chọn nội bộ
 	const processedRows: ParsedExcelRow[] = useMemo(() => {
 		if (parsedData && parsedData.length > 0) {
 			if (
@@ -183,7 +182,6 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 	};
 
 	const errorRowsCount = processedRows.filter((r) => r.hasError).length;
-	// Cảnh báo: dòng có cảnh báo nhưng không phải lỗi chặn
 	const warningRowsCount = processedRows.filter(
 		(r) => !r.hasError && (r.dobError || (r as any).warning),
 	).length;
@@ -202,12 +200,10 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 	);
 	const maxPage = Math.ceil(filteredRows.length / importLimit) || 1;
 
-	// Reset page khi chuyển toggle filter
 	useEffect(() => {
 		setImportPage(1);
 	}, [showOnlyIssues]);
 
-	// Khóa cuộn trang nền khi modal đang mở
 	useEffect(() => {
 		if (!isOpen) return;
 		const originalOverflow = document.body.style.overflow;
@@ -217,7 +213,6 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 		};
 	}, [isOpen]);
 
-	// Keyboard Navigation & Focus Trap (WCAG 2.1 AA)
 	useEffect(() => {
 		if (!isOpen) return;
 
@@ -310,7 +305,6 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 						: "max-w-[670px] w-full"
 				}`}
 			>
-				{/* 1. Tiêu đề cố định */}
 				<div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/50 shrink-0">
 					<div className="flex items-center gap-3 min-w-0">
 						<div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/80 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
@@ -362,7 +356,6 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 					</div>
 				</div>
 
-				{/* 2. Thanh bước thống nhất (Stepper) */}
 				<div className="px-6 py-2.5 bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-center gap-2 sm:gap-6 text-xs shrink-0 select-none">
 					{[
 						{ num: 1, label: "Chọn tệp" },
@@ -407,7 +400,6 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 					})}
 				</div>
 
-				{/* 3. Nội dung thân modal */}
 				<div className="flex-1 overflow-y-auto flex flex-col custom-scrollbar">
 					{!activeFile ? (
 						<div className="p-6 sm:p-10 flex flex-col items-center justify-center flex-1 space-y-4">
@@ -491,10 +483,8 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 						</div>
 					) : (
 				<>
-					{/* Dải trạng thái: 3 Chip + Toggle lọc dòng lỗi/cảnh báo */}
 					<div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between flex-wrap gap-3 bg-white dark:bg-slate-900 shrink-0">
 						<div className="flex items-center gap-2.5 flex-wrap">
-							{/* Chip Hợp Lệ (luôn hiện) */}
 							<div className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5">
 								<CheckCircle2
 									className="w-4 h-4 text-emerald-600"
@@ -503,7 +493,6 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 								<span>Hợp lệ: {validRowsCount} nhân khẩu</span>
 							</div>
 
-							{/* Chip Cảnh Báo (chỉ hiện khi > 0) */}
 							{warningRowsCount > 0 && (
 								<div className="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-1.5">
 									<AlertCircle
@@ -514,7 +503,6 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 								</div>
 							)}
 
-							{/* Chip Lỗi (chỉ hiện khi > 0) */}
 							{errorRowsCount > 0 && (
 								<div className="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-1.5">
 									<AlertTriangle
@@ -528,7 +516,6 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 							)}
 						</div>
 
-						{/* Toggle: Chỉ hiện dòng lỗi / cảnh báo */}
 						{(errorRowsCount > 0 || warningRowsCount > 0) && (
 							<button
 								type="button"
@@ -549,7 +536,6 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 						)}
 					</div>
 
-					{/* Bảng đối soát 11 cột chuẩn với 3 cột đầu cố định */}
 					<div className="flex-1 min-h-0 flex flex-col overflow-hidden p-4 sm:p-5">
 						<div className="overflow-x-auto overflow-y-auto flex-1 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
 							<table className="w-full min-w-[1060px] text-left border-separate border-spacing-0 text-xs whitespace-nowrap">
@@ -617,14 +603,12 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 														: "hover:bg-slate-50 dark:hover:bg-slate-800/60"
 												}`}
 											>
-												{/* Cột 1: STT (Sticky 1) */}
 												<td
 													className={`py-1.5 px-2.5 text-center font-mono border-b border-r border-slate-100 dark:border-slate-800 sticky left-0 z-10 w-[48px] min-w-[48px] max-w-[48px] ${stickyBg} ${headBorderClass}`}
 												>
 													{row.stt}
 												</td>
 
-												{/* Cột 2: Hộ Gia Đình (Sticky 2) */}
 												<td
 													className={`py-1.5 px-2.5 border-b border-r border-slate-100 dark:border-slate-800 sticky left-[48px] z-10 w-[100px] min-w-[100px] max-w-[100px] ${stickyBg} ${headBorderClass}`}
 												>
@@ -640,14 +624,12 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 													)}
 												</td>
 
-												{/* Cột 3: Họ và Tên (Sticky 3) */}
 												<td
 													className={`py-1.5 px-2.5 font-bold border-b border-r border-slate-100 dark:border-slate-800 sticky left-[148px] z-10 w-[160px] min-w-[160px] max-w-[160px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] ${stickyBg} ${headBorderClass}`}
 												>
 													{row.fullName}
 												</td>
 
-												{/* Cột 4: Quan Hệ */}
 												<td
 													className={`py-1.5 px-2.5 border-b border-r border-slate-100 dark:border-slate-800 ${headBorderClass}`}
 												>
@@ -662,7 +644,6 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 													</span>
 												</td>
 
-												{/* Cột 5: Ngày Sinh */}
 												<td
 													className={`py-1.5 px-2.5 text-center font-mono border-b border-r border-slate-100 dark:border-slate-800 ${headBorderClass} ${
 														row.dobError
@@ -691,7 +672,6 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 													</div>
 												</td>
 
-												{/* Cột 6: Giới Tính */}
 												<td
 													className={`py-1.5 px-2.5 text-center border-b border-r border-slate-100 dark:border-slate-800 ${headBorderClass}`}
 												>
@@ -706,21 +686,18 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 													</span>
 												</td>
 
-												{/* Cột 7: Dân Tộc */}
 												<td
 													className={`py-1.5 px-2.5 border-b border-r border-slate-100 dark:border-slate-800 ${headBorderClass}`}
 												>
 													{row.ethnicity}
 												</td>
 
-												{/* Cột 8: Tôn Giáo */}
 												<td
 													className={`py-1.5 px-2.5 border-b border-r border-slate-100 dark:border-slate-800 ${headBorderClass}`}
 												>
 													{row.religion}
 												</td>
 
-												{/* Cột 9: CCCD - Nếu không có, hiển thị — trung tính xám nhạt */}
 												<td
 													className={`py-1.5 px-2.5 font-mono border-b border-r border-slate-100 dark:border-slate-800 ${headBorderClass}`}
 												>
@@ -733,14 +710,12 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 													)}
 												</td>
 
-												{/* Cột 10: Địa Chỉ */}
 												<td
 													className={`py-1.5 px-2.5 border-b border-r border-slate-100 dark:border-slate-800 ${headBorderClass}`}
 												>
 													{row.address}
 												</td>
 
-												{/* Cột 11: Ghi Chú */}
 												<td
 													className={`py-1.5 px-2.5 text-slate-500 truncate max-w-[140px] border-b border-slate-100 dark:border-slate-800 ${headBorderClass}`}
 												>
@@ -757,10 +732,8 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 			)}
 		</div>
 
-		{/* 4. Chân modal cố định (chỉ hiện ở bước 2 xem trước) */}
 		{activeFile && (
 			<div className="p-4 sm:p-5 border-t border-slate-200/90 dark:border-slate-800/90 bg-slate-50/70 dark:bg-slate-950/60 shrink-0 flex items-center justify-between gap-4 w-full whitespace-nowrap overflow-x-auto">
-				{/* Cụm trái: Số lượng hiển thị */}
 				<div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 shrink-0">
 					<span>Hiển thị</span>
 					<CustomSelect<number>
@@ -781,7 +754,6 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 					<span>/ {filteredRows.length} bản ghi</span>
 				</div>
 
-				{/* Cụm giữa: Phân trang */}
 				<div className="flex items-center gap-2 shrink-0">
 					<button
 						type="button"
@@ -804,7 +776,6 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 					</button>
 				</div>
 
-				{/* Cụm phải: Hành động */}
 				<div className="flex items-center gap-2 shrink-0">
 					<button
 						type="button"

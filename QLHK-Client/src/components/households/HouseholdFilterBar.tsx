@@ -86,7 +86,6 @@ export const HouseholdFilterBar: React.FC<HouseholdFilterBarProps> = ({
 	const [isActionDropdownOpen, setIsActionDropdownOpen] = useState(false);
 	const actionDropdownRef = useRef<HTMLDivElement>(null);
 
-	// Close action dropdown on outside click or Escape
 	useEffect(() => {
 		if (!isActionDropdownOpen) return;
 		const handleClickOutside = (e: MouseEvent) => {
@@ -138,7 +137,6 @@ export const HouseholdFilterBar: React.FC<HouseholdFilterBarProps> = ({
 
 	return (
 		<div className="flex flex-wrap items-center gap-2 bg-white dark:bg-slate-900 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs transition-colors duration-150">
-			{/* 1. Ô tìm kiếm tích hợp */}
 			<div className="relative w-56 sm:w-72 shrink-0">
 				<Search
 					className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
@@ -192,12 +190,10 @@ export const HouseholdFilterBar: React.FC<HouseholdFilterBarProps> = ({
 				</div>
 			</div>
 
-			{/* 2. YearSelector (Chọn năm tính toán) */}
 			<div className="shrink-0">
 				<YearSelector year={year} onYearChange={onYearChange} />
 			</div>
 
-			{/* 3. AgeFilterPopover (Chọn mốc tuổi) */}
 			{setAgeFilter && (
 				<div className="shrink-0">
 					<AgeFilterPopover
@@ -207,7 +203,6 @@ export const HouseholdFilterBar: React.FC<HouseholdFilterBarProps> = ({
 				</div>
 			)}
 
-			{/* 4. Dropdown Giới tính */}
 			<div className="w-36 shrink-0">
 				<CustomSelect
 					variant="filter"
@@ -222,7 +217,6 @@ export const HouseholdFilterBar: React.FC<HouseholdFilterBarProps> = ({
 				/>
 			</div>
 
-			{/* 5. Dropdown Dân tộc */}
 			<div className="w-40 shrink-0">
 				<CustomSelect
 					variant="filter"
@@ -237,7 +231,6 @@ export const HouseholdFilterBar: React.FC<HouseholdFilterBarProps> = ({
 				/>
 			</div>
 
-			{/* 6. Dropdown Cư trú */}
 			<div className="w-36 shrink-0">
 				<CustomSelect
 					variant="filter"
@@ -252,7 +245,6 @@ export const HouseholdFilterBar: React.FC<HouseholdFilterBarProps> = ({
 				/>
 			</div>
 
-			{/* 7. Nút Xóa lọc nếu có lọc đang hoạt động */}
 			{isFilterActive && (
 				<button
 					type="button"
@@ -270,10 +262,8 @@ export const HouseholdFilterBar: React.FC<HouseholdFilterBarProps> = ({
 				</button>
 			)}
 
-			{/* 8. Cụm tác vụ hàng loạt khi có dòng được chọn: dồn sang mép phải (ml-auto) */}
 			{Boolean(selectedCount && selectedCount > 0) && (
 				<div className="ml-auto flex items-center gap-2 shrink-0 animate-in fade-in">
-					{/* Nút trung tính "Thao tác (N)" dạng dropdown */}
 					<div className="relative" ref={actionDropdownRef}>
 						<button
 							type="button"
@@ -322,7 +312,6 @@ export const HouseholdFilterBar: React.FC<HouseholdFilterBarProps> = ({
 						)}
 					</div>
 
-					{/* Nút đỏ xóa các hộ đã chọn */}
 					{onBatchDelete && (
 						<button
 							type="button"

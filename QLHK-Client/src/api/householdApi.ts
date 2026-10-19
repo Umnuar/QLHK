@@ -106,9 +106,6 @@ export function normalizeHousehold(item: any): Household {
 }
 
 export const householdApi = {
-	/**
-	 * Lấy danh sách hộ khẩu phân trang theo thôn, từ khóa
-	 */
 	async getPage(params?: GetHouseholdsParams): Promise<HouseholdsResponse> {
 		const res = await apiClient.get("/households", {
 			params: {
@@ -141,18 +138,12 @@ export const householdApi = {
 		};
 	},
 
-	/**
-	 * Lấy chi tiết một hộ khẩu theo ID
-	 */
 	async getById(id: string): Promise<Household> {
 		const res = await apiClient.get(`/households/${id}`);
 		const item = res.data?.data || res.data;
 		return normalizeHousehold(item);
 	},
 
-	/**
-	 * Tạo mới hộ khẩu
-	 */
 	async create(data: Partial<Household>): Promise<Household> {
 		const payload = {
 			village_id: data.village_id,
@@ -166,9 +157,6 @@ export const householdApi = {
 		return normalizeHousehold(item);
 	},
 
-	/**
-	 * Cập nhật thông tin hộ khẩu
-	 */
 	async update(id: string, data: Partial<Household>): Promise<Household> {
 		const payload: any = {
 			book_number: data.book_number || data.code,
@@ -182,38 +170,27 @@ export const householdApi = {
 		return normalizeHousehold(item);
 	},
 
-	/**
-	 * Xóa mềm một hộ khẩu vào thùng rác
-	 */
 	async delete(id: string): Promise<{ success: boolean; message?: string }> {
 		const res = await apiClient.delete(`/households/${id}`);
 		return res.data;
 	},
 
-	/**
-	 * Xóa hàng loạt hộ khẩu vào thùng rác
-	 */
 	async batchDelete(ids: string[]): Promise<any> {
 		try {
 			const res = await apiClient.post("/households/batch-delete", { ids });
 			return res.data;
 		} catch {
-			// Fallback gọi xóa từng hộ nếu endpoint batch chưa được backend hỗ trợ
 			return Promise.all(
 				ids.map((id) => apiClient.delete(`/households/${id}`)),
 			);
 		}
 	},
 
-	/**
-	 * Khôi phục hộ khẩu từ thùng rác
-	 */
 	async restore(id: string): Promise<any> {
 		try {
 			const res = await apiClient.post(`/households/${id}/restore`);
 			return res.data;
 		} catch {
-			// Fallback
 			const res = await apiClient.patch(`/households/${id}`, {
 				is_deleted: false,
 			});
@@ -221,17 +198,11 @@ export const householdApi = {
 		}
 	},
 
-	/**
-	 * Xóa vĩnh viễn hộ khẩu khỏi CSDL (chỉ Admin)
-	 */
 	async hardDelete(id: string): Promise<any> {
 		const res = await apiClient.delete(`/households/${id}/hard`);
 		return res.data;
 	},
 
-	/**
-	 * Lấy danh sách hộ khẩu trong thùng rác
-	 */
 	async getRecycleBin(params?: {
 		page?: number;
 		limit?: number;
@@ -249,7 +220,6 @@ export const householdApi = {
 				},
 			};
 		} catch {
-			// Fallback lọc danh sách đã xóa với includeDeleted=true
 			const res = await apiClient.get("/households", {
 				params: { ...params, includeDeleted: "true" },
 			});
@@ -269,9 +239,6 @@ export const householdApi = {
 		}
 	},
 
-	/**
-	 * Giải mã và hiển thị số CCCD của công dân (ghi log kiểm toán REVEAL_CCCD)
-	 */
 	async revealCitizenCCCD(citizenId: string): Promise<string | null> {
 		if (!citizenId || citizenId.startsWith("mem-")) return null;
 		try {

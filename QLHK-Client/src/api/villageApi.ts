@@ -31,9 +31,6 @@ export const villageApi = {
 		return normalizeVillage(data);
 	},
 
-	/**
-	 * Xóa thôn theo id (DELETE /villages/:id)
-	 */
 	async delete(id: string): Promise<{
 		success: boolean;
 		message?: string;

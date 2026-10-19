@@ -216,21 +216,18 @@ export const VillagesPage: React.FC = () => {
 			confirmText: "Xác nhận xóa",
 			cancelText: "Hủy",
 			onConfirm: async () => {
-				// 1. Optimistic Update: Xóa lập tức khỏi giao diện & cache local
 				await removeVillage(id);
 				setVillages((prev) => prev.filter((v) => v.id !== id && v.name !== name));
 
 				try {
 					await villageApi.delete(id);
 				} catch (err: any) {
-					// Nếu máy chủ báo 404 (Không tìm thấy thôn): Thôn đã không còn tồn tại trên CSDL, đồng bộ luôn là thành công
 					if (err.response?.status === 404) {
 						console.warn(
 							`[VillagesPage] Thôn "${name}" (${id}) không tồn tại trên CSDL, đã dọn sạch khỏi giao diện.`,
 						);
 					} else {
 						console.error("Lỗi xóa thôn:", err);
-						// Rollback nếu là lỗi thực sự
 						await refreshVillages(true);
 						await fetchVillageStats(true);
 						setTimeout(() => {
@@ -296,7 +293,6 @@ export const VillagesPage: React.FC = () => {
 	const femaleCount = overview?.gender?.female?.count ?? 0;
 	const femalePct = overview?.gender?.female?.percentage ?? 0;
 
-	// Tính số lượng và tỷ lệ DTTS (các dân tộc khác Kinh)
 	const dttsCount = overview?.ethnicities
 		? overview.ethnicities
 				.filter((e) => e.name.toLowerCase().trim() !== "kinh")
@@ -307,7 +303,6 @@ export const VillagesPage: React.FC = () => {
 
 	return (
 		<div className="space-y-6 animate-in fade-in pb-10">
-			{/* Banner Tổng Quan Toàn Xã (Gradient Emerald Đậm) */}
 			<div className="rounded-3xl p-6 bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900 text-white shadow-xl shadow-emerald-950/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
 				<div className="flex items-center gap-4 relative z-10">
 					<div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 backdrop-blur-xs">
@@ -354,9 +349,7 @@ export const VillagesPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* 4 Thẻ KPI Phụ */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-				{/* KPI 1: Số Thôn */}
 				<div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
 					<div>
 						<span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -375,7 +368,6 @@ export const VillagesPage: React.FC = () => {
 					/>
 				</div>
 
-				{/* KPI 2: Tổng Hộ Dân */}
 				<div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
 					<div>
 						<span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -394,7 +386,6 @@ export const VillagesPage: React.FC = () => {
 					/>
 				</div>
 
-				{/* KPI 3: Tổng Nhân Khẩu */}
 				<div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
 					<div>
 						<span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -413,7 +404,6 @@ export const VillagesPage: React.FC = () => {
 					/>
 				</div>
 
-				{/* KPI 4: Tỷ Lệ DTTS */}
 				<div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
 					<div>
 						<span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -433,7 +423,6 @@ export const VillagesPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Header Panel */}
 			<div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 				<div>
 					<h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -482,7 +471,6 @@ export const VillagesPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Form thêm thôn mới nếu mở */}
 			{isAdding && (
 				<div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border-2 border-emerald-500 shadow-lg space-y-4 animate-in fade-in">
 					<div className="flex items-center justify-between">
@@ -525,7 +513,6 @@ export const VillagesPage: React.FC = () => {
 				</div>
 			)}
 
-			{/* Grid Danh Sách Thôn */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
 				{filteredVillages.map((village) => {
 					const isEditing = editingId === village.id;
@@ -653,7 +640,6 @@ export const VillagesPage: React.FC = () => {
 									)}
 								</div>
 
-								{/* Cán bộ phụ trách / Trưởng thôn */}
 								<div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-2">
 									<span className="text-slate-400">•</span>
 									<span>Trưởng thôn:</span>
@@ -671,7 +657,6 @@ export const VillagesPage: React.FC = () => {
 								</div>
 							</div>
 
-							{/* Thống kê nhanh trong thẻ */}
 							<div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs mt-3">
 								<div className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-300">
 									<span>{householdCount} Hộ</span>

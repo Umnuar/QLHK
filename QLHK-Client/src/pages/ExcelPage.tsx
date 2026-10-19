@@ -185,7 +185,6 @@ export const ExcelPage: React.FC = () => {
 				householdMap[code].members.push(person);
 			});
 
-			// 1. Cập nhật Context Store cho từng hộ (reactive state & cache)
 			const householdList = Object.values(householdMap);
 			for (const group of householdList) {
 				const headPerson =
@@ -210,7 +209,6 @@ export const ExcelPage: React.FC = () => {
 				addHousehold(newHh);
 			}
 
-			// 2. Đồng bộ hàng loạt vào CSDL backend qua POST /excel/import
 			try {
 				const importPayload = {
 					village_id: targetVillageId,
@@ -260,7 +258,6 @@ export const ExcelPage: React.FC = () => {
 		}
 	};
 
-	// Tải biểu mẫu Excel mẫu 11 cột
 	const handleDownloadTemplate = () => {
 		const templateRows = [
 			{
@@ -312,7 +309,6 @@ export const ExcelPage: React.FC = () => {
 
 	return (
 		<div className="space-y-6 animate-in fade-in pb-10">
-			{/* Top Banner */}
 			<div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors duration-150">
 				<div>
 					<div className="flex items-center gap-2.5">
@@ -342,7 +338,6 @@ export const ExcelPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Main Drag & Drop Zone */}
 			<div
 				onDragOver={handleDragOver}
 				onDragLeave={handleDragLeave}
@@ -388,7 +383,6 @@ export const ExcelPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Thông tin quy chuẩn 11 cột */}
 			<div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-3">
 				<h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
 					<CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -476,7 +470,6 @@ export const ExcelPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Modal Preview 11 Cột & Highlight lỗi ngày sinh */}
 			<ImportPreviewModal
 				isOpen={isPreviewOpen}
 				onClose={() => setIsPreviewOpen(false)}

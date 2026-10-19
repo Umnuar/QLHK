@@ -32,10 +32,6 @@ export function joinFullName(lastName: string, firstName: string): string {
 	return `${l} ${f}`.replace(/\s+/g, " ");
 }
 
-/**
- * Kiểm tra xem từ khóa tìm kiếm (không phân biệt hoa thường, không phân biệt dấu)
- * có xuất hiện trong bất kỳ mục tiêu nào không.
- */
 export function matchesSearch(
 	query: string,
 	...targets: (string | undefined | null)[]

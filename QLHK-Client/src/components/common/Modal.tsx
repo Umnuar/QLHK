@@ -49,13 +49,11 @@ export const Modal: React.FC<ModalProps> = ({
 	const autoId = useId();
 	const titleId = customId || `modal-title-${autoId}`;
 
-	// Khóa focus trong modal và lắng nghe phím Escape
 	const modalRef = useFocusTrap<HTMLDivElement>({
 		isActive: isOpen,
 		onEscape: onClose,
 	});
 
-	// Khóa cuộn trang nền khi modal đang mở
 	useEffect(() => {
 		if (!isOpen) return;
 		const originalOverflow = document.body.style.overflow;
@@ -87,7 +85,6 @@ export const Modal: React.FC<ModalProps> = ({
 				className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-900 dark:text-slate-100 max-h-[85vh] transition-all duration-150 motion-reduce:transition-none relative ${SIZE_CLASSES[size]} ${className}`}
 				onClick={(e) => e.stopPropagation()}
 			>
-				{/* Top Bar cố định */}
 				<div className="p-5 border-b border-slate-200/90 dark:border-slate-800/90 flex items-center justify-between bg-slate-50/70 dark:bg-slate-950/50 shrink-0 gap-3">
 					<div className="flex items-center gap-3 min-w-0 flex-1">
 						{icon && (
@@ -124,14 +121,12 @@ export const Modal: React.FC<ModalProps> = ({
 					</div>
 				</div>
 
-				{/* Thân cuộn bên trong */}
 				<div
 					className={`flex-1 overflow-y-auto p-5 sm:p-6 min-h-0 ${bodyClassName}`}
 				>
 					{children}
 				</div>
 
-				{/* Chân cố định nếu có footer */}
 				{footer && (
 					<div className="p-4 sm:p-5 border-t border-slate-200/90 dark:border-slate-800/90 bg-slate-50/70 dark:bg-slate-950/60 shrink-0">
 						{footer}

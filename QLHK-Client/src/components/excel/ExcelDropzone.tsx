@@ -73,12 +73,10 @@ export const ExcelDropzone: React.FC<Props> = ({
 				const errors: string[] = [];
 				const warnings: string[] = [];
 
-				// 1. Kiểm tra Họ và tên
 				if (!fullName) {
 					errors.push("Thiếu họ và tên nhân khẩu");
 				}
 
-				// 2. Kiểm tra Ngày sinh linh hoạt & các lỗi đề bài đưa ra
 				if (!dobRaw) {
 					errors.push("Thiếu ngày tháng năm sinh");
 				} else {
@@ -88,7 +86,6 @@ export const ExcelDropzone: React.FC<Props> = ({
 					}
 				}
 
-				// 3. Kiểm tra số CCCD nếu có
 				if (cccd) {
 					const cccdCheck = validateCccd(cccd);
 					if (!cccdCheck.isValid) {
@@ -97,7 +94,7 @@ export const ExcelDropzone: React.FC<Props> = ({
 				}
 
 				return {
-					rowIndex: idx + 2, // Excel dòng tính từ 2
+					rowIndex: idx + 2,
 					stt,
 					code,
 					village_name: villageName,
@@ -184,7 +181,6 @@ export const ExcelDropzone: React.FC<Props> = ({
 		}
 	};
 
-	// Tạo và tải file Excel mẫu
 	const downloadSampleTemplate = () => {
 		const sampleData = [
 			{
@@ -236,7 +232,7 @@ export const ExcelDropzone: React.FC<Props> = ({
 				"Quan hệ": "Chủ hộ",
 				"Họ và tên": "Đinh Văn Lỗi 1",
 				"Giới tính": "Nam",
-				"Ngày sinh": "11/01/976", // Lỗi mẫu: năm sinh thiếu số
+				"Ngày sinh": "11/01/976",
 				"Dân tộc": "Giơ Lâng",
 				"Tôn giáo": "Tin lành",
 				CCCD: "060076004455",
@@ -250,7 +246,7 @@ export const ExcelDropzone: React.FC<Props> = ({
 				"Quan hệ": "Chủ hộ",
 				"Họ và tên": "Trần Thị Lỗi 2",
 				"Giới tính": "Nữ",
-				"Ngày sinh": "15/17/1989", // Lỗi mẫu: tháng 17 sai
+				"Ngày sinh": "15/17/1989",
 				"Dân tộc": "Kinh",
 				"Tôn giáo": "Không",
 				CCCD: "060189005566",
@@ -293,7 +289,6 @@ export const ExcelDropzone: React.FC<Props> = ({
 					phát hiện lỗi định dạng và chuẩn hóa danh sách thành Sổ hộ khẩu.
 				</p>
 
-				{/* Nút bấm chọn file Native Dialog & Trình duyệt */}
 				<div className="mt-5 mb-3 flex flex-wrap items-center justify-center gap-3">
 					<button
 						type="button"
@@ -336,7 +331,6 @@ export const ExcelDropzone: React.FC<Props> = ({
 				)}
 			</div>
 
-			{/* Thanh tải file mẫu & gợi ý */}
 			<div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-white rounded-xl border border-slate-200/80 text-xs">
 				<div className="flex items-center gap-2 text-slate-600">
 					<AlertCircle className="w-4 h-4 text-emerald-600 shrink-0" />

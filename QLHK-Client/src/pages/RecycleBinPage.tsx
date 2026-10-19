@@ -171,7 +171,6 @@ export const RecycleBinPage: React.FC = () => {
 
 	return (
 		<div className="space-y-6 animate-in fade-in pb-10">
-			{/* Top Banner */}
 			<div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors duration-150">
 				<div>
 					<div className="flex items-center gap-2.5">
@@ -226,7 +225,6 @@ export const RecycleBinPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Bảng Thùng Rác */}
 			<RecycleBinTable
 				households={deletedHouseholds}
 				loading={loading}

@@ -96,13 +96,11 @@ const processQueue = (error: any, token: string | null = null) => {
 	failedQueue = [];
 };
 
-// Interceptor xử lý lỗi linh hoạt & tự động thử làm mới token khi gặp 401 Unauthorized
 apiClient.interceptors.response.use(
 	(response) => response,
 	async (error) => {
 		const originalRequest = error?.config;
 
-		// Phân biệt rõ: Chỉ lỗi mạng thực sự mới coi là offline
 		const isRealNetworkError =
 			error?.code === "ERR_NETWORK" ||
 			error?.code === "ECONNABORTED" ||
@@ -115,7 +113,6 @@ apiClient.interceptors.response.use(
 			return Promise.reject(error);
 		}
 
-		// Nếu gặp lỗi 401 Unauthorized: Tự động làm mới token bằng refreshToken nếu có
 		if (
 			error?.response?.status === 401 &&
 			originalRequest &&
@@ -161,7 +158,6 @@ apiClient.interceptors.response.use(
 						return apiClient(originalRequest);
 					}
 				}
-				// Không có refreshToken hợp lệ
 				processQueue(error, null);
 				setCachedAccessToken(null);
 				await secureStorage.removeItem("accessToken");

@@ -273,16 +273,13 @@ export const auditApi = {
 				return result;
 			}
 		} catch {
-			// Backend offline hoặc chưa cấu hình /audit-logs -> Nạp từ Offline Cache hoặc dữ liệu biến động mẫu
 		}
 
-		// Nạp từ Cache IndexedDB
 		const cached = await getCache<AuditLogResponse>(cacheKey);
 		if (cached && Array.isArray(cached.data) && cached.data.length > 0) {
 			return cached;
 		}
 
-		// Nạp từ danh sách mẫu địa phương kèm bộ lọc
 		let list = [...SAMPLE_AUDIT_LOGS];
 
 		if (params?.villageId) {

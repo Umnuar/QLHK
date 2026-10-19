@@ -49,7 +49,6 @@ export function parseAndValidateDob(
 		};
 	}
 
-	// Trường hợp 2: Tháng và Năm (MM/YYYY)
 	if (parts.length === 2) {
 		const monthStr = parts[0].trim();
 		const yearStr = parts[1].trim();
@@ -91,13 +90,11 @@ export function parseAndValidateDob(
 		};
 	}
 
-	// Trường hợp 3: Đầy đủ Ngày Tháng Năm (DD/MM/YYYY hoặc YYYY/MM/DD)
 	if (parts.length === 3) {
 		let dayStr = parts[0].trim();
 		const monthStr = parts[1].trim();
 		let yearStr = parts[2].trim();
 
-		// Hỗ trợ định dạng ISO (YYYY-MM-DD hoặc YYYY/MM/DD)
 		if (dayStr.length === 4 && yearStr.length <= 2) {
 			const temp = dayStr;
 			dayStr = yearStr;
@@ -138,7 +135,6 @@ export function parseAndValidateDob(
 			};
 		}
 
-		// Kiểm tra số ngày tối đa trong tháng
 		const daysInMonth = new Date(year, month, 0).getDate();
 		if (day < 1 || day > daysInMonth) {
 			return {
@@ -163,9 +159,6 @@ export function parseAndValidateDob(
 	};
 }
 
-/**
- * Tính tuổi dựa trên ngày sinh hoặc năm sinh tới năm hiện tại (mặc định 2026)
- */
 export function calculateAge(
 	dobInput: string | number | null | undefined,
 	currentYear = CURRENT_YEAR,
@@ -184,9 +177,6 @@ export function calculateAge(
 	return 0;
 }
 
-/**
- * Chuẩn hóa chuỗi hiển thị
- */
 export function formatDobDisplay(
 	dobInput: string | number | null | undefined,
 ): string {

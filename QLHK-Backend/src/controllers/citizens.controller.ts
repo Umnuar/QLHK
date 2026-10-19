@@ -581,7 +581,6 @@ export const deleteCitizen = async (
 			return;
 		}
 
-		// RBAC Check
 		if (
 			req.user?.village_id &&
 			current.household.village_id !== req.user.village_id

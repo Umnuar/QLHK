@@ -350,7 +350,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 							setActiveTab("villages");
 						}
 					} catch {
-						// Token hiện tại hết hạn hoặc không hợp lệ: Thử làm mới bằng refreshToken
 						const refreshToken = await secureStorage.getItem("refreshToken");
 						if (refreshToken && !refreshToken.startsWith("offline-refresh-")) {
 							try {
@@ -380,10 +379,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 									return;
 								}
 							} catch {
-								// Refresh không thành công
 							}
 						}
-						// Không thể làm mới: Dọn dẹp session cũ để hiển thị màn hình đăng nhập
 						if (!isMounted) return;
 						setCachedAccessToken(null);
 						await secureStorage.removeItem("accessToken");
@@ -406,12 +403,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 							}
 							return;
 						} catch {
-							// Ignore
 						}
 					}
 					if (isMounted) setUser(null);
 				} else {
-					// Chưa đăng nhập -> Hiển thị form Đăng nhập
 					if (isMounted) setUser(null);
 				}
 			} catch (e) {
@@ -429,14 +424,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 	}, []);
 
 	useEffect(() => {
-		// Warm-up: 2 ping liên tiếp để làm nóng TLS trước khi đo chính thức
 		detectAndSetOptimalApiGateway().then(async () => {
 			const apiBase = getActiveApiBaseUrl();
 			try {
 				await fetch(`${apiBase}/ping`, { method: "GET", cache: "no-store" });
 				await fetch(`${apiBase}/ping`, { method: "GET", cache: "no-store" });
 			} catch {
-				/* ignore warm-up errors */
 			}
 			checkServerHealth();
 		});
@@ -500,22 +493,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 				removeVillage,
 				checkServerHealth,
 
-				// 1. Sidebar
 				isSidebarCollapsed,
 				toggleSidebar,
 				setSidebarCollapsed,
 
-				// 2. Theme
 				theme,
 				toggleTheme,
 
-				// 3. Zoom
 				zoomLevel,
 				zoomIn,
 				zoomOut,
 				resetZoom,
 
-				// 4. Calculation Year
 				calculationYear,
 				setCalculationYear,
 			}}

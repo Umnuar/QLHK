@@ -68,7 +68,7 @@ describe('Khóa lạc quan (Optimistic Concurrency Control - OCC)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         address: 'Cố tình gửi version cũ',
-        version: 1, // Lúc này DB đã là version 2
+        version: 1,
       });
 
     expect(res.status).toBe(409);
@@ -95,7 +95,7 @@ describe('Khóa lạc quan (Optimistic Concurrency Control - OCC)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         full_name: 'Trần Văn OCC Sai Version',
-        version: 1, // DB đã là version 2
+        version: 1,
       });
 
     expect(res.status).toBe(409);

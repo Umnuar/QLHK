@@ -87,7 +87,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 			return;
 		}
 
-		// Fallback cho nhân khẩu tạo mới trong phiên
 		setRevealedCccdIds((prev) => [...prev, memId]);
 	};
 
@@ -218,7 +217,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 		const isHead = memberData.is_head || memberData.relationship === "Chủ hộ";
 
 		if (isHead) {
-			// Hủy cờ chủ hộ của các thành viên khác
 			updatedMembers = updatedMembers.map((m, idx) =>
 				idx === editingMemberIndex
 					? m
@@ -281,7 +279,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 			});
 		}
 
-		// Đánh lại STT 1..N
 		updatedMembers = updatedMembers.map((m, idx) => ({ ...m, stt: idx + 1 }));
 
 		setMembers(updatedMembers);
@@ -357,7 +354,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 
 	return createPortal(
 		<>
-			{/* Backdrop phủ mờ toàn màn hình & Canh giữa Modal */}
 			<div
 				className="fixed inset-0 !m-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/45 dark:bg-black/60 backdrop-blur-sm select-none animate-in fade-in duration-150"
 				onClick={(e) => {
@@ -367,7 +363,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 				}}
 				aria-hidden={isCitizenModalOpen}
 			>
-				{/* Modal Nổi Trung Tâm */}
 				<div
 					ref={drawerRef}
 					className="w-full max-w-3xl h-[88vh] max-h-[88vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 relative"
@@ -376,7 +371,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 					aria-labelledby="household-drawer-title"
 					onClick={(e) => e.stopPropagation()}
 				>
-					{/* Top Bar (Cố định trên cùng) */}
 					<div className="p-4 px-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-950/80 shrink-0">
 						<div className="space-y-1">
 							<div className="flex items-center gap-2">
@@ -426,7 +420,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 						</button>
 					</div>
 
-					{/* Error Notification */}
 					{error && (
 						<div className="mx-6 mt-4 flex items-center gap-2.5 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold animate-in fade-in">
 							<AlertCircle className="w-4 h-4 shrink-0" strokeWidth={1.5} />
@@ -434,14 +427,12 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 						</div>
 					)}
 
-					{/* Body (Cuộn 1 luồng dọc mượt mà) */}
 					<form
 						id="household-drawer-form"
 						onSubmit={handleSubmit}
 						autoComplete="off"
 						className="flex-1 overflow-y-auto p-6 space-y-6"
 					>
-						{/* KHỐI 1: Thông tin Chung Hộ Gia Đình */}
 						<div className="space-y-4">
 							<div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
 								<span className="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -522,7 +513,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 							</div>
 						</div>
 
-						{/* KHỐI 2: Danh Sách Thành Viên (Nhân Khẩu) */}
 						<div className="space-y-4">
 							<div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
 								<div className="flex items-center gap-2">
@@ -604,9 +594,7 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 												key={m.id || idx}
 												className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 shadow-2xs hover:shadow-sm transition-all flex items-center justify-between gap-3 group"
 											>
-												{/* Phía bên trái (Nội dung thông tin phân tầng) */}
 												<div className="space-y-1.5 min-w-0 flex-1">
-													{/* Hàng 1 (Nhận diện & Quan hệ) */}
 													<div className="flex items-center gap-2 min-w-0">
 														<span className="font-mono text-xs font-bold text-slate-400 dark:text-slate-500 w-5 text-center shrink-0">
 															#{m.stt || idx + 1}
@@ -636,7 +624,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 														)}
 													</div>
 
-													{/* Hàng 2 (Metadata chi tiết, căn lề thẳng hàng họ tên pl-7) */}
 													<div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 pl-7">
 														{birthDisplay && <span>{birthDisplay}</span>}
 														{hasRealCccd ? (
@@ -698,7 +685,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 													</div>
 												</div>
 
-												{/* Phía bên phải (Cụm nút Thao tác cố định, không cuộn ngang, luôn luôn nhìn thấy) */}
 												<div className="flex items-center gap-1 shrink-0">
 													<button
 														type="button"
@@ -727,7 +713,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 						</div>
 					</form>
 
-					{/* Bottom Bar (Cố định dưới cùng) */}
 					<div className="p-4 px-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 flex items-center justify-between shrink-0">
 						<button
 							type="button"
@@ -754,7 +739,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 				</div>
 			</div>
 
-			{/* Sub-modal Chuyên biệt Nhập liệu Nhân khẩu */}
 			<CitizenModal
 				isOpen={isCitizenModalOpen}
 				initialMember={
@@ -776,7 +760,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 				onSave={handleSaveCitizen}
 			/>
 
-			{/* Hộp thoại xác nhận hủy bỏ khi dữ liệu đã thay đổi (isDirty) */}
 			{showDiscardConfirm && (
 				<div className="fixed inset-0 !m-0 z-[60] flex items-center justify-center p-4 bg-slate-950/45 dark:bg-black/60 select-none animate-in fade-in duration-150">
 					<div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150">

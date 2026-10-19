@@ -279,12 +279,10 @@ describe("ImportPreviewModal Component", () => {
 			/>,
 		);
 
-		// Trang 1: Người Thứ 1 đến Người Thứ 20
 		expect(screen.getByText("Người Thứ 1")).toBeDefined();
 		expect(screen.queryByText("Người Thứ 25")).toBeNull();
 		expect(screen.getByText("1 / 2")).toBeDefined();
 
-		// Nút Trước phải bị disable ở trang 1
 		const prevBtn = screen.getByRole("button", {
 			name: "Trước",
 		}) as HTMLButtonElement;
@@ -294,7 +292,6 @@ describe("ImportPreviewModal Component", () => {
 		expect(prevBtn.disabled).toBe(true);
 		expect(nextBtn.disabled).toBe(false);
 
-		// Bấm Sau để sang trang 2
 		fireEvent.click(nextBtn);
 		expect(screen.getByText("2 / 2")).toBeDefined();
 		expect(screen.getByText("Người Thứ 25")).toBeDefined();
@@ -360,20 +357,16 @@ describe("ImportPreviewModal Component", () => {
 			/>,
 		);
 
-		// Kiểm tra tiêu đề cột 2 đã đổi thành "2. Hộ Gia Đình"
 		expect(screen.getByText("2. Hộ Gia Đình")).toBeDefined();
 		expect(screen.queryByText("2. Mã Sổ / Hộ")).toBeNull();
 
-		// Dòng chủ hộ hiển thị badge [Chủ Hộ]
 		const headBadge = screen.getByText("[Chủ Hộ]");
 		expect(headBadge).toBeDefined();
 
-		// Dòng chủ hộ có border phân tách ranh giới hộ gia đình
 		const headCell = headBadge.closest("td");
 		expect(headCell?.className).toContain("border-t-2");
 		expect(headCell?.className).toContain("border-emerald-500/30");
 
-		// Dòng thành viên hiển thị Thành viên và không có border-t-2
 		const memberText = screen.getByText("Thành viên");
 		expect(memberText).toBeDefined();
 		const memberCell = memberText.closest("td");
@@ -423,7 +416,6 @@ describe("ImportPreviewModal Component", () => {
 			/>,
 		);
 
-		// Cả 2 dòng đều phải hiển thị badge [Chủ Hộ]
 		const headBadges = screen.getAllByText("[Chủ Hộ]");
 		expect(headBadges).toHaveLength(2);
 	});

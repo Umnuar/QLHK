@@ -108,7 +108,6 @@ export const BackupRestoreTab: React.FC = () => {
 	return (
 		<div className="space-y-6">
 			<div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs max-w-3xl space-y-6">
-				{/* Header Title */}
 				<div className="flex items-center gap-3 pb-5 border-b border-slate-100 dark:border-slate-800">
 					<div className="w-10 h-10 rounded-2xl bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 flex items-center justify-center">
 						<Database className="w-5 h-5" />
@@ -123,7 +122,6 @@ export const BackupRestoreTab: React.FC = () => {
 					</div>
 				</div>
 
-				{/* Action 1: Xuất sao lưu */}
 				<div className="p-5 bg-slate-50 dark:bg-slate-950/50 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 					<div>
 						<h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">
@@ -143,7 +141,6 @@ export const BackupRestoreTab: React.FC = () => {
 					</button>
 				</div>
 
-				{/* Action 2: Phục hồi sao lưu */}
 				<div className="p-5 bg-rose-50/50 dark:bg-rose-950/20 rounded-2xl border border-rose-100 dark:border-rose-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 					<div>
 						<div className="flex items-center gap-2 text-rose-700 dark:text-rose-400 font-bold text-sm">

@@ -36,7 +36,6 @@ export function normalizeExcelDob(rawVal: any): {
 		return { dob: `${day}/${month}/${year}` };
 	}
 
-	// Trường hợp 1: Số nguyên từ 1900 đến 2100 là chỉ có năm sinh
 	if (typeof rawVal === "number") {
 		if (rawVal >= 1900 && rawVal <= 2100) {
 			return { dob: String(rawVal) };
@@ -58,7 +57,6 @@ export function normalizeExcelDob(rawVal: any): {
 		return { dob: "" };
 	}
 
-	// Trường hợp 2: Năm 3 chữ số (ví dụ: 11/01/976 -> 11/01/1976)
 	const threeDigitYearMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{3})$/);
 	if (threeDigitYearMatch) {
 		const d = parseInt(threeDigitYearMatch[1], 10);
@@ -72,7 +70,6 @@ export function normalizeExcelDob(rawVal: any): {
 		return { dob: `${dayStr}/${monthStr}/${y}` };
 	}
 
-	// Trường hợp 3: Chuỗi định dạng ISO YYYY-MM-DD hoặc YYYY/MM/DD
 	const isoMatch = str.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
 	if (isoMatch) {
 		const y = parseInt(isoMatch[1], 10);
@@ -95,14 +92,12 @@ export function normalizeExcelDob(rawVal: any): {
 		return { dob: `${dayStr}/${monthStr}/${y}` };
 	}
 
-	// Trường hợp 4: Chuỗi ngày/tháng/năm
 	const dateParts = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
 	if (dateParts) {
 		const p1 = parseInt(dateParts[1], 10);
 		const p2 = parseInt(dateParts[2], 10);
 		const y = parseInt(dateParts[3], 10);
 
-		// Cả 2 phần đều > 12 -> Lỗi tháng không hợp lệ (ví dụ: 15/17/1989)
 		if (p1 > 12 && p2 > 12) {
 			return {
 				dob: str,
@@ -110,32 +105,27 @@ export function normalizeExcelDob(rawVal: any): {
 			};
 		}
 
-		// Nếu phần 2 > 12 và phần 1 <= 12 -> Định dạng M/D/YYYY kiểu Mỹ (ví dụ: 8/18/2001)
 		if (p2 > 12 && p1 <= 12) {
 			const dayStr = String(p2).padStart(2, "0");
 			const monthStr = String(p1).padStart(2, "0");
 			return { dob: `${dayStr}/${monthStr}/${y}` };
 		}
 
-		// Nếu phần 1 > 12 và phần 2 <= 12 -> Định dạng D/M/YYYY chuẩn Việt Nam (ví dụ: 18/8/2001)
 		if (p1 > 12 && p2 <= 12) {
 			const dayStr = String(p1).padStart(2, "0");
 			const monthStr = String(p2).padStart(2, "0");
 			return { dob: `${dayStr}/${monthStr}/${y}` };
 		}
 
-		// Cả 2 phần đều <= 12 -> Ưu tiên chuẩn DD/MM/YYYY
 		const dayStr = String(p1).padStart(2, "0");
 		const monthStr = String(p2).padStart(2, "0");
 		return { dob: `${dayStr}/${monthStr}/${y}` };
 	}
 
-	// Trường hợp 5: Chỉ có năm dạng "1980"
 	if (/^\d{4}$/.test(str)) {
 		return { dob: str };
 	}
 
-	// Trường hợp 6: Tháng/Năm MM/YYYY
 	const myMatch = str.match(/^(\d{1,2})[/-](\d{4})$/);
 	if (myMatch) {
 		const m = parseInt(myMatch[1], 10);
@@ -148,11 +138,6 @@ export function normalizeExcelDob(rawVal: any): {
 	return { dob: str };
 }
 
-/**
- * Tự động nhận diện định dạng file Excel:
- * - 'dak_ha_merged': Mẫu biểu thực tế xã Đăk Hà (header hành chính 2 tầng, cột Chủ hộ / Thành viên, Họ đệm / Tên, Nữ X)
- * - 'standard_11_columns': Mẫu phẳng 11 cột chuẩn
- */
 export function detectExcelFormat(rawRows: any[][]): ExcelFormatType {
 	const sampleRows = rawRows.slice(0, 15);
 	for (const row of sampleRows) {
@@ -173,9 +158,6 @@ export function detectExcelFormat(rawRows: any[][]): ExcelFormatType {
 	return "standard_11_columns";
 }
 
-/**
- * Phân tích và chuyển đổi dữ liệu thô Excel thành danh sách hàng đối soát 11 cột chuẩn hóa
- */
 export function parseExcelSheet(
 	rawRows: any[][],
 	options?: { defaultVillageName?: string },
@@ -191,14 +173,10 @@ export function parseExcelSheet(
 	}
 }
 
-/**
- * Xử lý định dạng mẫu biểu thực tế xã Đăk Hà (cột gộp nhiều tầng)
- */
 function parseDakHaMergedFormat(
 	rawRows: any[][],
 	options?: { defaultVillageName?: string },
 ): ParsedExcelRow[] {
-	// 1. Quét tìm thông tin thôn nếu có ở các dòng hành chính đầu
 	let villageName = "";
 	for (let i = 0; i < Math.min(5, rawRows.length); i++) {
 		const rowStr = (rawRows[i] || []).join(" ");
@@ -208,7 +186,6 @@ function parseDakHaMergedFormat(
 		}
 	}
 
-	// 2. Tìm dòng bắt đầu dữ liệu (dòng có STT = 1 và có họ tên)
 	let dataStartIdx = -1;
 	let sttCol = 0;
 
@@ -219,7 +196,6 @@ function parseDakHaMergedFormat(
 		for (let c = 0; c < Math.min(5, row.length); c++) {
 			const val = row[c];
 			if (val === 1 || String(val).trim() === "1" || val === 1.0) {
-				// Kiểm tra xem các cột phía sau có dữ liệu tên hoặc CH không
 				const possibleName =
 					`${String(row[c + 3] || "")} ${String(row[c + 4] || "")}`.trim();
 				const possibleHead = String(row[c + 1] || "")
@@ -235,7 +211,6 @@ function parseDakHaMergedFormat(
 		if (dataStartIdx !== -1) break;
 	}
 
-	// Nếu không tìm thấy, mặc định data bắt đầu từ dòng 6, sttCol = 0
 	if (dataStartIdx === -1) {
 		dataStartIdx = 6;
 		sttCol = 0;
@@ -273,7 +248,6 @@ function parseDakHaMergedFormat(
 		const rawReligion = String(row[religionCol] || "").trim();
 		const rawNotes = String(row[notesCol] || "").trim();
 
-		// Dừng hoặc bỏ qua nếu không có họ tên và STT
 		if (!rawHoLot && !rawTen && !rawStt) {
 			continue;
 		}
@@ -284,7 +258,6 @@ function parseDakHaMergedFormat(
 			continue;
 		}
 
-		// Nhận diện Chủ hộ: Cột CH = 'CH' hoặc nếu member order là 1
 		const isHead =
 			rawHead === "CH" ||
 			rawHead.includes("CHỦ HỘ") ||
@@ -297,12 +270,10 @@ function parseDakHaMergedFormat(
 		const code = `HK-${String(householdCounter).padStart(4, "0")}`;
 		const relationship = isHead ? "Chủ hộ" : "Thành viên";
 
-		// Giới tính: Cột Nữ có 'X' hoặc 'x' hoặc 'Nữ' -> Nữ, để trống -> Nam
 		const isFemale =
 			rawFemale === "X" || rawFemale === "NỮ" || rawFemale === "NU";
 		const gender: "Nam" | "Nữ" = isFemale ? "Nữ" : "Nam";
 
-		// Chuẩn hóa và kiểm tra ngày sinh
 		const normDob = normalizeExcelDob(rawDob);
 		const dobRaw =
 			normDob.dob ||
@@ -318,7 +289,6 @@ function parseDakHaMergedFormat(
 			}
 		}
 
-		// Tôn giáo
 		let religion = "Không";
 		if (
 			rawNotes &&
@@ -364,16 +334,12 @@ function parseDakHaMergedFormat(
 	return result;
 }
 
-/**
- * Xử lý định dạng 11 cột phẳng tiêu chuẩn
- */
 function parseStandard11ColumnsFormat(
 	rawRows: any[][],
 	options?: { defaultVillageName?: string },
 ): ParsedExcelRow[] {
 	const result: ParsedExcelRow[] = [];
 
-	// Bỏ qua dòng tiêu đề nếu có
 	let startIdx = 0;
 	if (
 		rawRows.length > 0 &&
@@ -425,12 +391,10 @@ function parseStandard11ColumnsFormat(
 		}
 		lastCode = code;
 
-		// Giới tính
 		const gender: "Nam" | "Nữ" = rawGender.toLowerCase().includes("nữ")
 			? "Nữ"
 			: "Nam";
 
-		// Ngày sinh
 		const normDob = normalizeExcelDob(rawDob);
 		const dobRaw =
 			normDob.dob ||
@@ -446,7 +410,6 @@ function parseStandard11ColumnsFormat(
 			}
 		}
 
-		// Tôn giáo
 		let religion = rawReligion;
 		if (rawReligion === "CG") religion = "Công giáo";
 		else if (rawReligion === "TL") religion = "Tin lành";
@@ -474,11 +437,6 @@ function parseStandard11ColumnsFormat(
 	return result;
 }
 
-/**
- * Chống tấn công Formula Injection (CSV/Excel Macro Command Injection - CWE-1236).
- * Nếu một ô dữ liệu bắt đầu bằng một trong các ký tự điều khiển công thức (=, +, -, @, \t, \r),
- * thêm tiền tố dấu nháy đơn ' để phần mềm bảng tính (Excel/Calc) hiểu là văn bản thuần túy và không thực thi mã.
- */
 export function sanitizeExcelCellValue<T>(val: T): T {
 	if (typeof val === "string") {
 		const trimmed = val.trimStart();

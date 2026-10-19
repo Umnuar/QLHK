@@ -305,7 +305,6 @@ export const SettingsPage: React.FC = () => {
 				</button>
 			</div>
 
-			{/* TAB 1: TÀI KHOẢN CỦA TÔI */}
 			{activeTab === "profile" && (
 				<ProfileCard
 					user={user}
@@ -314,7 +313,6 @@ export const SettingsPage: React.FC = () => {
 				/>
 			)}
 
-			{/* TAB 2: QUẢN LÝ CÁN BỘ THÔN (ADMIN) */}
 			{activeTab === "users" && isAdmin && (
 				<div className="space-y-6">
 					<div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -353,7 +351,6 @@ export const SettingsPage: React.FC = () => {
 						</div>
 					</div>
 
-					{/* Form / Modal thêm cán bộ */}
 					{isAddUserOpen && (
 						<form
 							onSubmit={handleCreateUser}
@@ -450,7 +447,6 @@ export const SettingsPage: React.FC = () => {
 						</form>
 					)}
 
-					{/* Modal đặt lại mật khẩu cán bộ */}
 					{resetPwdUser &&
 						typeof document !== "undefined" &&
 						createPortal(
@@ -530,7 +526,6 @@ export const SettingsPage: React.FC = () => {
 							document.body,
 						)}
 
-					{/* Bảng danh sách cán bộ */}
 					<div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
 						<div className="overflow-x-auto">
 							<table className="w-full text-xs text-left border-separate border-spacing-0 whitespace-nowrap">
@@ -652,19 +647,16 @@ export const SettingsPage: React.FC = () => {
 				</div>
 			)}
 
-			{/* TAB 3: SAO LƯU CSDL (ADMIN) */}
 			{activeTab === "backup" && isAdmin && (
 				<div className="space-y-6">
 					<BackupRestoreTab />
 				</div>
 			)}
 
-			{/* TAB 4: THÔNG TIN ĐƠN VỊ & HỆ THỐNG */}
 			{activeTab === "system" && (
 				<div className="space-y-6">
 					<TimeCard />
 
-					{/* Card 1: Thông Tin Đơn Vị Hành Chính */}
 					<form
 						onSubmit={handleSaveCommune}
 						className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4"
@@ -811,7 +803,6 @@ export const SettingsPage: React.FC = () => {
 						)}
 					</form>
 
-					{/* Card 2: Thông Tin Phần Mềm QLHK */}
 					<div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
 						<div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
 							<div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-200 dark:border-emerald-800 shrink-0">

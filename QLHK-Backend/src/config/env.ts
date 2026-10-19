@@ -88,7 +88,6 @@ export function validateEnvironmentSecurity(env: NodeJS.ProcessEnv = process.env
 			!env.ENCRYPTION_KEY ||
 			INSECURE_DEFAULT_SECRETS.has(env.ENCRYPTION_KEY)
 		) {
-			// Thông báo bảo mật cho môi trường dev/local
 			console.warn("[Security Notice] Backend running in non-production mode with default development keys. Never use these in production!");
 		}
 	}

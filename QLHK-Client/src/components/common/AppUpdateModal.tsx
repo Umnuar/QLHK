@@ -149,7 +149,6 @@ export const AppUpdateModal: React.FC = () => {
 
 			setStatus("ready");
 
-			// Relaunch app sau khi cài đặt
 			const { relaunch } = await import("@tauri-apps/plugin-process");
 			setTimeout(async () => {
 				await relaunch();
@@ -164,13 +163,12 @@ export const AppUpdateModal: React.FC = () => {
 	};
 
 	const handleClose = async () => {
-		if (status === "downloading") return; // Chặn đóng khi đang tải gói
+		if (status === "downloading") return;
 
 		if (updateRef.current) {
 			try {
 				await updateRef.current.close();
 			} catch {
-				// ignore
 			}
 			updateRef.current = null;
 		}
@@ -196,7 +194,6 @@ export const AppUpdateModal: React.FC = () => {
 				className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-900 dark:text-slate-100 animate-in zoom-in-95 duration-150 relative"
 				onClick={(e) => e.stopPropagation()}
 			>
-				{/* Top Header Bar */}
 				<div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/40">
 					<div className="flex items-center gap-2.5">
 						<div className="w-9 h-9 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-200 dark:border-emerald-800 shrink-0">
@@ -229,9 +226,7 @@ export const AppUpdateModal: React.FC = () => {
 					)}
 				</div>
 
-				{/* Body Content */}
 				<div className="p-6 space-y-5">
-					{/* State: Checking */}
 					{status === "checking" && (
 						<div className="py-8 flex flex-col items-center justify-center text-center space-y-3">
 							<RefreshCw className="w-8 h-8 text-emerald-500 animate-spin" />
@@ -241,7 +236,6 @@ export const AppUpdateModal: React.FC = () => {
 						</div>
 					)}
 
-					{/* State: Up to date */}
 					{status === "up_to_date" && (
 						<div className="py-6 flex flex-col items-center justify-center text-center space-y-3">
 							<div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-200 dark:border-emerald-800">
@@ -261,10 +255,8 @@ export const AppUpdateModal: React.FC = () => {
 						</div>
 					)}
 
-					{/* State: Available */}
 					{status === "available" && updateInfo && (
 						<div className="space-y-4">
-							{/* Version Badge Transition */}
 							<div className="flex items-center justify-between p-3.5 bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded-2xl">
 								<div>
 									<span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
@@ -285,7 +277,6 @@ export const AppUpdateModal: React.FC = () => {
 								</div>
 							</div>
 
-							{/* Release Notes */}
 							<div>
 								<span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
 									Nội Dung Cập Nhật:
@@ -298,7 +289,6 @@ export const AppUpdateModal: React.FC = () => {
 						</div>
 					)}
 
-					{/* State: Downloading */}
 					{status === "downloading" && (
 						<div className="space-y-4 py-2">
 							<div className="flex items-center justify-between text-xs font-bold">
@@ -310,7 +300,6 @@ export const AppUpdateModal: React.FC = () => {
 								</span>
 							</div>
 
-							{/* Progress Bar */}
 							<div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200/60 dark:border-slate-700/60 p-0.5">
 								<div
 									className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-200"
@@ -325,7 +314,6 @@ export const AppUpdateModal: React.FC = () => {
 						</div>
 					)}
 
-					{/* State: Ready */}
 					{status === "ready" && (
 						<div className="py-6 flex flex-col items-center justify-center text-center space-y-3">
 							<div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-200 dark:border-emerald-800 animate-bounce">
@@ -342,7 +330,6 @@ export const AppUpdateModal: React.FC = () => {
 						</div>
 					)}
 
-					{/* State: Error */}
 					{status === "error" && (
 						<div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-2xl flex items-start gap-3">
 							<AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
@@ -358,7 +345,6 @@ export const AppUpdateModal: React.FC = () => {
 					)}
 				</div>
 
-				{/* Footer Actions */}
 				<div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
 					{status === "available" && (
 						<>

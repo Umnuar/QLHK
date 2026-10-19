@@ -117,7 +117,6 @@ export const HouseholdsPage: React.FC = () => {
 			setTotalPages(res.pagination.totalPages);
 			setIsUsingCachedData(false);
 
-			// Lưu kết quả vào Offline Cache
 			await setCache(cacheKey, res);
 			await setCache(fallbackCacheKey, res);
 		} catch (err: any) {
@@ -131,7 +130,6 @@ export const HouseholdsPage: React.FC = () => {
 				err?.code === "ECONNABORTED" ||
 				(!err?.response && err?.message?.includes("Network Error"));
 
-			// Nếu isBackendHealthy là true và không phải lỗi mạng thực sự, không vội vàng hiển thị badge Offline Cache
 			const shouldMarkOffline = !isBackendHealthy || isRealNetworkError;
 			setIsUsingCachedData(shouldMarkOffline);
 
@@ -179,7 +177,6 @@ export const HouseholdsPage: React.FC = () => {
 				return true;
 			};
 
-			// Nạp từ Cache nếu có
 			const cached =
 				(await getCache<any>(cacheKey)) ||
 				(await getCache<any>(fallbackCacheKey)) ||
@@ -194,7 +191,6 @@ export const HouseholdsPage: React.FC = () => {
 						(Math.ceil(filteredList.length / limit) || 1),
 				);
 			} else {
-				// Fallback sang seed data ban đầu
 				let list = INITIAL_HOUSEHOLDS.filter((h) => !h.is_deleted);
 				if (targetVillageId) {
 					list = list.filter((h) => h.village_id === targetVillageId);
@@ -231,12 +227,10 @@ export const HouseholdsPage: React.FC = () => {
 		statusFilter,
 	]);
 
-	// Kích hoạt nạp dữ liệu khi đổi thôn, trang, số lượng hoặc tìm kiếm
 	useEffect(() => {
 		fetchHouseholds();
 	}, [fetchHouseholds]);
 
-	// Khi đổi thôn, tìm kiếm hoặc các bộ lọc -> reset về trang 1
 	useEffect(() => {
 		setPage(1);
 	}, [
@@ -249,7 +243,6 @@ export const HouseholdsPage: React.FC = () => {
 		statusFilter,
 	]);
 
-	// Tự động tải lại khi server được kết nối lại
 	useEffect(() => {
 		const handleReconnected = () => {
 			fetchHouseholds();
@@ -259,7 +252,6 @@ export const HouseholdsPage: React.FC = () => {
 			window.removeEventListener("server:reconnected", handleReconnected);
 	}, [fetchHouseholds]);
 
-	// Toggle selection
 	const handleToggleSelect = (id: string) => {
 		setSelectedIds((prev) =>
 			prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
@@ -274,19 +266,16 @@ export const HouseholdsPage: React.FC = () => {
 		}
 	};
 
-	// Open modal create
 	const handleOpenCreate = () => {
 		setEditingHousehold(null);
 		setModalOpen(true);
 	};
 
-	// Open modal edit
 	const handleOpenEdit = (hh: Household) => {
 		setEditingHousehold(hh);
 		setModalOpen(true);
 	};
 
-	// Save household (create / update)
 	const handleSaveHousehold = async (data: Partial<Household>) => {
 		try {
 			if (editingHousehold) {
@@ -378,7 +367,6 @@ export const HouseholdsPage: React.FC = () => {
 		});
 	};
 
-	// Delete single household (soft delete to recycle bin)
 	const handleDeleteHousehold = (hh: Household) => {
 		showModal({
 			title: "Xác nhận chuyển vào thùng rác",
@@ -435,7 +423,6 @@ export const HouseholdsPage: React.FC = () => {
 		});
 	};
 
-	// Batch delete
 	const handleBatchDelete = () => {
 		if (selectedIds.length === 0) return;
 		const targetIds = [...selectedIds];
@@ -487,7 +474,6 @@ export const HouseholdsPage: React.FC = () => {
 		});
 	};
 
-	// Logic xuất Excel: Hỗ trợ Tab 1 (Truyền thống 11 cột) và Tab 2 (Chuyên đề tùy chọn)
 	const handleExportConfirm = async (
 		exportInput: "all" | "selected" | ExportConfig,
 	) => {
@@ -534,7 +520,6 @@ export const HouseholdsPage: React.FC = () => {
 			const now = new Date();
 			let currentStt = 1;
 
-			// XỬ LÝ TAB 2: BÁO CÁO CHUYÊN ĐỀ TÙY CHỌN
 			if (config.tab === "custom") {
 				const selectedCols =
 					config.selectedColumns.length > 0
@@ -547,7 +532,6 @@ export const HouseholdsPage: React.FC = () => {
 				});
 
 				const customRows: any[][] = [
-					// Row 0
 					[
 						"UBND TỈNH QUẢNG NGÃI\nUBND XÃ ĐĂK HÀ",
 						...Array(Math.max(0, Math.floor(selectedCols.length / 2) - 1)).fill(
@@ -555,12 +539,10 @@ export const HouseholdsPage: React.FC = () => {
 						),
 						"CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự Do - Hạnh Phúc",
 					],
-					// Row 1
 					[
 						"BÁO CÁO CHUYÊN ĐỀ NHÂN KHẨU - " +
 							(selectedVillageName || "TOÀN XÃ ĐĂK HÀ"),
 					],
-					// Row 2
 					[
 						"Ngày xuất: " +
 							now.getDate() +
@@ -569,9 +551,7 @@ export const HouseholdsPage: React.FC = () => {
 							"/" +
 							now.getFullYear(),
 					],
-					// Row 3
 					[],
-					// Row 4: Header các cột
 					headerLabels,
 				];
 
@@ -614,7 +594,6 @@ export const HouseholdsPage: React.FC = () => {
 						const ageVal =
 							(dobVal ? calculateAge(dobVal, calculationYear) : m.age) || 0;
 
-						// Lọc theo độ tuổi
 						if (config.ageMode === "range") {
 							if (
 								config.minAge !== undefined &&
@@ -640,7 +619,6 @@ export const HouseholdsPage: React.FC = () => {
 							}
 						}
 
-						// Lọc theo giới tính
 						if (
 							config.gender &&
 							config.gender !== "all" &&
@@ -649,7 +627,6 @@ export const HouseholdsPage: React.FC = () => {
 							return;
 						}
 
-						// Lọc theo từ khóa NVQS
 						if (
 							config.militaryKeyword &&
 							!(m.military_status || "")
@@ -659,7 +636,6 @@ export const HouseholdsPage: React.FC = () => {
 							return;
 						}
 
-						// Lọc theo trình độ học vấn
 						if (
 							config.educationKeyword &&
 							!(m.education || "")
@@ -669,7 +645,6 @@ export const HouseholdsPage: React.FC = () => {
 							return;
 						}
 
-						// Lọc theo nghề nghiệp
 						if (
 							config.occupationKeyword &&
 							!(m.occupation || "")
@@ -679,7 +654,6 @@ export const HouseholdsPage: React.FC = () => {
 							return;
 						}
 
-						// Xuất các cột đã chọn
 						const rowData = selectedCols.map((colKey) => {
 							switch (colKey) {
 								case "stt":
@@ -772,9 +746,7 @@ export const HouseholdsPage: React.FC = () => {
 				return;
 			}
 
-			// XỬ LÝ TAB 1: BIỂU MẪU 11 CỘT ĐĂK HÀ (TRUYỀN THỐNG)
 			const rows: any[][] = [
-				// Row 0
 				[
 					"UBND TỈNH QUẢNG NGÃI\nUBND XÃ ĐĂK HÀ",
 					null,
@@ -783,7 +755,6 @@ export const HouseholdsPage: React.FC = () => {
 					null,
 					"CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự Do - Hạnh Phúc",
 				],
-				// Row 1
 				[
 					"THÔN: " + (selectedVillageName || "TOÀN XÃ ĐĂK HÀ"),
 					null,
@@ -797,11 +768,8 @@ export const HouseholdsPage: React.FC = () => {
 						" năm " +
 						now.getFullYear(),
 				],
-				// Row 2
 				["DỮ LIỆU HỘ - NHÂN KHẨU"],
-				// Row 3
 				[],
-				// Row 4 (Header tầng 1)
 				[
 					"STT",
 					"HỘ GIA ĐÌNH",
@@ -815,7 +783,6 @@ export const HouseholdsPage: React.FC = () => {
 					null,
 					"Ghi chú",
 				],
-				// Row 5 (Header tầng 2)
 				[
 					null,
 					"Chủ hộ",
@@ -895,7 +862,6 @@ export const HouseholdsPage: React.FC = () => {
 				});
 			});
 
-			// Áp dụng sanitizeExcelRow để chống tấn công Formula Injection (CWE-1236)
 			const sanitizedRows = rows.map(sanitizeExcelRow);
 			const ws = XLSX.utils.aoa_to_sheet(sanitizedRows);
 			ws["!merges"] = [
@@ -904,11 +870,11 @@ export const HouseholdsPage: React.FC = () => {
 				{ s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
 				{ s: { r: 1, c: 5 }, e: { r: 1, c: 9 } },
 				{ s: { r: 2, c: 0 }, e: { r: 2, c: 10 } },
-				{ s: { r: 4, c: 0 }, e: { r: 5, c: 0 } }, // STT
-				{ s: { r: 4, c: 1 }, e: { r: 4, c: 2 } }, // HỘ GIA ĐÌNH
-				{ s: { r: 4, c: 3 }, e: { r: 5, c: 4 } }, // HỌ VÀ TÊN
-				{ s: { r: 4, c: 5 }, e: { r: 4, c: 9 } }, // PHÂN TÍCH
-				{ s: { r: 4, c: 10 }, e: { r: 5, c: 10 } }, // Ghi chú
+				{ s: { r: 4, c: 0 }, e: { r: 5, c: 0 } },
+				{ s: { r: 4, c: 1 }, e: { r: 4, c: 2 } },
+				{ s: { r: 4, c: 3 }, e: { r: 5, c: 4 } },
+				{ s: { r: 4, c: 5 }, e: { r: 4, c: 9 } },
+				{ s: { r: 4, c: 10 }, e: { r: 5, c: 10 } },
 			];
 			ws["!cols"] = [
 				{ wch: 6 },
@@ -955,7 +921,6 @@ export const HouseholdsPage: React.FC = () => {
 		}
 	};
 
-	// Import trực tiếp từ Excel
 	const handleConfirmImport = async (validRows: any[]) => {
 		setIsImportingModal(true);
 		try {
@@ -1060,14 +1025,12 @@ export const HouseholdsPage: React.FC = () => {
 					updated_at: new Date().toISOString(),
 				};
 
-				// 1. Đồng bộ vào Context Store (reactive state và offline cache)
 				try {
 					addHousehold(newHhData);
 				} catch (ctxErr) {
 					console.warn("[HouseholdsPage] Lỗi cập nhật context store:", ctxErr);
 				}
 
-				// 2. Đồng bộ vào CSDL backend qua API
 				try {
 					await householdApi.create(newHhData);
 				} catch (apiErr) {
@@ -1101,7 +1064,6 @@ export const HouseholdsPage: React.FC = () => {
 
 	return (
 		<div className="space-y-6 animate-in fade-in pb-10">
-			{/* Top Banner & Title */}
 			<div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors duration-150">
 				<div>
 					<div className="flex items-center gap-2.5 flex-wrap">
@@ -1109,7 +1071,6 @@ export const HouseholdsPage: React.FC = () => {
 							{selectedVillageName || "Toàn xã Đăk Hà"}
 						</span>
 
-						{/* Badge Offline Cache nổi bật */}
 						{isUsingCachedData && (
 							<div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 rounded-xl text-xs font-bold shadow-xs animate-in fade-in">
 								<span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse inline-block mr-1.5" />
@@ -1181,7 +1142,6 @@ export const HouseholdsPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Thanh tìm kiếm không dấu & Bộ lọc độ tuổi */}
 			<HouseholdFilterBar
 				search={search}
 				setSearch={setSearch}
@@ -1210,7 +1170,6 @@ export const HouseholdsPage: React.FC = () => {
 				}}
 			/>
 
-			{/* Bảng Hộ Gia Đình + Accordion Nhân Khẩu */}
 			<HouseholdTable
 				selectedIds={selectedIds}
 				onToggleSelect={handleToggleSelect}
@@ -1229,7 +1188,6 @@ export const HouseholdsPage: React.FC = () => {
 				calculationYear={calculationYear}
 			/>
 
-			{/* Slide-over Drawer Thêm / Sửa Hộ Gia Đình & Nhân Khẩu */}
 			<HouseholdDrawer
 				isOpen={modalOpen}
 				onClose={() => setModalOpen(false)}
@@ -1237,7 +1195,6 @@ export const HouseholdsPage: React.FC = () => {
 				onSave={handleSaveHousehold}
 			/>
 
-			{/* Modal Cài Đặt Xuất File Excel */}
 			<ExportSettingsModal
 				isOpen={exportModalOpen}
 				onClose={() => setExportModalOpen(false)}
@@ -1247,7 +1204,6 @@ export const HouseholdsPage: React.FC = () => {
 				villageName={selectedVillageName}
 			/>
 
-			{/* Modal Đối Soát & Nhập Dữ Liệu Excel Trực Tiếp */}
 			<ImportPreviewModal
 				isOpen={isImportModalOpen}
 				onClose={() => setIsImportModalOpen(false)}
@@ -1255,7 +1211,6 @@ export const HouseholdsPage: React.FC = () => {
 				importing={isImportingModal}
 			/>
 
-			{/* Modal Đối Soát Xung Đột Phiên Bản OCC 409 */}
 			<ConflictResolutionModal
 				isOpen={conflictModalOpen}
 				onClose={() => setConflictModalOpen(false)}

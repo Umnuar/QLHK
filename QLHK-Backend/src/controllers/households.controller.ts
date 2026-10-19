@@ -70,19 +70,16 @@ export const getHouseholds = async (
 
 		const where: any = {};
 
-		// Soft delete filter
 		if (includeDeleted !== "true") {
 			where.is_deleted = false;
 		}
 
-		// Village scoping
 		if (req.user?.village_id) {
 			where.village_id = req.user.village_id;
 		} else if (villageId) {
 			where.village_id = villageId as string;
 		}
 
-		// Status filter
 		if (
 			status &&
 			typeof status === "string" &&
@@ -104,7 +101,6 @@ export const getHouseholds = async (
 			}
 		}
 
-		// Trích xuất query parameters bổ sung
 		const targetYearStr = req.query.year;
 		let targetYear = new Date().getFullYear();
 		if (targetYearStr !== undefined && targetYearStr !== "") {
@@ -120,7 +116,6 @@ export const getHouseholds = async (
 		const gender = req.query.gender as string | undefined;
 		const ethnicity = req.query.ethnicity as string | undefined;
 
-		// Lọc theo khoảng độ tuổi (minAge, maxAge)
 		const minAStr = req.query.minAge;
 		const maxAStr = req.query.maxAge;
 		let minA: number | undefined;
@@ -156,7 +151,6 @@ export const getHouseholds = async (
 		const hasMinA = minA !== undefined;
 		const hasMaxA = maxA !== undefined;
 
-		// Cập nhật logic lọc nhân khẩu trong hộ (citizenSomeConditions)
 		const citizenSomeConditions: any = {
 			is_deleted: false,
 		};
@@ -209,7 +203,6 @@ export const getHouseholds = async (
 			};
 		}
 
-		// Search filter (số sổ, địa chỉ, họ tên, hoặc CCCD)
 		if (search && typeof search === "string" && search.trim()) {
 			const q = search.trim();
 			const cleanDigits = q.replace(/\D/g, "");
@@ -319,7 +312,6 @@ export const getHouseholdById = async (
 			return;
 		}
 
-		// RBAC Check
 		if (req.user?.village_id && household.village_id !== req.user.village_id) {
 			res
 				.status(403)
@@ -483,7 +475,6 @@ export const updateHousehold = async (
 			return;
 		}
 
-		// RBAC Check
 		if (req.user?.village_id && current.village_id !== req.user.village_id) {
 			res
 				.status(403)
@@ -491,7 +482,6 @@ export const updateHousehold = async (
 			return;
 		}
 
-		// Optimistic Concurrency Control (OCC)
 		const expectedVersion =
 			version !== undefined && version !== null
 				? Number(version)
@@ -835,7 +825,6 @@ export const deleteHousehold = async (
 			return;
 		}
 
-		// RBAC Check
 		if (req.user?.village_id && current.village_id !== req.user.village_id) {
 			res
 				.status(403)
@@ -843,7 +832,6 @@ export const deleteHousehold = async (
 			return;
 		}
 
-		// Soft delete household and cascade soft-delete its citizens
 		const now = new Date();
 		await prisma.$transaction([
 			prisma.households.update({

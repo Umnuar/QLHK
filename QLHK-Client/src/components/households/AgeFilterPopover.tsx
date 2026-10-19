@@ -124,7 +124,6 @@ export const AgeFilterPopover: React.FC<AgeFilterPopoverProps> = ({
 		setIsOpen(false);
 	};
 
-	// Kiểm tra xem preset có đang được chọn hay không
 	const isPresetActive = (preset: PresetItem) => {
 		if (!currentFilter) return false;
 		return currentFilter.min === preset.min && currentFilter.max === preset.max;
@@ -132,7 +131,6 @@ export const AgeFilterPopover: React.FC<AgeFilterPopoverProps> = ({
 
 	return (
 		<div className="relative inline-block text-left" ref={popoverRef}>
-			{/* Nút Trigger */}
 			{currentFilter ? (
 				<div
 					onClick={() => setIsOpen(!isOpen)}
@@ -185,10 +183,8 @@ export const AgeFilterPopover: React.FC<AgeFilterPopoverProps> = ({
 				</button>
 			)}
 
-			{/* Popover Panel */}
 			{isOpen && (
 				<div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 w-64 sm:w-72 bg-white dark:bg-slate-900 rounded-2xl p-3.5 shadow-xl border border-slate-200 dark:border-slate-800 space-y-3 z-50 animate-in fade-in zoom-in-95 duration-100">
-					{/* Header */}
 					<div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
 						<div className="flex items-center gap-2 text-slate-800 dark:text-slate-100 font-bold text-xs">
 							<Users className="w-3.5 h-3.5 text-emerald-500" />
@@ -205,7 +201,6 @@ export const AgeFilterPopover: React.FC<AgeFilterPopoverProps> = ({
 						)}
 					</div>
 
-					{/* Presets List */}
 					<div>
 						<div className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 px-0.5">
 							Nhóm tuổi phổ biến
@@ -234,7 +229,6 @@ export const AgeFilterPopover: React.FC<AgeFilterPopoverProps> = ({
 						</div>
 					</div>
 
-					{/* Custom Range Form */}
 					<form
 						onSubmit={handleApplyCustom}
 						className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2.5"

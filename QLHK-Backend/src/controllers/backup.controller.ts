@@ -133,7 +133,6 @@ export const runAutoBackup = async (): Promise<string | null> => {
 		fs.writeFileSync(filepath, JSON.stringify(backupData, null, 2));
 		logCron("AutoBackup", `SUCCESS - ${filename}`);
 
-		// Cleanup cũ (lưu trữ xoay vòng 7 ngày tương tự QLCS/QLNN)
 		const files = fs.readdirSync(backupDir);
 		const now = Date.now();
 		const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
@@ -196,7 +195,6 @@ export const restoreDatabase = async (
 
 		await prisma.$transaction(
 			async (tx) => {
-				// Xóa theo thứ tự ràng buộc khóa ngoại (child to parent)
 				await tx.audit_logs.deleteMany();
 				await tx.citizens.deleteMany();
 				await tx.households.deleteMany();

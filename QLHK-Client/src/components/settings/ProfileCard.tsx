@@ -347,7 +347,6 @@ export const DangerZoneCard: React.FC<DangerZoneCardProps> = () => {
 
 	return (
 		<div className="bg-white dark:bg-slate-900 rounded-3xl border border-rose-200 dark:border-rose-900/40 shadow-sm overflow-hidden transition-colors">
-			{/* Header */}
 			<div className="p-6 border-b border-rose-100 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-950/20 flex items-center justify-between">
 				<div className="flex items-center">
 					<div className="bg-rose-100 text-rose-600 p-2.5 rounded-2xl mr-4 dark:bg-rose-900/40 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
@@ -366,7 +365,6 @@ export const DangerZoneCard: React.FC<DangerZoneCardProps> = () => {
 			</div>
 
 			<div className="p-6 md:p-8 space-y-6">
-				{/* Action: Clear Cache */}
 				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
 					<div>
 						<h5 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
@@ -388,7 +386,6 @@ export const DangerZoneCard: React.FC<DangerZoneCardProps> = () => {
 					</button>
 				</div>
 
-				{/* Action: Logout */}
 				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-rose-200 dark:border-rose-900/30 bg-rose-50/30 dark:bg-rose-950/10">
 					<div>
 						<h5 className="font-bold text-xs uppercase tracking-wider text-rose-700 dark:text-rose-400 flex items-center gap-2">
@@ -409,7 +406,6 @@ export const DangerZoneCard: React.FC<DangerZoneCardProps> = () => {
 					</button>
 				</div>
 
-				{/* Security Note */}
 				<div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/20 text-xs text-slate-500 dark:text-slate-400">
 					<p className="font-semibold text-slate-700 dark:text-slate-300 mb-1">
 						Hệ sinh thái Dữ liệu Số Xã Đăk Hà — Cơ chế đồng bộ bảo mật:

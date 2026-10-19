@@ -204,7 +204,6 @@ export function CustomSelect<T extends string | number = string | number>({
 
 	return (
 		<div className={`relative w-full ${containerClassName}`} ref={containerRef}>
-			{/* Label */}
 			{label && (
 				<label
 					htmlFor={id}
@@ -216,7 +215,6 @@ export function CustomSelect<T extends string | number = string | number>({
 				</label>
 			)}
 
-			{/* Trigger Button */}
 			<button
 				id={id}
 				name={name}
@@ -252,7 +250,6 @@ export function CustomSelect<T extends string | number = string | number>({
 						</span>
 					)}
 
-					{/* Dấu hiệu nhận biết thứ hai cho người khiếm sắc (Rule 5): chấm tròn xanh khi đang lọc thật */}
 					{isEffectiveActive && (
 						<span
 							className="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 shrink-0"
@@ -331,14 +328,12 @@ export function CustomSelect<T extends string | number = string | number>({
 				</div>
 			</button>
 
-			{/* Error Message */}
 			{error && (
 				<p className="mt-1 text-xs text-rose-500 font-medium animate-in fade-in">
 					{error}
 				</p>
 			)}
 
-			{/* Dropdown Menu */}
 			{isOpen && (
 				<div
 					role="listbox"
@@ -346,7 +341,6 @@ export function CustomSelect<T extends string | number = string | number>({
 						openUpward ? "bottom-full mb-1.5" : "top-full mt-1.5"
 					} bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-2xl shadow-xl shadow-slate-950/20 dark:shadow-slate-950/60 overflow-hidden animate-in fade-in zoom-in-95 duration-150 ${dropdownClassName}`}
 				>
-					{/* Search Input */}
 					{shouldShowSearch && (
 						<div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
 							<div className="relative flex items-center">
@@ -377,7 +371,6 @@ export function CustomSelect<T extends string | number = string | number>({
 						</div>
 					)}
 
-					{/* Options List */}
 					<div className="max-h-56 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
 						{filteredOptions.length === 0 ? (
 							<div className="py-6 px-3 text-center text-xs text-slate-400 dark:text-slate-500 font-medium">

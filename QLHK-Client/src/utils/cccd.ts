@@ -28,9 +28,6 @@ export function maskCccd(
 	return `${maskedPrefix}${last4}`;
 }
 
-/**
- * Kiểm tra tính hợp lệ của số CCCD (12 chữ số) hoặc CMND (9 chữ số)
- */
 export function validateCccd(cccd: string | null | undefined): {
 	isValid: boolean;
 	error?: string;

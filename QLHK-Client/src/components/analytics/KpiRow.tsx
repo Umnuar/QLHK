@@ -77,7 +77,6 @@ export const KpiRow: React.FC<KpiRowProps> = ({
 			aria-label="Chỉ số tổng quan"
 			className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
 		>
-			{/* KPI 1: Tổng Hộ Gia Đình */}
 			<KpiCard
 				label="Tổng Hộ Gia Đình"
 				value={formatVietnameseNumber(totalHouseholds)}
@@ -99,7 +98,6 @@ export const KpiRow: React.FC<KpiRowProps> = ({
 				iconClass="bg-teal-500/10 text-teal-400"
 			/>
 
-			{/* KPI 2: Tổng Nhân Khẩu */}
 			<KpiCard
 				label="Tổng Nhân Khẩu"
 				value={formatVietnameseNumber(totalMembers)}
@@ -110,7 +108,6 @@ export const KpiRow: React.FC<KpiRowProps> = ({
 				iconClass="bg-sky-400/10 text-sky-300"
 			/>
 
-			{/* KPI 3: Tỷ Lệ DTTS */}
 			<KpiCard
 				label="Tỷ Lệ DTTS"
 				value={`${formatVietnameseNumber(minorityPct)}%`}
@@ -120,7 +117,6 @@ export const KpiRow: React.FC<KpiRowProps> = ({
 				iconClass="bg-amber-500/10 text-amber-400"
 			/>
 
-			{/* KPI 4: Cơ Cấu Giới Tính */}
 			<KpiCard
 				label="Cơ Cấu Giới Tính"
 				value={

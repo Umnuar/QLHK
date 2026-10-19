@@ -89,7 +89,6 @@ export const TimeCard: React.FC = () => {
 
 	return (
 		<div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden select-none transition-colors">
-			{/* Top Header Bar */}
 			<div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 flex items-center justify-between">
 				<div className="flex items-center">
 					<div className="bg-emerald-100 text-emerald-600 p-2.5 rounded-2xl mr-4 dark:bg-emerald-950/80 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 shrink-0">
@@ -122,7 +121,6 @@ export const TimeCard: React.FC = () => {
 			</div>
 
 			<div className="p-6 md:p-8 space-y-6">
-				{/* Digital Clock Box */}
 				<div className="p-6 rounded-3xl border border-emerald-100 dark:border-slate-800 bg-gradient-to-br from-emerald-50/60 to-slate-50 dark:from-slate-800/80 dark:to-slate-900/60 flex flex-col md:flex-row items-center justify-between gap-6">
 					<div className="space-y-1.5 text-center md:text-left">
 						<div className="flex items-center justify-center md:justify-start gap-2">
@@ -147,9 +145,7 @@ export const TimeCard: React.FC = () => {
 						</div>
 					</div>
 
-					{/* KPI Năm Tính Toán & Nguồn */}
 					<div className="flex flex-wrap items-center justify-center gap-3 w-full md:w-auto">
-						{/* Card Năm Tính Toán */}
 						<div className="px-5 py-3.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs text-center min-w-[140px]">
 							<div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
 								<Calendar className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -161,7 +157,6 @@ export const TimeCard: React.FC = () => {
 							<div className="text-[10px] text-slate-400 font-medium">Khóa cứng Backend</div>
 						</div>
 
-						{/* Card Nguồn Cấp */}
 						<div className="px-5 py-3.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs text-center min-w-[160px]">
 							<div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
 								{source === "internet" && <Globe className="w-3.5 h-3.5 text-emerald-500" strokeWidth={1.5} />}
@@ -191,7 +186,6 @@ export const TimeCard: React.FC = () => {
 					</div>
 				</div>
 
-				{/* Thông tin giải thích chuỗi Fallback (Read-Only) */}
 				<div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 flex items-start gap-3">
 					<ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" strokeWidth={1.5} />
 					<div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">

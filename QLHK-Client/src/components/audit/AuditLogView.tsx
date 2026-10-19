@@ -95,7 +95,6 @@ export const AuditLogView: React.FC = () => {
 	const { user, villages, selectedVillageId, setSelectedVillageId } = useApp();
 	const isAdmin = user?.role === "admin";
 
-	// Filters
 	const [actionFilter, setActionFilter] = useState<string>("ALL");
 	const [villageFilter, setVillageFilter] = useState<string>(
 		selectedVillageId || "",
@@ -103,12 +102,10 @@ export const AuditLogView: React.FC = () => {
 	const [userFilter, setUserFilter] = useState<string>("");
 	const [search, setSearch] = useState<string>("");
 
-	// Đồng bộ bộ lọc Thôn khi chọn trên header/sidebar
 	useEffect(() => {
 		setVillageFilter(selectedVillageId || "");
 	}, [selectedVillageId]);
 
-	// Data & Pagination
 	const [logs, setLogs] = useState<AuditLogItem[]>([]);
 	const [total, setTotal] = useState<number>(0);
 	const [page, setPage] = useState<number>(1);
@@ -117,7 +114,6 @@ export const AuditLogView: React.FC = () => {
 	const [loading, setLoading] = useState<boolean>(false);
 	const [userList, setUserList] = useState<User[]>([]);
 
-	// Tải danh sách cán bộ để phục vụ bộ lọc
 	useEffect(() => {
 		const loadUsers = async () => {
 			try {
@@ -130,7 +126,6 @@ export const AuditLogView: React.FC = () => {
 		loadUsers();
 	}, []);
 
-	// Truy vấn Audit Logs từ API
 	const fetchLogs = useCallback(
 		async (currentPage: number, append = false) => {
 			setLoading(true);
@@ -165,7 +160,6 @@ export const AuditLogView: React.FC = () => {
 		fetchLogs(1, false);
 	}, [fetchLogs]);
 
-	// Nút Tải thêm dữ liệu
 	const handleLoadMore = () => {
 		if (page < totalPages && !loading) {
 			const nextPage = page + 1;
@@ -174,7 +168,6 @@ export const AuditLogView: React.FC = () => {
 		}
 	};
 
-	// Cấu hình nhãn & màu sắc theo từng loại Action
 	const getActionConfig = (action: AuditAction) => {
 		switch (action) {
 			case "CREATE":
@@ -228,7 +221,6 @@ export const AuditLogView: React.FC = () => {
 		}
 	};
 
-	// Helper dịch JSON diff thân thiện
 	const renderFriendlyDiff = (item: AuditLogItem) => {
 		if (item.action === "UPDATE") {
 			const oldVals =
@@ -240,7 +232,6 @@ export const AuditLogView: React.FC = () => {
 					? item.new_values
 					: {};
 
-			// 1. Kiểm tra hành động đặc biệt: Tra cứu CCCD
 			if (newVals.action === "REVEAL_CCCD") {
 				return (
 					<div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
@@ -256,7 +247,6 @@ export const AuditLogView: React.FC = () => {
 				);
 			}
 
-			// 2. Biến động thuộc tính Sổ / Nhân khẩu cơ bản (bỏ qua IGNORED_FIELDS và nested objects)
 			const basicKeys = Array.from(
 				new Set([...Object.keys(oldVals), ...Object.keys(newVals)]),
 			).filter(
@@ -285,7 +275,6 @@ export const AuditLogView: React.FC = () => {
 					newVal: formatValue(newVals[k]),
 				}));
 
-			// 3. Biến động Nhân khẩu (Thêm/Sửa/Xóa thành viên)
 			const addedMembers: any[] = Array.isArray(newVals.added_members)
 				? newVals.added_members
 				: [];
@@ -311,7 +300,6 @@ export const AuditLogView: React.FC = () => {
 
 			return (
 				<div className="space-y-3 mt-2">
-					{/* Biến động thuộc tính cơ bản */}
 					{basicChanges.length > 0 && (
 						<div className="space-y-1.5">
 							<div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -343,14 +331,12 @@ export const AuditLogView: React.FC = () => {
 						</div>
 					)}
 
-					{/* Biến động thành viên hộ khẩu */}
 					{hasMemberChanges && (
 						<div className="space-y-2">
 							<div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
 								Biến động thành viên hộ:
 							</div>
 
-							{/* Thêm nhân khẩu */}
 							{addedMembers.map((m: any, idx: number) => (
 								<div
 									key={`add-${idx}`}
@@ -377,7 +363,6 @@ export const AuditLogView: React.FC = () => {
 								</div>
 							))}
 
-							{/* Cập nhật nhân khẩu */}
 							{updatedMembers.map((m: any, idx: number) => (
 								<div
 									key={`upd-${idx}`}
@@ -422,7 +407,6 @@ export const AuditLogView: React.FC = () => {
 								</div>
 							))}
 
-							{/* Xóa/Tách nhân khẩu */}
 							{removedMembers.map((m: any, idx: number) => (
 								<div
 									key={`rem-${idx}`}
@@ -537,7 +521,6 @@ export const AuditLogView: React.FC = () => {
 						)}
 					</div>
 
-					{/* Danh sách thành viên ban đầu nếu có */}
 					{citizensList.length > 0 && (
 						<div className="mt-2 space-y-1.5">
 							<div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
@@ -661,7 +644,6 @@ export const AuditLogView: React.FC = () => {
 
 	return (
 		<div className="space-y-6 animate-in fade-in pb-12">
-			{/* Banner Tiêu Đề */}
 			<div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors duration-150">
 				<div>
 					<div className="flex items-center gap-2.5 flex-wrap">
@@ -697,7 +679,6 @@ export const AuditLogView: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Thanh Bộ Lọc Sự Kiện Nhanh */}
 			<div className="flex flex-wrap items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
 				<span className="text-xs font-bold text-slate-500 dark:text-slate-400 px-3 flex items-center gap-1.5">
 					<Filter className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -859,7 +840,6 @@ export const AuditLogView: React.FC = () => {
 				/>
 			</div>
 
-			{/* Dòng Thời Gian Timeline Chuẩn QLNN */}
 			<div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 shadow-sm">
 				<div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
 					<div className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-2">
@@ -895,16 +875,13 @@ export const AuditLogView: React.FC = () => {
 
 							return (
 								<div key={item.id} className="relative pl-6 group">
-									{/* Node chấm tròn Timeline */}
 									<div
 										className={`absolute -left-2.25 top-1.5 w-4.5 h-4.5 rounded-full ${cfg.dotBg} ring-4 flex items-center justify-center text-white shadow-xs transition-transform group-hover:scale-110`}
 									>
 										<ActionIcon className="w-2.5 h-2.5 stroke-[3]" />
 									</div>
 
-									{/* Thẻ Nội Dung Sự Kiện */}
 									<div className="bg-slate-50/60 dark:bg-slate-950/60 p-4.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs hover:border-emerald-500/40 transition-all space-y-2">
-										{/* Header Thẻ: Loại thao tác & Thời gian */}
 										<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
 											<div className="flex items-center gap-2 flex-wrap">
 												<span
@@ -925,10 +902,8 @@ export const AuditLogView: React.FC = () => {
 											</div>
 										</div>
 
-										{/* Dịch JSON Diff Thân Thiện */}
 										{renderFriendlyDiff(item)}
 
-										{/* Footer Thẻ: Người thực hiện, IP, Đơn vị */}
 										<div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 flex-wrap gap-2">
 											<div className="flex items-center gap-3">
 												<span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
@@ -965,7 +940,6 @@ export const AuditLogView: React.FC = () => {
 					</div>
 				)}
 
-				{/* Nút Tải thêm dữ liệu & Phân trang */}
 				{page < totalPages && (
 					<div className="pt-6 flex justify-center border-t border-slate-100 dark:border-slate-800 mt-4">
 						<button

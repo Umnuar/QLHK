@@ -41,9 +41,6 @@ const formatTimePrefix = (date?: Date): string => {
 	return `${COLORS.DIM}[${time}]${COLORS.RESET}`;
 };
 
-/**
- * Trích xuất <HOST>:<PORT>/<DATABASE> từ biến DATABASE_URL
- */
 export const getDbTargetInfo = (rawUrl?: string): {
 	host: string;
 	port: string;
@@ -71,9 +68,6 @@ export const getDbTargetInfo = (rawUrl?: string): {
 	return { host: "localhost", port: "5432", database: "postgres" };
 };
 
-/**
- * [START] Service ready on port <PORT> | DB: Connected | Env: <NODE_ENV>
- */
 export const logStart = (port: number | string, env: string): string => {
 	const prefix = formatTimePrefix();
 	const tag = formatTag("START", COLORS.CYAN);
@@ -82,9 +76,6 @@ export const logStart = (port: number | string, env: string): string => {
 	return line;
 };
 
-/**
- * [DB] Connected to PostgreSQL at <HOST>:<PORT>/<DATABASE>
- */
 export const logDb = (host: string, port: string, database: string): string => {
 	const prefix = formatTimePrefix();
 	const tag = formatTag("DB", COLORS.BLUE);
@@ -93,9 +84,6 @@ export const logDb = (host: string, port: string, database: string): string => {
 	return line;
 };
 
-/**
- * [HTTP] <METHOD> <PATH> <STATUS> <DURATION>ms | IP: <IP>
- */
 export const logHttp = (
 	method: string,
 	path: string,
@@ -110,9 +98,6 @@ export const logHttp = (
 	return line;
 };
 
-/**
- * [AUTH] <username> (<role>) -> <ACTION> | IP: <IP>
- */
 export const logAuth = (
 	username: string,
 	role: string,
@@ -126,9 +111,6 @@ export const logAuth = (
 	return line;
 };
 
-/**
- * [CRON] <JobName> -> <STATUS>
- */
 export const logCron = (jobName: string, status: string): string => {
 	const prefix = formatTimePrefix();
 	const tag = formatTag("CRON", COLORS.YELLOW);
@@ -137,9 +119,6 @@ export const logCron = (jobName: string, status: string): string => {
 	return line;
 };
 
-/**
- * [ERROR] [<code>] <message>
- */
 export const logError = (code: string | number, message: string): string => {
 	const prefix = formatTimePrefix();
 	const tag = formatTag("ERROR", COLORS.RED);

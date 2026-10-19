@@ -53,12 +53,10 @@ export const StatKpiCard: React.FC<StatKpiCardProps> = ({
 			className={`bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-start justify-between gap-3 h-full min-h-[110px] ${className}`}
 		>
 			<div className="flex-1 min-w-0">
-				{/* Nhãn chữ hoa nhỏ màu xám */}
 				<div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
 					{label}
 				</div>
 
-				{/* Số lớn MÀU TRẮNG (dark) / màu chữ chính (light), font chữ thường + tabular-nums, không mono, không tô màu */}
 				<div className="text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight mt-1 flex items-baseline">
 					<span>{value}</span>
 					{unit && (
@@ -68,7 +66,6 @@ export const StatKpiCard: React.FC<StatKpiCardProps> = ({
 					)}
 				</div>
 
-				{/* Dòng phụ xám, tối đa 1 dòng, không tô màu cả dòng */}
 				{subText && (
 					<div className="text-xs text-slate-500 dark:text-slate-400 font-normal truncate mt-1">
 						{subText}
@@ -76,7 +73,6 @@ export const StatKpiCard: React.FC<StatKpiCardProps> = ({
 				)}
 			</div>
 
-			{/* Icon nét đơn xám trung tính ở góc phải */}
 			<Icon
 				className="w-6 h-6 text-slate-400 dark:text-slate-500 shrink-0 mt-0.5"
 				strokeWidth={1.5}
@@ -85,9 +81,6 @@ export const StatKpiCard: React.FC<StatKpiCardProps> = ({
 	);
 };
 
-/**
- * Interface cho Props của Panel biểu đồ
- */
 export interface StatChartPanelProps {
 	title: string;
 	description?: string;
@@ -98,9 +91,6 @@ export interface StatChartPanelProps {
 	className?: string;
 }
 
-/**
- * Component Panel biểu đồ dùng chung chuẩn card-shell v0 (1)
- */
 export const StatChartPanel: React.FC<StatChartPanelProps> = ({
 	title,
 	description,
@@ -155,7 +145,6 @@ export const StatChartPanel: React.FC<StatChartPanelProps> = ({
 					))}
 			</header>
 
-			{/* Nội dung bên trong panel */}
 			<div className="flex-1 min-h-0 flex flex-col justify-between overflow-hidden">
 				{children}
 			</div>
@@ -163,9 +152,6 @@ export const StatChartPanel: React.FC<StatChartPanelProps> = ({
 	);
 };
 
-/**
- * Interface cho Props của Dòng thanh tiến độ
- */
 export interface StatBarRowProps {
 	label: string;
 	value: number;
@@ -176,9 +162,6 @@ export interface StatBarRowProps {
 	className?: string;
 }
 
-/**
- * Component Dòng thanh tiến độ (Progress Bar Row) có khung riêng chuẩn
- */
 export const StatBarRow: React.FC<StatBarRowProps> = ({
 	label,
 	value,
@@ -201,7 +184,6 @@ export const StatBarRow: React.FC<StatBarRowProps> = ({
 			className={`p-1.5 sm:p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 space-y-1 ${className}`}
 		>
 			<div className="flex items-center justify-between text-xs gap-2">
-				{/* Trái: tên + phần trăm trong ngoặc xám nhỏ */}
 				<div className="flex items-center gap-1.5 min-w-0 truncate">
 					<span className="font-semibold text-slate-800 dark:text-slate-200 text-xs sm:text-[13px] truncate">
 						{label}
@@ -211,7 +193,6 @@ export const StatBarRow: React.FC<StatBarRowProps> = ({
 					</span>
 				</div>
 
-				{/* Phải: giá trị + đơn vị nhỏ xám, font tabular-nums */}
 				<div className="text-right shrink-0">
 					<span className="tabular-nums font-bold text-xs sm:text-[13px] text-slate-900 dark:text-white">
 						{formatVietnameseNumber(value)}
@@ -224,7 +205,6 @@ export const StatBarRow: React.FC<StatBarRowProps> = ({
 				</div>
 			</div>
 
-			{/* Dưới: thanh cao 6px bo tròn với track nền trống nhìn thấy rõ (~10% trắng dark, xám nhạt light) */}
 			<div className="w-full h-1.5 bg-slate-200/80 dark:bg-white/10 rounded-full overflow-hidden">
 				<div
 					className="h-full rounded-full transition-all duration-300"
@@ -238,9 +218,6 @@ export const StatBarRow: React.FC<StatBarRowProps> = ({
 	);
 };
 
-/**
- * Interface cho Props của Donut Chart SVG
- */
 const MIN_HIT_LENGTH = 16;
 
 export interface StatDonutItem {
@@ -265,9 +242,6 @@ export interface StatDonutProps {
 	ariaLabel?: string;
 }
 
-/**
- * Component Donut SVG chuẩn v0 (1): kích thước 176px, MIN_HIT_LENGTH = 16, hit-target vô hình chống trượt
- */
 export const StatDonut: React.FC<StatDonutProps> = ({
 	items,
 	segments: propSegments,
@@ -347,7 +321,6 @@ export const StatDonut: React.FC<StatDonutProps> = ({
 				className="-rotate-90 overflow-visible"
 				aria-hidden="true"
 			>
-				{/* Vòng nền rãnh tròn */}
 				<circle
 					cx={size / 2}
 					cy={size / 2}
@@ -357,7 +330,6 @@ export const StatDonut: React.FC<StatDonutProps> = ({
 					className="stroke-slate-100 transition-colors duration-150 dark:stroke-slate-800/40"
 				/>
 
-				{/* Vòng SVG hiển thị màu sắc trực quan (pointer-events-none để tránh đè hit area) */}
 				{arcs.map(({ segment, length, offset }) => (
 					<circle
 						key={segment.id}
@@ -374,7 +346,6 @@ export const StatDonut: React.FC<StatDonutProps> = ({
 					/>
 				))}
 
-				{/* Vòng Hit-Target vô hình với MIN_HIT_LENGTH = 16 chống trượt hover trên lát cắt nhỏ */}
 				{[...arcs]
 					.sort((a, b) => b.segment.pct - a.segment.pct)
 					.map(({ segment, length, offset }) => {
@@ -403,7 +374,6 @@ export const StatDonut: React.FC<StatDonutProps> = ({
 					})}
 			</svg>
 
-			{/* Tâm Donut: số lớn và nhãn tiếng Việt bọc chữ an toàn */}
 			<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
 				<span className="text-xl font-black leading-none text-slate-900 dark:text-white tabular-nums">
 					{displayCenterValue}
@@ -419,9 +389,6 @@ export const StatDonut: React.FC<StatDonutProps> = ({
 	);
 };
 
-/**
- * Component Tooltip native zero-dependency
- */
 interface TooltipContextType {
 	isOpen: boolean;
 	setIsOpen: (open: boolean) => void;

@@ -26,10 +26,6 @@ function getExcelSource(req: any): Buffer | string {
 	);
 }
 
-/**
- * POST /api/excel/preview
- * Bóc tách và xem trước dữ liệu file Excel kèm danh sách cảnh báo
- */
 export const previewExcel = async (
 	req: AuthRequest,
 	res: Response,
@@ -52,10 +48,6 @@ export const previewExcel = async (
 	}
 };
 
-/**
- * POST /api/excel/import
- * Thực thi Transaction lưu toàn bộ các hộ và nhân khẩu vào CSDL
- */
 export const importExcel = async (
 	req: AuthRequest,
 	res: Response,
@@ -64,11 +56,9 @@ export const importExcel = async (
 		let targetVillageId = req.user?.village_id;
 
 		if (!targetVillageId) {
-			// Nếu là Admin, lấy village_id từ body
 			targetVillageId = req.body.village_id || req.body.villageId;
 		}
 
-		// Nếu vẫn chưa có village_id, tìm Thôn 1 làm mặc định hoặc từ tên thôn bóc tách
 		if (!targetVillageId) {
 			const firstVillage = await prisma.villages.findFirst({
 				orderBy: { name: "asc" },
@@ -83,7 +73,6 @@ export const importExcel = async (
 			}
 		}
 
-		// Lấy dữ liệu parsed từ body hoặc parse trực tiếp từ file
 		let parseResult: ExcelParseResult;
 		if (req.body.households && Array.isArray(req.body.households)) {
 			parseResult = {
@@ -107,7 +96,6 @@ export const importExcel = async (
 			return;
 		}
 
-		// Thực thi theo từng batch 100 hộ để tối ưu hoá PostgreSQL I/O transaction và tránh khóa bảng quá lâu
 		const CHUNK_SIZE = 100;
 		let insertedHouseholds = 0;
 		let insertedCitizens = 0;

@@ -215,9 +215,7 @@ export const ExportSettingsModal: React.FC<ExportSettingsModalProps> = ({
 					</button>
 				</div>
 
-				{/* Modal Body (Scrollable) */}
 				<div className="p-5 space-y-5 overflow-y-auto max-h-[calc(92vh-180px)]">
-					{/* Phạm vi xuất (Áp dụng cho cả 2 tab) */}
 					<div className="space-y-3">
 						<label className="text-xs font-bold uppercase tracking-wider text-slate-500">
 							Phạm vi xuất dữ liệu
@@ -268,7 +266,6 @@ export const ExportSettingsModal: React.FC<ExportSettingsModalProps> = ({
 						</div>
 					</div>
 
-					{/* Nội dung Tab 1: Biểu mẫu 11 cột truyền thống */}
 					{activeTab === "traditional" && (
 						<div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2">
 							<p className="text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -282,10 +279,8 @@ export const ExportSettingsModal: React.FC<ExportSettingsModalProps> = ({
 						</div>
 					)}
 
-					{/* Nội dung Tab 2: Báo cáo chuyên đề tùy chọn */}
 					{activeTab === "custom" && (
 						<div className="space-y-5">
-							{/* 1. Bộ lọc độ tuổi */}
 							<div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3">
 								<div className="flex items-center justify-between">
 									<label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -376,7 +371,6 @@ export const ExportSettingsModal: React.FC<ExportSettingsModalProps> = ({
 								)}
 							</div>
 
-							{/* 2. Tiêu chí khác */}
 							<div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3">
 								<label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block">
 									2. Tiêu chí chuyên đề
@@ -454,7 +448,6 @@ export const ExportSettingsModal: React.FC<ExportSettingsModalProps> = ({
 								</div>
 							</div>
 
-							{/* 3. Tùy biến cột xuất (16 cột) */}
 							<div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3">
 								<div className="flex items-center justify-between">
 									<label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -515,7 +508,6 @@ export const ExportSettingsModal: React.FC<ExportSettingsModalProps> = ({
 					)}
 				</div>
 
-				{/* Modal Footer */}
 				<div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-end gap-3">
 					<button
 						type="button"

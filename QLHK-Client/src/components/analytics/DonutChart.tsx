@@ -61,7 +61,6 @@ export const DonutChart: React.FC<DonutChartProps> = ({
 				className="-rotate-90 overflow-visible"
 				aria-hidden="true"
 			>
-				{/* Vòng nền rãnh tròn */}
 				<circle
 					cx={size / 2}
 					cy={size / 2}
@@ -71,7 +70,6 @@ export const DonutChart: React.FC<DonutChartProps> = ({
 					className="stroke-slate-100 transition-colors duration-150 dark:stroke-slate-800/40"
 				/>
 
-				{/* Vòng SVG hiển thị màu sắc trực quan (pointer-events-none để tránh đè hit area) */}
 				{arcs.map(({ segment, length, offset }) => (
 					<circle
 						key={segment.id}
@@ -88,7 +86,6 @@ export const DonutChart: React.FC<DonutChartProps> = ({
 					/>
 				))}
 
-				{/* Vòng Hit-Target vô hình với MIN_HIT_LENGTH = 16 chống trượt hover trên lát cắt nhỏ */}
 				{[...arcs]
 					.sort((a, b) => b.segment.pct - a.segment.pct)
 					.map(({ segment, length, offset }) => {
@@ -117,7 +114,6 @@ export const DonutChart: React.FC<DonutChartProps> = ({
 					})}
 			</svg>
 
-			{/* Tâm Donut: số lớn và nhãn tiếng Việt bọc chữ an toàn */}
 			<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
 				<span className="text-xl font-bold leading-none text-slate-900 dark:text-white tabular-nums">
 					{centerValue}

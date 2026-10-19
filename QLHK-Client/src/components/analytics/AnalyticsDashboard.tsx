@@ -351,7 +351,6 @@ export const AnalyticsDashboard: React.FC = () => {
 			setApiVillageBreakdown(byVillageData);
 			setIsUsingCachedData(false);
 
-			// Lưu kết quả vào Offline Cache
 			await setCache(overviewCacheKey, overviewData);
 			await setCache(villageCacheKey, byVillageData);
 		} catch (err: any) {
@@ -384,7 +383,6 @@ export const AnalyticsDashboard: React.FC = () => {
 		fetchAnalytics();
 	}, [fetchAnalytics]);
 
-	// Tự động tải lại khi server kết nối lại
 	useEffect(() => {
 		const handleReconnected = () => {
 			fetchAnalytics();
@@ -394,7 +392,6 @@ export const AnalyticsDashboard: React.FC = () => {
 			window.removeEventListener("server:reconnected", handleReconnected);
 	}, [fetchAnalytics]);
 
-	// Tổng hợp số liệu hiển thị (Ưu tiên API/Cache, fallback Local)
 	const stats = useMemo(() => {
 		if (apiOverview) {
 			const ethnicMap: Record<string, number> = {};
@@ -414,7 +411,6 @@ export const AnalyticsDashboard: React.FC = () => {
 			const malePct = apiOverview.gender?.male?.percentage || 0;
 			const femalePct = apiOverview.gender?.female?.percentage || 0;
 
-			// Tính tổng DTTS (các dân tộc khác Kinh)
 			let minorityCount = 0;
 			(apiOverview.ethnicities || []).forEach((e) => {
 				if (e.name !== "Kinh") minorityCount += e.count;
@@ -424,7 +420,6 @@ export const AnalyticsDashboard: React.FC = () => {
 					? Math.round((minorityCount / totalMembers) * 1000) / 10
 					: 0;
 
-			// Age stats (hỗ trợ cả schema mới và schema cũ)
 			const ageStats = {
 				under16:
 					apiOverview.ageGroups?.under16 ||
@@ -494,7 +489,6 @@ export const AnalyticsDashboard: React.FC = () => {
 		return localCalculated.stats;
 	}, [apiOverview, localCalculated.stats]);
 
-	// Danh sách so sánh theo các thôn
 	const villageBreakdown = useMemo(() => {
 		if (apiVillageBreakdown && apiVillageBreakdown.length > 0) {
 			return apiVillageBreakdown;
@@ -502,7 +496,6 @@ export const AnalyticsDashboard: React.FC = () => {
 		return localCalculated.villageBreakdown;
 	}, [apiVillageBreakdown, localCalculated.villageBreakdown]);
 
-	// Tổng cộng toàn xã cộng dồn
 	const villageTotals = useMemo(() => {
 		let totalHh = 0;
 		let totalCit = 0;
@@ -531,7 +524,6 @@ export const AnalyticsDashboard: React.FC = () => {
 		};
 	}, [villageBreakdown]);
 
-	// Chi tiết cơ cấu tín ngưỡng & tôn giáo
 	const religionDetails = useMemo(() => {
 		const noReligion = stats.religionMap["Không"] || 0;
 		const catholic =
@@ -594,23 +586,22 @@ export const AnalyticsDashboard: React.FC = () => {
 		};
 	}, [stats.religionMap]);
 
-	// Phân khúc dân tộc cho DistributionCard (chuẩn SVG 176px, sum = 100.0%)
 	const ethnicSegments: Segment[] = useMemo(() => {
 		const colors = [
-			"#14b8a6", // teal
-			"#38bdf8", // sky
-			"#f59e0b", // amber
-			"#a855f7", // purple
-			"#ec4899", // pink
-			"#06b6d4", // cyan
-			"#10b981", // emerald
-			"#84cc16", // lime
-			"#eab308", // yellow
-			"#f97316", // orange
-			"#ef4444", // red
-			"#6366f1", // indigo
-			"#8b5cf6", // violet
-			"#d946ef", // fuchsia
+			"#14b8a6",
+			"#38bdf8",
+			"#f59e0b",
+			"#a855f7",
+			"#ec4899",
+			"#06b6d4",
+			"#10b981",
+			"#84cc16",
+			"#eab308",
+			"#f97316",
+			"#ef4444",
+			"#6366f1",
+			"#8b5cf6",
+			"#d946ef",
 		];
 
 		if (apiOverview?.ethnicities && apiOverview.ethnicities.length > 0) {
@@ -650,7 +641,6 @@ export const AnalyticsDashboard: React.FC = () => {
 		}));
 	}, [apiOverview?.ethnicities, stats.totalMembers, stats.ethnicMap]);
 
-	// Phân khúc tôn giáo cho DistributionCard (sum = 100.0%)
 	const religionSegments: Segment[] = useMemo(() => {
 		const rawItems = religionDetails.list
 			.filter((it) => it.value > 0)
@@ -685,7 +675,6 @@ export const AnalyticsDashboard: React.FC = () => {
 		}));
 	}, [religionDetails.list, stats.totalMembers]);
 
-	// Phân khúc tháp tuổi cho DistributionCard (4 nhóm MECE + chưa rõ nếu có, sum = 100.0%)
 	const ageSegments: Segment[] = useMemo(() => {
 		const segments: Segment[] = [
 			{
@@ -771,7 +760,6 @@ export const AnalyticsDashboard: React.FC = () => {
 			];
 
 			const aoaData = [titleRow, emptyRow, headers, ...dataRows, totalRow];
-			// Chống tấn công Formula Injection (CWE-1236) khi xuất báo cáo thống kê
 			const sanitizedAoaData = aoaData.map(sanitizeExcelRow);
 			const ws = XLSX.utils.aoa_to_sheet(sanitizedAoaData);
 
@@ -803,7 +791,6 @@ export const AnalyticsDashboard: React.FC = () => {
 			className="space-y-3.5 sm:space-y-4 animate-in fade-in"
 			style={{ "--stat-accent": DEFAULT_STAT_ACCENT } as React.CSSProperties}
 		>
-			{/* Top Banner & Scope */}
 			<div className="bg-white dark:bg-slate-900 px-4 py-3 sm:py-3.5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-colors duration-150">
 				<div>
 					<div className="flex items-center gap-2.5 flex-wrap">
@@ -811,7 +798,6 @@ export const AnalyticsDashboard: React.FC = () => {
 							{selectedVillageName || "Toàn xã Đăk Hà"}
 						</span>
 
-						{/* Badge Offline Cache nổi bật */}
 						{isUsingCachedData && (
 							<div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 rounded-xl text-xs font-bold shadow-xs animate-in fade-in">
 								<span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse inline-block mr-1.5" />
@@ -856,7 +842,6 @@ export const AnalyticsDashboard: React.FC = () => {
 				</div>
 			</div>
 
-			{/* 4 Thẻ KPI Chuẩn Chiều Cao 88px */}
 			<KpiRow
 				totalHouseholds={stats.totalHouseholds}
 				totalMembers={stats.totalMembers}
@@ -868,9 +853,7 @@ export const AnalyticsDashboard: React.FC = () => {
 				minorityPct={stats.minorityPct}
 			/>
 
-			{/* Lưới 4 Card Chính 2x2 Cố Định lg:h-[276px] */}
 			<div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
-				{/* Card 1: Dân tộc */}
 				<DistributionCard
 					icon={<PieChart className="size-4" />}
 					title="Phân Bổ Dân Tộc Địa Bàn Đăk Hà"
@@ -880,7 +863,6 @@ export const AnalyticsDashboard: React.FC = () => {
 					centerLabel="Dân tộc thiểu số"
 				/>
 
-				{/* Card 2: Tôn giáo */}
 				<DistributionCard
 					icon={<Shield className="size-4" />}
 					title="Cơ Cấu Tín Ngưỡng & Tôn Giáo"
@@ -899,7 +881,6 @@ export const AnalyticsDashboard: React.FC = () => {
 					centerLabel="Người có tôn giáo"
 				/>
 
-				{/* Card 3: Tháp tuổi */}
 				<DistributionCard
 					icon={<Users className="size-4" />}
 					title="Tháp Tuổi & Cơ Cấu Thế Hệ"
@@ -910,7 +891,6 @@ export const AnalyticsDashboard: React.FC = () => {
 					digits={1}
 				/>
 
-				{/* Card 4: Nghĩa vụ quân sự & Việc làm / Học vấn */}
 				<WelfareCard
 					militaryList={stats.militaryList}
 					educationList={stats.educationList}
@@ -919,7 +899,6 @@ export const AnalyticsDashboard: React.FC = () => {
 				/>
 			</div>
 
-			{/* Hàng 3: Bảng Thống Kê So Sánh Giữa Các Thôn Xã Đăk Hà */}
 			<div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col transition-colors duration-150">
 				<div className="p-3 sm:px-4 bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap text-xs">
 					<div className="flex items-center gap-2.5 text-slate-700 dark:text-slate-300 font-bold">

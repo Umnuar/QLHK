@@ -49,7 +49,6 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
 			</div>
 
 			<div className="flex items-center gap-3">
-				{/* Limit selector */}
 				<div className="flex items-center gap-1.5">
 					<span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">
 						Số dòng:
@@ -65,7 +64,6 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
 					/>
 				</div>
 
-				{/* Page navigation: ‹ Trước | Trang X / N | Sau › */}
 				<div className="flex items-center gap-1.5">
 					<button
 						type="button"

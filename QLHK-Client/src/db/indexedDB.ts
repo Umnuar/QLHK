@@ -118,15 +118,11 @@ export async function setCache(key: string, data: any): Promise<void> {
 			try {
 				ls.setItem(`${CACHE_PREFIX}${key}`, JSON.stringify(item));
 			} catch {
-				// Quota exceeded in localStorage, memory store retains it
 			}
 		}
 	}
 }
 
-/**
- * Lấy dữ liệu từ cache theo key
- */
 export async function getCache<T = any>(key: string): Promise<T | null> {
 	try {
 		const db = await openDatabase();
@@ -142,7 +138,6 @@ export async function getCache<T = any>(key: string): Promise<T | null> {
 			req.onerror = () => reject(req.error);
 		});
 	} catch {
-		// Fallback
 		const inMem = memoryFallback.get(key);
 		if (inMem) return inMem.data as T;
 
@@ -162,9 +157,6 @@ export async function getCache<T = any>(key: string): Promise<T | null> {
 	}
 }
 
-/**
- * Lấy thông tin metadata của cache (thời gian cập nhật)
- */
 export async function getCacheMeta(
 	key: string,
 ): Promise<{ updatedAt: number } | null> {
@@ -201,9 +193,6 @@ export async function getCacheMeta(
 	}
 }
 
-/**
- * Xóa một mục cache cụ thể
- */
 export async function removeCache(key: string): Promise<void> {
 	try {
 		const db = await openDatabase();
@@ -224,9 +213,6 @@ export async function removeCache(key: string): Promise<void> {
 	}
 }
 
-/**
- * Xóa toàn bộ dữ liệu offline cache của QLHK
- */
 export async function clearCache(): Promise<void> {
 	try {
 		const db = await openDatabase();

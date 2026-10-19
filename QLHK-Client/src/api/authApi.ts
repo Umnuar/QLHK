@@ -161,7 +161,6 @@ export const authApi = {
 			}
 			return user;
 		} catch (err: any) {
-			// Offline fallback từ session đã lưu
 			const storedSession = await getStoredSessionUser();
 			if (storedSession?.user) {
 				return storedSession.user;
@@ -202,7 +201,6 @@ export const authApi = {
 		const res = await apiClient.put(`/users/${userId}`, data);
 		const updatedUser = res.data?.data || res.data?.user || res.data;
 
-		// Cập nhật cache
 		const cached = await getCachedUsers();
 		const newCached = cached.map((u) =>
 			u.id === userId ? { ...u, ...data } : u,
@@ -222,7 +220,6 @@ export const authApi = {
 		const res = await apiClient.post("/users", userData);
 		const createdUser = res.data?.data || res.data?.user || res.data;
 
-		// Cập nhật cache
 		const cached = await getCachedUsers();
 		cached.push(createdUser);
 		await saveCachedUsers(cached);
@@ -233,7 +230,6 @@ export const authApi = {
 	async deleteUser(userId: string): Promise<void> {
 		await apiClient.delete(`/users/${userId}`);
 
-		// Cập nhật cache
 		const cached = await getCachedUsers();
 		const newCached = cached.filter((u) => u.id !== userId);
 		await saveCachedUsers(newCached);
@@ -245,7 +241,6 @@ export const authApi = {
 		try {
 			await apiClient.post("/auth/logout", { refreshToken: _refreshToken });
 		} catch {
-			// Offline fallback
 		}
 	},
 };

@@ -82,14 +82,11 @@ export function normalizeDob(rawVal: any): {
 		return { dob: `${day}/${month}/${year}`, age };
 	}
 
-	// Trường hợp 1: Số nguyên từ 1900 đến 2100 là chỉ có năm sinh
 	if (typeof rawVal === "number") {
 		if (rawVal >= 1900 && rawVal <= 2100) {
 			const currentYear = new Date().getFullYear();
 			return { dob: String(rawVal), age: currentYear - rawVal };
 		} else if (rawVal > 1000 && rawVal < 100000) {
-			// Excel epoch: 1899-12-30 (due to 1900 leap year bug)
-			// 25569 is 1970-01-01 in Excel serial
 			const utcDays = Math.floor(rawVal - 25569);
 			const date = new Date(utcDays * 86400 * 1000);
 			const day = String(date.getUTCDate()).padStart(2, "0");
@@ -108,13 +105,11 @@ export function normalizeDob(rawVal: any): {
 		return { dob: "", age: null };
 	}
 
-	// Trường hợp 2: Năm 3 chữ số ví dụ "11/01/976" -> "11/01/1976"
 	const threeDigitYearMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{3})$/);
 	if (threeDigitYearMatch) {
 		const d = parseInt(threeDigitYearMatch[1], 10);
 		const m = parseInt(threeDigitYearMatch[2], 10);
 		let y = parseInt(threeDigitYearMatch[3], 10);
-		// Chuẩn hóa 9xx thành 19xx
 		if (y >= 900 && y <= 999) {
 			y += 1000;
 		}
@@ -125,7 +120,6 @@ export function normalizeDob(rawVal: any): {
 		return { dob: `${dayStr}/${monthStr}/${y}`, age };
 	}
 
-	// Trường hợp 3: Chuỗi ISO YYYY-MM-DD hoặc YYYY/MM/DD
 	const isoMatch = str.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
 	if (isoMatch) {
 		const y = parseInt(isoMatch[1], 10);
@@ -150,14 +144,12 @@ export function normalizeDob(rawVal: any): {
 		return { dob: `${dayStr}/${monthStr}/${y}`, age };
 	}
 
-	// Trường hợp 4: Chuỗi ngày tháng năm DD/MM/YYYY hoặc M/D/YYYY
 	const dateParts = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
 	if (dateParts) {
 		const p1 = parseInt(dateParts[1], 10);
 		const p2 = parseInt(dateParts[2], 10);
 		const y = parseInt(dateParts[3], 10);
 
-		// Cả 2 phần đều > 12 -> Lỗi tháng không hợp lệ (ví dụ: 15/17/1989)
 		if (p1 > 12 && p2 > 12) {
 			return {
 				dob: str,
@@ -167,7 +159,6 @@ export function normalizeDob(rawVal: any): {
 
 		let d = p1;
 		let m = p2;
-		// Nếu phần 2 > 12 và phần 1 <= 12 -> Định dạng M/D/YYYY kiểu Mỹ (ví dụ: 8/18/2001)
 		if (p2 > 12 && p1 <= 12) {
 			d = p2;
 			m = p1;
@@ -193,26 +184,18 @@ export function normalizeDob(rawVal: any): {
 		return { dob: `${dayStr}/${monthStr}/${y}`, age };
 	}
 
-	// Trường hợp 5: Chỉ có năm dạng "1980"
 	if (/^\d{4}$/.test(str)) {
 		const y = parseInt(str, 10);
 		const currentYear = new Date().getFullYear();
 		return { dob: str, age: currentYear >= y ? currentYear - y : null };
 	}
 
-	// Không khớp bất kỳ mẫu hợp lệ nào
 	return {
 		dob: str,
 		warning: `Định dạng ngày sinh không chuẩn: "${str}"`,
 	};
 }
 
-/**
- * Bóc tách nội dung file Excel Nhân hộ khẩu (.xlsx hoặc luồng stream) bằng ExcelJS
- * Hỗ trợ cả 2 định dạng:
- * 1. Mẫu thực tế xã Đăk Hà (cột gộp nhiều tầng)
- * 2. Mẫu 11 cột phẳng tiêu chuẩn
- */
 export async function parseNhanHoKhauExcel(
 	bufferOrPathOrStream: Buffer | string | NodeJS.ReadableStream,
 ): Promise<ExcelParseResult> {
@@ -246,7 +229,6 @@ export async function parseNhanHoKhauExcel(
 
 	const sheetName = worksheet.name || "Dl Hộ";
 
-	// Chuyển đổi dữ liệu worksheet thành mảng 2 chiều rawRows
 	const rawRows: any[][] = [];
 	const rowCount = worksheet.rowCount;
 	for (let r = 1; r <= rowCount; r++) {
@@ -260,7 +242,6 @@ export async function parseNhanHoKhauExcel(
 	}
 
 	let villageName = "";
-	// Quét các dòng đầu để lấy thông tin Thôn nếu có
 	for (let i = 0; i < Math.min(5, rawRows.length); i++) {
 		const rowStr = rawRows[i].join(" ");
 		const match = rowStr.match(/THÔN:\s*([^.\n_…]+)/i);
@@ -269,7 +250,6 @@ export async function parseNhanHoKhauExcel(
 		}
 	}
 
-	// Nhận diện định dạng file
 	let isDakHaMerged = false;
 	for (let i = 0; i < Math.min(15, rawRows.length); i++) {
 		const rowStr = (rawRows[i] || [])
@@ -298,7 +278,6 @@ export async function parseNhanHoKhauExcel(
 	let householdCounter = 0;
 
 	if (isDakHaMerged) {
-		// Xử lý mẫu biểu thực tế xã Đăk Hà (cột gộp)
 		let dataStartIdx = -1;
 		let sttCol = 0;
 
@@ -360,7 +339,6 @@ export async function parseNhanHoKhauExcel(
 			const rawReligion = String(row[religionCol] || "").trim();
 			const rawNotes = String(row[notesCol] || "").trim();
 
-			// Dừng nếu không có tên hoặc STT
 			if (!rawHoLot && !rawTen && !rawStt) {
 				continue;
 			}
@@ -378,7 +356,6 @@ export async function parseNhanHoKhauExcel(
 				String(rawMemberOrder).trim() === "1";
 			const citizenWarnings: string[] = [];
 
-			// Chuẩn hóa ngày sinh
 			const dobResult = normalizeDob(rawDob);
 			if (dobResult.warning) {
 				citizenWarnings.push(dobResult.warning);
@@ -389,18 +366,15 @@ export async function parseNhanHoKhauExcel(
 				});
 			}
 
-			// Giới tính
 			const isFemale =
 				rawFemale === "X" || rawFemale === "NỮ" || rawFemale === "NU";
 			const gender: "Nam" | "Nữ" = isFemale ? "Nữ" : "Nam";
 
-			// Tuổi
 			let age: number | null = dobResult.age || null;
 			if (typeof rawAge === "number" && rawAge > 0) {
 				age = Math.round(rawAge);
 			}
 
-			// Tôn giáo
 			let religion = rawReligion;
 			if (
 				rawNotes &&
@@ -459,7 +433,6 @@ export async function parseNhanHoKhauExcel(
 			currentHousehold.member_count = currentHousehold.members.length;
 		}
 	} else {
-		// Xử lý mẫu 11 cột phẳng tiêu chuẩn
 		let startIdx = 0;
 		for (let i = 0; i < Math.min(10, rawRows.length); i++) {
 			const row0 = String(rawRows[i][0] || "").toLowerCase();

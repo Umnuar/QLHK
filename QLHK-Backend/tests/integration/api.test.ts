@@ -168,7 +168,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(res.body.accessToken).toBeDefined();
       expect(res.body.refreshToken).toBeDefined();
 
-      // Cập nhật refresh token mới sau rotation
       refreshToken = res.body.refreshToken;
     });
 
@@ -179,7 +178,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
 
       expect(res.status).toBe(200);
 
-      // Thử dùng lại refresh token vừa logout phải bị từ chối
       const resReuse = await request(app).post('/api/auth/refresh').send({
         refreshToken,
       });
@@ -204,7 +202,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
         refreshTokens.add(res.body.refreshToken);
       });
 
-      // Xác nhận cả 5 refresh token sinh ra đều hoàn toàn khác nhau (nhờ randomUUID jwtid)
       expect(refreshTokens.size).toBe(5);
     });
   });
@@ -401,7 +398,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
     const secretCCCD = '064099008877';
 
     beforeAll(async () => {
-      // Dọn dẹp dữ liệu test cũ nếu có
       await prisma.citizens.deleteMany({
         where: { full_name: 'Vũ Thị Bảo Mật' },
       });
@@ -435,9 +431,8 @@ describe('QLHK Backend End-to-End API Integration', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.has_cccd).toBe(true);
-      expect(res.body.data.cccd).toBeUndefined(); // Không trả về ciphertext
+      expect(res.body.data.cccd).toBeUndefined();
 
-      // Kiểm tra trong DB: cccd phải lưu dạng iv:authTag:encryptedHex
       const inDb = await prisma.citizens.findUnique({ where: { id: testCitizenId } });
       expect(inDb!.cccd).toBeDefined();
       expect(inDb!.cccd!.split(':').length).toBe(3);
@@ -493,7 +488,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(Array.isArray(res.body.data)).toBe(true);
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
 
-      // Đảm bảo không để lộ trường password_hash
       res.body.data.forEach((u: any) => {
         expect(u.password_hash).toBeUndefined();
         expect(u.username).toBeDefined();
@@ -548,7 +542,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
 
-      // Thử đăng nhập bằng mật khẩu mới
       const loginRes = await request(app).post('/api/auth/login').send({
         username: 'canbo_test_01',
         password: 'new_secret_password_123',
@@ -597,7 +590,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
 
-      // Xác nhận trong DB đã xóa
       const checkDb = await prisma.users.findUnique({ where: { id: newUserId } });
       expect(checkDb).toBeNull();
     });
@@ -625,7 +617,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
     });
 
     it('GET /api/audit-logs: Lọc theo action hoặc entity_type', async () => {
-      // Đảm bảo có ít nhất 1 audit log mẫu để kiểm tra lọc
       const sampleLog = await prisma.audit_logs.findFirst();
       const testAction = sampleLog?.action || 'IMPORT';
       const testEntityType = sampleLog?.entity_type || 'excel_import';
@@ -739,7 +730,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(head.cccd_last4).toBe('1122');
       headCitizenId = head.id;
 
-      // Kiểm tra trong CSDL PostgreSQL: CCCD phải được mã hóa AES-256-GCM và có hash, last4
       const citizensInDb = await prisma.citizens.findMany({
         where: { household_id: testHouseholdId, is_deleted: false },
       });
@@ -779,7 +769,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(res.body.data).toBeDefined();
       expect(res.body.data.book_number).toMatch(/^HGD-\d+-\d+$/);
 
-      // Dọn dẹp bản ghi test
       await prisma.citizens.deleteMany({ where: { household_id: res.body.data.id } });
       await prisma.households.deleteMany({ where: { id: res.body.data.id } });
     });
@@ -791,7 +780,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
         status: 'active',
         version: 1,
         members: [
-          // Giữ và sửa chủ hộ
           {
             id: headCitizenId,
             stt: 1,
@@ -800,12 +788,11 @@ describe('QLHK Backend End-to-End API Integration', () => {
             full_name: 'Nguyễn Văn Chủ Hộ Đã Đổi Tên',
             gender: 'Nam',
             dob: '1980-01-01',
-            cccd: '••••••••1122', // Masked cccd không bị ghi đè cipher rỗng
+            cccd: '••••••••1122',
             ethnicity: 'Kinh',
             religion: 'Không',
             notes: 'Đã cập nhật',
           },
-          // Thêm con đẻ mới (không có id)
           {
             stt: 2,
             is_head: false,
@@ -817,7 +804,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
             ethnicity: 'Kinh',
             religion: 'Không',
           },
-          // Người vợ cũ không còn trong mảng -> sẽ bị soft delete
         ],
       };
 
@@ -847,7 +833,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(newChildInDb!.cccd!.split(':')).toHaveLength(3);
       expect(newChildInDb!.cccd_hash).toBeDefined();
 
-      // Kiểm tra CSDL: người vợ cũ đã bị soft delete (is_deleted: true)
       const deletedWife = await prisma.citizens.findFirst({
         where: { household_id: testHouseholdId, full_name: 'Trần Thị Vợ' },
       });
@@ -908,7 +893,7 @@ describe('QLHK Backend End-to-End API Integration', () => {
                 relationship: 'Chủ hộ',
                 full_name: 'A Đột',
                 gender: 'Nam',
-                dob: '15/01/2009', // 18 tuổi vào năm tương lai 2027
+                dob: '15/01/2009',
                 ethnicity: 'Ba Na',
                 religion: 'Không',
               },
@@ -918,7 +903,7 @@ describe('QLHK Backend End-to-End API Integration', () => {
                 relationship: 'Con',
                 full_name: 'A Xoang',
                 gender: 'Nam',
-                dob: `01/06/${curYear - 20}`, // 20 tuổi (độ tuổi NVQS 18-27)
+                dob: `01/06/${curYear - 20}`,
                 ethnicity: 'Xơ Đăng',
                 religion: 'Không',
               },
@@ -1001,9 +986,7 @@ describe('QLHK Backend End-to-End API Integration', () => {
       for (const hh of res.body.data) {
         for (const c of hh.citizens || []) {
           if (c.cccd && c.cccd !== 'Chưa có') {
-            // Không được là số CCCD trần 12 chữ số
             expect(c.cccd).not.toMatch(/^\d{12}$/);
-            // Phải chứa ký tự mask
             expect(c.cccd).toContain('••••••••');
           }
           if (c.cccd_masked && c.cccd_masked !== 'Chưa có') {
@@ -1039,7 +1022,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
     });
 
     it('TASK-010: GET /api/households?search=... tìm kiếm chính xác theo số CCCD', async () => {
-      // Tìm theo 12 số CCCD của chủ hộ test: '064080001122'
       const res = await request(app)
         .get('/api/households?search=064080001122')
         .set('Authorization', `Bearer ${adminToken}`);
@@ -1049,7 +1031,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
       const found = res.body.data.find((h: any) => h.id === testHouseholdId);
       expect(found).toBeDefined();
 
-      // Tìm theo 4 số cuối CCCD: '1122'
       const resLast4 = await request(app)
         .get('/api/households?search=1122')
         .set('Authorization', `Bearer ${adminToken}`);
@@ -1075,7 +1056,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
     let auditHeadCitizenId: string;
 
     it('Admin tạo hộ khẩu tại Thôn 1 -> GET /api/audit-logs?village_id=... trả về chính xác sự kiện, đúng village_id và JSON parse hợp lệ', async () => {
-      // 1. Admin tạo hộ khẩu tại Thôn 1
       const createRes = await request(app)
         .post('/api/households')
         .set('Authorization', `Bearer ${adminToken}`)
@@ -1102,7 +1082,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
       auditTestHouseholdId = createRes.body.data.id;
       auditHeadCitizenId = createRes.body.data.citizens[0].id;
 
-      // 2. Admin gọi GET /api/audit-logs với village_id của Thôn 1
       const auditRes = await request(app)
         .get(`/api/audit-logs?village_id=${thon1VillageId}`)
         .set('Authorization', `Bearer ${adminToken}`);
@@ -1112,14 +1091,12 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(Array.isArray(auditRes.body.data)).toBe(true);
       expect(auditRes.body.data.length).toBeGreaterThan(0);
 
-      // Tìm sự kiện CREATE vừa tạo
       const createLog = auditRes.body.data.find(
         (log: any) => log.entity_id === auditTestHouseholdId && log.action === 'CREATE'
       );
       expect(createLog).toBeDefined();
       expect(createLog.village_id).toBe(thon1VillageId);
 
-      // Kiểm tra old_values và new_values là Object JSON, không phải chuỗi thô (raw String)
       expect(createLog.old_values).toBeNull();
       expect(typeof createLog.new_values).toBe('object');
       expect(createLog.new_values).not.toBeNull();
@@ -1129,7 +1106,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
     });
 
     it('Admin cập nhật hộ khẩu -> GET /api/audit-logs trả về diff chi tiết (old_values & new_values dạng JSON Object)', async () => {
-      // 1. Cập nhật hộ khẩu vừa tạo (đổi địa chỉ và thêm thành viên con)
       const updateRes = await request(app)
         .put(`/api/households/${auditTestHouseholdId}`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -1160,7 +1136,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
 
       expect(updateRes.status).toBe(200);
 
-      // 2. Tra cứu audit logs
       const auditRes = await request(app)
         .get(`/api/audit-logs?village_id=${thon1VillageId}`)
         .set('Authorization', `Bearer ${adminToken}`);
@@ -1172,13 +1147,11 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(updateLog).toBeDefined();
       expect(updateLog.village_id).toBe(thon1VillageId);
 
-      // Kiểm tra old_values và new_values là Object JSON
       expect(typeof updateLog.old_values).toBe('object');
       expect(updateLog.old_values).not.toBeNull();
       expect(typeof updateLog.new_values).toBe('object');
       expect(updateLog.new_values).not.toBeNull();
 
-      // Kiểm tra cấu trúc diff chi tiết
       expect(updateLog.old_values.address).toBe('123 Đường Test Audit');
       expect(updateLog.new_values.address).toBe('456 Đường Test Audit Mới');
       expect(Array.isArray(updateLog.new_values.added_members)).toBe(true);
@@ -1298,7 +1271,6 @@ describe('QLHK Backend End-to-End API Integration', () => {
       expect(backupPath).toBeTruthy();
       const fs = await import('fs');
       expect(fs.existsSync(backupPath!)).toBe(true);
-      // Clean up file sau khi test
       if (backupPath && fs.existsSync(backupPath)) {
         fs.unlinkSync(backupPath);
       }

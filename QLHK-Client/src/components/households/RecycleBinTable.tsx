@@ -212,7 +212,6 @@ export const RecycleBinTable: React.FC<RecycleBinTableProps> = ({
 											</td>
 										</tr>
 
-										{/* Dòng mở rộng: Danh sách nhân khẩu chi tiết */}
 										{isExpanded && (
 											<tr className="bg-slate-50/70 dark:bg-slate-950/40 border-b border-slate-200/80 dark:border-slate-800/80 animate-in fade-in duration-200">
 												<td

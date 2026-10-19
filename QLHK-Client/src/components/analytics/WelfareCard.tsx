@@ -61,7 +61,6 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 			badge={totalMetrics > 0 ? `${totalMetrics} chỉ số` : "Chỉ số an sinh"}
 		>
 			<div className="grid min-h-0 flex-1 grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-slate-200 dark:sm:divide-slate-800">
-				{/* Cột 1: Tình Hình Nghĩa Vụ Quân Sự */}
 				<section
 					aria-label="Tình Hình Nghĩa Vụ Quân Sự"
 					className="flex flex-col px-4 py-3 min-h-0"
@@ -184,13 +183,11 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
 					</div>
 				</section>
 
-				{/* Cột 2: Trình Độ Học Vấn & Cơ Cấu Nghề Nghiệp */}
 				<section
 					aria-label="Trình Độ Học Vấn & Cơ Cấu Nghề Nghiệp"
 					className="flex flex-col px-4 py-3 min-h-0"
 				>
 					<div className="h-[210px] overflow-y-auto scrollbar-thin pr-1.5 space-y-3">
-						{/* Nhóm Học Vấn */}
 						<div>
 							<div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5 mb-2">
 								<h3 className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-600 dark:text-slate-300 uppercase">
@@ -264,7 +261,6 @@ export const WelfareCard: React.FC<WelfareCardProps> = ({
  							)}
  						</div>
 
- 						{/* Nhóm Nghề Nghiệp */}
  						<div className="pt-1">
  							<div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5 mb-2">
  								<h3 className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-600 dark:text-slate-300 uppercase">

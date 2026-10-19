@@ -37,9 +37,6 @@ export function encryptCCCD(plainCCCD: string): {
 	};
 }
 
-/**
- * Giải mã chuỗi CCCD từ định dạng "ivHex:authTagHex:encryptedHex"
- */
 export function decryptCCCD(encryptedString: string): string {
 	if (!encryptedString || !encryptedString.includes(":")) {
 		return encryptedString || "";
@@ -65,9 +62,6 @@ export function decryptCCCD(encryptedString: string): string {
 	return decrypted;
 }
 
-/**
- * Sinh HMAC-SHA256 hash của CCCD kèm PEPPER bí mật hệ thống chống Rainbow Table
- */
 export function hashCCCD(plainCCCD: string): string {
 	const cleaned = plainCCCD.trim();
 	const pepper =
@@ -75,9 +69,6 @@ export function hashCCCD(plainCCCD: string): string {
 	return crypto.createHmac("sha256", pepper).update(cleaned).digest("hex");
 }
 
-/**
- * Xóa dấu tiếng Việt phục vụ tìm kiếm không dấu
- */
 export function removeAccents(str: string): string {
 	if (!str) return "";
 	return str

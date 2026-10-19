@@ -218,13 +218,11 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
 		};
 
 		setToasts((prev) => {
-			// Nếu cùng hành động lặp lại (cùng actionKey): thay thế toast cũ
 			let updated = prev;
 			if (opts.actionKey) {
 				updated = updated.filter((t) => t.actionKey !== opts.actionKey);
 			}
 
-			// Thêm toast mới và giới hạn tối đa 3 toast (đẩy toast cũ nhất đi)
 			const nextList = [...updated, newToast];
 			if (nextList.length > 3) {
 				return nextList.slice(-3);
@@ -235,7 +233,6 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
 		return id;
 	}, []);
 
-	// Bắt phím Escape để đóng toast mới nhất
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "Escape" && toastsRef.current.length > 0) {
@@ -271,7 +268,6 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
 		<ToastContext.Provider value={contextValue}>
 			{children}
 
-			{/* Container thông báo toast chung: Cố định mép dưới, không đè sidebar, z-index 100 */}
 			<div
 				className="fixed bottom-6 left-4 right-4 sm:left-64 sm:right-0 z-[100] flex flex-col items-center gap-2 pointer-events-none select-none"
 				aria-label="Thông báo hệ thống"

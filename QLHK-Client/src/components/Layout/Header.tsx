@@ -150,7 +150,6 @@ export const Header: React.FC = () => {
 
 					<div className="h-5 w-px bg-slate-700" />
 
-					{/* User Info & Role Badge */}
 					<div className="flex items-center gap-2 sm:gap-3">
 						<div className="flex items-center gap-2.5">
 							<div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200 font-bold text-xs">
@@ -175,7 +174,6 @@ export const Header: React.FC = () => {
 							</div>
 						</div>
 
-						{/* Logout Button */}
 						<button
 							type="button"
 							onClick={logout}

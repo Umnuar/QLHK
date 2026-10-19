@@ -135,7 +135,6 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 		onEscape: onClose,
 	});
 
-
 	if (!isOpen || typeof document === "undefined") return null;
 
 	const handleRelationshipChange = (val: string) => {
@@ -258,7 +257,6 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 			aria-labelledby="citizen-modal-title"
 		>
 			<div ref={modalRef} className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto">
-				{/* Header */}
 				<div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
 					<div className="flex items-center gap-2.5">
 						<User
@@ -289,7 +287,6 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 					</button>
 				</div>
 
-				{/* Error Alert */}
 				{error && (
 					<div className="flex items-center gap-2.5 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold animate-in fade-in">
 						<AlertCircle className="w-4 h-4 shrink-0" strokeWidth={1.5} />
@@ -297,9 +294,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 					</div>
 				)}
 
-				{/* Form */}
 				<form onSubmit={handleSubmit} noValidate autoComplete="off" className="space-y-3.5">
-					{/* Hàng 1: Họ và Tên * */}
 					<div>
 						<label htmlFor="citizen-full-name" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
 							Họ và Tên <span className="text-rose-500">*</span>
@@ -318,7 +313,6 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 						/>
 					</div>
 
-					{/* Hàng 2: Quan hệ với chủ hộ & Giới tính */}
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 						<div>
 							<label htmlFor="citizen-relationship" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -354,7 +348,6 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 						</div>
 					</div>
 
-					{/* Hàng 3: Ngày tháng năm sinh & Số CCCD */}
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 						<div>
 							<label htmlFor="citizen-dob" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -421,7 +414,6 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 						</div>
 					</div>
 
-					{/* Hàng 4: Dân tộc & Tôn giáo */}
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 						<div>
 							<CustomSelect
@@ -444,7 +436,6 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 						</div>
 					</div>
 
-					{/* Hàng 5: Tình hình thực hiện nghĩa vụ quân sự */}
 					<div>
 						<label htmlFor="citizen-military-status" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
 							Tình hình thực hiện nghĩa vụ quân sự
@@ -461,7 +452,6 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 						/>
 					</div>
 
-					{/* Hàng 6: Trình độ học vấn & Nghề nghiệp */}
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 						<div>
 							<label htmlFor="citizen-education" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -496,7 +486,6 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 						</div>
 					</div>
 
-					{/* Hàng 7: Quê quán */}
 					<div>
 						<label htmlFor="citizen-native-place" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
 							Quê quán
@@ -513,7 +502,6 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 						/>
 					</div>
 
-					{/* Hàng 8: Ghi chú nhân khẩu */}
 					<div>
 						<label htmlFor="citizen-notes" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
 							Ghi chú nhân khẩu / Nghề nghiệp
@@ -530,7 +518,6 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 						/>
 					</div>
 
-					{/* Footer */}
 					<div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2.5">
 						<button
 							type="button"

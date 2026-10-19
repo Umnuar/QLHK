@@ -52,7 +52,6 @@ describe("QLHK Large Dataset Benchmark (23,000+ Record Simulation & Query Plan)"
 		const elapsedMs = performance.now() - startTime;
 		console.log(`Thời gian thực thi Analytics GROUP BY: ${elapsedMs.toFixed(2)}ms`);
 
-		// Thời gian thực thi aggregation qua cloud latency Singapore (< 3000ms)
 		expect(elapsedMs).toBeLessThan(3000);
 		expect(totalHouseholds).toBeGreaterThanOrEqual(0);
 		expect(totalCitizens).toBeGreaterThanOrEqual(0);

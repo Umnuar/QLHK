@@ -244,7 +244,6 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 
 								return (
 									<React.Fragment key={hh.id}>
-										{/* Hàng cha: Hộ gia đình - chiều cao ~52px, nền đồng bộ 100% giữa dòng và ô sticky */}
 										<tr
 											onClick={() => toggleAccordion(hh.id)}
 											className={`h-[52px] border-b border-slate-100 dark:border-slate-800/60 transition-colors group text-[14px] cursor-pointer ${rowClass}`}
@@ -265,7 +264,6 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 												/>
 											</td>
 
-											{/* Accordion trigger arrow: xám khi đóng, đổi xanh khi đang mở */}
 											<td className="py-3 px-2 text-center">
 												<ChevronRight
 													strokeWidth={1.75}
@@ -281,7 +279,6 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 												{formatVietnameseNumber(stt)}
 											</td>
 
-											{/* Cột Hộ Gia Đình: Bỏ tiền tố "Hộ ông/bà:", chỉ hiện tên đậm, giá trị chưa có hiển thị xám nghiêng */}
 											<td className="py-3.5 px-4 whitespace-nowrap">
 												<div className="text-[14px] leading-tight">
 													{isPlaceholderName ? (
@@ -301,7 +298,6 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 												)}
 											</td>
 
-											{/* Cột Thôn Quản Lý: Badge viền xanh lá, nền xanh lá rất nhạt đồng bộ */}
 											<td className="py-3.5 px-3.5 whitespace-nowrap">
 												<span className={VILLAGE_BADGE_CLASS}>
 													{hh.village_name || (
@@ -312,7 +308,6 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 												</span>
 											</td>
 
-											{/* Cột Địa Chỉ: Tên địa chỉ hoặc xám nghiêng nếu chưa có */}
 											<td className="py-3.5 px-4 text-slate-700 dark:text-slate-300 font-normal whitespace-nowrap text-[14px]">
 												{hh.address || (
 													<span className="text-slate-400 dark:text-slate-500 italic">
@@ -321,7 +316,6 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 												)}
 											</td>
 
-											{/* Cột Số Nhân Khẩu: Căn giữa, 0 màu xám nhạt, > 0 giữ nhấn xanh nhẹ */}
 											<td className="py-3.5 px-3 text-center w-28 whitespace-nowrap">
 												{memberCount === 0 ? (
 													<span className="tabular-nums text-[14px] text-slate-400 dark:text-slate-500 font-normal">
@@ -334,7 +328,6 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 												)}
 											</td>
 
-											{/* Cột Trạng Thái: Badge nhỏ cùng kích thước, có chấm màu trợ năng */}
 											<td className="py-3.5 px-3 text-center w-32 whitespace-nowrap">
 												<span
 													className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${statusBadge.className}`}
@@ -347,7 +340,6 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 												</span>
 											</td>
 
-											{/* Cột Thao Tác: Ô bấm 32px, hover sửa=xanh, xóa=đỏ */}
 											{!readOnly && (
 												<td
 													className={`py-3.5 px-3 text-center sticky right-0 z-10 shadow-[-6px_0_12px_-2px_rgba(0,0,0,0.08)] dark:shadow-[-6px_0_12px_-2px_rgba(0,0,0,0.3)] whitespace-nowrap transition-colors ${stickyCellClass}`}
@@ -377,7 +369,6 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 											)}
 										</tr>
 
-										{/* Hàng con bung mở (Flat Inline Sub-table: Danh sách Nhân khẩu) */}
 										{isExpanded &&
 											(() => {
 												const effectiveYear =
@@ -440,7 +431,6 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 																	)}
 																</div>
 
-																{/* Thanh thông báo lọc độ tuổi tinh gọn */}
 																{ageFilter && (
 																	<div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200">
 																		<div className="flex items-center gap-1.5 flex-wrap">
@@ -765,7 +755,6 @@ export const HouseholdTable: React.FC<HouseholdTableProps> = ({
 				</table>
 			</div>
 
-			{/* Pagination Footer */}
 			<TablePagination
 				itemCount={households.length}
 				total={total}

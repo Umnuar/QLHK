@@ -69,7 +69,6 @@ export const YearSelector: React.FC<YearSelectorProps> = ({
 
 	return (
 		<div ref={containerRef} className={`relative ${className}`}>
-			{/* Trigger button */}
 			<div
 				onClick={() => setIsOpen(!isOpen)}
 				className={`h-8 sm:h-9 px-2.5 py-1 text-xs rounded-xl flex items-center justify-between gap-1.5 shadow-2xs cursor-pointer select-none transition-all ${
@@ -113,14 +112,12 @@ export const YearSelector: React.FC<YearSelectorProps> = ({
 				</div>
 			</div>
 
-			{/* Popover */}
 			{isOpen && (
 				<div className="absolute right-0 top-full mt-1.5 w-52 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 space-y-3 animate-in fade-in zoom-in-95 duration-100">
 					<div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
 						Năm Tính Toán
 					</div>
 
-					{/* Stepper điều chỉnh năm */}
 					<div className="flex items-center justify-between gap-1.5">
 						<button
 							type="button"
@@ -158,7 +155,6 @@ export const YearSelector: React.FC<YearSelectorProps> = ({
 						</button>
 					</div>
 
-					{/* Hàng nút thao tác dưới */}
 					<div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
 						<button
 							type="button"

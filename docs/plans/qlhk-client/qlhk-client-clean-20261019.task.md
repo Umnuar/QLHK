@@ -22,7 +22,7 @@
 
 ## Execution Checklist
 
-- [ ] Step 1: Remove Dead Latency State and File-Scope Constants in AppContext [CLN-001]
+- [x] Step 1: Remove Dead Latency State and File-Scope Constants in AppContext [CLN-001]
   - Finding IDs: `CLN-001` (Root Cause Key: `CL-01:QLHK-Client/src/AppContext.tsx:dead-latency-state-and-constants`; Class: `CL-01`)
   - Target Files: `QLHK-Client/src/AppContext.tsx`
   - Role Focus: Preserving external behavior, dead-code elimination, caller-callee blast radius verification
@@ -30,7 +30,7 @@
   - Diff Budget: <= 200 gross LOC (modified/added), <= 25 files outside target directories
   - Verification: `cd QLHK-Client && npm test -- tests/e2e/workflow.test.ts && cd QLHK-Client && npx tsc --noEmit`
   - Equivalence Check: API Surface unchanged vs Step 0 snapshot; scoped tests pass
-  - Evidence: BEFORE `<pass summary>` / AFTER `<pass summary>`
+  - Evidence: BEFORE 16 passed, 0 tsc errors / AFTER 16 passed, 0 tsc errors; API Surface unchanged
 
 - [ ] Step 2: Remove Unused State Setter setLoading in Household Store [CLN-002]
   - Finding IDs: `CLN-002` (Root Cause Key: `CL-01:QLHK-Client/src/store/householdStore.ts:unused-setLoading-setter`; Class: `CL-01`)

@@ -63,8 +63,6 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 let lastFetchedVillagesTime = 0;
 
-let emaLatency: number | null = null;
-const EMA_ALPHA = 0.3; // Hệ số làm mượt: 0.3 = phản ứng vừa phải, loại spike
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 	children,
@@ -93,7 +91,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 	const [villages, setVillages] = useState<Village[]>(VILLAGES);
 	const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
 	const [isBackendHealthy, setIsBackendHealthy] = useState<boolean>(true);
-	const [latency, setLatency] = useState<number | null>(null);
+	const [latency] = useState<number | null>(null);
 	const [isInitializing, setIsInitializing] = useState<boolean>(true);
 
 	// 1. Sidebar Collapsed State

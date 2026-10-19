@@ -1,9 +1,6 @@
 import {
 	Activity,
 	ArrowDownCircle,
-	ArrowRight,
-	ChevronLeft,
-	ChevronRight,
 	Clock,
 	FileSpreadsheet,
 	Filter,
@@ -19,7 +16,7 @@ import {
 	User as UserIcon,
 } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useApp } from "../../AppContext";
 import {
 	type AuditAction,
@@ -115,7 +112,7 @@ export const AuditLogView: React.FC = () => {
 	const [logs, setLogs] = useState<AuditLogItem[]>([]);
 	const [total, setTotal] = useState<number>(0);
 	const [page, setPage] = useState<number>(1);
-	const [limit, setLimit] = useState<number>(10);
+	const [limit] = useState<number>(10);
 	const [totalPages, setTotalPages] = useState<number>(1);
 	const [loading, setLoading] = useState<boolean>(false);
 	const [userList, setUserList] = useState<User[]>([]);

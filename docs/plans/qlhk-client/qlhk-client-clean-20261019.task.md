@@ -52,7 +52,7 @@
   - Equivalence Check: API Surface unchanged vs Step 0 snapshot; scoped tests pass
   - Evidence: BEFORE 8 passed, 0 tsc errors / AFTER 8 passed, 0 tsc errors; API Surface unchanged
 
-- [ ] Step 4: Remove Unused Icons, Dead Hook and State Setter in AuditLogView [CLN-004]
+- [x] Step 4: Remove Unused Icons, Dead Hook and State Setter in AuditLogView [CLN-004]
   - Finding IDs: `CLN-004` (Root Cause Key: `CL-01:QLHK-Client/src/components/audit/AuditLogView.tsx:unused-imports-and-state`; Class: `CL-01`)
   - Target Files: `QLHK-Client/src/components/audit/AuditLogView.tsx`
   - Role Focus: Preserving external behavior, dead-code elimination, caller-callee blast radius verification
@@ -60,7 +60,7 @@
   - Diff Budget: <= 200 gross LOC (modified/added), <= 25 files outside target directories
   - Verification: `cd QLHK-Client && npm test -- tests/e2e/regressionFlows.test.ts && cd QLHK-Client && npx tsc --noEmit`
   - Equivalence Check: API Surface unchanged vs Step 0 snapshot; scoped tests pass
-  - Evidence: BEFORE `<pass summary>` / AFTER `<pass summary>`
+  - Evidence: BEFORE 22 passed, 0 tsc errors / AFTER 22 passed, 0 tsc errors; API Surface unchanged
 
 - [ ] Step 5: Remove Unused Imports and Dead Local in Common, Layout, and Settings Components [CLN-005]
   - Finding IDs: `CLN-005` (Root Cause Key: `CL-01:QLHK-Client/src/components:common-layout-settings-unused`; Class: `CL-01`)

@@ -82,7 +82,7 @@
   - Equivalence Check: API Surface unchanged vs Step 0 snapshot; scoped tests pass
   - Evidence: BEFORE 22 passed, 0 tsc errors / AFTER 22 passed, 0 tsc errors; API Surface unchanged
 
-- [ ] Step 7: Remove Redundant React and FireEvent Imports in Test Suites [CLN-007]
+- [x] Step 7: Remove Redundant React and FireEvent Imports in Test Suites [CLN-007]
   - Finding IDs: `CLN-007` (Root Cause Key: `CL-01:QLHK-Client/tests:redundant-test-imports`; Class: `CL-01`)
   - Target Files: `QLHK-Client/src/components/analytics/__tests__/AnalyticsDashboard.test.tsx`, `QLHK-Client/src/components/common/__tests__/CustomSelect.test.tsx`, `QLHK-Client/src/components/excel/__tests__/ExportSettingsModal.test.tsx`, `QLHK-Client/src/components/excel/__tests__/ImportPreviewModal.test.tsx`, `QLHK-Client/src/components/households/__tests__/AgeFilterPopover.test.tsx`, `QLHK-Client/src/components/households/__tests__/CitizenModal.test.tsx`, `QLHK-Client/src/components/households/__tests__/HouseholdTable.test.tsx`
   - Role Focus: Preserving external behavior, dead-code elimination, test suite cleanliness
@@ -90,7 +90,7 @@
   - Diff Budget: <= 200 gross LOC (modified/added), <= 25 files outside target directories
   - Verification: `cd QLHK-Client && npm test -- src/components/analytics/__tests__/AnalyticsDashboard.test.tsx src/components/common/__tests__/CustomSelect.test.tsx && cd QLHK-Client && npx tsc --noEmit`
   - Equivalence Check: API Surface unchanged vs Step 0 snapshot; scoped tests pass
-  - Evidence: BEFORE `<pass summary>` / AFTER `<pass summary>`
+  - Evidence: BEFORE 16 passed, 0 tsc errors / AFTER 16 passed, 0 tsc errors; API Surface unchanged
 
 - [ ] Step 8: Full Suite Verification, Equivalence & Zero-Regression Gate
   - Full Test Suite: `cd QLHK-Client && npm test` (162 passing, zero new failures vs baseline)

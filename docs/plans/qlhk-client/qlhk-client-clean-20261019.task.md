@@ -62,7 +62,7 @@
   - Equivalence Check: API Surface unchanged vs Step 0 snapshot; scoped tests pass
   - Evidence: BEFORE 22 passed, 0 tsc errors / AFTER 22 passed, 0 tsc errors; API Surface unchanged
 
-- [ ] Step 5: Remove Unused Imports and Dead Local in Common, Layout, and Settings Components [CLN-005]
+- [x] Step 5: Remove Unused Imports and Dead Local in Common, Layout, and Settings Components [CLN-005]
   - Finding IDs: `CLN-005` (Root Cause Key: `CL-01:QLHK-Client/src/components:common-layout-settings-unused`; Class: `CL-01`)
   - Target Files: `QLHK-Client/src/components/common/CustomSelect.tsx`, `QLHK-Client/src/components/common/statStyles.tsx`, `QLHK-Client/src/components/Layout/Header.tsx`, `QLHK-Client/src/components/settings/ProfileCard.tsx`
   - Role Focus: Preserving external behavior, dead-code elimination, caller-callee blast radius verification
@@ -70,7 +70,7 @@
   - Diff Budget: <= 200 gross LOC (modified/added), <= 25 files outside target directories
   - Verification: `cd QLHK-Client && npm test -- src/components/common/__tests__/CustomSelect.test.tsx && cd QLHK-Client && npx tsc --noEmit`
   - Equivalence Check: API Surface unchanged vs Step 0 snapshot; scoped tests pass
-  - Evidence: BEFORE `<pass summary>` / AFTER `<pass summary>`
+  - Evidence: BEFORE 8 passed, 0 tsc errors / AFTER 8 passed, 0 tsc errors; API Surface unchanged
 
 - [ ] Step 6: Remove Unused Imports and Dead Local Variable in Page Components [CLN-006]
   - Finding IDs: `CLN-006` (Root Cause Key: `CL-01:QLHK-Client/src/pages:unused-page-symbols`; Class: `CL-01`)

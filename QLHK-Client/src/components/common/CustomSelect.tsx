@@ -182,9 +182,6 @@ export function CustomSelect<T extends string | number = string | number>({
 	const isEffectiveActive =
 		!isFormVariant && (isActive !== undefined ? isActive : !isDefaultVal);
 
-	const isSelectedNonEmpty =
-		value !== "" && value !== undefined && value !== null;
-
 	const showClearButton =
 		clearable &&
 		!disabled &&

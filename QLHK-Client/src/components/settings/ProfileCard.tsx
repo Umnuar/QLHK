@@ -8,7 +8,6 @@ import {
 	Shield,
 	ShieldAlert,
 	Trash2,
-	User as UserIcon,
 } from "lucide-react";
 import type React from "react";
 import { useState } from "react";

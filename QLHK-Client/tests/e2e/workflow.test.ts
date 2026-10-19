@@ -172,20 +172,16 @@ describe("Kiểm thử ánh xạ thống kê thời gian thực các thôn (Vill
 });
 
 describe("Kiểm thử tích hợp Slide-over Drawer & Sub-modal CitizenModal", () => {
-	it("export hợp lệ CitizenModal, HouseholdDrawer và HouseholdModal", async () => {
+	it("export hợp lệ CitizenModal và HouseholdDrawer", async () => {
 		const { CitizenModal } = await import(
 			"@/components/households/CitizenModal"
 		);
 		const { HouseholdDrawer } = await import(
 			"@/components/households/HouseholdDrawer"
 		);
-		const { HouseholdModal } = await import(
-			"@/components/households/HouseholdModal"
-		);
 
 		expect(typeof CitizenModal).toBe("function");
 		expect(typeof HouseholdDrawer).toBe("function");
-		expect(typeof HouseholdModal).toBe("function");
 	}, 30000);
 });
 

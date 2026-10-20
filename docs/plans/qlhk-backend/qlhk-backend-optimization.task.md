@@ -16,7 +16,7 @@
 
 ## Execution Checklist
 
-- [ ] Step 1: Cache Encryption Key Buffer and Optimize Accents Removal in Crypto Utility
+- [x] Step 1: Cache Encryption Key Buffer and Optimize Accents Removal in Crypto Utility
   - Finding IDs: `OPT-001`, `OPT-004`
   - Target Files: `QLHK-Backend/src/utils/crypto.ts`, `QLHK-Backend/tests/security/crypto.test.ts`
   - Assigned Role: `.agents/security-engineer.md`

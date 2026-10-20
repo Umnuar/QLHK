@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { encryptCCCD, decryptCCCD, hashCCCD, removeAccents } from '../../src/utils/crypto';
+import { encryptCCCD, decryptCCCD, hashCCCD, removeAccents, getKeyBuffer } from '../../src/utils/crypto';
 
 describe('Bảo mật dữ liệu CCCD & Mã hóa (Crypto Utility)', () => {
   const sampleCCCD = '064098001234';
@@ -47,6 +47,20 @@ describe('Bảo mật dữ liệu CCCD & Mã hóa (Crypto Utility)', () => {
     expect(removeAccents('ĐINH THANH HIỂU')).toBe('dinh thanh hieu');
     expect(removeAccents('Làng Kon Hnông Bách')).toBe('lang kon hnong bach');
     expect(removeAccents('Thôn Kon Đao Yôp')).toBe('thon kon dao yop');
+    expect(removeAccents('ĐẶNG VĂN ĐỨC')).toBe('dang van duc');
+    expect(removeAccents('Bùi Thị Ánh Tuyết')).toBe('bui thi anh tuyet');
+    expect(removeAccents('A Lăng Đắc')).toBe('a lang dac');
+    expect(removeAccents('Y Blôk Êban')).toBe('y blok eban');
+    expect(removeAccents('')).toBe('');
+    expect(removeAccents('   ')).toBe('');
+  });
+
+  it('phải tái sử dụng buffer khóa mã hóa 32-byte đã cache để tối ưu bộ nhớ', () => {
+    const buf1 = getKeyBuffer();
+    const buf2 = getKeyBuffer();
+    expect(buf1).toBe(buf2);
+    expect(buf1.length).toBe(32);
+    expect(buf1.equals(buf2)).toBe(true);
   });
 
   describe('An ninh biến môi trường (Environment Security Hardening - CWE-798)', () => {

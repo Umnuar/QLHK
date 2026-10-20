@@ -1,12 +1,19 @@
 import crypto from "crypto";
 import { config } from "../config/env";
 
-function getKeyBuffer(): Buffer {
+let cachedKeyBuffer: Buffer | null = null;
+
+export function getKeyBuffer(): Buffer {
+	if (cachedKeyBuffer) {
+		return cachedKeyBuffer;
+	}
 	const hexKey = config.encryptionKey;
 	if (/^[0-9a-fA-F]{64}$/.test(hexKey)) {
-		return Buffer.from(hexKey, "hex");
+		cachedKeyBuffer = Buffer.from(hexKey, "hex");
+	} else {
+		cachedKeyBuffer = crypto.createHash("sha256").update(hexKey).digest();
 	}
-	return crypto.createHash("sha256").update(hexKey).digest();
+	return cachedKeyBuffer;
 }
 
 export function encryptCCCD(plainCCCD: string): {
@@ -69,12 +76,15 @@ export function hashCCCD(plainCCCD: string): string {
 	return crypto.createHmac("sha256", pepper).update(cleaned).digest("hex");
 }
 
+const DIACRITICS_REGEX = /[\u0300-\u036f]/g;
+const D_STROKE_REGEX = /đ/g;
+
 export function removeAccents(str: string): string {
 	if (!str) return "";
 	return str
-		.normalize("NFD")
-		.replace(/[\u0300-\u036f]/g, "")
-		.replace(/[đĐ]/g, (m) => (m === "đ" ? "d" : "D"))
 		.toLowerCase()
+		.replace(D_STROKE_REGEX, "d")
+		.normalize("NFD")
+		.replace(DIACRITICS_REGEX, "")
 		.trim();
 }

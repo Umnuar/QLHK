@@ -43,7 +43,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/components/analytics/__tests__/AnalyticsDashboard.test.tsx`
   - Static Check: `cd QLHK-Client && npx tsc --noEmit`
-- [ ] Step 4: Client Bundle Code-Splitting & Dynamic XLSX Loading
+- [x] Step 4: Client Bundle Code-Splitting & Dynamic XLSX Loading
   - Finding IDs: `OPT-001`
   - Target Files: `QLHK-Client/src/utils/fileExport.ts`, `QLHK-Client/src/pages/HouseholdsPage.tsx`, `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`, `QLHK-Client/src/components/excel/ImportPreviewModal.tsx`
   - Assigned Role: `.agents/frontend-developer.md`
@@ -52,7 +52,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npm run build && npx vitest run tests/e2e/workflow.test.ts src/components/excel/__tests__/ExportSettingsModal.test.tsx src/components/excel/__tests__/ImportPreviewModal.test.tsx`
   - Static Check: `cd QLHK-Client && npx tsc --noEmit`
-- [ ] Step 5: Verification & Final Gate
+- [x] Step 5: Verification & Final Gate
   - Full Test Suite: `cd QLHK-Client && npm test` (Zero new failures vs baseline)
   - Typecheck: `cd QLHK-Client && npx tsc --noEmit` (0 errors)
   - Production Build: `cd QLHK-Client && npm run build` (vendor-excel excluded from initial modulepreload)
@@ -61,4 +61,11 @@
 
 ## Finding Closure Mapping (When Sourced from `audit` / `optimize`)
 
+- `OPT-001` -> Closed by Step 4 (Bundle Code-Splitting & Dynamic XLSX Loading)
+- `OPT-002` -> Closed by Step 2 (Household List Search & Age Filter Acceleration)
+- `OPT-003` -> Closed by Step 3 (Analytics Dashboard Village Breakdown Decoupling)
+- `OPT-004` -> Closed by Step 1 (HouseholdStore Single-Pass Statistical Aggregation)
+
 ## Project Gotchas & Learned Invariants
+- `fileExport.ts`: dynamic `import("xlsx")` prevents 429kB xlsx chunk in initial modulepreload.
+- `AnalyticsDashboard.tsx`: `handleExportStatsExcel` must be async to await `loadXlsx()`.

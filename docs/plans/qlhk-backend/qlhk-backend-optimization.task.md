@@ -34,7 +34,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Backend && npx vitest run tests/unit/analytics.test.ts -t "Hare-Niemeyer"`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit`
-- [ ] Step 3: Implement Zero-Allocation Birth Year Parsing for Demographics
+- [x] Step 3: Implement Zero-Allocation Birth Year Parsing for Demographics
   - Finding IDs: `OPT-003`
   - Target Files: `QLHK-Backend/src/controllers/analytics.controller.ts`, `QLHK-Backend/tests/unit/analytics.test.ts`
   - Assigned Role: `.agents/performance-engineer.md`

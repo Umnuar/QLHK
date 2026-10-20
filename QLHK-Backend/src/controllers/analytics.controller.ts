@@ -78,6 +78,29 @@ export function calculatePercentagesWithLargestRemainder<T extends { count: numb
 	return results;
 }
 
+export function extractBirthYear(dob: string | null | undefined): number | null {
+	if (!dob) return null;
+	const len = dob.length;
+	let end = len - 1;
+	while (end >= 0 && dob.charCodeAt(end) <= 32) {
+		end--;
+	}
+	if (end < 3) return null;
+	const c3 = dob.charCodeAt(end);
+	const c2 = dob.charCodeAt(end - 1);
+	const c1 = dob.charCodeAt(end - 2);
+	const c0 = dob.charCodeAt(end - 3);
+	if (
+		c0 >= 48 && c0 <= 57 &&
+		c1 >= 48 && c1 <= 57 &&
+		c2 >= 48 && c2 <= 57 &&
+		c3 >= 48 && c3 <= 57
+	) {
+		return (c0 - 48) * 1000 + (c1 - 48) * 100 + (c2 - 48) * 10 + (c3 - 48);
+	}
+	return null;
+}
+
 export const getOverview = async (
 	req: AuthRequest,
 	res: Response,
@@ -222,14 +245,8 @@ export const getOverview = async (
 		let workingAgeCount = 0;
 
 		dobList.forEach((c) => {
-			if (!c.dob) {
-				unknownAgeCount++;
-				return;
-			}
-			const trimmed = c.dob.trim();
-			const match = trimmed.match(/(\d{4})$/);
-			if (match) {
-				const birthYear = parseInt(match[1], 10);
+			const birthYear = extractBirthYear(c.dob);
+			if (birthYear !== null) {
 				const age = currentYear - birthYear;
 				if (age < 16) {
 					under16Count++;

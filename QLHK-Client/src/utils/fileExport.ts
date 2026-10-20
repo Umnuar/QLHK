@@ -1,5 +1,6 @@
 import { isTauri } from "@tauri-apps/api/core";
-import * as XLSX from "xlsx";
+
+export const loadXlsx = async () => await import("xlsx");
 
 export interface FileExportResult {
 	success: boolean;
@@ -10,9 +11,10 @@ export interface FileExportResult {
 }
 
 export async function exportExcelWithDialog(
-	workbook: XLSX.WorkBook,
+	workbook: any,
 	defaultFilename: string,
 ): Promise<FileExportResult> {
+	const XLSX = await loadXlsx();
 	if (typeof window !== "undefined" && isTauri()) {
 		try {
 			const { save } = await import("@tauri-apps/plugin-dialog");

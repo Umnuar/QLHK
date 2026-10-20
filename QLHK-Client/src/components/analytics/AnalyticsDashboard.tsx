@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import * as XLSX from "xlsx";
+import { loadXlsx } from "../../utils/fileExport";
 import { useApp } from "../../AppContext";
 import {
 	type AnalyticsOverviewData,
@@ -722,7 +722,7 @@ export const AnalyticsDashboard: React.FC = () => {
 		return segments;
 	}, [stats.ageStats]);
 
-	const handleExportStatsExcel = () => {
+	const handleExportStatsExcel = async () => {
 		try {
 			const titleRow = [
 				"UBND XÃ ĐĂK HÀ - BẢNG THỐNG KÊ SO SÁNH QUY MÔ NHÂN HỘ KHẨU CÁC THÔN",
@@ -763,6 +763,7 @@ export const AnalyticsDashboard: React.FC = () => {
 
 			const aoaData = [titleRow, emptyRow, headers, ...dataRows, totalRow];
 			const sanitizedAoaData = aoaData.map(sanitizeExcelRow);
+			const XLSX = await loadXlsx();
 			const ws = XLSX.utils.aoa_to_sheet(sanitizedAoaData);
 
 			ws["!cols"] = [

@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
-import * as XLSX from "xlsx";
 import { useApp } from "../AppContext";
 import { householdApi } from "../api/householdApi";
 import {
@@ -15,7 +14,7 @@ import {
 	type ExportConfig,
 	ExportSettingsModal,
 } from "../components/excel/ExportSettingsModal";
-import { exportExcelWithDialog } from "../utils/fileExport";
+import { exportExcelWithDialog, loadXlsx } from "../utils/fileExport";
 import { ImportPreviewModal } from "../components/excel/ImportPreviewModal";
 import { formatVietnameseNumber } from "../components/common/tableStyles";
 import type { AgeFilter } from "../components/households/AgeFilterPopover";
@@ -702,6 +701,7 @@ export const HouseholdsPage: React.FC = () => {
 				});
 
 				const sanitizedRows = customRows.map(sanitizeExcelRow);
+				const XLSX = await loadXlsx();
 				const ws = XLSX.utils.aoa_to_sheet(sanitizedRows);
 				ws["!merges"] = [
 					{
@@ -866,6 +866,7 @@ export const HouseholdsPage: React.FC = () => {
 			});
 
 			const sanitizedRows = rows.map(sanitizeExcelRow);
+			const XLSX = await loadXlsx();
 			const ws = XLSX.utils.aoa_to_sheet(sanitizedRows);
 			ws["!merges"] = [
 				{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },

@@ -14,7 +14,7 @@ import {
 import type React from "react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import * as XLSX from "xlsx";
+import { loadXlsx } from "../../utils/fileExport";
 import { type ParsedExcelRow, parseExcelSheet } from "../../utils/excelParser";
 import { CustomSelect } from "../common/CustomSelect";
 import { formatVietnameseNumber } from "../common/tableStyles";
@@ -74,6 +74,7 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 
 		try {
 			const buffer = await selectedFile.arrayBuffer();
+			const XLSX = await loadXlsx();
 			const workbook = XLSX.read(buffer, { type: "array" });
 			const firstSheetName = workbook.SheetNames[0];
 			const worksheet = workbook.Sheets[firstSheetName];
@@ -133,7 +134,7 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 		onClose();
 	};
 
-	const handleDownloadTemplate = () => {
+	const handleDownloadTemplate = async () => {
 		const headers = [
 			"STT",
 			"Chủ hộ / Thành viên",
@@ -175,6 +176,7 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 				"",
 			],
 		];
+		const XLSX = await loadXlsx();
 		const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleData]);
 		const wb = XLSX.utils.book_new();
 		XLSX.utils.book_append_sheet(wb, ws, "NhanHoKhau");

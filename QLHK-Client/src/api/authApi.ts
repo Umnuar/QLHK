@@ -7,7 +7,24 @@ export interface StoredSessionUser {
 	accessToken: string;
 	refreshToken: string;
 	savedAt: string;
+	passwordHash?: string;
 }
+
+export const hashPassword = async (password: string): Promise<string> => {
+	if (typeof crypto !== "undefined" && crypto.subtle) {
+		const msgUint8 = new TextEncoder().encode(password);
+		const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+		const hashArray = Array.from(new Uint8Array(hashBuffer));
+		return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+	}
+	let hash = 0;
+	for (let i = 0; i < password.length; i++) {
+		const char = password.charCodeAt(i);
+		hash = (hash << 5) - hash + char;
+		hash |= 0;
+	}
+	return hash.toString(16);
+};
 
 export const SESSION_USER_STORE_KEY = "qlhk_session_user";
 export const USERS_CACHE_STORE_KEY = "qlhk_cached_users";
@@ -86,11 +103,13 @@ export const authApi = {
 			const data = res.data?.data || res.data;
 			if (data?.accessToken && data?.user) {
 				setCachedAccessToken(data.accessToken);
+				const passwordHash = await hashPassword(credentials.password);
 				await saveStoredSessionUser({
 					user: data.user,
 					accessToken: data.accessToken,
 					refreshToken: data.refreshToken || "",
 					savedAt: new Date().toISOString(),
+					passwordHash,
 				});
 				return {
 					accessToken: data.accessToken,
@@ -114,6 +133,10 @@ export const authApi = {
 				storedSession &&
 				storedSession.user.username.toLowerCase() === inputUser.toLowerCase()
 			) {
+				const inputHash = await hashPassword(credentials.password);
+				if (!storedSession.passwordHash || storedSession.passwordHash !== inputHash) {
+					throw new Error("Tên đăng nhập hoặc mật khẩu không chính xác.");
+				}
 				setCachedAccessToken(storedSession.accessToken);
 				return {
 					accessToken: storedSession.accessToken,

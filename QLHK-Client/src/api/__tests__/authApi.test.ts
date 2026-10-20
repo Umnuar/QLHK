@@ -3,6 +3,7 @@ import {
 	authApi,
 	getCachedUsers,
 	getStoredSessionUser,
+	hashPassword,
 	saveStoredSessionUser,
 } from "../authApi";
 import { apiClient } from "../client";
@@ -88,6 +89,57 @@ describe("authApi - Quản lý Xác thực & Phiên làm việc Ngoại tuyến 
 	});
 
 	it("cho phép khôi phục phiên offline nếu chính người dùng đó đã đăng nhập thành công trước đó", async () => {
+		const passwordHash = await hashPassword("correct_password");
+		await saveStoredSessionUser({
+			user: {
+				id: "usr-01",
+				username: "canboxa",
+				role: "user",
+				village_id: "vil-01",
+			},
+			accessToken: "saved-offline-token",
+			refreshToken: "saved-offline-refresh",
+			savedAt: new Date().toISOString(),
+			passwordHash,
+		});
+
+		vi.spyOn(apiClient, "post").mockRejectedValueOnce(new Error("Network Error"));
+
+		const res = await authApi.login({
+			username: "canboxa",
+			password: "correct_password",
+		});
+
+		expect(res.accessToken).toBe("saved-offline-token");
+		expect(res.user.username).toBe("canboxa");
+	});
+
+	it("tu choi dang nhap offline neu mat khau khong chinh xac", async () => {
+		const passwordHash = await hashPassword("correct_password");
+		await saveStoredSessionUser({
+			user: {
+				id: "usr-01",
+				username: "canboxa",
+				role: "user",
+				village_id: "vil-01",
+			},
+			accessToken: "saved-offline-token",
+			refreshToken: "saved-offline-refresh",
+			savedAt: new Date().toISOString(),
+			passwordHash,
+		});
+
+		vi.spyOn(apiClient, "post").mockRejectedValueOnce(new Error("Network Error"));
+
+		await expect(
+			authApi.login({
+				username: "canboxa",
+				password: "wrong_password",
+			}),
+		).rejects.toThrow("Tên đăng nhập hoặc mật khẩu không chính xác.");
+	});
+
+	it("tu choi dang nhap offline neu phien luu tru thieu passwordHash", async () => {
 		await saveStoredSessionUser({
 			user: {
 				id: "usr-01",
@@ -102,13 +154,12 @@ describe("authApi - Quản lý Xác thực & Phiên làm việc Ngoại tuyến 
 
 		vi.spyOn(apiClient, "post").mockRejectedValueOnce(new Error("Network Error"));
 
-		const res = await authApi.login({
-			username: "canboxa",
-			password: "any_dummy_password",
-		});
-
-		expect(res.accessToken).toBe("saved-offline-token");
-		expect(res.user.username).toBe("canboxa");
+		await expect(
+			authApi.login({
+				username: "canboxa",
+				password: "any_password",
+			}),
+		).rejects.toThrow("Tên đăng nhập hoặc mật khẩu không chính xác.");
 	});
 
 	it("từ chối đăng nhập offline nếu người dùng chưa từng đăng nhập trên máy này", async () => {

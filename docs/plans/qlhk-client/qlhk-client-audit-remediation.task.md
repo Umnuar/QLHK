@@ -24,7 +24,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/utils/__tests__/secureStorage.test.ts`
   - Static Check: `cd QLHK-Client && npx tsc --noEmit`
-- [ ] Step 2: Offline Login Password Verification & Credential Integrity
+- [x] Step 2: Offline Login Password Verification & Credential Integrity
   - Finding IDs: `BUG-007`
   - Target Files: `QLHK-Client/src/api/authApi.ts`, `QLHK-Client/src/api/__tests__/authApi.test.ts`
   - Role Focus: Guarantee offline authentication strictly enforces password verification via cryptographic digest.

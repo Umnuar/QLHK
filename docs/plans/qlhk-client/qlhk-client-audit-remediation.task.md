@@ -56,13 +56,19 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/components/analytics/__tests__/AnalyticsDashboard.test.tsx`
   - Static Check: `cd QLHK-Client && npx tsc --noEmit`
-- [ ] Step 6: Verification & Final Gate
+- [x] Step 6: Verification & Final Gate
   - Full Test Suite: `cd QLHK-Client && npm test` (Zero new failures vs baseline)
   - Typecheck: `cd QLHK-Client && npx tsc --noEmit` (0 errors)
   - Clean Working Tree & No Orphan Patches: Verified (`test -z "$(git status --porcelain)" && test -z "$(ls -A .git/roadmap-stash/qlhk-client-audit-remediation-*.patch 2>/dev/null)"`)
 
 ## Finding Closure Mapping (When Sourced from `audit` / `optimize`)
-<!-- Populate at Step 6 when steps carry Finding IDs: `BUG-001 -> <commit_hash> (Step K)` -->
+- BUG-001 -> 1f7f129 (Step 3: Standard 11-Column Excel Household Code Collision & Normalization)
+- BUG-002 -> ffc51a7 (Step 1: Secure Storage Logout Wipe & Offline Token Header Leak Guard)
+- BUG-003 -> 2ea34c1 (Step 5: Dynamic Calculation Year in Import Handlers & Analytics Metric Precedence)
+- BUG-004 -> 8bf2846 (Step 4: Household Head State Integrity on Member Deletion)
+- BUG-005 -> 2ea34c1 (Step 5: Dynamic Calculation Year in Import Handlers & Analytics Metric Precedence)
+- BUG-006 -> ffc51a7 (Step 1: Secure Storage Logout Wipe & Offline Token Header Leak Guard)
+- BUG-007 -> dd2e02c (Step 2: Offline Login Password Verification & Credential Integrity)
 
 ## Project Gotchas & Learned Invariants
-<!-- Append verified gotchas here when encountering subtle bugs -->
+- Vitest module resolver traverses parent directories looking for package.json; Windows sandbox EPERM on inaccessible C:\Users\umnuar\package.json handled by ignoring EPERM/EACCES.

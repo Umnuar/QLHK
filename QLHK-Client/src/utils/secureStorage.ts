@@ -118,9 +118,24 @@ export const secureStorage = {
 				localStorage &&
 				typeof localStorage.removeItem === "function"
 			) {
-				localStorage.removeItem("accessToken");
-				localStorage.removeItem("refreshToken");
-				localStorage.removeItem("user");
+				const keysToRemove = new Set<string>([
+					"accessToken",
+					"refreshToken",
+					"user",
+					"qlhk_session_user",
+					"qlhk_cached_users",
+				]);
+				if (typeof localStorage.length === "number" && typeof localStorage.key === "function") {
+					for (let i = 0; i < localStorage.length; i++) {
+						const k = localStorage.key(i);
+						if (k && k.startsWith("qlhk_")) {
+							keysToRemove.add(k);
+						}
+					}
+				}
+				for (const k of keysToRemove) {
+					localStorage.removeItem(k);
+				}
 			}
 		} catch (err) {
 			console.warn("Error clearing localStorage:", err);

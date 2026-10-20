@@ -16,7 +16,7 @@
 
 ## Execution Checklist
 
-- [ ] Step 1: Secure Storage Logout Wipe & Offline Token Header Leak Guard
+- [x] Step 1: Secure Storage Logout Wipe & Offline Token Header Leak Guard
   - Finding IDs: `BUG-006`, `BUG-002`
   - Target Files: `QLHK-Client/src/utils/secureStorage.ts`, `QLHK-Client/src/api/client.ts`, `QLHK-Client/src/utils/__tests__/secureStorage.test.ts`
   - Role Focus: Ensure sensitive storage is thoroughly purged on logout and offline tokens never escape across network boundary.

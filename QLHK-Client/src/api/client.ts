@@ -68,7 +68,7 @@ apiClient.interceptors.request.use(
 					cachedAccessToken = token;
 				}
 			}
-			if (token && config.headers) {
+			if (token && !token.startsWith("offline-token-") && config.headers) {
 				config.headers.Authorization = `Bearer ${token}`;
 			}
 		} catch (err) {

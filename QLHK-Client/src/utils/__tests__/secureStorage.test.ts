@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { secureStorage } from "../secureStorage";
+import { apiClient, setCachedAccessToken } from "../../api/client";
 
 describe("secureStorage", () => {
 	let mockStoreData: Record<string, string> = {};
@@ -15,6 +16,10 @@ describe("secureStorage", () => {
 		clear: vi.fn(() => {
 			mockStoreData = {};
 		}),
+		get length() {
+			return Object.keys(mockStoreData).length;
+		},
+		key: vi.fn((index: number) => Object.keys(mockStoreData)[index] || null),
 	};
 
 	beforeEach(() => {
@@ -59,16 +64,31 @@ describe("secureStorage", () => {
 			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("token");
 		});
 
-		it("clear các key phiên đăng nhập", async () => {
+		it("clear các key phiên đăng nhập và qlhk session", async () => {
 			await secureStorage.setItem("accessToken", "token-123");
 			await secureStorage.setItem("refreshToken", "refresh-456");
 			await secureStorage.setItem("user", JSON.stringify({ name: "Admin" }));
+			await secureStorage.setItem("qlhk_session_user", JSON.stringify({ name: "Admin" }));
+			await secureStorage.setItem("qlhk_cached_users", JSON.stringify([]));
 
 			await secureStorage.clear();
 
 			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("accessToken");
 			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("refreshToken");
 			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("user");
+			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("qlhk_session_user");
+			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("qlhk_cached_users");
+		});
+
+		it("khong gan token offline vao header Authorization", async () => {
+			setCachedAccessToken(null);
+			await secureStorage.setItem("accessToken", "offline-token-user-12345");
+
+			const requestHandler = (apiClient.interceptors.request as any).handlers[0]?.fulfilled;
+			const config = { headers: {} as any };
+			const result = await requestHandler(config);
+
+			expect(result.headers.Authorization).toBeUndefined();
 		});
 	});
 

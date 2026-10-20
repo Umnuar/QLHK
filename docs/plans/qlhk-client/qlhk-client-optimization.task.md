@@ -25,7 +25,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/api/__tests__/householdApi.test.ts src/db/__tests__/indexedDB.test.ts`
   - Static Check: `cd QLHK-Client && npx tsc --noEmit`
-- [ ] Step 2: Household List Search & Age Filter Hot-Path Acceleration
+- [x] Step 2: Household List Search & Age Filter Hot-Path Acceleration
   - Finding IDs: `OPT-002`
   - Target Files: `QLHK-Client/src/pages/HouseholdsPage.tsx`
   - Assigned Role: `.agents/react-performance-optimization.md`

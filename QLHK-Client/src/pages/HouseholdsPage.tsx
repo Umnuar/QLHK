@@ -142,10 +142,13 @@ export const HouseholdsPage: React.FC = () => {
 
 				if (ageFilter) {
 					const hasAgeMatch = members.some((m) => {
-						const mAge = calculateAge(
-							m.dob_formatted || m.dob_raw || m.dob,
-							calculationYear,
-						);
+						const mAge =
+							typeof m.birth_year === "number" && m.birth_year > 1900
+								? calculationYear - m.birth_year
+								: calculateAge(
+										m.dob_formatted || m.dob_raw || m.dob,
+										calculationYear,
+									);
 						if (ageFilter.min !== undefined && mAge < ageFilter.min)
 							return false;
 						if (ageFilter.max !== undefined && mAge > ageFilter.max)
@@ -199,7 +202,7 @@ export const HouseholdsPage: React.FC = () => {
 					const q = normalizeUnaccented(debouncedSearch.toLowerCase().trim());
 					list = list.filter(
 						(h) =>
-							normalizeUnaccented(h.head_name.toLowerCase()).includes(q) ||
+							((h as any).head_name_unaccented || normalizeUnaccented(h.head_name.toLowerCase())).includes(q) ||
 							(h.book_number || "").toLowerCase().includes(q),
 					);
 				}

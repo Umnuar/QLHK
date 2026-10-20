@@ -43,7 +43,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Backend && npx vitest run tests/unit/analytics.test.ts -t "Birth Year"`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit`
-- [ ] Step 4: Replace Eager Hydration with Database Aggregate Grouping in Village Analytics
+- [x] Step 4: Replace Eager Hydration with Database Aggregate Grouping in Village Analytics
   - Finding IDs: `OPT-005`
   - Target Files: `QLHK-Backend/src/controllers/analytics.controller.ts`, `QLHK-Backend/tests/unit/analytics.test.ts`
   - Assigned Role: `.agents/database-optimization.md`

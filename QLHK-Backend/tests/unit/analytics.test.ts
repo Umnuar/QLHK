@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   calculatePercentagesWithLargestRemainder,
   extractBirthYear,
+  aggregateVillageStats,
 } from "../../src/controllers/analytics.controller";
 
 describe("Analytics Unit Tests - Hare-Niemeyer Algorithm", () => {
@@ -89,5 +90,49 @@ describe("Analytics Unit Tests - Zero-Allocation Birth Year Parsing", () => {
     expect(extractBirthYear("không rõ")).toBeNull();
     expect(extractBirthYear("123")).toBeNull();
     expect(extractBirthYear("199a")).toBeNull();
+  });
+});
+
+describe("Analytics Unit Tests - Village Stats Aggregation", () => {
+  it("tổng hợp chính xác số liệu nhân khẩu, giới tính và DTTS theo thôn", () => {
+    const villages = [
+      { id: "v1", name: "Thôn 1", code: "T1", householdCount: 100 },
+      { id: "v2", name: "Thôn 2", code: "T2", householdCount: 50 },
+    ];
+    const groupedRows = [
+      { village_id: "v1", gender: "Nam", ethnicity: "Kinh", religion: "Không", count: 120 },
+      { village_id: "v1", gender: "Nữ", ethnicity: "Kinh", religion: "Không", count: 130 },
+      { village_id: "v1", gender: "Nam", ethnicity: "Xơ Đăng", religion: "Công giáo", count: 50 },
+      { village_id: "v2", gender: "Nữ", ethnicity: "Ba Na", religion: "Tin Lành", count: 70 },
+      { village_id: "v2", gender: "Nam", ethnicity: "Ba Na", religion: "Tin Lành", count: 30 },
+    ];
+    const stats = aggregateVillageStats(villages, groupedRows);
+    expect(stats.length).toBe(2);
+    const v1 = stats.find((s) => s.village_id === "v1");
+    expect(v1?.household_count).toBe(100);
+    expect(v1?.citizen_count).toBe(300);
+    expect(v1?.male_count).toBe(170);
+    expect(v1?.female_count).toBe(130);
+    expect(v1?.dtts_count).toBe(50);
+    expect(v1?.dtts_percentage).toBe(16.7);
+    expect(v1?.top_ethnicity).toBe("Kinh");
+    expect(v1?.top_religion).toBe("Không");
+    const v2 = stats.find((s) => s.village_id === "v2");
+    expect(v2?.household_count).toBe(50);
+    expect(v2?.citizen_count).toBe(100);
+    expect(v2?.dtts_count).toBe(100);
+    expect(v2?.dtts_percentage).toBe(100.0);
+    expect(v2?.top_ethnicity).toBe("Ba Na");
+    expect(v2?.top_religion).toBe("Tin Lành");
+  });
+
+  it("xử lý thôn không có nhân khẩu", () => {
+    const villages = [{ id: "v3", name: "Thôn Mới", code: "TM", householdCount: 0 }];
+    const stats = aggregateVillageStats(villages, []);
+    expect(stats.length).toBe(1);
+    expect(stats[0].citizen_count).toBe(0);
+    expect(stats[0].dtts_percentage).toBe(0);
+    expect(stats[0].top_ethnicity).toBe("Kinh");
+    expect(stats[0].top_religion).toBe("Không");
   });
 });

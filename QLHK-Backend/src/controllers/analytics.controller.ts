@@ -409,6 +409,72 @@ export const getOverview = async (
 	}
 };
 
+export interface VillageGroupRow {
+	village_id: string;
+	gender: string;
+	ethnicity: string;
+	religion: string;
+	count: number;
+}
+
+export interface VillageSummaryItem {
+	id: string;
+	name: string;
+	code: string | null;
+	householdCount: number;
+}
+
+export function aggregateVillageStats(
+	villages: VillageSummaryItem[],
+	groupedRows: VillageGroupRow[],
+) {
+	const rowsByVillage: Record<string, VillageGroupRow[]> = {};
+	for (const r of groupedRows) {
+		(rowsByVillage[r.village_id] ??= []).push(r);
+	}
+
+	return villages.map((v) => {
+		const rows = rowsByVillage[v.id] || [];
+		let citizenCount = 0;
+		let maleCount = 0;
+		let femaleCount = 0;
+		let dttsCount = 0;
+		const ethnicityMap: Record<string, number> = {};
+		const religionMap: Record<string, number> = {};
+
+		for (const r of rows) {
+			const count = Number(r.count);
+			citizenCount += count;
+			if (r.gender === "Nữ") femaleCount += count;
+			else maleCount += count;
+
+			const eth = r.ethnicity || "Kinh";
+			if (eth !== "Kinh") dttsCount += count;
+			ethnicityMap[eth] = (ethnicityMap[eth] || 0) + count;
+
+			const rel = r.religion || "Không";
+			religionMap[rel] = (religionMap[rel] || 0) + count;
+		}
+
+		const topEthnicity = Object.entries(ethnicityMap).sort((a, b) => b[1] - a[1])[0]?.[0] || "Kinh";
+		const topReligion = Object.entries(religionMap).sort((a, b) => b[1] - a[1])[0]?.[0] || "Không";
+
+		return {
+			village_id: v.id,
+			village_name: v.name,
+			village_code: v.code,
+			household_count: v.householdCount,
+			citizen_count: citizenCount,
+			male_count: maleCount,
+			female_count: femaleCount,
+			dtts_count: dttsCount,
+			dtts_percentage: citizenCount > 0 ? Number(((dttsCount / citizenCount) * 100).toFixed(1)) : 0,
+			top_ethnicity: topEthnicity,
+			top_religion: topReligion,
+		};
+	});
+}
+
 export const getByVillage = async (
 	req: AuthRequest,
 	res: Response,
@@ -422,73 +488,39 @@ export const getByVillage = async (
 		const villages = await prisma.villages.findMany({
 			where,
 			orderBy: { name: "asc" },
-			include: {
-				households: {
-					where: { is_deleted: false },
-					include: {
-						citizens: {
-							where: { is_deleted: false },
-							select: { gender: true, ethnicity: true, religion: true },
-						},
-					},
-				},
+			select: {
+				id: true,
+				name: true,
+				code: true,
+				_count: { select: { households: { where: { is_deleted: false } } } },
 			},
 		});
 
-		const villageStats = villages.map((v) => {
-			const households = v.households;
-			const householdCount = households.length;
+		const villageIds = villages.map((v) => v.id);
+		if (villageIds.length === 0) {
+			res.json({ success: true, data: [] });
+			return;
+		}
 
-			let citizenCount = 0;
-			let maleCount = 0;
-			let femaleCount = 0;
-			let dttsCount = 0;
-			const ethnicityMap: Record<string, number> = {};
-			const religionMap: Record<string, number> = {};
-
-			households.forEach((h) => {
-				h.citizens.forEach((c) => {
-					citizenCount++;
-					if (c.gender === "Nữ") femaleCount++;
-					else maleCount++;
-
-					const eth = c.ethnicity?.trim() || "Kinh";
-					if (eth !== "Kinh") dttsCount++;
-					ethnicityMap[eth] = (ethnicityMap[eth] || 0) + 1;
-
-					const rel = c.religion?.trim() || "Không";
-					religionMap[rel] = (religionMap[rel] || 0) + 1;
-				});
-			});
-
-			const topEthnicity =
-				Object.entries(ethnicityMap).sort((a, b) => b[1] - a[1])[0]?.[0] ||
-				"Kinh";
-			const topReligion =
-				Object.entries(religionMap).sort((a, b) => b[1] - a[1])[0]?.[0] ||
-				"Không";
-
-			return {
-				village_id: v.id,
-				village_name: v.name,
-				village_code: v.code,
-				household_count: householdCount,
-				citizen_count: citizenCount,
-				male_count: maleCount,
-				female_count: femaleCount,
-				dtts_count: dttsCount,
-				dtts_percentage:
-					citizenCount > 0
-						? Number(((dttsCount / citizenCount) * 100).toFixed(1))
-						: 0,
-				top_ethnicity: topEthnicity,
-				top_religion: topReligion,
-			};
-		});
+		const groupedRows: VillageGroupRow[] = await prisma.$queryRaw`
+			SELECT 
+				h.village_id::text AS village_id,
+				COALESCE(c.gender, 'Khác') AS gender,
+				COALESCE(NULLIF(TRIM(c.ethnicity), ''), 'Kinh') AS ethnicity,
+				COALESCE(NULLIF(TRIM(c.religion), ''), 'Không') AS religion,
+				COUNT(*)::int AS count
+			FROM citizens c
+			JOIN households h ON c.household_id = h.id
+			WHERE c.is_deleted = false AND h.is_deleted = false AND h.village_id = ANY(${villageIds}::uuid[])
+			GROUP BY h.village_id, c.gender, ethnicity, religion
+		`;
 
 		res.json({
 			success: true,
-			data: villageStats,
+			data: aggregateVillageStats(
+				villages.map((v) => ({ id: v.id, name: v.name, code: v.code, householdCount: v._count.households })),
+				groupedRows,
+			),
 		});
 	} catch (error) {
 		console.error("Lỗi getByVillage:", error);

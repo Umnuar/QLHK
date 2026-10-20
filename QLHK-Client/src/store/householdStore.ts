@@ -114,118 +114,63 @@ export function useHouseholdStore() {
 		return searchedHouseholds.slice(start, start + limit);
 	}, [searchedHouseholds, page, limit]);
 
-	const kpiStats = useMemo<KpiStats>(() => {
-		let totalMembers = 0;
-		let maleCount = 0;
-		let femaleCount = 0;
-		let minorityCount = 0;
-
-		activeHouseholds.forEach((h) => {
-			h.members.forEach((m) => {
-				totalMembers++;
-				if (m.gender === "Nam") maleCount++;
-				if (m.gender === "Nữ") femaleCount++;
-				if (m.ethnicity !== "Kinh") minorityCount++;
-			});
-		});
-
-		const malePercentage =
-			totalMembers > 0 ? Math.round((maleCount / totalMembers) * 1000) / 10 : 0;
-		const femalePercentage =
-			totalMembers > 0
-				? Math.round((femaleCount / totalMembers) * 1000) / 10
-				: 0;
-		const minorityPercentage =
-			totalMembers > 0
-				? Math.round((minorityCount / totalMembers) * 1000) / 10
-				: 0;
-
-		return {
-			totalHouseholds: activeHouseholds.length,
-			totalMembers,
-			maleCount,
-			femaleCount,
-			malePercentage,
-			femalePercentage,
-			minorityCount,
-			minorityPercentage,
-		};
-	}, [activeHouseholds]);
-
-	const ethnicStats = useMemo<EthnicDistribution[]>(() => {
-		const counts: Record<string, number> = {};
-		ETHNIC_GROUPS.forEach((g) => {
-			counts[g] = 0;
-		});
-
-		let total = 0;
-		activeHouseholds.forEach((h) => {
-			h.members.forEach((m) => {
-				total++;
-				const eth = m.ethnicity || "Kinh";
-				counts[eth] = (counts[eth] || 0) + 1;
-			});
-		});
-
-		return ETHNIC_GROUPS.map((name) => {
-			const count = counts[name] || 0;
-			const percentage =
-				total > 0 ? Math.round((count / total) * 1000) / 10 : 0;
-			return {
-				name,
-				count,
-				percentage,
-				isMinority: name !== "Kinh",
-			};
-		}).sort((a, b) => b.count - a.count);
-	}, [activeHouseholds]);
-
-	const villageStats = useMemo<VillageStatRow[]>(() => {
-		type VillageAcc = {
-			households_count: number;
-			members_count: number;
-			male_count: number;
-			female_count: number;
-			minority_count: number;
-		};
-
-		const statsMap = new Map<string, VillageAcc>();
-		for (const v of VILLAGES) {
-			statsMap.set(v.id, {
-				households_count: 0,
-				members_count: 0,
-				male_count: 0,
-				female_count: 0,
-				minority_count: 0,
-			});
-		}
+	const aggregatedStats = useMemo(() => {
+		let totalMembers = 0, maleCount = 0, femaleCount = 0, minorityCount = 0;
+		const ethnicCounts: Record<string, number> = Object.fromEntries(ETHNIC_GROUPS.map((g) => [g, 0]));
+		const statsMap = new Map<string, {
+			households_count: number; members_count: number; male_count: number; female_count: number; minority_count: number;
+		}>(VILLAGES.map((v) => [v.id, {
+			households_count: 0, members_count: 0, male_count: 0, female_count: 0, minority_count: 0,
+		}]));
 
 		for (const h of activeHouseholds) {
-			const acc = statsMap.get(h.village_id);
-			if (acc) {
-				acc.households_count++;
-				for (const m of h.members) {
-					acc.members_count++;
-					if (m.gender === "Nam") acc.male_count++;
-					if (m.gender === "Nữ") acc.female_count++;
-					if (m.ethnicity !== "Kinh") acc.minority_count++;
+			const villageAcc = statsMap.get(h.village_id);
+			if (villageAcc) villageAcc.households_count++;
+			for (const m of h.members) {
+				totalMembers++;
+				const isMale = m.gender === "Nam";
+				const isFemale = m.gender === "Nữ";
+				const isMinority = m.ethnicity !== "Kinh";
+				if (isMale) maleCount++;
+				if (isFemale) femaleCount++;
+				if (isMinority) minorityCount++;
+
+				const eth = m.ethnicity || "Kinh";
+				ethnicCounts[eth] = (ethnicCounts[eth] || 0) + 1;
+
+				if (villageAcc) {
+					villageAcc.members_count++;
+					if (isMale) villageAcc.male_count++;
+					if (isFemale) villageAcc.female_count++;
+					if (isMinority) villageAcc.minority_count++;
 				}
 			}
 		}
 
-		return VILLAGES.map((v) => {
-			const acc = statsMap.get(v.id) || {
-				households_count: 0,
-				members_count: 0,
-				male_count: 0,
-				female_count: 0,
-				minority_count: 0,
-			};
-			const minority_percentage =
-				acc.members_count > 0
-					? Math.round((acc.minority_count / acc.members_count) * 1000) / 10
-					: 0;
+		const calcPct = (cnt: number, tot: number) => tot > 0 ? Math.round((cnt / tot) * 1000) / 10 : 0;
 
+		const computedKpiStats: KpiStats = {
+			totalHouseholds: activeHouseholds.length,
+			totalMembers,
+			maleCount,
+			femaleCount,
+			malePercentage: calcPct(maleCount, totalMembers),
+			femalePercentage: calcPct(femaleCount, totalMembers),
+			minorityCount,
+			minorityPercentage: calcPct(minorityCount, totalMembers),
+		};
+
+		const computedEthnicStats: EthnicDistribution[] = ETHNIC_GROUPS.map((name) => ({
+			name,
+			count: ethnicCounts[name] || 0,
+			percentage: calcPct(ethnicCounts[name] || 0, totalMembers),
+			isMinority: name !== "Kinh",
+		})).sort((a, b) => b.count - a.count);
+
+		const computedVillageStats: VillageStatRow[] = VILLAGES.map((v) => {
+			const acc = statsMap.get(v.id) || {
+				households_count: 0, members_count: 0, male_count: 0, female_count: 0, minority_count: 0,
+			};
 			return {
 				village_id: v.id,
 				village_name: v.name,
@@ -234,10 +179,18 @@ export function useHouseholdStore() {
 				male_count: acc.male_count,
 				female_count: acc.female_count,
 				minority_count: acc.minority_count,
-				minority_percentage,
+				minority_percentage: calcPct(acc.minority_count, acc.members_count),
 			};
 		});
+
+		return {
+			kpiStats: computedKpiStats,
+			ethnicStats: computedEthnicStats,
+			villageStats: computedVillageStats,
+		};
 	}, [activeHouseholds]);
+
+	const { kpiStats, ethnicStats, villageStats } = aggregatedStats;
 
 	const addHousehold = useCallback((newH: any) => {
 		const village =

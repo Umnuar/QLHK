@@ -16,7 +16,7 @@
 
 ## Execution Checklist
 
-- [ ] Step 1: HouseholdStore Single-Pass Statistical Aggregation
+- [x] Step 1: HouseholdStore Single-Pass Statistical Aggregation
   - Finding IDs: `OPT-004`
   - Target Files: `QLHK-Client/src/store/householdStore.ts`
   - Assigned Role: `.agents/performance-engineer.md`

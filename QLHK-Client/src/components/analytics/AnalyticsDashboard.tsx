@@ -55,6 +55,69 @@ export const AnalyticsDashboard: React.FC = () => {
 		VillageAnalyticsRow[] | null
 	>(null);
 
+	const computedVillageBreakdown = useMemo(() => {
+		type VillageBreakdownAcc = {
+			household_count: number;
+			citizen_count: number;
+			male_count: number;
+			female_count: number;
+			dtts_count: number;
+		};
+
+		const villageStatsMap = new Map<string, VillageBreakdownAcc>();
+		for (const v of villages) {
+			villageStatsMap.set(v.id, {
+				household_count: 0,
+				citizen_count: 0,
+				male_count: 0,
+				female_count: 0,
+				dtts_count: 0,
+			});
+		}
+
+		for (const h of activeHouseholds) {
+			const acc = villageStatsMap.get(h.village_id);
+			if (acc) {
+				acc.household_count++;
+				for (const m of (h.members || [])) {
+					acc.citizen_count++;
+					if (m.gender === "Nam") acc.male_count++;
+					if (m.gender === "Nữ") acc.female_count++;
+					if (m.ethnicity !== "Kinh") acc.dtts_count++;
+				}
+			}
+		}
+
+		return villages.map((v) => {
+			const acc = villageStatsMap.get(v.id) || {
+				household_count: 0,
+				citizen_count: 0,
+				male_count: 0,
+				female_count: 0,
+				dtts_count: 0,
+			};
+
+			const minPct =
+				acc.citizen_count > 0
+					? Math.round((acc.dtts_count / acc.citizen_count) * 1000) / 10
+					: 0;
+
+			return {
+				village_id: v.id,
+				village_name: v.name,
+				village_code: v.short_code,
+				household_count: acc.household_count,
+				citizen_count: acc.citizen_count,
+				male_count: acc.male_count,
+				female_count: acc.female_count,
+				dtts_count: acc.dtts_count,
+				dtts_percentage: minPct,
+				top_ethnicity: "Kinh",
+				top_religion: "Không",
+			};
+		});
+	}, [activeHouseholds, villages]);
+
 	const localCalculated = useMemo(() => {
 		const filtered = selectedVillageId
 			? activeHouseholds.filter((h) => h.village_id === selectedVillageId)
@@ -255,67 +318,6 @@ export const AnalyticsDashboard: React.FC = () => {
 			totalOccupation,
 		);
 
-		type VillageBreakdownAcc = {
-			household_count: number;
-			citizen_count: number;
-			male_count: number;
-			female_count: number;
-			dtts_count: number;
-		};
-
-		const villageStatsMap = new Map<string, VillageBreakdownAcc>();
-		for (const v of villages) {
-			villageStatsMap.set(v.id, {
-				household_count: 0,
-				citizen_count: 0,
-				male_count: 0,
-				female_count: 0,
-				dtts_count: 0,
-			});
-		}
-
-		for (const h of activeHouseholds) {
-			const acc = villageStatsMap.get(h.village_id);
-			if (acc) {
-				acc.household_count++;
-				for (const m of (h.members || [])) {
-					acc.citizen_count++;
-					if (m.gender === "Nam") acc.male_count++;
-					if (m.gender === "Nữ") acc.female_count++;
-					if (m.ethnicity !== "Kinh") acc.dtts_count++;
-				}
-			}
-		}
-
-		const villageBreakdown = villages.map((v) => {
-			const acc = villageStatsMap.get(v.id) || {
-				household_count: 0,
-				citizen_count: 0,
-				male_count: 0,
-				female_count: 0,
-				dtts_count: 0,
-			};
-
-			const minPct =
-				acc.citizen_count > 0
-					? Math.round((acc.dtts_count / acc.citizen_count) * 1000) / 10
-					: 0;
-
-			return {
-				village_id: v.id,
-				village_name: v.name,
-				village_code: v.short_code,
-				household_count: acc.household_count,
-				citizen_count: acc.citizen_count,
-				male_count: acc.male_count,
-				female_count: acc.female_count,
-				dtts_count: acc.dtts_count,
-				dtts_percentage: minPct,
-				top_ethnicity: "Kinh",
-				top_religion: "Không",
-			};
-		});
-
 		return {
 			stats: {
 				totalHouseholds,
@@ -333,9 +335,9 @@ export const AnalyticsDashboard: React.FC = () => {
 				educationList,
 				occupationList,
 			},
-			villageBreakdown,
+			villageBreakdown: computedVillageBreakdown,
 		};
-	}, [activeHouseholds, selectedVillageId, villages]);
+	}, [activeHouseholds, selectedVillageId, computedVillageBreakdown]);
 
 	const fetchAnalytics = useCallback(async () => {
 		const overviewCacheKey = `analytics_overview_${selectedVillageId || "all"}`;
@@ -493,8 +495,8 @@ export const AnalyticsDashboard: React.FC = () => {
 		if (apiVillageBreakdown && apiVillageBreakdown.length > 0) {
 			return apiVillageBreakdown;
 		}
-		return localCalculated.villageBreakdown;
-	}, [apiVillageBreakdown, localCalculated.villageBreakdown]);
+		return computedVillageBreakdown;
+	}, [apiVillageBreakdown, computedVillageBreakdown]);
 
 	const villageTotals = useMemo(() => {
 		let totalHh = 0;

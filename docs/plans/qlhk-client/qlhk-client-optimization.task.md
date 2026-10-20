@@ -34,7 +34,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/components/households/__tests__/HouseholdTable.test.tsx src/utils/__tests__/utilities.test.ts`
   - Static Check: `cd QLHK-Client && npx tsc --noEmit`
-- [ ] Step 3: Analytics Dashboard Village Breakdown Decoupling
+- [x] Step 3: Analytics Dashboard Village Breakdown Decoupling
   - Finding IDs: `OPT-003`
   - Target Files: `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`
   - Assigned Role: `.agents/react-performance-optimization.md`

@@ -24,45 +24,58 @@ export function calculatePercentagesWithLargestRemainder<T extends { count: numb
 	items: T[],
 	totalOverride?: number,
 ): (T & { percentage: number })[] {
-	const total =
-		totalOverride !== undefined
-			? totalOverride
-			: items.reduce((sum, item) => sum + item.count, 0);
+	const len = items.length;
+	if (len === 0) return [];
+	let total = totalOverride !== undefined ? totalOverride : 0;
+	if (totalOverride === undefined) {
+		for (let i = 0; i < len; i++) {
+			total += items[i].count;
+		}
+	}
 
-	if (total <= 0 || items.length === 0) {
-		return items.map((item) => ({ ...item, percentage: 0 }));
+	if (total <= 0) {
+		const zeroResult: (T & { percentage: number })[] = new Array(len);
+		for (let i = 0; i < len; i++) {
+			zeroResult[i] = { ...items[i], percentage: 0 };
+		}
+		return zeroResult;
 	}
 
 	const TARGET_SUM = 1000;
 	let currentSum = 0;
+	const floorTenths = new Int32Array(len);
+	const remainders = new Float64Array(len);
+	const eligibleIndices: number[] = [];
 
-	const calculations = items.map((item, idx) => {
-		if (item.count <= 0) {
-			return { idx, floorTenths: 0, remainder: 0, original: item };
-		}
-		const rawTenths = (item.count / total) * TARGET_SUM;
-		const floorTenths = Math.floor(rawTenths);
-		const remainder = rawTenths - floorTenths;
-		currentSum += floorTenths;
-		return { idx, floorTenths, remainder, original: item };
-	});
-
-	const diff = TARGET_SUM - currentSum;
-	if (diff > 0 && diff < items.length) {
-		const eligible = calculations
-			.filter((c) => c.original.count > 0)
-			.sort((a, b) => b.remainder - a.remainder);
-
-		for (let i = 0; i < diff && i < eligible.length; i++) {
-			eligible[i].floorTenths += 1;
+	for (let i = 0; i < len; i++) {
+		const count = items[i].count;
+		if (count > 0) {
+			const rawTenths = (count / total) * TARGET_SUM;
+			const f = Math.floor(rawTenths);
+			floorTenths[i] = f;
+			remainders[i] = rawTenths - f;
+			currentSum += f;
+			eligibleIndices.push(i);
 		}
 	}
 
-	calculations.sort((a, b) => a.idx - b.idx);
-	return calculations.map((c) => ({
-		...c.original,
-		percentage: Number((c.floorTenths / 10).toFixed(1)),
-	}));
+	const diff = TARGET_SUM - currentSum;
+	if (diff > 0 && diff < len && eligibleIndices.length > 0) {
+		eligibleIndices.sort((a, b) => remainders[b] - remainders[a]);
+		const limit = Math.min(diff, eligibleIndices.length);
+		for (let i = 0; i < limit; i++) {
+			floorTenths[eligibleIndices[i]] += 1;
+		}
+	}
+
+	const results: (T & { percentage: number })[] = new Array(len);
+	for (let i = 0; i < len; i++) {
+		results[i] = {
+			...items[i],
+			percentage: Number((floorTenths[i] / 10).toFixed(1)),
+		};
+	}
+	return results;
 }
 
 export const getOverview = async (

@@ -25,7 +25,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Backend && npx vitest run tests/security/crypto.test.ts`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit`
-- [ ] Step 2: Optimize Hare-Niemeyer Algorithm Single-Pass Allocation in Analytics Controller
+- [x] Step 2: Optimize Hare-Niemeyer Algorithm Single-Pass Allocation in Analytics Controller
   - Finding IDs: `OPT-002`
   - Target Files: `QLHK-Backend/src/controllers/analytics.controller.ts`, `QLHK-Backend/tests/unit/analytics.test.ts`
   - Assigned Role: `.agents/performance-engineer.md`

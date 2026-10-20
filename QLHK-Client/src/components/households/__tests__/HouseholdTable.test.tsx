@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, renderHook, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Household, Person } from "../../../types";
+import { useHouseholdStore } from "../../../store/householdStore";
 import { HouseholdTable } from "../HouseholdTable";
 
 describe("HouseholdTable Component", () => {
@@ -147,5 +148,53 @@ describe("HouseholdTable Component", () => {
 		expect(screen.getByText("Vợ")).toBeDefined();
 
 		expect(screen.queryByText("HK-9999")).toBeNull();
+	});
+
+	it("4. deleteMember tu dong chuyen chu ho cho thanh vien tiep theo khi xoa chu ho", () => {
+		const { result } = renderHook(() => useHouseholdStore());
+
+		let createdHousehold: any;
+		act(() => {
+			createdHousehold = result.current.addHousehold({
+				village_id: "vil-01",
+				address: "Thôn 1",
+				members: [
+					{
+						id: "head-01",
+						full_name: "Nguyễn Văn Chủ Hộ",
+						is_head: true,
+						relationship: "Chủ hộ",
+						gender: "Nam",
+						dob_raw: "1980",
+						cccd: "060080001111",
+					},
+					{
+						id: "member-02",
+						full_name: "Lê Thị Thành Viên",
+						is_head: false,
+						relationship: "Vợ",
+						gender: "Nữ",
+						dob_raw: "1982",
+						cccd: "060082002222",
+					},
+				],
+			});
+		});
+
+		expect(createdHousehold.head_name).toBe("Nguyễn Văn Chủ Hộ");
+
+		act(() => {
+			result.current.deleteMember(createdHousehold.id, "head-01");
+		});
+
+		const updatedHousehold = result.current.households.find(
+			(h) => h.id === createdHousehold.id,
+		);
+
+		expect(updatedHousehold).toBeDefined();
+		expect(updatedHousehold?.members.length).toBe(1);
+		expect(updatedHousehold?.members[0].is_head).toBe(true);
+		expect(updatedHousehold?.members[0].relationship).toBe("Chủ hộ");
+		expect(updatedHousehold?.head_name).toBe("Lê Thị Thành Viên");
 	});
 });

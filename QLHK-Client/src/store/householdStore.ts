@@ -492,9 +492,36 @@ export function useHouseholdStore() {
 		setHouseholds((prev) =>
 			prev.map((h) => {
 				if (h.id !== householdId) return h;
-				const updatedMembers = h.members.filter((m) => m.id !== memberId);
+				let updatedMembers = h.members.filter((m) => m.id !== memberId);
+				const hasHead = updatedMembers.some((m) => m.is_head);
+				let headName = h.head_name;
+				let headCccd = h.head_cccd;
+
+				if (!hasHead) {
+					if (updatedMembers.length > 0) {
+						updatedMembers = updatedMembers.map((m, idx) =>
+							idx === 0
+								? { ...m, is_head: true, relationship: "Chủ hộ" }
+								: m,
+						);
+						headName = updatedMembers[0].full_name;
+						headCccd = updatedMembers[0].cccd || "";
+					} else {
+						headName = "Chưa xác định";
+						headCccd = "";
+					}
+				} else {
+					const currentHead = updatedMembers.find((m) => m.is_head);
+					if (currentHead) {
+						headName = currentHead.full_name;
+						headCccd = currentHead.cccd || "";
+					}
+				}
+
 				return {
 					...h,
+					head_name: headName,
+					head_cccd: headCccd,
 					members: updatedMembers,
 					members_count: updatedMembers.length,
 					updated_at: new Date().toISOString(),

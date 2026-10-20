@@ -40,7 +40,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/utils/__tests__/excelParser.test.ts`
   - Static Check: `cd QLHK-Client && npx tsc --noEmit`
-- [ ] Step 4: Household Head State Integrity on Member Deletion
+- [x] Step 4: Household Head State Integrity on Member Deletion
   - Finding IDs: `BUG-004`
   - Target Files: `QLHK-Client/src/store/householdStore.ts`, `QLHK-Client/src/components/households/__tests__/HouseholdTable.test.tsx`
   - Role Focus: Defend invariant INV-02 so households never hold orphaned head names or 0 head members upon deletion.

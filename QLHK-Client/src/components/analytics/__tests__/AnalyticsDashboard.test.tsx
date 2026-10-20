@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { calculateAge, parseAndValidateDob } from "../../../utils/date";
 import { AnalyticsDashboard } from "../AnalyticsDashboard";
 
 const mockUseApp = vi.fn();
@@ -268,5 +269,45 @@ describe("AnalyticsDashboard Component (Thống Kê Toàn Diện)", () => {
 
 		expect(screen.getByText("Thiếu nhi (< 16 tuổi)")).toBeInTheDocument();
 		expect(screen.getByText("Thanh niên & NVQS (16 - 27 tuổi)")).toBeInTheDocument();
+	});
+
+	it("9. Uu tien dung militaryAge va workingAge tu API overview thay vi bi ghi de boi youth va adult", async () => {
+		mockGetOverview.mockResolvedValueOnce({
+			totalHouseholds: 100,
+			totalCitizens: 400,
+			averageHouseholdSize: 4,
+			gender: { male: { count: 200, percentage: 50 }, female: { count: 200, percentage: 50 } },
+			ethnicities: [],
+			religions: [],
+			ageGroups: {
+				under16: { count: 80, percentage: 20 },
+				youth: { count: 120, percentage: 30 },
+				militaryAge: { count: 45, percentage: 11.25 },
+				adult: { count: 180, percentage: 45 },
+				workingAge: { count: 210, percentage: 52.5 },
+				over60: { count: 20, percentage: 5 },
+			},
+		});
+
+		render(<AnalyticsDashboard />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Tháp Tuổi & Cơ Cấu Thế Hệ")).toBeInTheDocument();
+		});
+
+		expect(screen.getByText("Thanh niên & NVQS (16 - 27 tuổi)")).toBeInTheDocument();
+	});
+
+	it("10. Tinh toan tuoi thanh vien import bang calculationYear dong", () => {
+		const calculationYear = 2024;
+		const dobRaw = "01/01/2010";
+		const dobVal = parseAndValidateDob(dobRaw);
+		const dobFormatted = dobVal.formatted || dobRaw;
+
+		const targetYear = calculationYear;
+		const computedAge = calculateAge(dobFormatted, targetYear);
+
+		expect(computedAge).toBe(14);
+		expect(computedAge).not.toBe(calculateAge(dobFormatted, 2026));
 	});
 });

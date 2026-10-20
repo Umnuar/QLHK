@@ -430,18 +430,18 @@ export const AnalyticsDashboard: React.FC = () => {
 					apiOverview.ageGroups?.militaryAge ||
 					localCalculated.stats.ageStats.youth,
 				militaryAge:
-					apiOverview.ageGroups?.youth ||
 					apiOverview.ageGroups?.militaryAge ||
 					(apiOverview.ageGroups as any)?.from6to17 ||
+					apiOverview.ageGroups?.youth ||
 					localCalculated.stats.ageStats.militaryAge,
 				adult:
 					apiOverview.ageGroups?.adult ||
 					apiOverview.ageGroups?.workingAge ||
 					localCalculated.stats.ageStats.adult,
 				workingAge:
-					apiOverview.ageGroups?.adult ||
 					apiOverview.ageGroups?.workingAge ||
 					(apiOverview.ageGroups as any)?.from18to60 ||
+					apiOverview.ageGroups?.adult ||
 					localCalculated.stats.ageStats.workingAge,
 				over60:
 					apiOverview.ageGroups?.over60 ||

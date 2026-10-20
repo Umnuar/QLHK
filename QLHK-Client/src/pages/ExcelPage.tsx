@@ -24,7 +24,7 @@ import { parseExcelSheet } from "../utils/excelParser";
 import { normalizeUnaccented, splitFullName } from "../utils/vietnamese";
 
 export const ExcelPage: React.FC = () => {
-	const { villages, selectedVillageId, selectedVillageName, setActiveTab } =
+	const { villages, selectedVillageId, selectedVillageName, setActiveTab, calculationYear } =
 		useApp();
 	const { addHousehold } = useHouseholds();
 	const { showModal } = useModal();
@@ -135,14 +135,15 @@ export const ExcelPage: React.FC = () => {
 				const notes = String(r.notes || "").trim();
 
 				let dobFormatted = dobRaw;
-				let birthYear = 2000;
+				const targetYear = calculationYear || new Date().getFullYear();
+				let birthYear = targetYear - 26;
 				let age = 26;
 				if (dobRaw) {
 					const dobVal = parseAndValidateDob(dobRaw);
 					if (dobVal.isValid) {
 						dobFormatted = dobVal.formatted || dobRaw;
-						birthYear = dobVal.birthYear ?? 2000;
-						age = calculateAge(dobFormatted, 2026);
+						birthYear = dobVal.birthYear ?? (targetYear - 26);
+						age = calculateAge(dobFormatted, targetYear);
 					}
 				}
 

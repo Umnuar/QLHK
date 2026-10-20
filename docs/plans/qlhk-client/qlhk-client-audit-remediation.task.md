@@ -48,7 +48,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/components/households/__tests__/HouseholdTable.test.tsx`
   - Static Check: `cd QLHK-Client && npx tsc --noEmit`
-- [ ] Step 5: Dynamic Calculation Year in Import Handlers & Analytics Metric Precedence
+- [x] Step 5: Dynamic Calculation Year in Import Handlers & Analytics Metric Precedence
   - Finding IDs: `BUG-003`, `BUG-005`
   - Target Files: `QLHK-Client/src/pages/HouseholdsPage.tsx`, `QLHK-Client/src/pages/ExcelPage.tsx`, `QLHK-Client/src/components/analytics/AnalyticsDashboard.tsx`, `QLHK-Client/src/components/analytics/__tests__/AnalyticsDashboard.test.tsx`
   - Role Focus: Ensure dynamic calculation year is respected across import workflows and demographic metric keys are mapped in correct precedence.

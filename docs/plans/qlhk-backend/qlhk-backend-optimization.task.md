@@ -52,11 +52,19 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Backend && npx vitest run tests/unit/analytics.test.ts -t "Village Stats"`
   - Static Check: `cd QLHK-Backend && npx tsc --noEmit`
-- [ ] Step 5: Verification & Final Gate
-  - Full Test Suite: `cd QLHK-Backend && npx vitest run tests/unit tests/security/crypto.test.ts tests/security/rbac.test.ts` (Zero new failures vs baseline)
+- [x] Step 5: Verification & Final Gate
+  - Full Test Suite: `cd QLHK-Backend && npx vitest run tests/unit tests/security/crypto.test.ts tests/security/rbac.test.ts` (Zero new failures vs baseline: 52/52 passing)
   - Typecheck: `cd QLHK-Backend && npx tsc --noEmit` (0 errors)
   - Clean Working Tree & No Orphan Patches: Verified (`test -z "$(git status --porcelain)" && test -z "$(ls -A .git/roadmap-stash/qlhk-backend-optimization-*.patch 2>/dev/null)"`)
 
 ## Finding Closure Mapping (When Sourced from audit / optimize)
+- `OPT-001` -> `10951e3` (Step 1)
+- `OPT-002` -> `f471319` (Step 2)
+- `OPT-003` -> `459580b` (Step 3)
+- `OPT-004` -> `10951e3` (Step 1)
+- `OPT-005` -> `ce952bf` (Step 4)
 
 ## Project Gotchas & Learned Invariants
+- `Windows Git Line Endings`: Ensure LF line endings on modified files to keep diffs minimal and prevent git churn.
+- `Typecheck in Background`: Antigravity handles long-running tsc via reactive task notifications.
+- `Diff Ceiling (<= 200 LOC)`: Strict discipline required on Step 4 by formatting test fixtures compactly and inlining aggregate transformers.

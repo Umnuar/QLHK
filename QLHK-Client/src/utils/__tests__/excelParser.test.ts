@@ -283,6 +283,84 @@ describe("Smart Excel Parser (Client)", () => {
 			expect(parsed[1].gender).toBe("Nữ");
 			expect(parsed[1].hasError).toBe(false);
 		});
+
+		it("tranh xung dot ma ho khi ho thu nhat co ma va ho thu hai de trong ma", () => {
+			const rawCollisionRows = [
+				[
+					"STT",
+					"Mã Hộ",
+					"Họ và Tên",
+					"Quan Hệ",
+					"Ngày Sinh",
+					"Giới Tính",
+					"Dân Tộc",
+					"Tôn Giáo",
+					"CCCD",
+					"Địa Chỉ",
+					"Ghi Chú",
+				],
+				[
+					1,
+					"HK-0001",
+					"Nguyễn Văn An",
+					"Chủ hộ",
+					"15/08/1990",
+					"Nam",
+					"Kinh",
+					"Không",
+					"",
+					"Thôn 1",
+					"",
+				],
+				[
+					2,
+					"",
+					"Lê Thị Bình",
+					"Vợ",
+					"20/11/1992",
+					"Nữ",
+					"Kinh",
+					"Không",
+					"",
+					"Thôn 1",
+					"",
+				],
+				[
+					3,
+					"",
+					"Trần Văn Cường",
+					"chu ho",
+					"10/05/1985",
+					"Nam",
+					"Kinh",
+					"Không",
+					"",
+					"Thôn 1",
+					"",
+				],
+				[
+					4,
+					"",
+					"Phạm Thị Dung",
+					"Vợ",
+					"12/08/1988",
+					"Nữ",
+					"Kinh",
+					"Không",
+					"",
+					"Thôn 1",
+					"",
+				],
+			];
+
+			const parsed = parseExcelSheet(rawCollisionRows);
+
+			expect(parsed[0].code).toBe("HK-0001");
+			expect(parsed[1].code).toBe("HK-0001");
+
+			expect(parsed[2].code).not.toBe(parsed[0].code);
+			expect(parsed[3].code).toBe(parsed[2].code);
+		});
 	});
 
 	describe("Đọc và bóc tách file thực tế: C:\\Users\\umnuar\\Downloads\\Nhân hộ khẩu.xls", () => {

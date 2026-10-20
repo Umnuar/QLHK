@@ -32,7 +32,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK-Client && npx vitest run src/api/__tests__/authApi.test.ts`
   - Static Check: `cd QLHK-Client && npx tsc --noEmit`
-- [ ] Step 3: Standard 11-Column Excel Household Code Collision & Normalization
+- [x] Step 3: Standard 11-Column Excel Household Code Collision & Normalization
   - Finding IDs: `BUG-001`
   - Target Files: `QLHK-Client/src/utils/excelParser.ts`, `QLHK-Client/src/utils/__tests__/excelParser.test.ts`
   - Role Focus: Ensure Excel parser allocates distinct, collision-free household codes regardless of row code omissions.

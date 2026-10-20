@@ -355,6 +355,16 @@ function parseStandard11ColumnsFormat(
 		startIdx = 1;
 	}
 
+	const allocatedCodes = new Set<string>();
+	for (let r = startIdx; r < rawRows.length; r++) {
+		const row = rawRows[r];
+		if (!row || row.length === 0) continue;
+		const rowCode = String(row[1] || "").trim();
+		if (rowCode) {
+			allocatedCodes.add(rowCode);
+		}
+	}
+
 	let householdCounter = 0;
 	let lastCode = "";
 
@@ -379,15 +389,21 @@ function parseStandard11ColumnsFormat(
 		if (!fullName && !code && !stt) continue;
 		if (!fullName) continue;
 
-		const isHead = relationship.toLowerCase().includes("chủ hộ");
+		const relLower = relationship.toLowerCase().trim();
+		const isHead = relLower.includes("chủ hộ") || relLower === "chu ho" || relLower === "ch";
 
 		if (!code) {
 			if (isHead || !lastCode) {
-				householdCounter++;
-				code = `HK-${String(householdCounter).padStart(4, "0")}`;
+				do {
+					householdCounter++;
+					code = `HK-${String(householdCounter).padStart(4, "0")}`;
+				} while (allocatedCodes.has(code));
+				allocatedCodes.add(code);
 			} else {
 				code = lastCode;
 			}
+		} else {
+			allocatedCodes.add(code);
 		}
 		lastCode = code;
 

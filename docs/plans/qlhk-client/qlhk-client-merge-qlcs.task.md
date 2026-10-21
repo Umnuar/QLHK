@@ -17,7 +17,7 @@
 ## Implementation Steps
 
 - [x] `Step 0`: Setup isolated branch `roadmap/qlhk-client-merge-qlcs`, baseline verification & task tracker
-- [ ] `Step 1`: Client Policy API Layer & State Types
+- [x] `Step 1`: Client Policy API Layer & State Types
 - [ ] `Step 2`: Client Navigation & Desktop Window Configuration
 - [ ] `Step 3`: Client Chúc Thọ Page & Management Modals
 - [ ] `Step 4`: Client Hỗ Trợ Xã Hội Page & Modals

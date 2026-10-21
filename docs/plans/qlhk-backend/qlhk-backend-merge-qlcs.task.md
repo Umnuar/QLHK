@@ -17,7 +17,7 @@
 ## Implementation Steps
 
 - [x] `Step 0`: Setup isolated branch `roadmap/qlhk-backend-merge-qlcs`, baseline verification & task tracker
-- [ ] `Step 1`: Prisma Schema Integration & DDL Extension
+- [x] `Step 1`: Prisma Schema Integration & DDL Extension
 - [ ] `Step 2`: Policy DTO Types & Shared Age Calculation Engine
 - [ ] `Step 3`: Database ETL & CCCD Re-encryption Migration Script
 - [ ] `Step 4`: Backend Chúc Thọ Policy Controller & Service
@@ -30,3 +30,4 @@
 - P0: Zero Comments in Code.
 - Model names: `chuctho_profiles`, `htxh_profiles`, `profile_audit_log`.
 - All policy endpoints mounted under `/api/policies/*` with `authenticateToken` and `authorizeVillage`.
+- Worktree Isolation: Used `QLHK-Backend-Worktree` to avoid concurrency stomping with client merge agent.

@@ -12,28 +12,31 @@ datasource db {
 }
 
 model villages {
-  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String       @unique @db.VarChar(255)
-  code       String?      @unique @db.VarChar(50)
-  created_at DateTime?    @default(now()) @db.Timestamptz
-  updated_at DateTime?    @default(now()) @updatedAt @db.Timestamptz
-  users      users[]
-  households households[]
-  audit_logs audit_logs[]
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String             @unique @db.VarChar(255)
+  code             String?            @unique @db.VarChar(50)
+  created_at       DateTime?          @default(now()) @db.Timestamptz
+  updated_at       DateTime?          @default(now()) @updatedAt @db.Timestamptz
+  users            users[]
+  households       households[]
+  audit_logs       audit_logs[]
+  chuctho_profiles chuctho_profiles[]
+  htxh_profiles    htxh_profiles[]
 }
 
 model users {
-  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  username       String           @unique @db.VarChar(50)
-  password_hash  String           @db.VarChar(255)
-  full_name      String?          @db.VarChar(255)
-  role           String           @default("user") @db.VarChar(20)
-  village_id     String?          @db.Uuid
-  created_at     DateTime?        @default(now()) @db.Timestamptz
-  updated_at     DateTime?        @default(now()) @updatedAt @db.Timestamptz
-  village        villages?        @relation(fields: [village_id], references: [id])
-  refresh_tokens refresh_tokens[]
-  audit_logs     audit_logs[]
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username          String              @unique @db.VarChar(50)
+  password_hash     String              @db.VarChar(255)
+  full_name         String?             @db.VarChar(255)
+  role              String              @default("user") @db.VarChar(20)
+  village_id        String?             @db.Uuid
+  created_at        DateTime?           @default(now()) @db.Timestamptz
+  updated_at        DateTime?           @default(now()) @updatedAt @db.Timestamptz
+  village           villages?           @relation(fields: [village_id], references: [id])
+  refresh_tokens    refresh_tokens[]
+  audit_logs        audit_logs[]
+  profile_audit_log profile_audit_log[]
 }
 
 model refresh_tokens {
@@ -123,4 +126,112 @@ model settings {
   description String?
   created_at  DateTime? @default(now()) @db.Timestamptz
   updated_at  DateTime? @default(now()) @updatedAt @db.Timestamptz
+}
+
+model chuctho_profiles {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  stt              Int?
+  name             String    @db.VarChar(255)
+  name_unaccented  String?   @db.VarChar(255)
+  dob              String?   @db.VarChar(20)
+  gender           String?   @db.VarChar(10)
+  cccd             String?
+  cccd_hash        String?   @db.VarChar(64)
+  cccd_last4       String?   @db.VarChar(4)
+  ethnicity        String?   @db.VarChar(50)
+  residence        String?
+  current_address  String?
+  village_id       String?   @db.Uuid
+  age60            String?   @default("") @db.VarChar(5)
+  age65            String?   @default("") @db.VarChar(5)
+  age70            String?   @default("") @db.VarChar(5)
+  age75            String?   @default("") @db.VarChar(5)
+  age80            String?   @default("") @db.VarChar(5)
+  age85            String?   @default("") @db.VarChar(5)
+  age90            String?   @default("") @db.VarChar(5)
+  age95            String?   @default("") @db.VarChar(5)
+  age100           String?   @default("") @db.VarChar(5)
+  age_over_100     String?   @default("") @db.VarChar(5)
+  received         Boolean?  @default(false)
+  calculation_year Int?
+  notes            String?   @default("")
+  is_deleted       Boolean?  @default(false)
+  deleted_at       DateTime? @db.Timestamptz
+  created_at       DateTime? @default(now()) @db.Timestamptz
+  updated_at       DateTime? @default(now()) @updatedAt @db.Timestamptz
+  version          Int?      @default(1)
+  village          villages? @relation(fields: [village_id], references: [id])
+
+  @@index([name])
+  @@index([village_id])
+  @@index([received])
+  @@index([is_deleted])
+  @@index([cccd_last4])
+  @@index([cccd_hash])
+  @@index([name_unaccented])
+  @@index([village_id, is_deleted, calculation_year])
+  @@map("chuctho_profiles")
+}
+
+model htxh_profiles {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  village_id        String    @db.Uuid
+  stt               Int?
+  name              String    @db.VarChar(255)
+  name_unaccented   String?   @db.VarChar(255)
+  dob               String?   @db.VarChar(20)
+  gender            String?   @db.VarChar(10)
+  cccd              String?
+  cccd_hash         String?   @db.VarChar(64)
+  cccd_last4        String?   @db.VarChar(4)
+  ethnicity         String?   @db.VarChar(50)
+  residence         String?
+  current_address   String?
+  age75plus         String?   @default("") @db.VarChar(5)
+  age70to74poor     String?   @default("") @db.VarChar(5)
+  bao_tro           String?   @default("") @db.VarChar(5)
+  huu_tri           String?   @default("") @db.VarChar(5)
+  huu_tuat_bao_hiem String?   @default("") @db.VarChar(5)
+  nguoi_co_cong     String?   @default("") @db.VarChar(5)
+  received          Boolean?  @default(false)
+  notes             String?   @default("")
+  calculation_year  Int?
+  is_deleted        Boolean?  @default(false)
+  deleted_at        DateTime? @db.Timestamptz
+  created_at        DateTime? @default(now()) @db.Timestamptz
+  updated_at        DateTime? @default(now()) @updatedAt @db.Timestamptz
+  version           Int?      @default(1)
+  village           villages  @relation(fields: [village_id], references: [id])
+
+  @@index([name])
+  @@index([village_id])
+  @@index([received])
+  @@index([is_deleted])
+  @@index([cccd_last4])
+  @@index([cccd_hash])
+  @@index([name_unaccented])
+  @@index([village_id, is_deleted, calculation_year])
+  @@map("htxh_profiles")
+}
+
+model profile_audit_log {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profile_id     String    @db.Uuid
+  user_id        String?   @db.Uuid
+  village_id     String?   @db.Uuid
+  action         String    @db.VarChar(20)
+  changed_fields Json?
+  old_values     Json?
+  new_values     Json?
+  note           String?
+  profile_type   String?   @default("chuctho") @db.VarChar(20)
+  sync_source    String?   @default("online") @db.VarChar(20)
+  created_at     DateTime? @default(now()) @db.Timestamptz
+  user           users?    @relation(fields: [user_id], references: [id])
+
+  @@index([profile_id])
+  @@index([village_id])
+  @@index([created_at])
+  @@index([village_id, created_at(sort: Desc)])
+  @@map("profile_audit_log")
 }

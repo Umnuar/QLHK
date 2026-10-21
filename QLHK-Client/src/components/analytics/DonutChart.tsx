@@ -1,15 +1,9 @@
 import type React from "react";
+import type { Segment } from "./policyAnalyticsData";
 
-export type Segment = {
-	id: string;
-	label: string;
-	pct: number;
-	count: number;
-	color: string;
-	note?: string;
-};
+export type { Segment };
 
-export type DonutChartProps = {
+export interface DonutChartProps {
 	segments: Segment[];
 	centerValue: string;
 	centerLabel: string;
@@ -19,7 +13,7 @@ export type DonutChartProps = {
 	size?: number;
 	stroke?: number;
 	gap?: number;
-};
+}
 
 const MIN_HIT_LENGTH = 16;
 
@@ -36,92 +30,89 @@ export const DonutChart: React.FC<DonutChartProps> = ({
 }) => {
 	const radius = (size - stroke) / 2;
 	const circumference = 2 * Math.PI * radius;
-	const total = segments.reduce((sum, s) => sum + s.pct, 0) || 1;
+	const center = size / 2;
 
-	let consumed = 0;
-	const arcs = segments.map((segment) => {
-		const fraction = segment.pct / total;
-		const length = Math.max(fraction * circumference - gap, 0.5);
-		const offset = consumed * circumference;
-		consumed += fraction;
-		return { segment, length, offset };
-	});
+	let accumulatedAngle = -90;
 
 	return (
 		<div
-			className="relative shrink-0 flex items-center justify-center"
+			className="relative shrink-0 flex items-center justify-center select-none"
 			style={{ width: size, height: size }}
-			role="img"
-			aria-label={ariaLabel}
 		>
 			<svg
 				width={size}
 				height={size}
 				viewBox={`0 0 ${size} ${size}`}
-				className="-rotate-90 overflow-visible"
-				aria-hidden="true"
+				className="transform -rotate-90"
+				role="img"
+				aria-label={ariaLabel}
 			>
-				<circle
-					cx={size / 2}
-					cy={size / 2}
-					r={radius}
-					fill="none"
-					strokeWidth={stroke}
-					className="stroke-slate-100 transition-colors duration-150 dark:stroke-slate-800/40"
-				/>
+				{segments.map((seg) => {
+					const angle = (seg.pct / 100) * 360;
+					const arcLength = (seg.pct / 100) * circumference;
+					const dashLength = Math.max(0, arcLength - gap);
+					const dashArray = `${dashLength} ${circumference - dashLength}`;
 
-				{arcs.map(({ segment, length, offset }) => (
-					<circle
-						key={segment.id}
-						cx={size / 2}
-						cy={size / 2}
-						r={radius}
-						fill="none"
-						stroke={segment.color}
-						strokeWidth={activeId === segment.id ? stroke + 4 : stroke}
-						strokeDasharray={`${length} ${circumference - length}`}
-						strokeDashoffset={-offset}
-						opacity={activeId && activeId !== segment.id ? 0.3 : 1}
-						className="pointer-events-none transition-all duration-200"
-					/>
-				))}
+					const currentAngle = accumulatedAngle;
+					accumulatedAngle += angle;
 
-				{[...arcs]
-					.sort((a, b) => b.segment.pct - a.segment.pct)
-					.map(({ segment, length, offset }) => {
-						const hitLength = Math.max(length, MIN_HIT_LENGTH);
-						const hitOffset = offset - (hitLength - length) / 2;
-						return (
+					const isActive = activeId === seg.id;
+					const isAnyActive = activeId !== null;
+					const strokeWidth = isActive ? stroke + 4 : stroke;
+					const opacity = isAnyActive && !isActive ? 0.35 : 1;
+
+					return (
+						<g key={seg.id} className="transition-all duration-200">
 							<circle
-								key={`hit-${segment.id}`}
-								cx={size / 2}
-								cy={size / 2}
+								cx={center}
+								cy={center}
+								r={radius}
+								fill="none"
+								stroke={seg.color}
+								strokeWidth={strokeWidth}
+								strokeDasharray={dashArray}
+								strokeDashoffset={0}
+								style={{
+									transformOrigin: `${center}px ${center}px`,
+									transform: `rotate(${currentAngle + 90}deg)`,
+									opacity,
+									transition:
+										"stroke-width 150ms ease, opacity 150ms ease",
+								}}
+							/>
+							<circle
+								cx={center}
+								cy={center}
 								r={radius}
 								fill="none"
 								stroke="transparent"
-								strokeWidth={stroke + 14}
-								strokeDasharray={`${hitLength} ${circumference - hitLength}`}
-								strokeDashoffset={-hitOffset}
-								pointerEvents="stroke"
-								className="cursor-pointer"
-								onMouseEnter={() => onActiveChange(segment.id)}
+								strokeWidth={Math.max(
+									stroke + 12,
+									MIN_HIT_LENGTH,
+								)}
+								strokeDasharray={dashArray}
+								style={{
+									transformOrigin: `${center}px ${center}px`,
+									transform: `rotate(${currentAngle + 90}deg)`,
+									cursor: "pointer",
+								}}
+								onMouseEnter={() => onActiveChange(seg.id)}
 								onMouseLeave={() => onActiveChange(null)}
 								onClick={() =>
-									onActiveChange(activeId === segment.id ? null : segment.id)
+									onActiveChange(isActive ? null : seg.id)
 								}
+								aria-label={`${seg.label}: ${seg.pct}%`}
 							/>
-						);
-					})}
+						</g>
+					);
+				})}
 			</svg>
 
-			<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-				<span className="text-xl font-bold leading-none text-slate-900 dark:text-white tabular-nums">
+			<div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
+				<span className="font-mono text-xl sm:text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight leading-none">
 					{centerValue}
 				</span>
-				<span
-					className="mt-1 text-balance break-words text-[10px] font-semibold leading-[1.15] text-slate-600 dark:text-slate-400"
-					style={{ maxWidth: Math.max(size - stroke * 2 - 20, 60) }}
-				>
+				<span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mt-1 truncate max-w-[110px]">
 					{centerLabel}
 				</span>
 			</div>

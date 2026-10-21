@@ -1,16 +1,16 @@
-import React, { Suspense, lazy } from "react";
+﻿import React, { Suspense, lazy } from "react";
 import { useApp } from "./AppContext";
 import { LoginView } from "./components/auth/LoginView";
 import { AppLayout } from "./components/Layout/AppLayout";
 import { AppUpdateModal } from "./components/common/AppUpdateModal";
-import { HouseholdsPage } from "./pages/HouseholdsPage";
-import { VillagesPage } from "./pages/VillagesPage";
+import { HouseholdsPage } from "./features/qlhk/pages/HouseholdsPage";
+import { VillagesPage } from "./features/qlhk/pages/VillagesPage";
 
 const AnalyticsPage = lazy(() =>
-	import("./pages/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage }))
+	import("./features/qlhk/pages/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage }))
 );
 const RecycleBinPage = lazy(() =>
-	import("./pages/RecycleBinPage").then((m) => ({ default: m.RecycleBinPage }))
+	import("./features/qlhk/pages/RecycleBinPage").then((m) => ({ default: m.RecycleBinPage }))
 );
 const SettingsPage = lazy(() =>
 	import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage }))
@@ -19,13 +19,13 @@ const AuditLogView = lazy(() =>
 	import("./components/audit/AuditLogView").then((m) => ({ default: m.AuditLogView }))
 );
 const ChucThoPage = lazy(() =>
-	import("./pages/ChucThoPage").then((m) => ({ default: m.ChucThoPage }))
+	import("./features/qlcs/pages/ChucThoPage").then((m) => ({ default: m.ChucThoPage }))
 );
 const HtxhPage = lazy(() =>
-	import("./pages/HtxhPage").then((m) => ({ default: m.HtxhPage }))
+	import("./features/qlcs/pages/HtxhPage").then((m) => ({ default: m.HtxhPage }))
 );
 const PolicyAnalyticsPage = lazy(() =>
-	import("./pages/PolicyAnalyticsPage").then((m) => ({ default: m.PolicyAnalyticsPage }))
+	import("./features/qlcs/pages/PolicyAnalyticsPage").then((m) => ({ default: m.PolicyAnalyticsPage }))
 );
 
 const PageLoadingSpinner: React.FC = () => (

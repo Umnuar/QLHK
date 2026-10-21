@@ -44,6 +44,7 @@ interface AppContextType {
 	setSidebarCollapsed: (collapsed: boolean) => void;
 
 	theme: "light" | "dark";
+	isDarkMode: boolean;
 	toggleTheme: () => void;
 
 	zoomLevel: number;
@@ -498,6 +499,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 				setSidebarCollapsed,
 
 				theme,
+				isDarkMode: theme === "dark",
 				toggleTheme,
 
 				zoomLevel,
@@ -521,3 +523,5 @@ export const useApp = () => {
 	}
 	return context;
 };
+
+export const useAppContext = useApp;

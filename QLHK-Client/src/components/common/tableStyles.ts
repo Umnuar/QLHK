@@ -1,4 +1,4 @@
-
+﻿
 export function formatVietnameseNumber(
 	value: number | string | undefined | null,
 ): string {
@@ -182,3 +182,37 @@ export const TABLE_CLASSES = {
 		"w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 dark:hover:text-rose-400 transition-colors cursor-pointer",
 };
 
+export const TABLE_STYLES = {
+	card: "bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col transition-colors duration-150",
+	headerBar:
+		"p-3.5 bg-slate-50 dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap text-xs",
+	cardHeader:
+		"p-3.5 bg-slate-50 dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap text-xs",
+	headerTitle: "text-slate-800 dark:text-slate-200 font-bold text-sm",
+	headerTip:
+		"text-xs text-slate-500 dark:text-slate-400 font-medium px-2 flex items-center gap-1.5",
+	scrollArea:
+		"overflow-x-auto overflow-y-auto flex-1 max-h-[620px] relative custom-scrollbar",
+	scrollContainer:
+		"overflow-x-auto overflow-y-auto flex-1 max-h-[620px] relative custom-scrollbar",
+	table: "w-full text-left border-collapse text-xs table-fixed min-w-[1200px]",
+	thead:
+		"sticky top-0 z-20 select-none shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_3px_0_rgba(0,0,0,0.3)]",
+	headerRow:
+		"bg-slate-50 dark:bg-slate-800 border-b border-slate-200/90 dark:border-slate-700/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 select-none",
+	th: "py-3.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border-b border-slate-200/90 dark:border-slate-700/80 select-none whitespace-nowrap",
+	thCenter:
+		"py-3.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border-b border-slate-200/90 dark:border-slate-700/80 text-center select-none whitespace-nowrap",
+	thRight:
+		"py-3.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border-b border-slate-200/90 dark:border-slate-700/80 text-right select-none whitespace-nowrap",
+	thStickyLeft:
+		"py-3.5 px-2 text-center w-12 min-w-[48px] max-w-[48px] sticky left-0 z-30 bg-slate-50 dark:bg-slate-800 border-b border-slate-200/90 dark:border-slate-700/80 select-none whitespace-nowrap",
+	thStickyLeftStt:
+		"py-3.5 px-2 text-center w-14 min-w-[56px] max-w-[56px] sticky left-12 z-30 bg-slate-50 dark:bg-slate-800 border-b border-slate-200/90 dark:border-slate-700/80 tabular-nums select-none whitespace-nowrap",
+	thStickyLeftName:
+		"py-3.5 px-3 text-left sticky left-[104px] z-30 bg-slate-50 dark:bg-slate-800 border-b border-slate-200/90 dark:border-slate-700/80 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.3)] select-none whitespace-nowrap",
+	thStickyRight:
+		"py-3.5 px-2 text-center w-24 min-w-[96px] max-w-[96px] sticky right-0 z-30 bg-slate-50 dark:bg-slate-800 border-b border-slate-200/90 dark:border-slate-700/80 shadow-[-6px_0_12px_-2px_rgba(0,0,0,0.08)] dark:shadow-[-6px_0_12px_-2px_rgba(0,0,0,0.3)] text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 select-none whitespace-nowrap",
+	thSortable:
+		"cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors group",
+};

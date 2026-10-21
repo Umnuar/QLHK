@@ -6,6 +6,8 @@ import { HtxhPage } from "../HtxhPage";
 vi.mock("../../AppContext", () => ({
 	useApp: () => ({
 		selectedVillageId: "v-1",
+		setSelectedVillageId: vi.fn(),
+		villages: [{ id: "v-1", name: "Thôn 1" }],
 		user: { id: "u-1", role: "admin" },
 	}),
 }));
@@ -23,7 +25,7 @@ describe("HtxhPage", () => {
 	});
 
 	it("renders profile table and toggles received state", async () => {
-		const mockProfiles = [{ id: "h-1", name: "Le Thi C", dob: "1940", gender: "Nữ", cccd: "987654321", received: false }];
+		const mockProfiles = [{ id: "h-1", name: "Le Thi C", dob: "1940", gender: "Nữ", cccd: "987654321098", received: false }];
 		vi.mocked(policyApi.getHtxh).mockResolvedValueOnce({ data: mockProfiles, total: 1 });
 
 		render(<HtxhPage />);
@@ -31,10 +33,11 @@ describe("HtxhPage", () => {
 		expect(await screen.findByText("Le Thi C")).toBeInTheDocument();
 		expect(screen.getByText("1940")).toBeInTheDocument();
 
-		const checkbox = screen.getByRole("checkbox");
-		expect(checkbox).not.toBeChecked();
+		const checkboxes = screen.getAllByRole("checkbox");
+		const receivedCheckbox = checkboxes[checkboxes.length - 1];
+		expect(receivedCheckbox).not.toBeChecked();
 
-		fireEvent.click(checkbox);
+		fireEvent.click(receivedCheckbox);
 		expect(policyApi.toggleReceived).toHaveBeenCalledWith("htxh", "h-1", true);
 	});
 
@@ -43,11 +46,23 @@ describe("HtxhPage", () => {
 
 		render(<HtxhPage />);
 
-		const categoryBtn = screen.getByRole("button", { name: "Bảo trợ xã hội" });
+		const categoryBtn = screen.getByRole("button", { name: "Bảo trợ XH" });
 		fireEvent.click(categoryBtn);
 
 		await waitFor(() => {
 			expect(policyApi.getHtxh).toHaveBeenCalledWith(expect.objectContaining({ category: "baoTro" }));
 		});
+	});
+
+	it("opens drawer when clicking citizen name", async () => {
+		const mockProfiles = [{ id: "h-1", name: "Le Thi C", dob: "1940", gender: "Nữ", cccd: "987654321098", received: false, baoTro: true }];
+		vi.mocked(policyApi.getHtxh).mockResolvedValueOnce({ data: mockProfiles, total: 1 });
+
+		render(<HtxhPage />);
+
+		const nameBtn = await screen.findByRole("button", { name: "Le Thi C" });
+		fireEvent.click(nameBtn);
+
+		expect(screen.getByText("Hồ sơ đối tượng hỗ trợ xã hội")).toBeInTheDocument();
 	});
 });

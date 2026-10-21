@@ -13,7 +13,8 @@
 - [x] Step 0: Branch Isolation, Pre-Flight Gate & Task Initialization
 - [x] Step 1: Khởi tạo cấu trúc features/qlhk và di chuyển components Hộ tịch
 - [x] Step 2: Di chuyển pages QLHK vào features/qlhk/pages và cập nhật router & tests
-- [ ] Step 3: Xây dựng các widget đồ họa & phân tích chuyên sâu 1:1 QLCS trong features/qlcs/analytics
+- [x] Step 3.a: MicroBar và PolicyDonutChart trong features/qlcs/analytics
+- [/] Step 3.b: PolicyGenderBar và PolicyKpiRow trong features/qlcs/analytics
 - [ ] Step 4: Bảng đối soát thôn và Trang Thống kê Chính sách High-Fidelity
 - [ ] Step 5: Chúc Thọ StatsBar, FilterBar & Table High-Fidelity trong features/qlcs/chuctho
 - [ ] Step 6: Chúc Thọ Drawer, Modal 14 trường & Page Integration

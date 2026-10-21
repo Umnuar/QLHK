@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Plus, RefreshCw } from "lucide-react";
-import { useApp } from "../AppContext";
-import { policyApi } from "../api/policyApi";
+import { useApp } from "@/AppContext";
+import { policyApi } from "@/api/policyApi";
+import { ChucThoStatsBar } from "../components/chuctho/ChucThoStatsBar";
 import { ChucThoFilterBar } from "../components/chuctho/ChucThoFilterBar";
 import { ChucThoTable } from "../components/chuctho/ChucThoTable";
 import { ChucThoDrawer } from "../components/chuctho/ChucThoDrawer";
 import { ChucThoModal } from "../components/chuctho/ChucThoModal";
-import { TablePagination } from "../components/common/TablePagination";
-import type { PolicyProfile } from "../types/policy";
+import { TablePagination } from "@/components/common/TablePagination";
+import type { PolicyProfile } from "@/types/policy";
 
 export const ChucThoPage: React.FC = () => {
 	const { selectedVillageId, setSelectedVillageId, villages, user } = useApp();
@@ -80,6 +81,10 @@ export const ChucThoPage: React.FC = () => {
 		setSelectedIds((prev) => (prev.length === profiles.length ? [] : profiles.map((p) => p.id)));
 	};
 
+	const receivedCount = profiles.filter((p) => p.received).length;
+	const unreceivedCount = Math.max(0, profiles.length - receivedCount);
+	const rate = profiles.length > 0 ? (receivedCount / profiles.length) * 100 : 0;
+
 	return (
 		<div className="p-6 space-y-4">
 			<div className="flex flex-wrap justify-between items-center gap-3">
@@ -88,14 +93,16 @@ export const ChucThoPage: React.FC = () => {
 					<p className="text-xs text-slate-500 dark:text-slate-400">Quản lý người cao tuổi mừng thọ tại địa phương</p>
 				</div>
 				<div className="flex items-center gap-2">
-					<button onClick={loadData} className="p-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300" title="Tải lại">
+					<button onClick={loadData} className="p-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 cursor-pointer" title="Tải lại">
 						<RefreshCw className="w-4 h-4" />
 					</button>
-					<button onClick={() => { setEditingProfile(null); setModalOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors">
+					<button onClick={() => { setEditingProfile(null); setModalOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer">
 						<Plus className="w-4 h-4" /> Thêm người mừng thọ
 					</button>
 				</div>
 			</div>
+
+			<ChucThoStatsBar total={total || profiles.length} received={receivedCount} unreceived={unreceivedCount} rate={rate} />
 
 			<ChucThoFilterBar
 				search={search} onSearchChange={(v) => { setSearch(v); setPage(1); }}

@@ -19,7 +19,7 @@ const AuditLogView = lazy(() =>
 	import("./components/audit/AuditLogView").then((m) => ({ default: m.AuditLogView }))
 );
 const ChucThoPage = lazy(() =>
-	import("./pages/ChucThoPage").then((m) => ({ default: m.ChucThoPage }))
+	import("./features/qlcs/pages/ChucThoPage").then((m) => ({ default: m.ChucThoPage }))
 );
 const HtxhPage = lazy(() =>
 	import("./pages/HtxhPage").then((m) => ({ default: m.HtxhPage }))

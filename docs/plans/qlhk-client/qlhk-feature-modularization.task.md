@@ -20,8 +20,8 @@
 - [x] Step 5.a: ChucThoStatsBar và ChucThoFilterBar trong features/qlcs/chuctho
 - [x] Step 5.b: ChucThoTable trong features/qlcs/chuctho
 - [x] Step 6.a: ChucThoDrawer và ChucThoModal trong features/qlcs/chuctho
-- [/] Step 6.b: ChucThoPage integration, bridge router và test verification
-- [ ] Step 7: Hỗ Trợ Xã Hội StatsBar, FilterBar & Table High-Fidelity trong features/qlcs/htxh
+- [x] Step 6.b: ChucThoPage integration, bridge router và test verification
+- [/] Step 7: Hỗ Trợ Xã Hội StatsBar, FilterBar & Table High-Fidelity trong features/qlcs/htxh
 - [ ] Step 8: Hỗ Trợ Xã Hội Drawer, Modal Checkbox, Page Integration & Legacy Cleanup
 - [ ] Step 9: Final Verification Gate (Zero Regression, Full Suite, Build)
 

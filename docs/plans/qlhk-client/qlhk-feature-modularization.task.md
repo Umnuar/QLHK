@@ -1,4 +1,4 @@
-# Task Progress Tracker
+﻿# Task Progress Tracker
 
 - **Project**: QLHK-Client
 - **Base Branch**: `roadmap/qlhk-client-port-qlcs-ui`
@@ -21,7 +21,8 @@
 - [x] Step 5.b: ChucThoTable trong features/qlcs/chuctho
 - [x] Step 6.a: ChucThoDrawer và ChucThoModal trong features/qlcs/chuctho
 - [x] Step 6.b: ChucThoPage integration, bridge router và test verification
-- [/] Step 7: Hỗ Trợ Xã Hội StatsBar, FilterBar & Table High-Fidelity trong features/qlcs/htxh
+- [x] Step 7.a: HtxhStatsBar vA HtxhFilterBar trong features/qlcs/htxh
+- [/] Step 7.b: HtxhTable trong features/qlcs/htxh
 - [ ] Step 8: Hỗ Trợ Xã Hội Drawer, Modal Checkbox, Page Integration & Legacy Cleanup
 - [ ] Step 9: Final Verification Gate (Zero Regression, Full Suite, Build)
 

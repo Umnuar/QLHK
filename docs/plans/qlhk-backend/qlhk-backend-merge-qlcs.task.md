@@ -20,7 +20,7 @@
 - [x] `Step 1`: Prisma Schema Integration & DDL Extension
 - [x] `Step 2`: Policy DTO Types & Shared Age Calculation Engine
 - [x] `Step 3`: Database ETL & CCCD Re-encryption Migration Script
-- [ ] `Step 4`: Backend Chúc Thọ Policy Controller & Service
+- [x] `Step 4`: Backend Chúc Thọ Policy Controller & Service
 - [ ] `Step 5`: Backend Hỗ Trợ Xã Hội (HTXH) Policy Controller & Service
 - [ ] `Step 6`: Backend Policy Analytics & Excel Export/Import Controllers
 - [ ] `Step 7`: Backend Policy Routes & RBAC Middleware Integration

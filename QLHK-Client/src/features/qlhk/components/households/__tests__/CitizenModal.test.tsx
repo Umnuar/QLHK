@@ -1,10 +1,10 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { householdApi } from "../../../api/householdApi";
-import type { Person } from "../../../types";
+import { householdApi } from "@/api/householdApi";
+import type { Person } from "@/types";
 import { CitizenModal } from "../CitizenModal";
 
-vi.mock("../../../api/householdApi", () => ({
+vi.mock("@/api/householdApi", () => ({
 	householdApi: {
 		revealCitizenCCCD: vi.fn(),
 	},

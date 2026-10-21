@@ -8,8 +8,8 @@ import {
 	X,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
-import { DAKHA_ETHNICITIES } from "../../data/constants";
-import { CustomSelect } from "../common/CustomSelect";
+import { DAKHA_ETHNICITIES } from "@/data/constants";
+import { CustomSelect } from "@/components/common/CustomSelect";
 import { type AgeFilter, AgeFilterPopover } from "./AgeFilterPopover";
 import { YearSelector } from "./YearSelector";
 

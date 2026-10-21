@@ -1,7 +1,7 @@
 import { act, fireEvent, render, renderHook, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { Household, Person } from "../../../types";
-import { useHouseholdStore } from "../../../store/householdStore";
+import type { Household, Person } from "@/types";
+import { useHouseholdStore } from "@/store/householdStore";
 import { HouseholdTable } from "../HouseholdTable";
 
 describe("HouseholdTable Component", () => {

@@ -1,8 +1,8 @@
 import { Briefcase, GraduationCap, ShieldCheck } from "lucide-react";
 import type React from "react";
-import { formatVietnameseNumber } from "../common/tableStyles";
-import { CardShell } from "./CardShell";
-import { MicroBar } from "./MicroBar";
+import { formatVietnameseNumber } from "@/components/common/tableStyles";
+import { CardShell } from "@/components/analytics/CardShell";
+import { MicroBar } from "@/components/analytics/MicroBar";
 
 export interface WelfareItem {
 	name: string;

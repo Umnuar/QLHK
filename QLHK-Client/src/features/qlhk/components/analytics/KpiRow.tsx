@@ -1,6 +1,6 @@
 import { Building2, HeartHandshake, UserCheck, Users } from "lucide-react";
 import type React from "react";
-import { formatVietnameseNumber } from "../common/tableStyles";
+import { formatVietnameseNumber } from "@/components/common/tableStyles";
 
 export interface KpiRowProps {
 	totalHouseholds: number;

@@ -1,28 +1,28 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { calculateAge, parseAndValidateDob } from "../../../utils/date";
+import { calculateAge, parseAndValidateDob } from "@/utils/date";
 import { AnalyticsDashboard } from "../AnalyticsDashboard";
 
 const mockUseApp = vi.fn();
-vi.mock("../../../AppContext", () => ({
+vi.mock("@/AppContext", () => ({
 	useApp: () => mockUseApp(),
 }));
 
 const mockUseHouseholds = vi.fn();
-vi.mock("../../../context/HouseholdContext", () => ({
+vi.mock("@/context/HouseholdContext", () => ({
 	useHouseholds: () => mockUseHouseholds(),
 }));
 
 const mockGetOverview = vi.fn();
 const mockGetByVillage = vi.fn();
-vi.mock("../../../api/analyticsApi", () => ({
+vi.mock("@/api/analyticsApi", () => ({
 	analyticsApi: {
 		getOverview: (...args: any[]) => mockGetOverview(...args),
 		getByVillage: (...args: any[]) => mockGetByVillage(...args),
 	},
 }));
 
-vi.mock("../../../db/indexedDB", () => ({
+vi.mock("@/db/indexedDB", () => ({
 	getCache: vi.fn().mockResolvedValue(null),
 	setCache: vi.fn().mockResolvedValue(true),
 }));

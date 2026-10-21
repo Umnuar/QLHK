@@ -2,18 +2,18 @@ import { AlertCircle, Check, Eye, EyeOff, User, X } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { householdApi } from "../../api/householdApi";
-import { ETHNIC_GROUPS, RELIGIONS } from "../../data/constants";
-import type { Gender, Person, RelationshipType } from "../../types";
-import { maskCccd, validateCccd } from "../../utils/cccd";
+import { householdApi } from "@/api/householdApi";
+import { ETHNIC_GROUPS, RELIGIONS } from "@/data/constants";
+import type { Gender, Person, RelationshipType } from "@/types";
+import { maskCccd, validateCccd } from "@/utils/cccd";
 import {
 	calculateAge,
 	formatDobDisplay,
 	parseAndValidateDob,
-} from "../../utils/date";
-import { normalizeUnaccented, splitFullName } from "../../utils/vietnamese";
-import { CustomSelect } from "../common/CustomSelect";
-import { useFocusTrap } from "../../hooks/useFocusTrap";
+} from "@/utils/date";
+import { normalizeUnaccented, splitFullName } from "@/utils/vietnamese";
+import { CustomSelect } from "@/components/common/CustomSelect";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 export interface CitizenModalProps {
 	isOpen: boolean;

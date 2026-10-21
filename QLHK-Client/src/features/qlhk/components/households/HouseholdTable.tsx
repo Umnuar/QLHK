@@ -9,10 +9,10 @@ import {
 	Users,
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
-import { householdApi } from "../../api/householdApi";
-import type { Household, Person } from "../../types";
-import { calculateAge } from "../../utils/date";
-import { TablePagination } from "../common/TablePagination";
+import { householdApi } from "@/api/householdApi";
+import type { Household, Person } from "@/types";
+import { calculateAge } from "@/utils/date";
+import { TablePagination } from "@/components/common/TablePagination";
 import {
 	formatHouseholdStatus,
 	formatVietnameseNumber,
@@ -21,7 +21,7 @@ import {
 	getTableRowBackground,
 	TABLE_HEADER_CLASSES,
 	VILLAGE_BADGE_CLASS,
-} from "../common/tableStyles";
+} from "@/components/common/tableStyles";
 import type { AgeFilter } from "./AgeFilterPopover";
 
 export { formatHouseholdStatus, getHouseholdStatusBadgeClass };

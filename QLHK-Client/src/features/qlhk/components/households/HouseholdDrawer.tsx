@@ -13,13 +13,13 @@ import {
 import type React from "react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { useApp } from "../../AppContext";
-import { VILLAGES } from "../../data/constants";
-import type { Household, Person, RelationshipType } from "../../types";
-import { CustomSelect } from "../common/CustomSelect";
+import { useApp } from "@/AppContext";
+import { VILLAGES } from "@/data/constants";
+import type { Household, Person, RelationshipType } from "@/types";
+import { CustomSelect } from "@/components/common/CustomSelect";
 import { CitizenModal } from "./CitizenModal";
-import { useFocusTrap } from "../../hooks/useFocusTrap";
-import { householdApi } from "../../api/householdApi";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { householdApi } from "@/api/householdApi";
 
 export interface HouseholdDrawerProps {
 	isOpen: boolean;

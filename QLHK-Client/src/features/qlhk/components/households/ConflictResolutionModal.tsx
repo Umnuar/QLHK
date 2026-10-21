@@ -1,7 +1,7 @@
 import { AlertTriangle, ArrowRight, Check, Database, RefreshCw, X } from "lucide-react";
 import React from "react";
 import { createPortal } from "react-dom";
-import type { Household } from "../../types";
+import type { Household } from "@/types";
 
 export interface ConflictResolutionModalProps {
 	isOpen: boolean;

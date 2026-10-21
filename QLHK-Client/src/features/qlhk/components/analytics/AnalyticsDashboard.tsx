@@ -9,30 +9,30 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { loadXlsx } from "../../utils/fileExport";
-import { useApp } from "../../AppContext";
+import { loadXlsx } from "@/utils/fileExport";
+import { useApp } from "@/AppContext";
 import {
 	type AnalyticsOverviewData,
 	analyticsApi,
 	type VillageAnalyticsRow,
-} from "../../api/analyticsApi";
-import { useHouseholds } from "../../context/HouseholdContext";
-import { ETHNIC_GROUPS } from "../../data/constants";
-import { getCache, setCache } from "../../db/indexedDB";
-import { sanitizeExcelRow } from "../../utils/excelParser";
-import { parseAndValidateDob } from "../../utils/date";
+} from "@/api/analyticsApi";
+import { useHouseholds } from "@/context/HouseholdContext";
+import { ETHNIC_GROUPS } from "@/data/constants";
+import { getCache, setCache } from "@/db/indexedDB";
+import { sanitizeExcelRow } from "@/utils/excelParser";
+import { parseAndValidateDob } from "@/utils/date";
 import {
 	DEFAULT_STAT_ACCENT,
 	STAT_CATEGORY_COLORS,
-} from "../common/statStyles";
+} from "@/components/common/statStyles";
 import {
 	TABLE_HEADER_CLASSES,
 	VILLAGE_BADGE_CLASS,
 	calculatePercentagesWithLargestRemainder,
 	formatVietnameseNumber,
-} from "../common/tableStyles";
-import { DistributionCard } from "./DistributionCard";
-import type { Segment } from "./DonutChart";
+} from "@/components/common/tableStyles";
+import { DistributionCard } from "@/components/analytics/DistributionCard";
+import type { Segment } from "@/components/analytics/DonutChart";
 import { KpiRow } from "./KpiRow";
 import { WelfareCard } from "./WelfareCard";
 

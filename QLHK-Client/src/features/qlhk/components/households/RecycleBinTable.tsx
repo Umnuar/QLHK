@@ -1,12 +1,12 @@
 import { ChevronRight, RotateCcw, Trash2 } from "lucide-react";
 import React, { useState } from "react";
-import type { Household } from "../../types";
-import { calculateAge } from "../../utils/date";
-import { TablePagination } from "../common/TablePagination";
+import type { Household } from "@/types";
+import { calculateAge } from "@/utils/date";
+import { TablePagination } from "@/components/common/TablePagination";
 import {
 	formatVietnameseNumber,
 	VILLAGE_BADGE_CLASS,
-} from "../common/tableStyles";
+} from "@/components/common/tableStyles";
 
 interface RecycleBinTableProps {
 	households: Household[];

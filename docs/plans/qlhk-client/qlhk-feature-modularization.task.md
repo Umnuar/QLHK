@@ -26,7 +26,8 @@
 - [x] Step 8.a: HtxhDrawer vA HtxhModal trong features/qlcs/htxh
 - [x] Step 8.b: HtxhPage integration vA bridge router
 - [x] Step 8.c: Cleanup legacy chuctho drawer and filterbar
-- [/] Step 8.d: Cleanup legacy chuctho table and htxh filterbar
+- [x] Step 8.d: Cleanup legacy chuctho table and htxh filterbar
+- [/] Step 8.e: Cleanup legacy htxh drawer and table
 - [ ] Step 9: Final Verification Gate (Zero Regression, Full Suite, Build)
 
 ## Project Gotchas & Learned Invariants

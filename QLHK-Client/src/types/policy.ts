@@ -3,9 +3,9 @@ export interface PolicyProfile {
 	stt?: number;
 	village_id?: string | null;
 	name: string;
-	dob: string;
-	gender: string;
-	cccd: string;
+	dob?: string;
+	gender?: string;
+	cccd?: string;
 	ethnicity?: string;
 	residence?: string;
 	currentAddress?: string;

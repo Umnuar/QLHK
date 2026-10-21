@@ -21,7 +21,7 @@
 - [x] `Step 2`: Client Navigation & Desktop Window Configuration
 - [x] `Step 3`: Client Chúc Thọ Page & Management Modals
 - [x] `Step 4`: Client Hỗ Trợ Xã Hội Page & Modals
-- [ ] `Step 5`: Client Policy Analytics Dashboard Page & Route Wiring
+- [x] `Step 5`: Client Policy Analytics Dashboard Page & Route Wiring
 - [ ] `Step 6`: Final Verification Gate (Full test suite, static typecheck & clean tree)
 
 ## Project Gotchas & Learned Invariants

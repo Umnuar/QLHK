@@ -18,6 +18,15 @@ const SettingsPage = lazy(() =>
 const AuditLogView = lazy(() =>
 	import("./components/audit/AuditLogView").then((m) => ({ default: m.AuditLogView }))
 );
+const ChucThoPage = lazy(() =>
+	import("./pages/ChucThoPage").then((m) => ({ default: m.ChucThoPage }))
+);
+const HtxhPage = lazy(() =>
+	import("./pages/HtxhPage").then((m) => ({ default: m.HtxhPage }))
+);
+const PolicyAnalyticsPage = lazy(() =>
+	import("./pages/PolicyAnalyticsPage").then((m) => ({ default: m.PolicyAnalyticsPage }))
+);
 
 const PageLoadingSpinner: React.FC = () => (
 	<div className="flex flex-col items-center justify-center py-20 min-h-[300px]">
@@ -53,6 +62,9 @@ export const App: React.FC = () => {
 				{activeTab === "villages" && <VillagesPage />}
 				{activeTab === "households" && <HouseholdsPage />}
 				{activeTab === "analytics" && <AnalyticsPage />}
+				{activeTab === "chuctho" && <ChucThoPage />}
+				{activeTab === "htxh" && <HtxhPage />}
+				{activeTab === "policy-analytics" && <PolicyAnalyticsPage />}
 				{activeTab === "recycle-bin" && <RecycleBinPage />}
 				{activeTab === "audit" &&
 					(user?.role === "admin" ? <AuditLogView /> : <HouseholdsPage />)}

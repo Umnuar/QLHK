@@ -34,15 +34,6 @@ export function usePolicyAnalyticsPageData() {
 		!isAdmin && user?.village_id ? user.village_id : selectedVillageId || "",
 	);
 
-	useEffect(() => {
-		if (!isAdmin && user?.village_id) {
-			setSelectedVillage(user.village_id);
-			setSelectedVillageId(user.village_id);
-		} else {
-			setSelectedVillage(selectedVillageId || "");
-		}
-	}, [selectedVillageId, isAdmin, user?.village_id, setSelectedVillageId]);
-
 	const [loading, setLoading] = useState(false);
 	const [overview, setOverview] = useState<AnalyticsOverviewData | null>(null);
 	const [breakdown, setBreakdown] = useState<AnalyticsByVillageResponse | null>(null);

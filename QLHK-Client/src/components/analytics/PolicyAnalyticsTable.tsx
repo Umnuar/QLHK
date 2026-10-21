@@ -108,7 +108,10 @@ export const PolicyAnalyticsTable: React.FC<PolicyAnalyticsTableProps> = ({
 				<div className="flex items-center gap-2">
 					<TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={1.5} />
 					<h3 className={TABLE_STYLES.headerTitle}>
-						Đối Soát Số Liệu Chính Sách Theo Thôn ({isAdmin ? (villagesCount ? `${villagesCount} Thôn` : "Các Thôn") : userVillageName} - Năm {selectedYear})
+						<span>Đối Soát Số Liệu Chính Sách Theo Thôn</span>
+						<span className="ml-1 text-xs font-normal text-slate-500">
+							({isAdmin ? (villagesCount ? `${villagesCount} Thôn` : "Các Thôn") : userVillageName} - Năm {selectedYear})
+						</span>
 					</h3>
 				</div>
 				<div className="flex items-center gap-2">
@@ -166,9 +169,9 @@ export const PolicyAnalyticsTable: React.FC<PolicyAnalyticsTableProps> = ({
 					<tfoot className="bg-slate-100/90 dark:bg-slate-800/90 font-black text-xs border-t-2 border-slate-300 dark:border-slate-700">
 						<tr>
 							<td className="px-4 py-3 text-center font-bold uppercase text-emerald-700 dark:text-emerald-300" colSpan={2}>TỔNG CỘNG TOÀN XÃ</td>
-							<td className="px-3 py-3 text-right font-mono font-black text-slate-900 dark:text-white tabular-nums">{formatNumber(summary.total)}</td>
-							<td className="px-3 py-3 text-right font-mono font-black text-amber-600 dark:text-amber-400 tabular-nums">{formatNumber(summary.chucTho)}</td>
-							<td className="px-3 py-3 text-right font-mono font-black text-sky-600 dark:text-sky-400 tabular-nums">{formatNumber(summary.htxh)}</td>
+							<td className="px-3 py-3 text-right font-mono font-black text-slate-900 dark:text-white tabular-nums">{formatNumber(summary.total)} người</td>
+							<td className="px-3 py-3 text-right font-mono font-black text-amber-600 dark:text-amber-400 tabular-nums">{formatNumber(summary.chucTho)} cụ</td>
+							<td className="px-3 py-3 text-right font-mono font-black text-sky-600 dark:text-sky-400 tabular-nums">{formatNumber(summary.htxh)} hồ sơ</td>
 							<td className="px-3 py-3 text-right font-mono font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{formatNumber(summary.received)}</td>
 							<td className={`px-3 py-3 text-right font-mono font-black tabular-nums ${summary.unreceived > 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-400 dark:text-slate-500"}`}>{formatNumber(summary.unreceived)}</td>
 							<td className="px-3 py-3 text-right font-mono font-black text-slate-900 dark:text-white tabular-nums">{formatPct(summary.rate)}%</td>

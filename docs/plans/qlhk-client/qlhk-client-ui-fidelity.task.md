@@ -20,7 +20,7 @@
 - [x] `Step 1`: Analytics Visual Components & Micro-Charts
 - [x] `Step 2`: Policy Analytics Page High-Fidelity Dashboard
 - [x] `Step 3`: High-Fidelity Chúc Thọ FilterBar & Table
-- [ ] `Step 4`: Chúc Thọ Drawer, Enhanced Modal & Page Integration
+- [x] `Step 4`: Chúc Thọ Drawer, Enhanced Modal & Page Integration
 - [ ] `Step 5`: High-Fidelity Hỗ Trợ Xã Hội FilterBar & Table
 - [ ] `Step 6`: Hỗ Trợ Xã Hội Drawer, Enhanced Modal & Page Integration
 - [ ] `Step 7`: Final Verification Gate (Zero regression, full suite, build)

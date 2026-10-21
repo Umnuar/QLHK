@@ -6,6 +6,8 @@ import { ChucThoPage } from "../ChucThoPage";
 vi.mock("../../AppContext", () => ({
 	useApp: () => ({
 		selectedVillageId: "v-1",
+		setSelectedVillageId: vi.fn(),
+		villages: [{ id: "v-1", name: "Thôn 1" }],
 		user: { id: "u-1", role: "admin" },
 	}),
 }));
@@ -23,7 +25,7 @@ describe("ChucThoPage", () => {
 	});
 
 	it("renders profile table and toggles received state", async () => {
-		const mockProfiles = [{ id: "p-1", name: "Tran Van M", dob: "1954", gender: "Nam", cccd: "123456789", received: false }];
+		const mockProfiles = [{ id: "p-1", name: "Tran Van M", dob: "1954", gender: "Nam", cccd: "123456789012", received: false }];
 		vi.mocked(policyApi.getChuctho).mockResolvedValueOnce({ data: mockProfiles, total: 1 });
 
 		render(<ChucThoPage />);
@@ -31,10 +33,11 @@ describe("ChucThoPage", () => {
 		expect(await screen.findByText("Tran Van M")).toBeInTheDocument();
 		expect(screen.getByText("1954")).toBeInTheDocument();
 
-		const checkbox = screen.getByRole("checkbox");
-		expect(checkbox).not.toBeChecked();
+		const checkboxes = screen.getAllByRole("checkbox");
+		const receivedCheckbox = checkboxes[checkboxes.length - 1];
+		expect(receivedCheckbox).not.toBeChecked();
 
-		fireEvent.click(checkbox);
+		fireEvent.click(receivedCheckbox);
 		expect(policyApi.toggleReceived).toHaveBeenCalledWith("chuctho", "p-1", true);
 	});
 
@@ -49,5 +52,17 @@ describe("ChucThoPage", () => {
 		await waitFor(() => {
 			expect(policyApi.getChuctho).toHaveBeenCalledWith(expect.objectContaining({ milestone: "70" }));
 		});
+	});
+
+	it("opens drawer when clicking citizen name", async () => {
+		const mockProfiles = [{ id: "p-1", name: "Tran Van M", dob: "1954", gender: "Nam", cccd: "123456789012", received: false, milestone: "70" }];
+		vi.mocked(policyApi.getChuctho).mockResolvedValueOnce({ data: mockProfiles, total: 1 });
+
+		render(<ChucThoPage />);
+
+		const nameBtn = await screen.findByRole("button", { name: "Tran Van M" });
+		fireEvent.click(nameBtn);
+
+		expect(screen.getByText("Hồ sơ người mừng thọ")).toBeInTheDocument();
 	});
 });

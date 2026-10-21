@@ -15,7 +15,8 @@
 - [x] Step 2: Di chuyển pages QLHK vào features/qlhk/pages và cập nhật router & tests
 - [x] Step 3.a: MicroBar và PolicyDonutChart trong features/qlcs/analytics
 - [x] Step 3.b: PolicyGenderBar và PolicyKpiRow trong features/qlcs/analytics
-- [/] Step 4: Bảng đối soát thôn và Trang Thống kê Chính sách High-Fidelity
+- [x] Step 4.a: PolicyVillageTable và PolicyDistributionCards trong features/qlcs/analytics
+- [/] Step 4.b: PolicyAnalyticsPage trong features/qlcs/pages và bridge router
 - [ ] Step 5: Chúc Thọ StatsBar, FilterBar & Table High-Fidelity trong features/qlcs/chuctho
 - [ ] Step 6: Chúc Thọ Drawer, Modal 14 trường & Page Integration
 - [ ] Step 7: Hỗ Trợ Xã Hội StatsBar, FilterBar & Table High-Fidelity trong features/qlcs/htxh

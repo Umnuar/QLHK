@@ -284,7 +284,7 @@ STRICT INVARIANTS:
   3. `cd QLHK/QLHK-Backend && npx tsc --noEmit` (Yêu cầu: 0 compiler errors).
   4. `cd QLHK/QLHK-Client && npm run build` (Yêu cầu: build thành công, code-splitting chunks nhỏ gọn).
   5. Audit P0 Zero Comments:
-     `git diff roadmap/qlhk-feature-modularization...BASE_BRANCH | grep -E "^\+.*(//|/\*|#)"` (Yêu cầu: 0 comment).
+     `git diff roadmap/qlhk-feature-modularization...<BASE_BRANCH> | grep -E "^\+.*(//|/\*|#)"` (Yêu cầu: 0 comment).
 - **Final Action**: Update `docs/plans/qlhk-client/qlhk-feature-modularization.task.md`: Mark Step 9 as `[x]`, set Status to `Completed`.
 - **Commit**: `chore(roadmap): complete final verification gate for qlhk-feature-modularization`
 

@@ -13,47 +13,73 @@ interface ModalOptions {
 	onCancel?: () => void;
 }
 
+export type ModalType = "info" | "warning" | "danger" | "success" | "error";
+export type AlertParams = string | { title: string; message: string; type?: ModalType };
+export type ConfirmParams = string | { title: string; message: string; type?: ModalType; confirmText?: string; cancelText?: string };
+
 interface ModalContextType {
 	showModal: (options: ModalOptions) => void;
 	hideModal: () => void;
-	showAlert: (title: string, message: string, type?: "info" | "warning" | "danger" | "success") => Promise<void>;
-	showConfirm: (title: string, message: string, type?: "info" | "warning" | "danger" | "success", confirmText?: string, cancelText?: string) => Promise<boolean>;
+	showAlert: ((options: { title: string; message: string; type?: ModalType }) => Promise<void>) & ((title: string, message?: string, type?: ModalType) => Promise<void>);
+	showConfirm: ((options: { title: string; message: string; type?: ModalType; confirmText?: string; cancelText?: string }) => Promise<boolean>) & ((title: string, message?: string, type?: ModalType, confirmText?: string, cancelText?: string) => Promise<boolean>);
 }
 
 let globalShowModal: ((options: ModalOptions) => void) | null = null;
 
-export const showAlert = (title: string, message: string, type: "info" | "warning" | "danger" | "success" = "info"): Promise<void> => {
+export const showAlert = (
+	titleOrOptions: AlertParams,
+	message?: string,
+	type: ModalType = "info",
+): Promise<void> => {
+	const resolvedTitle = typeof titleOrOptions === "object" ? titleOrOptions.title : titleOrOptions;
+	const resolvedMessage = typeof titleOrOptions === "object" ? titleOrOptions.message : (message || "");
+	const rawType = typeof titleOrOptions === "object" ? (titleOrOptions.type || "info") : type;
+	const resolvedType = rawType === "error" ? "danger" : rawType;
+
 	return new Promise((resolve) => {
 		if (globalShowModal) {
 			globalShowModal({
-				title,
-				message,
-				type,
+				title: resolvedTitle,
+				message: resolvedMessage,
+				type: resolvedType,
 				cancelText: null,
 				confirmText: "Đóng",
 				onConfirm: () => resolve(),
 			});
 		} else {
-			alert(`${title}\n${message}`);
+			alert(`${resolvedTitle}\n${resolvedMessage}`);
 			resolve();
 		}
 	});
 };
 
-export const showConfirm = (title: string, message: string, type: "info" | "warning" | "danger" | "success" = "warning", confirmText = "Xác nhận", cancelText = "Hủy"): Promise<boolean> => {
+export const showConfirm = (
+	titleOrOptions: ConfirmParams,
+	message?: string,
+	type: ModalType = "warning",
+	confirmText = "Xác nhận",
+	cancelText = "Hủy",
+): Promise<boolean> => {
+	const resolvedTitle = typeof titleOrOptions === "object" ? titleOrOptions.title : titleOrOptions;
+	const resolvedMessage = typeof titleOrOptions === "object" ? titleOrOptions.message : (message || "");
+	const rawType = typeof titleOrOptions === "object" ? (titleOrOptions.type || "warning") : type;
+	const resolvedType = rawType === "error" ? "danger" : rawType;
+	const resolvedConfirmText = typeof titleOrOptions === "object" ? (titleOrOptions.confirmText || confirmText) : confirmText;
+	const resolvedCancelText = typeof titleOrOptions === "object" ? (titleOrOptions.cancelText || cancelText) : cancelText;
+
 	return new Promise((resolve) => {
 		if (globalShowModal) {
 			globalShowModal({
-				title,
-				message,
-				type,
-				confirmText,
-				cancelText,
+				title: resolvedTitle,
+				message: resolvedMessage,
+				type: resolvedType,
+				confirmText: resolvedConfirmText,
+				cancelText: resolvedCancelText,
 				onConfirm: () => resolve(true),
 				onCancel: () => resolve(false),
 			});
 		} else {
-			resolve(window.confirm(`${title}\n${message}`));
+			resolve(window.confirm(`${resolvedTitle}\n${resolvedMessage}`));
 		}
 	});
 };

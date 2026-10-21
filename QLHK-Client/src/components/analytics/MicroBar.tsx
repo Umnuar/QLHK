@@ -1,11 +1,11 @@
 import type React from "react";
 
-export type MicroBarProps = {
+export interface MicroBarProps {
 	value: number;
 	color: string;
-	label: string;
+	label?: string;
 	className?: string;
-};
+}
 
 export const MicroBar: React.FC<MicroBarProps> = ({
 	value,
@@ -13,24 +13,20 @@ export const MicroBar: React.FC<MicroBarProps> = ({
 	label,
 	className = "",
 }) => {
-	const clampedValue = Math.min(Math.max(value, 0), 100);
+	const clamped = Math.min(Math.max(value, 0), 100);
 
 	return (
 		<div
+			className={`w-full h-1 bg-slate-200/80 dark:bg-slate-800 rounded-full overflow-hidden ${className}`}
 			role="progressbar"
-			aria-label={label}
-			aria-valuenow={clampedValue}
+			aria-valuenow={clamped}
 			aria-valuemin={0}
 			aria-valuemax={100}
-			style={{ "--bar": color } as React.CSSProperties}
-			className={`h-1 w-full rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden ${className}`}
+			aria-label={label}
 		>
 			<div
-				className="h-full rounded-full transition-all duration-300"
-				style={{
-					width: `${clampedValue}%`,
-					backgroundColor: "var(--bar, " + color + ")",
-				}}
+				className="h-full rounded-full transition-all duration-300 ease-out"
+				style={{ width: `${clamped}%`, backgroundColor: color }}
 			/>
 		</div>
 	);

@@ -17,7 +17,8 @@
 - [x] Step 3.b: PolicyGenderBar và PolicyKpiRow trong features/qlcs/analytics
 - [x] Step 4.a: PolicyVillageTable và PolicyDistributionCards trong features/qlcs/analytics
 - [x] Step 4.b: PolicyAnalyticsPage trong features/qlcs/pages và bridge router
-- [/] Step 5: Chúc Thọ StatsBar, FilterBar & Table High-Fidelity trong features/qlcs/chuctho
+- [x] Step 5.a: ChucThoStatsBar và ChucThoFilterBar trong features/qlcs/chuctho
+- [/] Step 5.b: ChucThoTable trong features/qlcs/chuctho
 - [ ] Step 6: Chúc Thọ Drawer, Modal 14 trường & Page Integration
 - [ ] Step 7: Hỗ Trợ Xã Hội StatsBar, FilterBar & Table High-Fidelity trong features/qlcs/htxh
 - [ ] Step 8: Hỗ Trợ Xã Hội Drawer, Modal Checkbox, Page Integration & Legacy Cleanup

@@ -13,7 +13,7 @@ STRICT INVARIANTS:
    - Verify clean working tree: `test -z "$(git status --porcelain)"`.
    - Execute the baseline test command **twice** (`Run 1` and `Run 2`), record `Base Branch: <BASE_BRANCH>`, the passing count, and exact names of any tests failing in **either** run as "flaky/known failing" into `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`, and immediately commit the task tracker. Never build on an uncommitted dirty tree.
 2. TWO-TIER READ CADENCE & CONTEXT ANCHORING:
-   - **Tier 1 (Session / Task Initialization)**: At `STEP 0`, when resuming from a handoff, or after a `/compact` event, perform a one-time anchor read of: `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`, `.agents/frontend-developer.md` (or relevant specialist role), and the plan header (`docs/plans/qlhk-client/qlhk-client-merge-qlcs.md`). Emit mandatory proof-of-read log before taking action:
+   - **Tier 1 (Session / Task Initialization)**: At `STEP 0`, when resuming from a handoff, or after a `/compact` event, perform a one-time anchor read of: `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`, `.agents/frontend-developer.md` (if present in repo), and the plan header (`docs/plans/qlhk-client/qlhk-client-merge-qlcs.md`). Emit mandatory proof-of-read log before taking action:
      `[Context Anchored]: qlhk-client-merge-qlcs.task.md (<status>), frontend-developer.md (<invariants>), qlhk-client-merge-qlcs.md (<goal>)`
    - **Tier 2 (In-Session Atomic Step K)**: Never re-read the entire plan or role file at each step. Rely on inlined instructions inside `STEP K` (or read only the exact surgical slice `### Section K: ...`, `<= 30 lines`). Follow the embedded `Role Focus` invariants and only read code files strictly inside `Target Files`. Review `## Project Gotchas & Learned Invariants` in `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md` before starting a step.
 3. GRAPH-AWARE BLAST RADIUS:
@@ -99,183 +99,155 @@ STRICT INVARIANTS:
   - `[!]` Blocked (Circuit Breaker Tripped)
 
 ## Implementation Steps
-- [ ] **Step 1: Client Policy API Layer & State Types**
-  - Target Files: `QLHK/QLHK-Client/src/types/policy.ts`, `QLHK/QLHK-Client/src/api/policyApi.ts`, `QLHK/QLHK-Client/src/api/__tests__/policyApi.test.ts`
-  - Scoped Test Command: `cd QLHK/QLHK-Client && npx vitest run src/api/__tests__/policyApi.test.ts`
-- [ ] **Step 2: Client Navigation & Desktop Window Configuration**
-  - Target Files: `QLHK/QLHK-Client/src/components/Layout/Sidebar.tsx`, `QLHK/QLHK-Client/src-tauri/tauri.conf.json`, `QLHK/QLHK-Client/src/components/Layout/__tests__/SidebarPolicy.test.tsx`
-  - Scoped Test Command: `cd QLHK/QLHK-Client && npx vitest run src/components/Layout/__tests__/SidebarPolicy.test.tsx`
-- [ ] **Step 3: Client Chúc Thọ Page & Management Modals**
-  - Target Files: `QLHK/QLHK-Client/src/pages/ChucThoPage.tsx`, `QLHK/QLHK-Client/src/components/chuctho/ChucThoModal.tsx`, `QLHK/QLHK-Client/src/pages/__tests__/ChucThoPage.test.tsx`
-  - Scoped Test Command: `cd QLHK/QLHK-Client && npx vitest run src/pages/__tests__/ChucThoPage.test.tsx`
-- [ ] **Step 4: Client Hỗ Trợ Xã Hội Page & Modals**
-  - Target Files: `QLHK/QLHK-Client/src/pages/HtxhPage.tsx`, `QLHK/QLHK-Client/src/components/htxh/HtxhModal.tsx`, `QLHK/QLHK-Client/src/pages/__tests__/HtxhPage.test.tsx`
-  - Scoped Test Command: `cd QLHK/QLHK-Client && npx vitest run src/pages/__tests__/HtxhPage.test.tsx`
-- [ ] **Step 5: Client Policy Analytics Dashboard Page & Route Wiring**
-  - Target Files: `QLHK/QLHK-Client/src/pages/PolicyAnalyticsPage.tsx`, `QLHK/QLHK-Client/src/App.tsx`, `QLHK/QLHK-Client/src/pages/__tests__/PolicyAnalyticsPage.test.tsx`
-  - Scoped Test Command: `cd QLHK/QLHK-Client && npx vitest run src/pages/__tests__/PolicyAnalyticsPage.test.tsx`
-- [ ] **Step 6: Final Verification Gate & Full Test Suite**
-  - Full Test Command: `cd QLHK/QLHK-Client && npm test`
-  - Typecheck Command: `cd QLHK/QLHK-Client && npx tsc --noEmit`
+
+- [ ] `Step 0`: Setup isolated branch `roadmap/qlhk-client-merge-qlcs`, baseline verification & task tracker
+- [ ] `Step 1`: Client Policy API Layer & State Types
+- [ ] `Step 2`: Client Navigation & Desktop Window Configuration
+- [ ] `Step 3`: Client Chúc Thọ Page & Management Modals
+- [ ] `Step 4`: Client Hỗ Trợ Xã Hội Page & Modals
+- [ ] `Step 5`: Client Policy Analytics Dashboard Page & Route Wiring
+- [ ] `Step 6`: Final Verification Gate (Full test suite, static typecheck & clean tree)
 
 ## Project Gotchas & Learned Invariants
-- Zero comments rule: Do not add code comments in new or modified files.
-- Desktop window title in `tauri.conf.json` must be updated accurately.
-- Use `React.lazy()` for all policy pages to protect bundle size.
+- P0: Zero Comments in Code.
+- Tauri v2 Desktop: Use React.lazy() for all policy pages to maintain ~10MB lightweight bundle.
+- Re-use existing UI components (CustomSelect, Modal, TablePagination) and Lucide icons.
 ```
 
-5. Commit tracker:
-```bash
-git add docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md && git commit -m "chore(roadmap): initialize task tracker for qlhk-client-merge-qlcs"
-test -z "$(git status --porcelain)"
-```
+5. Commit tracker: `git add docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md && git commit -m "chore(roadmap): init qlhk-client-merge-qlcs.task.md"`
 
 ---
 
 ### STEP 1: Client Policy API Layer & State Types
 - START STEP:
-  + Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 1 as `[/]`
-- Plan Section: `docs/plans/qlhk-client/qlhk-client-merge-qlcs.md (Section 1: Client Policy API Layer & State Types (Step 1))`
-- Assigned Role: `.agents/frontend-developer.md`
-- Role Focus: TypeScript interfaces, Axios client wrapper, typed error handling, REST contracts.
-- Target Files: `QLHK/QLHK-Client/src/types/policy.ts` (new), `QLHK/QLHK-Client/src/api/policyApi.ts` (new), `QLHK/QLHK-Client/src/api/__tests__/policyApi.test.ts` (new)
-- Scoped Test Command: `cd QLHK/QLHK-Client && npx vitest run src/api/__tests__/policyApi.test.ts`
-- Per-Step Static Check: `cd QLHK/QLHK-Client && npx tsc --noEmit`
-- Actions:
-  1. Create `src/types/policy.ts` defining types for Chúc thọ, HTXH profiles and analytics payloads.
-  2. Create `src/api/policyApi.ts` implementing calls to `/api/policies/*` endpoints using existing Axios client.
-  3. Create unit test `src/api/__tests__/policyApi.test.ts` validating API endpoint calls and response schemas.
-- Verification & Gate:
-  1. Run `git status --short`.
-  2. Run DIFF GATE (Invariant 4) -> verify gross diff <= 200 LOC.
-  3. Run Scoped Test Command -> must pass with zero failures.
-  4. Run Per-Step Static Check -> must exit 0.
-  5. Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 1 as `[x]`.
-  6. Commit: `git add -A && git commit -m "feat(roadmap): complete step 1 - client policy api layer and state types"`
-  7. Verify clean tree: `test -z "$(git status --porcelain)"`.
++ Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 1 as `[/]`
+- **Target Files**: `QLHK/QLHK-Client/src/types/policy.ts`, `QLHK/QLHK-Client/src/api/policyApi.ts`, `QLHK/QLHK-Client/src/api/__tests__/policyApi.test.ts`
+- **Assigned Role**: `.agents/frontend-developer.md`
+- **Role Focus**: TypeScript interfaces, Axios client wrapper, typed error handling, REST contracts, zero comments.
+- **Graph Check**: `None (new API client)`
+- **Actions**:
+  1. Create `src/types/policy.ts` defining types for Chúc thọ and HTXH records, milestone filters, and analytics summaries.
+  2. Create `src/api/policyApi.ts` implementing `getChuctho`, `getHtxh`, `toggleReceived`, `getAnalytics`, `importExcel`, `exportExcel`.
+  3. Create `src/api/__tests__/policyApi.test.ts` asserting all endpoints call Axios correctly.
+- **Verification Commands**:
+  - Scoped Test: `cd QLHK/QLHK-Client && npx vitest run src/api/__tests__/policyApi.test.ts`
+  - Per-Step Static Check: `cd QLHK/QLHK-Client && npx tsc --noEmit`
+- **Scope Hygiene & Commit**:
+  - Review `git status --short`.
+  - Check DIFF GATE (<= 200 gross LOC).
+  - Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 1 as `[x]`.
+  - Commit: `git add -A && git commit -m "feat(roadmap): complete step 1 - client policy api layer and state types"`
+  - Verify clean working tree (`test -z "$(git status --porcelain)"`).
 
 ---
 
 ### STEP 2: Client Navigation & Desktop Window Configuration
 - START STEP:
-  + Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 2 as `[/]`
-- Plan Section: `docs/plans/qlhk-client/qlhk-client-merge-qlcs.md (Section 2: Client Navigation & Desktop Window Configuration (Step 2))`
-- Assigned Role: `.agents/frontend-developer.md`
-- Role Focus: Tauri configuration, navigation sidebar, accessible icons, responsive layout.
-- Target Files: `QLHK/QLHK-Client/src/components/Layout/Sidebar.tsx`, `QLHK/QLHK-Client/src-tauri/tauri.conf.json`, `QLHK/QLHK-Client/src/components/Layout/__tests__/SidebarPolicy.test.tsx` (new)
-- Scoped Test Command: `cd QLHK/QLHK-Client && npx vitest run src/components/Layout/__tests__/SidebarPolicy.test.tsx`
-- Per-Step Static Check: `cd QLHK/QLHK-Client && npx tsc --noEmit`
-- Actions:
-  1. Update `Sidebar.tsx` to add "CHÍNH SÁCH XÃ HỘI" section with items: chuctho, htxh, policy-analytics.
-  2. Update `src-tauri/tauri.conf.json` window title to "Quản Lý Hộ Khẩu & Chính Sách Xã Hội - Xã Đăk Hà".
-  3. Create test `src/components/Layout/__tests__/SidebarPolicy.test.tsx` to verify sidebar rendering and tab activation.
-- Verification & Gate:
-  1. Run `git status --short`.
-  2. Run DIFF GATE -> gross diff <= 200 LOC.
-  3. Run Scoped Test Command -> must pass.
-  4. Run Per-Step Static Check -> must exit 0.
-  5. Update tracker: Mark Step 2 as `[x]`.
-  6. Commit: `git add -A && git commit -m "feat(roadmap): complete step 2 - client navigation and window configuration"`
-  7. Verify clean tree: `test -z "$(git status --porcelain)"`.
++ Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 2 as `[/]`
+- **Target Files**: `QLHK/QLHK-Client/src/components/Layout/Sidebar.tsx`, `QLHK/QLHK-Client/src-tauri/tauri.conf.json`, `QLHK/QLHK-Client/src/components/Layout/__tests__/SidebarPolicy.test.tsx`
+- **Assigned Role**: `.agents/frontend-developer.md`
+- **Role Focus**: Tauri configuration, navigation sidebar, accessible icons, responsive layout, zero comments.
+- **Graph Check**: `graft callers Sidebar`
+- **Actions**:
+  1. In `src/components/Layout/Sidebar.tsx`, add the "CHÍNH SÁCH XÃ HỘI" section with items `chuctho`, `htxh`, and `policy-analytics`.
+  2. In `src-tauri/tauri.conf.json`, update the main window title to "Quản Lý Hộ Khẩu & Chính Sách Xã Hội - Xã Đăk Hà".
+  3. Create unit test `src/components/Layout/__tests__/SidebarPolicy.test.tsx` verifying tab clicks and active indicators.
+- **Verification Commands**:
+  - Scoped Test: `cd QLHK/QLHK-Client && npx vitest run src/components/Layout/__tests__/SidebarPolicy.test.tsx`
+  - Per-Step Static Check: `cd QLHK/QLHK-Client && npx tsc --noEmit`
+- **Scope Hygiene & Commit**:
+  - Review `git status --short`.
+  - Check DIFF GATE (<= 200 gross LOC).
+  - Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 2 as `[x]`.
+  - Commit: `git add -A && git commit -m "feat(roadmap): complete step 2 - client navigation and desktop window configuration"`
+  - Verify clean working tree (`test -z "$(git status --porcelain)"`).
 
 ---
 
 ### STEP 3: Client Chúc Thọ Page & Management Modals
 - START STEP:
-  + Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 3 as `[/]`
-- Plan Section: `docs/plans/qlhk-client/qlhk-client-merge-qlcs.md (Section 3: Client Chúc Thọ Page & Management Modals (Step 3))`
-- Assigned Role: `.agents/frontend-developer.md`
-- Role Focus: React components, table presentation, milestone filters, modal form validation, zero comments.
-- Target Files: `QLHK/QLHK-Client/src/pages/ChucThoPage.tsx` (new), `QLHK/QLHK-Client/src/components/chuctho/ChucThoModal.tsx` (new), `QLHK/QLHK-Client/src/pages/__tests__/ChucThoPage.test.tsx` (new)
-- Scoped Test Command: `cd QLHK/QLHK-Client && npx vitest run src/pages/__tests__/ChucThoPage.test.tsx`
-- Per-Step Static Check: `cd QLHK/QLHK-Client && npx tsc --noEmit`
-- Actions:
-  1. Create `ChucThoPage.tsx` with milestone filter tabs (60..>100), received toggle, search input and pagination.
-  2. Create `ChucThoModal.tsx` for viewing, creating, and editing elderly milestone records.
-  3. Create component test `src/pages/__tests__/ChucThoPage.test.tsx` validating table render and filter interactions.
-- Verification & Gate:
-  1. Run `git status --short`.
-  2. Run DIFF GATE -> gross diff <= 200 LOC.
-  3. Run Scoped Test Command -> must pass.
-  4. Run Per-Step Static Check -> must exit 0.
-  5. Update tracker: Mark Step 3 as `[x]`.
-  6. Commit: `git add -A && git commit -m "feat(roadmap): complete step 3 - client chuctho page and management modals"`
-  7. Verify clean tree: `test -z "$(git status --porcelain)"`.
++ Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 3 as `[/]`
+- **Target Files**: `QLHK/QLHK-Client/src/pages/ChucThoPage.tsx`, `QLHK/QLHK-Client/src/components/chuctho/ChucThoModal.tsx`, `QLHK/QLHK-Client/src/pages/__tests__/ChucThoPage.test.tsx`
+- **Assigned Role**: `.agents/frontend-developer.md`
+- **Role Focus**: React components, table presentation, milestone filters, modal form validation, zero comments.
+- **Graph Check**: `None (new page component)`
+- **Actions**:
+  1. Create `src/pages/ChucThoPage.tsx` with milestone pill tabs (60..>100), received toggle checkbox, and search input.
+  2. Create `src/components/chuctho/ChucThoModal.tsx` for viewing, creating, and editing elderly profile records.
+  3. Create unit test `src/pages/__tests__/ChucThoPage.test.tsx` asserting table rendering and milestone filtering.
+- **Verification Commands**:
+  - Scoped Test: `cd QLHK/QLHK-Client && npx vitest run src/pages/__tests__/ChucThoPage.test.tsx`
+  - Per-Step Static Check: `cd QLHK/QLHK-Client && npx tsc --noEmit`
+- **Scope Hygiene & Commit**:
+  - Review `git status --short`.
+  - Check DIFF GATE (<= 200 gross LOC).
+  - Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 3 as `[x]`.
+  - Commit: `git add -A && git commit -m "feat(roadmap): complete step 3 - client chuc tho page and management modals"`
+  - Verify clean working tree (`test -z "$(git status --porcelain)"`).
 
 ---
 
 ### STEP 4: Client Hỗ Trợ Xã Hội Page & Modals
 - START STEP:
-  + Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 4 as `[/]`
-- Plan Section: `docs/plans/qlhk-client/qlhk-client-merge-qlcs.md (Section 4: Client Hỗ Trợ Xã Hội Page & Modals (Step 4))`
-- Assigned Role: `.agents/frontend-developer.md`
-- Role Focus: React UI, 6 category pill filters, status toggling, CRUD modal.
-- Target Files: `QLHK/QLHK-Client/src/pages/HtxhPage.tsx` (new), `QLHK/QLHK-Client/src/components/htxh/HtxhModal.tsx` (new), `QLHK/QLHK-Client/src/pages/__tests__/HtxhPage.test.tsx` (new)
-- Scoped Test Command: `cd QLHK/QLHK-Client && npx vitest run src/pages/__tests__/HtxhPage.test.tsx`
-- Per-Step Static Check: `cd QLHK/QLHK-Client && npx tsc --noEmit`
-- Actions:
-  1. Create `HtxhPage.tsx` managing 6 social assistance categories, status toggles, and search.
-  2. Create `HtxhModal.tsx` for creating and editing social assistance recipient profiles.
-  3. Create component test `src/pages/__tests__/HtxhPage.test.tsx` checking category switching and modal interactions.
-- Verification & Gate:
-  1. Run `git status --short`.
-  2. Run DIFF GATE -> gross diff <= 200 LOC.
-  3. Run Scoped Test Command -> must pass.
-  4. Run Per-Step Static Check -> must exit 0.
-  5. Update tracker: Mark Step 4 as `[x]`.
-  6. Commit: `git add -A && git commit -m "feat(roadmap): complete step 4 - client htxh page and modals"`
-  7. Verify clean tree: `test -z "$(git status --porcelain)"`.
++ Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 4 as `[/]`
+- **Target Files**: `QLHK/QLHK-Client/src/pages/HtxhPage.tsx`, `QLHK/QLHK-Client/src/components/htxh/HtxhModal.tsx`, `QLHK/QLHK-Client/src/pages/__tests__/HtxhPage.test.tsx`
+- **Assigned Role**: `.agents/frontend-developer.md`
+- **Role Focus**: React UI, 6 category pill filters, status toggling, CRUD modal, zero comments.
+- **Graph Check**: `None (new page component)`
+- **Actions**:
+  1. Create `src/pages/HtxhPage.tsx` managing 6 social assistance categories (75+, 70-74 poor, social protection, retirement, insurance survivorship, meritorious persons).
+  2. Create `src/components/htxh/HtxhModal.tsx` for adding/editing HTXH beneficiaries.
+  3. Create unit test `src/pages/__tests__/HtxhPage.test.tsx` verifying category filtering and status updates.
+- **Verification Commands**:
+  - Scoped Test: `cd QLHK/QLHK-Client && npx vitest run src/pages/__tests__/HtxhPage.test.tsx`
+  - Per-Step Static Check: `cd QLHK/QLHK-Client && npx tsc --noEmit`
+- **Scope Hygiene & Commit**:
+  - Review `git status --short`.
+  - Check DIFF GATE (<= 200 gross LOC).
+  - Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 4 as `[x]`.
+  - Commit: `git add -A && git commit -m "feat(roadmap): complete step 4 - client htxh page and modals"`
+  - Verify clean working tree (`test -z "$(git status --porcelain)"`).
 
 ---
 
 ### STEP 5: Client Policy Analytics Dashboard Page & Route Wiring
 - START STEP:
-  + Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 5 as `[/]`
-- Plan Section: `docs/plans/qlhk-client/qlhk-client-merge-qlcs.md (Section 5: Client Policy Analytics Dashboard Page & Route Wiring (Step 5))`
-- Assigned Role: `.agents/frontend-developer.md`
-- Role Focus: Dynamic imports (React.lazy), code splitting, analytics charts, routing integration.
-- Target Files: `QLHK/QLHK-Client/src/pages/PolicyAnalyticsPage.tsx` (new), `QLHK/QLHK-Client/src/App.tsx`, `QLHK/QLHK-Client/src/pages/__tests__/PolicyAnalyticsPage.test.tsx` (new)
-- Scoped Test Command: `cd QLHK/QLHK-Client && npx vitest run src/pages/__tests__/PolicyAnalyticsPage.test.tsx`
-- Per-Step Static Check: `cd QLHK/QLHK-Client && npx tsc --noEmit`
-- Actions:
-  1. Create `PolicyAnalyticsPage.tsx` presenting summary KPI cards, milestone distribution bars, and village breakdowns.
-  2. Update `App.tsx` with `React.lazy()` imports for `ChucThoPage`, `HtxhPage`, and `PolicyAnalyticsPage`.
-  3. Create component test `src/pages/__tests__/PolicyAnalyticsPage.test.tsx` verifying charts render and tab switching.
-- Verification & Gate:
-  1. Run `git status --short`.
-  2. Run DIFF GATE -> gross diff <= 200 LOC.
-  3. Run Scoped Test Command -> must pass.
-  4. Run Per-Step Static Check -> must exit 0.
-  5. Update tracker: Mark Step 5 as `[x]`.
-  6. Commit: `git add -A && git commit -m "feat(roadmap): complete step 5 - client policy analytics and route wiring"`
-  7. Verify clean tree: `test -z "$(git status --porcelain)"`.
++ Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 5 as `[/]`
+- **Target Files**: `QLHK/QLHK-Client/src/pages/PolicyAnalyticsPage.tsx`, `QLHK/QLHK-Client/src/App.tsx`, `QLHK/QLHK-Client/src/pages/__tests__/PolicyAnalyticsPage.test.tsx`
+- **Assigned Role**: `.agents/frontend-developer.md`
+- **Role Focus**: Dynamic imports (React.lazy), code splitting, analytics charts, routing integration, zero comments.
+- **Graph Check**: `graft callers App`
+- **Actions**:
+  1. Create `src/pages/PolicyAnalyticsPage.tsx` rendering KPI cards and milestone distribution charts.
+  2. In `src/App.tsx`, lazily import `ChucThoPage`, `HtxhPage`, and `PolicyAnalyticsPage` and render them when `activeTab` matches.
+  3. Create unit test `src/pages/__tests__/PolicyAnalyticsPage.test.tsx` asserting chart presentation.
+- **Verification Commands**:
+  - Scoped Test: `cd QLHK/QLHK-Client && npx vitest run src/pages/__tests__/PolicyAnalyticsPage.test.tsx`
+  - Per-Step Static Check: `cd QLHK/QLHK-Client && npx tsc --noEmit`
+- **Scope Hygiene & Commit**:
+  - Review `git status --short`.
+  - Check DIFF GATE (<= 200 gross LOC).
+  - Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 5 as `[x]`.
+  - Commit: `git add -A && git commit -m "feat(roadmap): complete step 5 - client policy analytics dashboard page and route wiring"`
+  - Verify clean working tree (`test -z "$(git status --porcelain)"`).
 
 ---
 
-### STEP 6: FINAL VERIFICATION GATE & TASK COMPLETION
+### STEP 6: Final Verification Gate & Completion
 - START STEP:
-  + Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 6 as `[/]`
-- Actions:
-  1. Run the full client test suite: `cd QLHK/QLHK-Client && npm test` (Must exit 0 with 0 regressions vs. baseline).
-  2. Run full client typecheck: `cd QLHK/QLHK-Client && npx tsc --noEmit` (Must exit 0 with 0 errors).
-  3. Run client production build test: `cd QLHK/QLHK-Client && npm run build` (Must succeed).
-  4. Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 6 as `[x]`.
-  5. Commit: `git add -A && git commit -m "chore(roadmap): final verification gate complete for qlhk-client-merge-qlcs"`
-  6. Verify clean tree: `test -z "$(git status --porcelain)"`.
-  7. Print completion banner:
-     ```text
-     ============================================================
-     ROADMAP COMPLETE: qlhk-client-merge-qlcs
-     - All 5 implementation steps verified and committed
-     - Full client test suite and typecheck clean
-     ============================================================
-     ```
++ Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 6 as `[/]`
+- **Assigned Role**: `.agents/test-engineer.md`
+- **Role Focus**: Full regression verification, static analysis, bundle size check.
+- **Actions**:
+  1. Run full client test suite: `cd QLHK/QLHK-Client && npm test` (Must pass 100% with 0 regressions vs baseline).
+  2. Run TypeScript static typecheck: `cd QLHK/QLHK-Client && npx tsc --noEmit` (Must exit 0 with 0 errors).
+  3. Verify production bundle build: `cd QLHK/QLHK-Client && npm run build` (Must complete without errors).
+  4. Audit for zero comments in code: verify no comments exist in touched files.
+  5. Update `docs/plans/qlhk-client/qlhk-client-merge-qlcs.task.md`: Mark Step 6 as `[x]`.
+  6. Final commit: `git add -A && git commit -m "chore(roadmap): complete qlhk-client-merge-qlcs verification gate"`
+  7. Verify clean working tree: `test -z "$(git status --porcelain)"`.
 
 ---
-
-### SESSION HANDOFF CHECKPOINT TEMPLATE (Output after every 4 implementation steps in a session, unless Step 6 just finished)
-
-When 4 implementation steps (`Step 0` excluded) are completed in the current session (or when requested by the user), and `Step 6` is not yet complete, run `cd QLHK/QLHK-Client && npm test`, ensure clean git status, output the block below (replacing `<STEPS_COMPLETED_IN_SESSION>` with the actual count), and **STOP immediately** (do not start the next step in this session):
 
 ````text
 ### 🔄 Session Handoff Checkpoint

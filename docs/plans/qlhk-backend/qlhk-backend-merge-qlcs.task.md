@@ -24,7 +24,7 @@
 - [x] `Step 5`: Backend Hỗ Trợ Xã Hội (HTXH) Policy Controller & Service
 - [x] `Step 6`: Backend Policy Analytics & Excel Export/Import Controllers
 - [x] `Step 7`: Backend Policy Routes & RBAC Middleware Integration
-- [ ] `Step 8`: Final Verification Gate (Full test suite, static typecheck & clean tree)
+- [x] `Step 8`: Final Verification Gate (Full test suite, static typecheck & clean tree)
 
 ## Project Gotchas & Learned Invariants
 - P0: Zero Comments in Code.

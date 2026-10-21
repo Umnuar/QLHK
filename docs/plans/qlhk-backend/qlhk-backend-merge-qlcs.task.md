@@ -23,7 +23,7 @@
 - [x] `Step 4`: Backend Chúc Thọ Policy Controller & Service
 - [x] `Step 5`: Backend Hỗ Trợ Xã Hội (HTXH) Policy Controller & Service
 - [x] `Step 6`: Backend Policy Analytics & Excel Export/Import Controllers
-- [ ] `Step 7`: Backend Policy Routes & RBAC Middleware Integration
+- [x] `Step 7`: Backend Policy Routes & RBAC Middleware Integration
 - [ ] `Step 8`: Final Verification Gate (Full test suite, static typecheck & clean tree)
 
 ## Project Gotchas & Learned Invariants

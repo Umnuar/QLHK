@@ -10,6 +10,7 @@ import villagesRoutes from "./villages.routes";
 import backupRoutes from "./backup.routes";
 import updatesRoutes from "./updates.routes";
 import settingsRoutes from "./settings.routes";
+import policyRoutes from "./policy.routes";
 
 const router = Router();
 
@@ -25,5 +26,6 @@ router.use("/audit", auditRoutes);
 router.use("/backup", backupRoutes);
 router.use("/updates", updatesRoutes);
 router.use("/settings", settingsRoutes);
+router.use("/policies", policyRoutes);
 
 export default router;

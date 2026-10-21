@@ -1,6 +1,9 @@
 import {
+	Award,
+	BarChart2,
 	BarChart3,
 	Database,
+	HeartHandshake,
 	History,
 	Map,
 	PanelLeftClose,
@@ -50,6 +53,21 @@ export const Sidebar: React.FC = () => {
 					]
 				: []),
 			{
+				id: "chuctho",
+				label: "Chúc Thọ",
+				icon: Award,
+			},
+			{
+				id: "htxh",
+				label: "Hỗ Trợ Xã Hội",
+				icon: HeartHandshake,
+			},
+			{
+				id: "policy-analytics",
+				label: "TK Chính Sách",
+				icon: BarChart2,
+			},
+			{
 				id: "recycle-bin",
 				label: "Thùng Rác",
 				icon: Trash2,
@@ -77,6 +95,21 @@ export const Sidebar: React.FC = () => {
 				label: "Thống Kê",
 				icon: BarChart3,
 				badge: "Chính",
+			},
+			{
+				id: "chuctho",
+				label: "Chúc Thọ",
+				icon: Award,
+			},
+			{
+				id: "htxh",
+				label: "Hỗ Trợ Xã Hội",
+				icon: HeartHandshake,
+			},
+			{
+				id: "policy-analytics",
+				label: "TK Chính Sách",
+				icon: BarChart2,
 			},
 			{
 				id: "recycle-bin",

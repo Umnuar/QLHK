@@ -25,7 +25,7 @@ const HtxhPage = lazy(() =>
 	import("./pages/HtxhPage").then((m) => ({ default: m.HtxhPage }))
 );
 const PolicyAnalyticsPage = lazy(() =>
-	import("./pages/PolicyAnalyticsPage").then((m) => ({ default: m.PolicyAnalyticsPage }))
+	import("./features/qlcs/pages/PolicyAnalyticsPage").then((m) => ({ default: m.PolicyAnalyticsPage }))
 );
 
 const PageLoadingSpinner: React.FC = () => (

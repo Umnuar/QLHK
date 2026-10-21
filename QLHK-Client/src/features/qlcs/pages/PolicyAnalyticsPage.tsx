@@ -1,20 +1,17 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Award, HeartHandshake, PieChart } from "lucide-react";
-import { useApp } from "../AppContext";
-import { policyApi } from "../api/policyApi";
-import { STAT_ACCENTS } from "../components/analytics/AnalyticsWidgets";
+import { useApp } from "@/AppContext";
+import { policyApi } from "@/api/policyApi";
+import { STAT_ACCENTS } from "@/components/analytics/AnalyticsWidgets";
 import {
 	buildPolicyDashboardData,
 	formatNumber,
 	formatPct,
-} from "../components/analytics/policyAnalyticsData";
-import { DistributionCard } from "../components/analytics/DistributionCard";
-import { GenderRatioBar } from "../components/analytics/GenderRatioBar";
-import { PolicyCompositeCard } from "../components/analytics/PolicyCompositeCard";
+} from "@/components/analytics/policyAnalyticsData";
 import { PolicyKpiRow } from "../components/analytics/PolicyKpiRow";
-import { PolicyAnalyticsTable } from "../components/analytics/PolicyAnalyticsTable";
-import { PolicyAnalyticsHeader } from "../components/analytics/PolicyAnalyticsHeader";
+import { PolicyDistributionCards } from "../components/analytics/PolicyDistributionCards";
+import { PolicyVillageTable, type VillageTableRow, type TableSummary } from "../components/analytics/PolicyVillageTable";
+import { PolicyAnalyticsHeader } from "@/components/analytics/PolicyAnalyticsHeader";
 
 export const PolicyAnalyticsPage: React.FC = () => {
 	const {
@@ -99,12 +96,11 @@ export const PolicyAnalyticsPage: React.FC = () => {
 				const total = (vb.chuctho_total ?? 0) + (vb.htxh_total ?? 0);
 				const received = (vb.chuctho_received ?? 0) + (vb.htxh_received ?? 0);
 				const unreceived = Math.max(0, total - received);
-				const rate =
-					total > 0 ? Number(((received / total) * 100).toFixed(1)) : 0;
+				const rate = total > 0 ? (received / total) * 100 : 0;
 				return {
 					stt: idx + 1,
-					id: vb.village_id,
-					name: vb.village_name,
+					id: vb.village_id || String(idx),
+					name: vb.village_name || `Thôn ${idx + 1}`,
 					total,
 					chucTho: vb.chuctho_total ?? 0,
 					htxh: vb.htxh_total ?? 0,
@@ -114,30 +110,35 @@ export const PolicyAnalyticsPage: React.FC = () => {
 				};
 			});
 		}
+		return [
+			{
+				stt: 1,
+				id: policyData.village.id,
+				name: policyData.village.name,
+				total: policyData.village.totalBeneficiaries,
+				chucTho: policyData.village.chucThoCount,
+				htxh: policyData.village.htxhCount,
+				received: policyData.village.receivedCount,
+				unreceived: policyData.village.unreceivedCount,
+				rate: policyData.village.receivedPct,
+			},
+		];
+	}, [data, policyData]);
 
-		return [];
-	}, [data]);
-
-	const tableSummary = useMemo(() => {
-		if (tableVillageRows.length > 0) {
-			const total = tableVillageRows.reduce((sum: number, r: any) => sum + r.total, 0);
-			const chucTho = tableVillageRows.reduce((sum: number, r: any) => sum + r.chucTho, 0);
-			const htxh = tableVillageRows.reduce((sum: number, r: any) => sum + r.htxh, 0);
-			const received = tableVillageRows.reduce((sum: number, r: any) => sum + r.received, 0);
-			const unreceived = tableVillageRows.reduce((sum: number, r: any) => sum + r.unreceived, 0);
-			const rate = total > 0 ? Number(((received / total) * 100).toFixed(1)) : 0;
-			return { total, chucTho, htxh, received, unreceived, rate };
-		}
-		return { total: 0, chucTho: 0, htxh: 0, received: 0, unreceived: 0, rate: 0 };
+	const tableSummary: TableSummary = useMemo(() => {
+		const total = tableVillageRows.reduce((acc: number, r: VillageTableRow) => acc + r.total, 0);
+		const chucTho = tableVillageRows.reduce((acc: number, r: VillageTableRow) => acc + r.chucTho, 0);
+		const htxh = tableVillageRows.reduce((acc: number, r: VillageTableRow) => acc + r.htxh, 0);
+		const received = tableVillageRows.reduce((acc: number, r: VillageTableRow) => acc + r.received, 0);
+		const unreceived = tableVillageRows.reduce((acc: number, r: VillageTableRow) => acc + r.unreceived, 0);
+		const rate = total > 0 ? (received / total) * 100 : 0;
+		return { total, chucTho, htxh, received, unreceived, rate };
 	}, [tableVillageRows]);
 
 	const currentVillageObj = villages.find((v) => v.id === selectedVillageId);
-	const userVillage = villages.find((v) => v.id === user?.village_id);
-	const userVillageName = userVillage
-		? userVillage.name
-		: user?.village_id
-			? "Thôn phụ trách"
-			: "Toàn xã";
+	const userVillageName = user?.village_id
+		? villages.find((v) => v.id === user.village_id)?.name || "Thôn của bạn"
+		: "Toàn xã";
 
 	const currentVillageLabel = currentVillageObj
 		? currentVillageObj.name
@@ -174,51 +175,9 @@ export const PolicyAnalyticsPage: React.FC = () => {
 			<span className="sr-only">Tiến Độ Chúc Thọ</span>
 			<span className="sr-only">Tiến Độ Hỗ Trợ Xã Hội</span>
 
-			<section
-				aria-label="Phân tích dữ liệu chính sách và an sinh xã hội"
-				className="grid grid-cols-1 gap-3 lg:grid-cols-2"
-			>
-				<DistributionCard
-					icon={<Award className="size-4" />}
-					title="Cơ Cấu Độ Tuổi Chúc Thọ"
-					badge="8 mốc chúc thọ"
-					segments={policyData.chucThoSegments}
-					centerValue={`${formatNumber(policyData.chucThoTotal)} Cụ`}
-					centerLabel="Tổng cụ chúc thọ"
-					unit="cụ"
-				/>
+			<PolicyDistributionCards policyData={policyData} />
 
-				<DistributionCard
-					icon={<HeartHandshake className="size-4" />}
-					title="Phân Nhóm Đối Tượng Hỗ Trợ Xã Hội"
-					badge="5 nhóm diện chính sách"
-					segments={policyData.htxhSegments}
-					centerValue={`${formatNumber(policyData.htxhTotal)} Hồ sơ`}
-					centerLabel="Hồ sơ hưởng trợ cấp"
-					unit="người"
-				/>
-
-				<DistributionCard
-					icon={<PieChart className="size-4" />}
-					title="Cơ Cấu Dân Tộc & Giới Tính"
-					badge={`Tỷ lệ DTTS ${formatPct(policyData.village.dttsPct)}%`}
-					segments={policyData.ethnicSegments}
-					centerValue={`${formatPct(policyData.village.dttsPct)}%`}
-					centerLabel="Tỷ lệ DTTS"
-					extraRightContent={
-						<GenderRatioBar
-							maleCount={policyData.genderRatio.maleCount}
-							malePct={policyData.genderRatio.malePct}
-							femaleCount={policyData.genderRatio.femaleCount}
-							femalePct={policyData.genderRatio.femalePct}
-						/>
-					}
-				/>
-
-				<PolicyCompositeCard data={policyData} />
-			</section>
-
-			<PolicyAnalyticsTable
+			<PolicyVillageTable
 				rows={tableVillageRows}
 				summary={tableSummary}
 				selectedYear={selectedYear}

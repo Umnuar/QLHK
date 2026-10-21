@@ -24,7 +24,8 @@
 - [x] Step 7.a: HtxhStatsBar vA HtxhFilterBar trong features/qlcs/htxh
 - [x] Step 7.b: HtxhTable trong features/qlcs/htxh
 - [x] Step 8.a: HtxhDrawer vA HtxhModal trong features/qlcs/htxh
-- [/] Step 8.b: HtxhPage integration, legacy cleanup vA test verification
+- [x] Step 8.b: HtxhPage integration vA bridge router
+- [/] Step 8.c: Cleanup legacy components chuctho vA htxh
 - [ ] Step 9: Final Verification Gate (Zero Regression, Full Suite, Build)
 
 ## Project Gotchas & Learned Invariants

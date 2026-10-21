@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+﻿import React, { Suspense, lazy } from "react";
 import { useApp } from "./AppContext";
 import { LoginView } from "./components/auth/LoginView";
 import { AppLayout } from "./components/Layout/AppLayout";
@@ -22,7 +22,7 @@ const ChucThoPage = lazy(() =>
 	import("./features/qlcs/pages/ChucThoPage").then((m) => ({ default: m.ChucThoPage }))
 );
 const HtxhPage = lazy(() =>
-	import("./pages/HtxhPage").then((m) => ({ default: m.HtxhPage }))
+	import("./features/qlcs/pages/HtxhPage").then((m) => ({ default: m.HtxhPage }))
 );
 const PolicyAnalyticsPage = lazy(() =>
 	import("./features/qlcs/pages/PolicyAnalyticsPage").then((m) => ({ default: m.PolicyAnalyticsPage }))

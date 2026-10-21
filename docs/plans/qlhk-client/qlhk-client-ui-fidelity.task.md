@@ -23,7 +23,7 @@
 - [x] `Step 4`: Chúc Thọ Drawer, Enhanced Modal & Page Integration
 - [x] `Step 5`: High-Fidelity Hỗ Trợ Xã Hội FilterBar & Table
 - [x] `Step 6`: Hỗ Trợ Xã Hội Drawer, Enhanced Modal & Page Integration
-- [ ] `Step 7`: Final Verification Gate (Zero regression, full suite, build)
+- [x] `Step 7`: Final Verification Gate (Zero regression, full suite, build)
 
 ## Project Gotchas & Learned Invariants
 - P0: Zero Comments in Code.

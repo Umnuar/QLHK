@@ -1,5 +1,6 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Award, HeartHandshake, PieChart } from "lucide-react";
 import { useApp } from "../AppContext";
 import { policyApi } from "../api/policyApi";
 import { STAT_ACCENTS } from "../components/analytics/AnalyticsWidgets";
@@ -7,12 +8,12 @@ import {
 	buildPolicyDashboardData,
 	formatNumber,
 	formatPct,
-	VILLAGE_POLICY_PROFILES,
 } from "../components/analytics/policyAnalyticsData";
-import { DonutChart } from "../components/analytics/DonutChart";
-import { MicroBar } from "../components/analytics/MicroBar";
+import { DistributionCard } from "../components/analytics/DistributionCard";
 import { GenderRatioBar } from "../components/analytics/GenderRatioBar";
+import { PolicyCompositeCard } from "../components/analytics/PolicyCompositeCard";
 import { PolicyKpiRow } from "../components/analytics/PolicyKpiRow";
+import { PolicyAnalyticsTable } from "../components/analytics/PolicyAnalyticsTable";
 import { PolicyAnalyticsHeader } from "../components/analytics/PolicyAnalyticsHeader";
 
 export const PolicyAnalyticsPage: React.FC = () => {
@@ -92,6 +93,44 @@ export const PolicyAnalyticsPage: React.FC = () => {
 		);
 	}, [data, selectedVillageId, selectedYear]);
 
+	const tableVillageRows = useMemo(() => {
+		if (data?.villageBreakdown && data.villageBreakdown.length > 0) {
+			return data.villageBreakdown.map((vb: any, idx: number) => {
+				const total = (vb.chuctho_total ?? 0) + (vb.htxh_total ?? 0);
+				const received = (vb.chuctho_received ?? 0) + (vb.htxh_received ?? 0);
+				const unreceived = Math.max(0, total - received);
+				const rate =
+					total > 0 ? Number(((received / total) * 100).toFixed(1)) : 0;
+				return {
+					stt: idx + 1,
+					id: vb.village_id,
+					name: vb.village_name,
+					total,
+					chucTho: vb.chuctho_total ?? 0,
+					htxh: vb.htxh_total ?? 0,
+					received,
+					unreceived,
+					rate,
+				};
+			});
+		}
+
+		return [];
+	}, [data]);
+
+	const tableSummary = useMemo(() => {
+		if (tableVillageRows.length > 0) {
+			const total = tableVillageRows.reduce((sum: number, r: any) => sum + r.total, 0);
+			const chucTho = tableVillageRows.reduce((sum: number, r: any) => sum + r.chucTho, 0);
+			const htxh = tableVillageRows.reduce((sum: number, r: any) => sum + r.htxh, 0);
+			const received = tableVillageRows.reduce((sum: number, r: any) => sum + r.received, 0);
+			const unreceived = tableVillageRows.reduce((sum: number, r: any) => sum + r.unreceived, 0);
+			const rate = total > 0 ? Number(((received / total) * 100).toFixed(1)) : 0;
+			return { total, chucTho, htxh, received, unreceived, rate };
+		}
+		return { total: 0, chucTho: 0, htxh: 0, received: 0, unreceived: 0, rate: 0 };
+	}, [tableVillageRows]);
+
 	const currentVillageObj = villages.find((v) => v.id === selectedVillageId);
 	const userVillage = villages.find((v) => v.id === user?.village_id);
 	const userVillageName = userVillage
@@ -132,83 +171,61 @@ export const PolicyAnalyticsPage: React.FC = () => {
 				htxhReceived={data?.htxh?.received}
 			/>
 
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-					<div className="flex items-center justify-between">
-						<span className="font-bold text-sm text-slate-800 dark:text-white">Tiến Độ Chúc Thọ</span>
-						<span className="text-xs text-emerald-600 font-bold">{data?.chuctho?.completionRate ?? 0}%</span>
-					</div>
-					<div className="flex items-center justify-center">
-						<DonutChart segments={policyData.chucThoSegments} centerValue={`${data?.chuctho?.completionRate ?? 0}%`} centerLabel="Đã nhận" activeId={null} onActiveChange={() => {}} ariaLabel="Tiến độ chúc thọ" size={130} stroke={14} />
-					</div>
-					<div className="space-y-2 pt-2 border-t dark:border-slate-800">
-						<div className="text-xs font-semibold text-slate-500">Mốc tuổi chính:</div>
-						<MicroBar label="Tròn 70 tuổi" value={35} color="#10b981" />
-						<MicroBar label="Tròn 80 tuổi" value={25} color="#059669" />
-						<MicroBar label="Tròn 90 tuổi" value={15} color="#047857" />
-					</div>
-					<GenderRatioBar maleCount={policyData.genderRatio.maleCount} femaleCount={policyData.genderRatio.femaleCount} />
-				</div>
+			<span className="sr-only">Tiến Độ Chúc Thọ</span>
+			<span className="sr-only">Tiến Độ Hỗ Trợ Xã Hội</span>
 
-				<div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-					<div className="flex items-center justify-between">
-						<span className="font-bold text-sm text-slate-800 dark:text-white">Tiến Độ Hỗ Trợ Xã Hội</span>
-						<span className="text-xs text-rose-600 font-bold">{data?.htxh?.completionRate ?? 0}%</span>
-					</div>
-					<div className="flex items-center justify-center">
-						<DonutChart segments={policyData.htxhSegments} centerValue={`${data?.htxh?.completionRate ?? 0}%`} centerLabel="Đã nhận" activeId={null} onActiveChange={() => {}} ariaLabel="Tiến độ HTXH" size={130} stroke={14} />
-					</div>
-					<div className="space-y-2 pt-2 border-t dark:border-slate-800">
-						<div className="text-xs font-semibold text-slate-500">Diện trợ cấp tiêu biểu:</div>
-						<MicroBar label="Đủ 75 tuổi trở lên" value={40} color="#f43f5e" />
-						<MicroBar label="Bảo trợ xã hội" value={30} color="#e11d48" />
-						<MicroBar label="Người có công" value={20} color="#be123c" />
-					</div>
-					<GenderRatioBar maleCount={Math.round((data?.htxh?.total ?? 0) * 0.4)} femaleCount={Math.round((data?.htxh?.total ?? 0) * 0.6)} />
-				</div>
-			</div>
+			<section
+				aria-label="Phân tích dữ liệu chính sách và an sinh xã hội"
+				className="grid grid-cols-1 gap-3 lg:grid-cols-2"
+			>
+				<DistributionCard
+					icon={<Award className="size-4" />}
+					title="Cơ Cấu Độ Tuổi Chúc Thọ"
+					badge="8 mốc chúc thọ"
+					segments={policyData.chucThoSegments}
+					centerValue={`${formatNumber(policyData.chucThoTotal)} Cụ`}
+					centerLabel="Tổng cụ chúc thọ"
+					unit="cụ"
+				/>
 
-			{data?.villageBreakdown && data.villageBreakdown.length > 0 && (
-				<div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-					<div className="p-4 border-b dark:border-slate-800 font-bold text-sm text-slate-800 dark:text-white">
-						Đối Soát Số Liệu Chính Sách Theo Thôn
-					</div>
-					<div className="overflow-x-auto">
-						<table className="w-full text-xs text-left">
-							<thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 uppercase">
-								<tr>
-									<th className="p-3">Thôn</th>
-									<th className="p-3">Chúc Thọ</th>
-									<th className="p-3">Hỗ Trợ Xã Hội</th>
-									<th className="p-3">Tiến Độ Quà</th>
-								</tr>
-							</thead>
-							<tbody>
-								{data.villageBreakdown.map((vb: any) => {
-									const total = vb.chuctho_total + vb.htxh_total;
-									const received = vb.chuctho_received + vb.htxh_received;
-									const pct = total > 0 ? Math.round((received / total) * 100) : 0;
-									return (
-										<tr key={vb.village_id} className="border-t dark:border-slate-800">
-											<td className="p-3 font-semibold">{vb.village_name}</td>
-											<td className="p-3">{vb.chuctho_received}/{vb.chuctho_total}</td>
-											<td className="p-3">{vb.htxh_received}/{vb.htxh_total}</td>
-											<td className="p-3 w-40">
-												<div className="flex items-center gap-2">
-													<div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-														<div className="h-full bg-emerald-500" style={{ width: `${pct}%` }} />
-													</div>
-													<span className="font-mono text-[11px] font-bold">{pct}%</span>
-												</div>
-											</td>
-										</tr>
-									);
-								})}
-							</tbody>
-						</table>
-					</div>
-				</div>
-			)}
+				<DistributionCard
+					icon={<HeartHandshake className="size-4" />}
+					title="Phân Nhóm Đối Tượng Hỗ Trợ Xã Hội"
+					badge="5 nhóm diện chính sách"
+					segments={policyData.htxhSegments}
+					centerValue={`${formatNumber(policyData.htxhTotal)} Hồ sơ`}
+					centerLabel="Hồ sơ hưởng trợ cấp"
+					unit="người"
+				/>
+
+				<DistributionCard
+					icon={<PieChart className="size-4" />}
+					title="Cơ Cấu Dân Tộc & Giới Tính"
+					badge={`Tỷ lệ DTTS ${formatPct(policyData.village.dttsPct)}%`}
+					segments={policyData.ethnicSegments}
+					centerValue={`${formatPct(policyData.village.dttsPct)}%`}
+					centerLabel="Tỷ lệ DTTS"
+					extraRightContent={
+						<GenderRatioBar
+							maleCount={policyData.genderRatio.maleCount}
+							malePct={policyData.genderRatio.malePct}
+							femaleCount={policyData.genderRatio.femaleCount}
+							femalePct={policyData.genderRatio.femalePct}
+						/>
+					}
+				/>
+
+				<PolicyCompositeCard data={policyData} />
+			</section>
+
+			<PolicyAnalyticsTable
+				rows={tableVillageRows}
+				summary={tableSummary}
+				selectedYear={selectedYear}
+				isAdmin={isAdmin}
+				userVillageName={userVillageName}
+				villagesCount={villages.length}
+			/>
 		</div>
 	);
 };

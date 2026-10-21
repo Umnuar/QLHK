@@ -22,7 +22,7 @@
 - [x] `Step 3`: Database ETL & CCCD Re-encryption Migration Script
 - [x] `Step 4`: Backend Chúc Thọ Policy Controller & Service
 - [x] `Step 5`: Backend Hỗ Trợ Xã Hội (HTXH) Policy Controller & Service
-- [ ] `Step 6`: Backend Policy Analytics & Excel Export/Import Controllers
+- [x] `Step 6`: Backend Policy Analytics & Excel Export/Import Controllers
 - [ ] `Step 7`: Backend Policy Routes & RBAC Middleware Integration
 - [ ] `Step 8`: Final Verification Gate (Full test suite, static typecheck & clean tree)
 

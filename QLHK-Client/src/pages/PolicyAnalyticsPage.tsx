@@ -1,73 +1,131 @@
-import React, { useEffect, useState } from "react";
-import { BarChart3, Calendar, RefreshCw } from "lucide-react";
+import type React from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApp } from "../AppContext";
 import { policyApi } from "../api/policyApi";
-import type { PolicyAnalyticsSummary } from "../types/policy";
-import { PolicyKpiRow } from "../components/analytics/PolicyKpiRow";
+import { STAT_ACCENTS } from "../components/analytics/AnalyticsWidgets";
+import {
+	buildPolicyDashboardData,
+	formatNumber,
+	formatPct,
+	VILLAGE_POLICY_PROFILES,
+} from "../components/analytics/policyAnalyticsData";
 import { DonutChart } from "../components/analytics/DonutChart";
 import { MicroBar } from "../components/analytics/MicroBar";
 import { GenderRatioBar } from "../components/analytics/GenderRatioBar";
+import { PolicyKpiRow } from "../components/analytics/PolicyKpiRow";
+import { PolicyAnalyticsHeader } from "../components/analytics/PolicyAnalyticsHeader";
 
 export const PolicyAnalyticsPage: React.FC = () => {
-	const { selectedVillageId, setSelectedVillageId, villages = [], user } = useApp();
-	const [data, setData] = useState<PolicyAnalyticsSummary | null>(null);
-	const [loading, setLoading] = useState(false);
-	const [calculationYear, setCalculationYear] = useState<number>(new Date().getFullYear());
+	const {
+		villages = [],
+		selectedVillageId,
+		setSelectedVillageId,
+		user,
+	} = useApp();
+	const isAdmin = user?.role === "admin";
+	const currentYear = new Date().getFullYear();
+	const [selectedYear, setSelectedYear] = useState<number>(() => {
+		const saved = localStorage.getItem("globalCalculationYear");
+		if (saved) {
+			const parsed = parseInt(saved, 10);
+			if (!isNaN(parsed) && parsed >= 1900 && parsed <= 2100) return parsed;
+		}
+		return currentYear;
+	});
 
-	const loadAnalytics = async () => {
+	const [data, setData] = useState<any>(null);
+	const [loading, setLoading] = useState(false);
+
+	const loadAnalytics = useCallback(async () => {
 		setLoading(true);
 		try {
-			const res = await policyApi.getAnalytics(selectedVillageId || undefined, calculationYear);
+			const res = await policyApi.getAnalytics(
+				selectedVillageId || undefined,
+				selectedYear,
+			);
 			setData(res);
-		} finally {
+			setLoading(false);
+		} catch (err) {
+			console.error("Policy analytics error:", err);
 			setLoading(false);
 		}
-	};
+	}, [selectedVillageId, selectedYear]);
 
 	useEffect(() => {
 		loadAnalytics();
-	}, [selectedVillageId, calculationYear]);
+	}, [loadAnalytics]);
 
-	const chucthoSegments = [
-		{ id: "rcv", label: "Đã nhận", count: data?.chuctho?.received ?? 0, pct: data?.chuctho?.completionRate ?? 0, color: "#10b981" },
-		{ id: "unrcv", label: "Chưa nhận", count: data?.chuctho?.unreceived ?? 0, pct: 100 - (data?.chuctho?.completionRate ?? 0), color: "#cbd5e1" },
-	];
+	const policyData = useMemo(() => {
+		const overviewData = data
+			? {
+					chuctho: {
+						total: data.chuctho?.total ?? 0,
+						received: data.chuctho?.received ?? 0,
+						unreceived: data.chuctho?.unreceived ?? 0,
+						completionRate: data.chuctho?.completionRate ?? 0,
+						ageStructure: data.chuctho?.ageStructure ?? {
+							age60: 0, age65: 0, age70: 0, age75: 0, age80: 0,
+							age85: 0, age90: 0, age95: 0, age100: 0, age_over_100: 0,
+						},
+					},
+					htxh: {
+						total: data.htxh?.total ?? 0,
+						received: data.htxh?.received ?? 0,
+						unreceived: data.htxh?.unreceived ?? 0,
+						completionRate: data.htxh?.completionRate ?? 0,
+						categories: data.htxh?.categories ?? {
+							age75plus: 0, age70to74poor: 0, bao_tro: 0,
+							huu_tri: 0, huu_tuat_bao_hiem: 0, nguoi_co_cong: 0,
+						},
+					},
+					demographics: data.demographics ?? {
+						gender: { male: 0, female: 0 },
+						ethnicity: { kinh: 0, other: 0 },
+					},
+				}
+			: null;
 
-	const htxhSegments = [
-		{ id: "rcv", label: "Đã nhận", count: data?.htxh?.received ?? 0, pct: data?.htxh?.completionRate ?? 0, color: "#f43f5e" },
-		{ id: "unrcv", label: "Chưa nhận", count: data?.htxh?.unreceived ?? 0, pct: 100 - (data?.htxh?.completionRate ?? 0), color: "#cbd5e1" },
-	];
+		return buildPolicyDashboardData(
+			overviewData,
+			selectedVillageId,
+			selectedYear,
+		);
+	}, [data, selectedVillageId, selectedYear]);
+
+	const currentVillageObj = villages.find((v) => v.id === selectedVillageId);
+	const userVillage = villages.find((v) => v.id === user?.village_id);
+	const userVillageName = userVillage
+		? userVillage.name
+		: user?.village_id
+			? "Thôn phụ trách"
+			: "Toàn xã";
+
+	const currentVillageLabel = currentVillageObj
+		? currentVillageObj.name
+		: !isAdmin && userVillageName
+			? userVillageName
+			: "Toàn xã Đăk Hà";
 
 	return (
-		<div className="p-6 space-y-6">
-			<div className="flex flex-wrap justify-between items-center gap-3">
-				<h1 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
-					<BarChart3 className="w-5 h-5 text-emerald-600" /> Thống Kê Chính Sách Xã Hội
-				</h1>
-				<div className="flex items-center gap-2">
-					<div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl text-xs font-semibold">
-						<Calendar className="w-4 h-4 text-emerald-600" />
-						<select value={calculationYear} onChange={(e) => setCalculationYear(Number(e.target.value))} className="bg-transparent border-none outline-none cursor-pointer">
-							{[2024, 2025, 2026, 2027].map((y) => (
-								<option key={y} value={y}>Năm {y}</option>
-							))}
-						</select>
-					</div>
-					{user?.role === "admin" && (
-						<select value={selectedVillageId || ""} onChange={(e) => setSelectedVillageId(e.target.value)} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer">
-							<option value="">Toàn xã Đăk Hà</option>
-							{villages.map((v) => (
-								<option key={v.id} value={v.id}>{v.name}</option>
-							))}
-						</select>
-					)}
-					<button onClick={loadAnalytics} disabled={loading} className="p-2 border rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800">
-						<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-					</button>
-				</div>
-			</div>
+		<div
+			className="space-y-6 animate-in fade-in pb-12 select-none"
+			style={{ ["--stat-accent" as any]: STAT_ACCENTS.cs }}
+		>
+			<PolicyAnalyticsHeader
+				currentVillageLabel={currentVillageLabel}
+				isAdmin={isAdmin}
+				selectedVillage={selectedVillageId}
+				userVillageName={userVillageName}
+				selectedYear={selectedYear}
+				currentYear={currentYear}
+				loading={loading}
+				onClearTrends={() => {}}
+				onRefresh={loadAnalytics}
+				onYearChange={setSelectedYear}
+			/>
 
 			<PolicyKpiRow
+				data={data ? policyData : undefined}
 				chucthoTotal={data?.chuctho?.total}
 				chucthoReceived={data?.chuctho?.received}
 				htxhTotal={data?.htxh?.total}
@@ -81,7 +139,7 @@ export const PolicyAnalyticsPage: React.FC = () => {
 						<span className="text-xs text-emerald-600 font-bold">{data?.chuctho?.completionRate ?? 0}%</span>
 					</div>
 					<div className="flex items-center justify-center">
-						<DonutChart segments={chucthoSegments} centerValue={`${data?.chuctho?.completionRate ?? 0}%`} centerLabel="Đã nhận" activeId={null} onActiveChange={() => {}} ariaLabel="Tiến độ chúc thọ" size={130} stroke={14} />
+						<DonutChart segments={policyData.chucThoSegments} centerValue={`${data?.chuctho?.completionRate ?? 0}%`} centerLabel="Đã nhận" activeId={null} onActiveChange={() => {}} ariaLabel="Tiến độ chúc thọ" size={130} stroke={14} />
 					</div>
 					<div className="space-y-2 pt-2 border-t dark:border-slate-800">
 						<div className="text-xs font-semibold text-slate-500">Mốc tuổi chính:</div>
@@ -89,7 +147,7 @@ export const PolicyAnalyticsPage: React.FC = () => {
 						<MicroBar label="Tròn 80 tuổi" value={25} color="#059669" />
 						<MicroBar label="Tròn 90 tuổi" value={15} color="#047857" />
 					</div>
-					<GenderRatioBar maleCount={Math.round((data?.chuctho?.total ?? 0) * 0.45)} femaleCount={Math.round((data?.chuctho?.total ?? 0) * 0.55)} />
+					<GenderRatioBar maleCount={policyData.genderRatio.maleCount} femaleCount={policyData.genderRatio.femaleCount} />
 				</div>
 
 				<div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
@@ -98,7 +156,7 @@ export const PolicyAnalyticsPage: React.FC = () => {
 						<span className="text-xs text-rose-600 font-bold">{data?.htxh?.completionRate ?? 0}%</span>
 					</div>
 					<div className="flex items-center justify-center">
-						<DonutChart segments={htxhSegments} centerValue={`${data?.htxh?.completionRate ?? 0}%`} centerLabel="Đã nhận" activeId={null} onActiveChange={() => {}} ariaLabel="Tiến độ HTXH" size={130} stroke={14} />
+						<DonutChart segments={policyData.htxhSegments} centerValue={`${data?.htxh?.completionRate ?? 0}%`} centerLabel="Đã nhận" activeId={null} onActiveChange={() => {}} ariaLabel="Tiến độ HTXH" size={130} stroke={14} />
 					</div>
 					<div className="space-y-2 pt-2 border-t dark:border-slate-800">
 						<div className="text-xs font-semibold text-slate-500">Diện trợ cấp tiêu biểu:</div>
@@ -126,7 +184,7 @@ export const PolicyAnalyticsPage: React.FC = () => {
 								</tr>
 							</thead>
 							<tbody>
-								{data.villageBreakdown.map((vb) => {
+								{data.villageBreakdown.map((vb: any) => {
 									const total = vb.chuctho_total + vb.htxh_total;
 									const received = vb.chuctho_received + vb.htxh_received;
 									const pct = total > 0 ? Math.round((received / total) * 100) : 0;

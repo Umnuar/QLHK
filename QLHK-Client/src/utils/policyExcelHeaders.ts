@@ -9,7 +9,7 @@ export async function extractExcelHeaders(
 	const workbook = XLSX.read(new Uint8Array(buffer), { type: "array" });
 
 	if (workbook.SheetNames.length === 0) {
-		throw new Error("File Excel khÃ´ng cÃ³ báº¥t ká»³ sheet nÃ o.");
+		throw new Error("File Excel không có bất kỳ sheet nào.");
 	}
 
 	const sheetName = workbook.SheetNames[0];
@@ -20,7 +20,7 @@ export async function extractExcelHeaders(
 	});
 
 	if (!rawRowsAOA || rawRowsAOA.length === 0) {
-		throw new Error("File Excel rá»—ng, khÃ´ng cÃ³ dá»¯ liá»‡u.");
+		throw new Error("File Excel rỗng, không có dữ liệu.");
 	}
 
 	let headerRowIdx = -1;
@@ -59,7 +59,7 @@ export async function extractExcelHeaders(
 
 	if (headerRowIdx === -1) {
 		throw new Error(
-			"KhÃ´ng nháº­n diá»‡n Ä‘Æ°á»£c dÃ²ng tiÃªu Ä‘á» cá»™t há»£p lá»‡ trong file Excel.",
+			"Không nhận diện được dòng tiêu đề cột hợp lệ trong file Excel.",
 		);
 	}
 
@@ -116,7 +116,7 @@ export async function extractExcelHeaders(
 		}
 
 		if (!combinedHeader) {
-			combinedHeader = `Cá»™t ${c + 1}`;
+			combinedHeader = `Cột ${c + 1}`;
 		}
 
 		rawHeaderList.push(combinedHeader);
@@ -124,7 +124,7 @@ export async function extractExcelHeaders(
 
 	while (
 		rawHeaderList.length > 0 &&
-		/^Cá»™t \d+$/.test(rawHeaderList[rawHeaderList.length - 1])
+		/^Cột \d+$/.test(rawHeaderList[rawHeaderList.length - 1])
 	) {
 		const lastColIdx = rawHeaderList.length - 1;
 		const hasAnyData = rawRowsAOA
@@ -139,7 +139,7 @@ export async function extractExcelHeaders(
 
 	const seenHeaderCounts = new Map<string, number>();
 	const headers: string[] = rawHeaderList.map((h) => {
-		const clean = h.trim() || "Cá»™t";
+		const clean = h.trim() || "Cột";
 		const count = seenHeaderCounts.get(clean) || 0;
 		seenHeaderCounts.set(clean, count + 1);
 		return count === 0 ? clean : `${clean} (${count + 1})`;

@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
 import type React from "react";
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 interface ModalOptions {
@@ -16,7 +16,47 @@ interface ModalOptions {
 interface ModalContextType {
 	showModal: (options: ModalOptions) => void;
 	hideModal: () => void;
+	showAlert: (title: string, message: string, type?: "info" | "warning" | "danger" | "success") => Promise<void>;
+	showConfirm: (title: string, message: string, type?: "info" | "warning" | "danger" | "success", confirmText?: string, cancelText?: string) => Promise<boolean>;
 }
+
+let globalShowModal: ((options: ModalOptions) => void) | null = null;
+
+export const showAlert = (title: string, message: string, type: "info" | "warning" | "danger" | "success" = "info"): Promise<void> => {
+	return new Promise((resolve) => {
+		if (globalShowModal) {
+			globalShowModal({
+				title,
+				message,
+				type,
+				cancelText: null,
+				confirmText: "Đóng",
+				onConfirm: () => resolve(),
+			});
+		} else {
+			alert(`${title}\n${message}`);
+			resolve();
+		}
+	});
+};
+
+export const showConfirm = (title: string, message: string, type: "info" | "warning" | "danger" | "success" = "warning", confirmText = "Xác nhận", cancelText = "Hủy"): Promise<boolean> => {
+	return new Promise((resolve) => {
+		if (globalShowModal) {
+			globalShowModal({
+				title,
+				message,
+				type,
+				confirmText,
+				cancelText,
+				onConfirm: () => resolve(true),
+				onCancel: () => resolve(false),
+			});
+		} else {
+			resolve(window.confirm(`${title}\n${message}`));
+		}
+	});
+};
 
 const ModalContext = createContext<ModalContextType | undefined>(undefined);
 
@@ -58,8 +98,15 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({
 		hideModal();
 	};
 
+	useEffect(() => {
+		globalShowModal = showModal;
+		return () => {
+			globalShowModal = null;
+		};
+	}, [showModal]);
+
 	return (
-		<ModalContext.Provider value={{ showModal, hideModal }}>
+		<ModalContext.Provider value={{ showModal, hideModal, showAlert, showConfirm }}>
 			{children}
 			{isOpen &&
 				modal &&

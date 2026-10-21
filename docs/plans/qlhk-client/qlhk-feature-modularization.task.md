@@ -22,8 +22,9 @@
 - [x] Step 6.a: ChucThoDrawer và ChucThoModal trong features/qlcs/chuctho
 - [x] Step 6.b: ChucThoPage integration, bridge router và test verification
 - [x] Step 7.a: HtxhStatsBar vA HtxhFilterBar trong features/qlcs/htxh
-- [/] Step 7.b: HtxhTable trong features/qlcs/htxh
-- [ ] Step 8: Hỗ Trợ Xã Hội Drawer, Modal Checkbox, Page Integration & Legacy Cleanup
+- [x] Step 7.b: HtxhTable trong features/qlcs/htxh
+- [/] Step 8.a: HtxhDrawer vA HtxhModal trong features/qlcs/htxh
+- [ ] Step 8.b: HtxhPage integration, legacy cleanup vA test verification
 - [ ] Step 9: Final Verification Gate (Zero Regression, Full Suite, Build)
 
 ## Project Gotchas & Learned Invariants

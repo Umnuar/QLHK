@@ -1,11 +1,11 @@
 import { ArrowLeft, RotateCcw, ShieldAlert, Trash2 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
-import { useApp } from "../AppContext";
-import { householdApi } from "../api/householdApi";
+import { useApp } from "@/AppContext";
+import { householdApi } from "@/api/householdApi";
 import { RecycleBinTable } from "../components/households/RecycleBinTable";
-import { useModal } from "../hooks/useModal";
-import type { Household } from "../types";
+import { useModal } from "@/hooks/useModal";
+import type { Household } from "@/types";
 
 export const RecycleBinPage: React.FC = () => {
 	const { setActiveTab } = useApp();

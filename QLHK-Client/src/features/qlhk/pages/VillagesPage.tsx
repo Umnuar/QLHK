@@ -14,18 +14,18 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
-import { useApp } from "../AppContext";
+import { useApp } from "@/AppContext";
 import {
 	type AnalyticsOverviewData,
 	analyticsApi,
 	type VillageAnalyticsRow,
-} from "../api/analyticsApi";
-import { authApi } from "../api/authApi";
-import { villageApi } from "../api/villageApi";
-import { getCache, setCache } from "../db/indexedDB";
-import { useModal } from "../hooks/useModal";
-import type { User, Village } from "../types";
-import { normalizeUnaccented } from "../utils/vietnamese";
+} from "@/api/analyticsApi";
+import { authApi } from "@/api/authApi";
+import { villageApi } from "@/api/villageApi";
+import { getCache, setCache } from "@/db/indexedDB";
+import { useModal } from "@/hooks/useModal";
+import type { User, Village } from "@/types";
+import { normalizeUnaccented } from "@/utils/vietnamese";
 
 let cachedStatsTime = 0;
 let cachedUsersTime = 0;

@@ -3,14 +3,14 @@ import { useApp } from "./AppContext";
 import { LoginView } from "./components/auth/LoginView";
 import { AppLayout } from "./components/Layout/AppLayout";
 import { AppUpdateModal } from "./components/common/AppUpdateModal";
-import { HouseholdsPage } from "./pages/HouseholdsPage";
-import { VillagesPage } from "./pages/VillagesPage";
+import { HouseholdsPage } from "./features/qlhk/pages/HouseholdsPage";
+import { VillagesPage } from "./features/qlhk/pages/VillagesPage";
 
 const AnalyticsPage = lazy(() =>
-	import("./pages/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage }))
+	import("./features/qlhk/pages/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage }))
 );
 const RecycleBinPage = lazy(() =>
-	import("./pages/RecycleBinPage").then((m) => ({ default: m.RecycleBinPage }))
+	import("./features/qlhk/pages/RecycleBinPage").then((m) => ({ default: m.RecycleBinPage }))
 );
 const SettingsPage = lazy(() =>
 	import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage }))

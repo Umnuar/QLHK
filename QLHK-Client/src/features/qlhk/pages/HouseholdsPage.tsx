@@ -7,36 +7,36 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
-import { useApp } from "../AppContext";
-import { householdApi } from "../api/householdApi";
+import { useApp } from "@/AppContext";
+import { householdApi } from "@/api/householdApi";
 import {
 	EXPORT_COLUMNS,
 	type ExportConfig,
 	ExportSettingsModal,
-} from "../components/excel/ExportSettingsModal";
-import { exportExcelWithDialog, loadXlsx } from "../utils/fileExport";
-import { ImportPreviewModal } from "../components/excel/ImportPreviewModal";
-import { formatVietnameseNumber } from "../components/common/tableStyles";
+} from "@/components/excel/ExportSettingsModal";
+import { exportExcelWithDialog, loadXlsx } from "@/utils/fileExport";
+import { ImportPreviewModal } from "@/components/excel/ImportPreviewModal";
+import { formatVietnameseNumber } from "@/components/common/tableStyles";
 import type { AgeFilter } from "../components/households/AgeFilterPopover";
 import { HouseholdDrawer } from "../components/households/HouseholdDrawer";
 import { ConflictResolutionModal } from "../components/households/ConflictResolutionModal";
 import { HouseholdFilterBar } from "../components/households/HouseholdFilterBar";
 import { HouseholdTable } from "../components/households/HouseholdTable";
-import { useHouseholds } from "../context/HouseholdContext";
-import { INITIAL_HOUSEHOLDS } from "../data/seedData";
-import { getCache, setCache } from "../db/indexedDB";
-import { useDebounce } from "../hooks/useDebounce";
-import { useModal } from "../hooks/useModal";
-import { useToast } from "../hooks/useToast";
-import type { Household, Person } from "../types";
-import { maskCccd } from "../utils/cccd";
+import { useHouseholds } from "@/context/HouseholdContext";
+import { INITIAL_HOUSEHOLDS } from "@/data/seedData";
+import { getCache, setCache } from "@/db/indexedDB";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useModal } from "@/hooks/useModal";
+import { useToast } from "@/hooks/useToast";
+import type { Household, Person } from "@/types";
+import { maskCccd } from "@/utils/cccd";
 import {
 	calculateAge,
 	formatDobDisplay,
 	parseAndValidateDob,
-} from "../utils/date";
-import { sanitizeExcelRow } from "../utils/excelParser";
-import { normalizeUnaccented, splitFullName } from "../utils/vietnamese";
+} from "@/utils/date";
+import { sanitizeExcelRow } from "@/utils/excelParser";
+import { normalizeUnaccented, splitFullName } from "@/utils/vietnamese";
 
 export const HouseholdsPage: React.FC = () => {
 	const {

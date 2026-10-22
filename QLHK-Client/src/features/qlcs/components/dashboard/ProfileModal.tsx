@@ -100,8 +100,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 		setFormErrors({});
 
 		if (initialData && !isNew) {
+			const safeCccd =
+				typeof initialData.cccd === "string" && initialData.cccd.includes(":")
+					? ""
+					: initialData.cccd || "";
 			setFormData({
 				...initialData,
+				cccd: safeCccd,
 				name:
 					initialData.name ||
 					initialData.full_name ||

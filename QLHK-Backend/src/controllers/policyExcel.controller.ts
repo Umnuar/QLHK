@@ -3,7 +3,19 @@ import ExcelJS from "exceljs";
 import { prisma } from "../config/prisma";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { computeChucthoMilestones, computeHtxhMilestones, parseDobValue } from "../utils/age";
-import { encryptCCCD, removeAccents } from "../utils/crypto";
+import { decryptCCCD, encryptCCCD, removeAccents } from "../utils/crypto";
+
+const resolveExportCccd = (p: any): string => {
+  if (!p.cccd) return p.cccd_last4 ? `***${p.cccd_last4}` : "";
+  if (typeof p.cccd === "string" && p.cccd.includes(":")) {
+    try {
+      return decryptCCCD(p.cccd);
+    } catch {
+      return p.cccd_last4 ? `***${p.cccd_last4}` : "";
+    }
+  }
+  return String(p.cccd);
+};
 
 export const importPolicyExcel = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -146,11 +158,11 @@ export const exportPolicyExcel = async (req: AuthRequest, res: Response): Promis
     if (type === "chuctho") {
       sheet.addRow(["STT", "Họ và tên", "Ngày sinh", "CCCD", "60", "65", "70", "75", "80", "85", "90", "95", "100", ">100", "Đã nhận"]);
       const list = await prisma.chuctho_profiles.findMany({ where, orderBy: { stt: "asc" } });
-      list.forEach((p, idx) => sheet.addRow([p.stt || idx + 1, p.name, p.dob, p.cccd_last4 ? `***${p.cccd_last4}` : "", p.age60, p.age65, p.age70, p.age75, p.age80, p.age85, p.age90, p.age95, p.age100, p.age_over_100, p.received ? "X" : ""]));
+      list.forEach((p, idx) => sheet.addRow([p.stt || idx + 1, p.name, p.dob, resolveExportCccd(p), p.age60, p.age65, p.age70, p.age75, p.age80, p.age85, p.age90, p.age95, p.age100, p.age_over_100, p.received ? "X" : ""]));
     } else {
       sheet.addRow(["STT", "Họ và tên", "Ngày sinh", "CCCD", "75+", "70-74 nghèo", "Bảo trợ", "Hưu trí", "Hưu tuất", "Người có công", "Đã nhận"]);
       const list = await prisma.htxh_profiles.findMany({ where, orderBy: { stt: "asc" } });
-      list.forEach((p, idx) => sheet.addRow([p.stt || idx + 1, p.name, p.dob, p.cccd_last4 ? `***${p.cccd_last4}` : "", p.age75plus, p.age70to74poor, p.bao_tro, p.huu_tri, p.huu_tuat_bao_hiem, p.nguoi_co_cong, p.received ? "X" : ""]));
+      list.forEach((p, idx) => sheet.addRow([p.stt || idx + 1, p.name, p.dob, resolveExportCccd(p), p.age75plus, p.age70to74poor, p.bao_tro, p.huu_tri, p.huu_tuat_bao_hiem, p.nguoi_co_cong, p.received ? "X" : ""]));
     }
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

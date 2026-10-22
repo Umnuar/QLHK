@@ -2,10 +2,26 @@ import { Response } from "express";
 import { prisma } from "../config/prisma";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { computeHtxhMilestones, parseDobValue } from "../utils/age";
-import { encryptCCCD, removeAccents } from "../utils/crypto";
+import { decryptCCCD, encryptCCCD, removeAccents } from "../utils/crypto";
 
 export const isValidUuid = (id: string): boolean =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+export const formatPolicyProfile = <T extends Record<string, any>>(p: T): T => {
+  if (!p) return p;
+  let plainCccd = p.cccd || "";
+  if (plainCccd && typeof plainCccd === "string" && plainCccd.includes(":")) {
+    try {
+      plainCccd = decryptCCCD(plainCccd);
+    } catch {
+      plainCccd = p.cccd_last4 ? `***${p.cccd_last4}` : "";
+    }
+  }
+  return {
+    ...p,
+    cccd: plainCccd,
+  };
+};
 
 const SORT_KEY_MAP: Record<string, string> = {
   stt: "stt",
@@ -68,7 +84,7 @@ export const getHtxhProfiles = async (req: AuthRequest, res: Response): Promise<
       prisma.htxh_profiles.count({ where }),
     ]);
 
-    res.json({ success: true, data: items, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
+    res.json({ success: true, data: items.map(formatPolicyProfile), pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (error) {
     res.status(500).json({ error: "Lỗi hệ thống khi tải danh sách HTXH" });
   }
@@ -92,7 +108,7 @@ export const getHtxhStream = async (req: AuthRequest, res: Response): Promise<vo
     const profiles = await prisma.htxh_profiles.findMany({ where, orderBy: { stt: "asc" } });
     for (const p of profiles) {
       if (closed) break;
-      res.write(JSON.stringify(p) + "\n");
+      res.write(JSON.stringify(formatPolicyProfile(p)) + "\n");
     }
     res.end();
   } catch (error) {
@@ -125,7 +141,7 @@ export const createHtxhProfile = async (req: AuthRequest, res: Response): Promis
         cccd: reEnc.encrypted, cccd_hash: reEnc.hash, cccd_last4: reEnc.last4,
       },
     });
-    res.status(201).json({ success: true, data: profile });
+    res.status(201).json({ success: true, data: formatPolicyProfile(profile) });
   } catch (error) {
     res.status(500).json({ error: "Lỗi khi tạo hồ sơ HTXH" });
   }
@@ -175,7 +191,7 @@ export const updateHtxhProfile = async (req: AuthRequest, res: Response): Promis
     }
 
     const updated = await prisma.htxh_profiles.update({ where: { id }, data });
-    res.json({ success: true, data: updated });
+    res.json({ success: true, data: formatPolicyProfile(updated) });
   } catch (error: any) {
     if (error?.code === "P2025") {
       res.status(404).json({ error: "Hồ sơ không tồn tại" });
@@ -194,7 +210,7 @@ export const markHtxhReceived = async (req: AuthRequest, res: Response): Promise
     }
     const received = req.body.received !== undefined ? Boolean(req.body.received) : true;
     const updated = await prisma.htxh_profiles.update({ where: { id }, data: { received } });
-    res.json({ success: true, data: updated });
+    res.json({ success: true, data: formatPolicyProfile(updated) });
   } catch (error: any) {
     if (error?.code === "P2025") {
       res.status(404).json({ error: "Hồ sơ không tồn tại" });

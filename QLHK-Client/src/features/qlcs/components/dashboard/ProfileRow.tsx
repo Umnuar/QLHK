@@ -108,7 +108,7 @@ export const ProfileRow = React.memo(function ProfileRow({
 	const maskCccd = (cccdStr?: string | number | null) => {
 		if (!cccdStr) return "—";
 		const clean = String(cccdStr).trim();
-		if (!clean || clean === "—" || clean === "0") return "—";
+		if (!clean || clean === "—" || clean === "0" || clean.includes(":")) return "—";
 		if (clean.length <= 4) return clean;
 		return `••••${clean.slice(-4)}`;
 	};
@@ -157,7 +157,8 @@ export const ProfileRow = React.memo(function ProfileRow({
 		Boolean(profile.cccd) &&
 		String(profile.cccd).trim() !== "" &&
 		String(profile.cccd).trim() !== "—" &&
-		String(profile.cccd).trim() !== "0";
+		String(profile.cccd).trim() !== "0" &&
+		!String(profile.cccd).includes(":");
 
 	return (
 		<tr

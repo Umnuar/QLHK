@@ -194,7 +194,10 @@ export function useProfiles(
 				const hasLegacyIds = Array.isArray(cached.data) && cached.data.some(
 					(p: any) => typeof p?.id === "string" && (p.id.startsWith("ct-") || p.id.startsWith("ht-")),
 				);
-				if (hasLegacyIds) {
+				const hasRawCipherCccd = Array.isArray(cached.data) && cached.data.some(
+					(p: any) => typeof p?.cccd === "string" && p.cccd.includes(":"),
+				);
+				if (hasLegacyIds || hasRawCipherCccd) {
 					await removeCache(cacheKey);
 				} else {
 					setPageData(cached.data);
@@ -221,9 +224,17 @@ export function useProfiles(
 			if (abortController.signal.aborted) return;
 
 			if (res && res.data) {
-				setPageData(res.data);
-				setTotal(res.pagination?.total ?? res.data.length);
-				await setCache(cacheKey, res);
+				const cleanedData = Array.isArray(res.data)
+					? res.data.map((p: any) => {
+							if (typeof p?.cccd === "string" && p.cccd.includes(":")) {
+								return { ...p, cccd: p.cccd_last4 ? `***${p.cccd_last4}` : "" };
+							}
+							return p;
+						})
+					: res.data;
+				setPageData(cleanedData);
+				setTotal(res.pagination?.total ?? cleanedData.length);
+				await setCache(cacheKey, { ...res, data: cleanedData });
 			}
 		} catch (e: any) {
 			if (abortController.signal.aborted || axios.isCancel(e) || e?.code === "ERR_CANCELED" || e?.name === "CanceledError" || e?.name === "AbortError") return;

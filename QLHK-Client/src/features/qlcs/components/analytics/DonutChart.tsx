@@ -1,9 +1,9 @@
 import type React from "react";
-import type { Segment } from "@/components/analytics/policyAnalyticsData";
+import type { Segment } from "./policyAnalyticsData";
 
 export type { Segment };
 
-export interface PolicyDonutChartProps {
+export interface DonutChartProps {
 	segments: Segment[];
 	centerValue: string;
 	centerLabel: string;
@@ -17,7 +17,7 @@ export interface PolicyDonutChartProps {
 
 const MIN_HIT_LENGTH = 16;
 
-export const PolicyDonutChart: React.FC<PolicyDonutChartProps> = ({
+export const DonutChart: React.FC<DonutChartProps> = ({
 	segments,
 	centerValue,
 	centerLabel,
@@ -55,6 +55,7 @@ export const PolicyDonutChart: React.FC<PolicyDonutChartProps> = ({
 				className="-rotate-90 overflow-visible"
 				aria-hidden="true"
 			>
+
 				<circle
 					cx={size / 2}
 					cy={size / 2}
@@ -63,6 +64,7 @@ export const PolicyDonutChart: React.FC<PolicyDonutChartProps> = ({
 					strokeWidth={stroke}
 					className="stroke-slate-100 transition-colors duration-150 dark:stroke-slate-800/40"
 				/>
+
 				{arcs.map(({ segment, length, offset }) => (
 					<circle
 						key={segment.id}
@@ -78,6 +80,7 @@ export const PolicyDonutChart: React.FC<PolicyDonutChartProps> = ({
 						className="pointer-events-none transition-all duration-200"
 					/>
 				))}
+
 				{[...arcs]
 					.sort((a, b) => b.segment.pct - a.segment.pct)
 					.map(({ segment, length, offset }) => {
@@ -105,6 +108,7 @@ export const PolicyDonutChart: React.FC<PolicyDonutChartProps> = ({
 						);
 					})}
 			</svg>
+
 			<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-2">
 				<span className="text-xl font-bold leading-none text-slate-900 dark:text-white tabular-nums">
 					{centerValue}

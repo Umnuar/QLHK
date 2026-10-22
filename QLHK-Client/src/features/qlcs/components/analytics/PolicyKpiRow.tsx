@@ -4,7 +4,7 @@ import {
 	formatNumber,
 	formatPct,
 	type PolicyDashboardData,
-} from "@/components/analytics/policyAnalyticsData";
+} from "./policyAnalyticsData";
 
 type KpiProps = {
 	label: string;
@@ -57,28 +57,7 @@ function KpiItem({
 	);
 }
 
-export interface PolicyKpiRowProps {
-	data?: PolicyDashboardData;
-	chucthoTotal?: number;
-	chucthoReceived?: number;
-	htxhTotal?: number;
-	htxhReceived?: number;
-}
-
-export function PolicyKpiRow({
-	data,
-	chucthoTotal = 0,
-	chucthoReceived = 0,
-	htxhTotal = 0,
-	htxhReceived = 0,
-}: PolicyKpiRowProps) {
-	const totalBeneficiaries = data ? data.village.totalBeneficiaries : chucthoTotal + htxhTotal;
-	const totalReceived = data ? data.policyExecution.summary.received : chucthoReceived + htxhReceived;
-	const totalUnreceived = data ? data.policyExecution.summary.unreceived : Math.max(0, totalBeneficiaries - totalReceived);
-	const receivedPct = data ? data.policyExecution.summary.receivedPct : (totalBeneficiaries > 0 ? (totalReceived / totalBeneficiaries) * 100 : 0);
-	const ctCount = data ? data.village.chucThoCount : chucthoTotal;
-	const htxhCount = data ? data.village.htxhCount : htxhTotal;
-
+export function PolicyKpiRow({ data }: { data: PolicyDashboardData }) {
 	return (
 		<section
 			aria-label="Chỉ số tổng quan an sinh xã hội"
@@ -86,24 +65,24 @@ export function PolicyKpiRow({
 		>
 			<KpiItem
 				label="TỔNG ĐỐI TƯỢNG AN SINH"
-				value={formatNumber(totalBeneficiaries)}
+				value={formatNumber(data.village.totalBeneficiaries)}
 				unit="Người"
-				detail={`${formatNumber(ctCount)} Chúc thọ • ${formatNumber(htxhCount)} Bảo trợ XH`}
+				detail={`${formatNumber(data.village.chucThoCount)} Chúc thọ • ${formatNumber(data.village.htxhCount)} Bảo trợ XH`}
 				icon={<Users className="size-5" />}
 				borderClass="border-t-sky-500 dark:border-t-sky-500"
 				iconClass="bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300"
 			/>
 			<KpiItem
 				label="TIẾN ĐỘ TRAO TẶNG / CHI TRẢ"
-				value={`${formatPct(receivedPct)}%`}
-				detail={`Đã chi trả: ${formatNumber(totalReceived)} • Chưa nhận: ${formatNumber(totalUnreceived)}`}
+				value={`${formatPct(data.policyExecution.summary.receivedPct)}%`}
+				detail={`Đã chi trả: ${formatNumber(data.policyExecution.summary.received)} • Chưa nhận: ${formatNumber(data.policyExecution.summary.unreceived)}`}
 				icon={<CheckCircle className="size-5" />}
 				borderClass="border-t-emerald-500 dark:border-t-emerald-500"
 				iconClass="bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
 			/>
 			<KpiItem
 				label="HỒ SƠ CHÚC THỌ NGƯỜI CAO TUỔI"
-				value={formatNumber(ctCount)}
+				value={formatNumber(data.village.chucThoCount)}
 				unit="Cụ"
 				detail="Các mốc từ 70 đến >100 tuổi"
 				icon={<Award className="size-5" />}
@@ -112,7 +91,7 @@ export function PolicyKpiRow({
 			/>
 			<KpiItem
 				label="ĐỐI TƯỢNG BẢO TRỢ XÃ HỘI (HTXH)"
-				value={formatNumber(htxhCount)}
+				value={formatNumber(data.village.htxhCount)}
 				unit="Hồ sơ"
 				detail="Trợ cấp bảo trợ xã hội hàng tháng"
 				icon={<HeartHandshake className="size-5" />}

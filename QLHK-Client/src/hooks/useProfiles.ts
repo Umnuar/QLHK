@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { htxhApi } from "../api/htxh";
 import { profilesApi } from "../api/profiles";
-import { getCache, setCache } from "../db/indexedDB";
+import { getCache, removeCache, setCache } from "../db/indexedDB";
 import { useModal } from "./useModal";
 import type { AuditLog, TabType } from "../types";
 import type { FilterParams } from "./useProfilesTypes";
@@ -12,7 +12,7 @@ export * from "./useProfilesTypes";
 
 const FALLBACK_CHUC_THO = [
 	{
-		id: "ct-1",
+		id: "00000000-0000-4000-8000-000000000001",
 		stt: 1,
 		name: "Nguyễn Văn An",
 		dob: "1946",
@@ -26,7 +26,7 @@ const FALLBACK_CHUC_THO = [
 		notes: "Đã trao quà tại hội trường thôn",
 	},
 	{
-		id: "ct-2",
+		id: "00000000-0000-4000-8000-000000000002",
 		stt: 2,
 		name: "Trần Thị Mai",
 		dob: "1936",
@@ -40,7 +40,7 @@ const FALLBACK_CHUC_THO = [
 		notes: "Sức khỏe yếu, trao tại nhà",
 	},
 	{
-		id: "ct-3",
+		id: "00000000-0000-4000-8000-000000000003",
 		stt: 3,
 		name: "A Dốt",
 		dob: "1926",
@@ -57,7 +57,7 @@ const FALLBACK_CHUC_THO = [
 
 const FALLBACK_HTXH = [
 	{
-		id: "ht-1",
+		id: "00000000-0000-4000-8000-000000000101",
 		stt: 1,
 		name: "Lê Văn Bình",
 		dob: "1948",
@@ -71,7 +71,7 @@ const FALLBACK_HTXH = [
 		notes: "Nhận qua tài khoản bưu điện",
 	},
 	{
-		id: "ht-2",
+		id: "00000000-0000-4000-8000-000000000102",
 		stt: 2,
 		name: "Y Blang",
 		dob: "1953",
@@ -85,7 +85,7 @@ const FALLBACK_HTXH = [
 		notes: "Hộ cận nghèo",
 	},
 	{
-		id: "ht-3",
+		id: "00000000-0000-4000-8000-000000000103",
 		stt: 3,
 		name: "Phạm Văn Cường",
 		dob: "1944",
@@ -191,8 +191,15 @@ export function useProfiles(
 			const cached = await getCache<any>(cacheKey);
 			if (abortController.signal.aborted) return;
 			if (cached && cached.data) {
-				setPageData(cached.data);
-				if (cached.pagination?.total !== undefined) setTotal(cached.pagination.total);
+				const hasLegacyIds = Array.isArray(cached.data) && cached.data.some(
+					(p: any) => typeof p?.id === "string" && (p.id.startsWith("ct-") || p.id.startsWith("ht-")),
+				);
+				if (hasLegacyIds) {
+					await removeCache(cacheKey);
+				} else {
+					setPageData(cached.data);
+					if (cached.pagination?.total !== undefined) setTotal(cached.pagination.total);
+				}
 			}
 		} catch {}
 

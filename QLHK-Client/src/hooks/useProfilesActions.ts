@@ -1,5 +1,10 @@
 import type React from "react";
 
+const isLegacySampleId = (id: any): boolean => {
+	if (typeof id !== "string") return false;
+	return id.startsWith("ct-") || id.startsWith("ht-");
+};
+
 export function useProfilesActions(
 	api: any,
 	showAlert: any,
@@ -13,6 +18,16 @@ export function useProfilesActions(
 	setIsBulkUpdating: (v: boolean) => void,
 ) {
 	const handleSave = async (profileData: any, editId: string | number | null) => {
+		if (editId && isLegacySampleId(editId)) {
+			showAlert({
+				title: "Dữ Liệu Mẫu",
+				message: "Hồ sơ này là dữ liệu mẫu cũ. Đang làm mới danh sách dữ liệu thực từ máy chủ.",
+				type: "warning",
+			});
+			await loadPage();
+			return false;
+		}
+
 		setIsSaving(true);
 		try {
 			if (editId) {
@@ -24,11 +39,19 @@ export function useProfilesActions(
 			await loadStats();
 			return true;
 		} catch (err: any) {
+			const status = err.response?.status;
 			const msg = err.response?.data?.message || err.response?.data?.error || "Lỗi khi lưu dữ liệu";
-			if (err.response?.status === 409) {
+			if (status === 409) {
 				showAlert({
 					title: "Xung Đột Dữ Liệu (409)",
 					message: "Hồ sơ này đã được cập nhật bởi một thao tác khác. Danh sách dữ liệu đang được đồng bộ lại, vui lòng kiểm tra và thực hiện lại.",
+					type: "warning",
+				});
+				await loadPage();
+			} else if (status === 404 || status === 400) {
+				showAlert({
+					title: "Không Tìm Thấy Hồ Sơ",
+					message: "Hồ sơ không tồn tại trên hệ thống hoặc là dữ liệu mẫu. Đang đồng bộ lại danh sách mới nhất.",
 					type: "warning",
 				});
 				await loadPage();
@@ -42,6 +65,16 @@ export function useProfilesActions(
 	};
 
 	const handleDelete = async (id: string | number) => {
+		if (isLegacySampleId(id)) {
+			showAlert({
+				title: "Dữ Liệu Mẫu",
+				message: "Hồ sơ này là dữ liệu mẫu cũ. Đang làm mới danh sách dữ liệu thực từ máy chủ.",
+				type: "warning",
+			});
+			await loadPage();
+			return false;
+		}
+
 		setIsDeleting(id);
 		try {
 			await api.deleteProfile(String(id));
@@ -49,8 +82,18 @@ export function useProfilesActions(
 			await loadStats();
 			return true;
 		} catch (err: any) {
-			const msg = err.response?.data?.error || "Lỗi khi xóa";
-			showAlert({ title: "Lỗi", message: msg, type: "error" });
+			const status = err.response?.status;
+			if (status === 404 || status === 400) {
+				showAlert({
+					title: "Không Tìm Thấy Hồ Sơ",
+					message: "Hồ sơ không tồn tại hoặc đã được xóa trước đó. Đang đồng bộ lại danh sách.",
+					type: "warning",
+				});
+				await loadPage();
+			} else {
+				const msg = err.response?.data?.error || "Lỗi khi xóa";
+				showAlert({ title: "Lỗi", message: msg, type: "error" });
+			}
 			return false;
 		} finally {
 			setIsDeleting(null);
@@ -59,6 +102,17 @@ export function useProfilesActions(
 
 	const handleStatusToggle = async (profileOrId: any, maybeStatus?: boolean): Promise<boolean> => {
 		const targetId = typeof profileOrId === "object" && profileOrId !== null ? profileOrId.id : profileOrId;
+
+		if (isLegacySampleId(targetId)) {
+			showAlert({
+				title: "Dữ Liệu Mẫu",
+				message: "Hồ sơ này là dữ liệu mẫu cũ. Đang làm mới danh sách dữ liệu thực từ máy chủ.",
+				type: "warning",
+			});
+			await loadPage();
+			return false;
+		}
+
 		setIsStatusUpdating(targetId);
 
 		let newStatus: boolean;
@@ -91,8 +145,18 @@ export function useProfilesActions(
 			return true;
 		} catch (err: any) {
 			setPageData(previousList);
-			const msg = err.response?.data?.error || err.response?.data?.message || "Lỗi khi cập nhật trạng thái quà";
-			showAlert({ title: "Lỗi", message: msg, type: "error" });
+			const status = err.response?.status;
+			if (status === 404 || status === 400) {
+				showAlert({
+					title: "Không Thể Cập Nhật",
+					message: "Hồ sơ không tồn tại trên máy chủ hoặc là dữ liệu mẫu. Đang đồng bộ lại dữ liệu.",
+					type: "warning",
+				});
+				await loadPage();
+			} else {
+				const msg = err.response?.data?.error || err.response?.data?.message || "Lỗi khi cập nhật trạng thái quà";
+				showAlert({ title: "Lỗi", message: msg, type: "error" });
+			}
 			return false;
 		} finally {
 			setIsStatusUpdating(null);
@@ -133,8 +197,18 @@ export function useProfilesActions(
 			return true;
 		} catch (err: any) {
 			setPageData(previousList);
-			const msg = err.response?.data?.error || err.response?.data?.message || "Lỗi khi cập nhật hàng loạt";
-			showAlert({ title: "Lỗi", message: msg, type: "error" });
+			const status = err.response?.status;
+			if (status === 404 || status === 400) {
+				showAlert({
+					title: "Không Thể Cập Nhật",
+					message: "Một số hồ sơ không tồn tại trên máy chủ hoặc là dữ liệu mẫu. Đang đồng bộ lại dữ liệu.",
+					type: "warning",
+				});
+				await loadPage();
+			} else {
+				const msg = err.response?.data?.error || err.response?.data?.message || "Lỗi khi cập nhật hàng loạt";
+				showAlert({ title: "Lỗi", message: msg, type: "error" });
+			}
 			return false;
 		} finally {
 			setIsBulkUpdating(false);
@@ -156,8 +230,18 @@ export function useProfilesActions(
 			await loadPage();
 			await loadStats();
 		} catch (err: any) {
-			const msg = err.response?.data?.error || "Lỗi khi xóa hàng loạt";
-			showAlert({ title: "Lỗi", message: msg, type: "error" });
+			const status = err.response?.status;
+			if (status === 404 || status === 400) {
+				showAlert({
+					title: "Không Thể Xóa",
+					message: "Một số hồ sơ không tồn tại hoặc đã được xóa trước đó. Đang đồng bộ lại dữ liệu.",
+					type: "warning",
+				});
+				await loadPage();
+			} else {
+				const msg = err.response?.data?.error || "Lỗi khi xóa hàng loạt";
+				showAlert({ title: "Lỗi", message: msg, type: "error" });
+			}
 		} finally {
 			setIsBulkUpdating(false);
 		}

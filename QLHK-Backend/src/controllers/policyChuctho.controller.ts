@@ -4,6 +4,9 @@ import { AuthRequest } from "../middlewares/auth.middleware";
 import { computeChucthoMilestones, parseDobValue } from "../utils/age";
 import { encryptCCCD, removeAccents } from "../utils/crypto";
 
+export const isValidUuid = (id: string): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
 const SORT_KEY_MAP: Record<string, string> = {
   stt: "stt",
   name: "name",
@@ -131,6 +134,10 @@ export const createChucthoProfile = async (req: AuthRequest, res: Response): Pro
 export const updateChucthoProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = String(req.params.id);
+    if (!isValidUuid(id)) {
+      res.status(400).json({ error: "Mã định danh hồ sơ không hợp lệ (yêu cầu định dạng UUID)" });
+      return;
+    }
     const current = await prisma.chuctho_profiles.findUnique({ where: { id } });
     if (!current || current.is_deleted) {
       res.status(404).json({ error: "Không tìm thấy hồ sơ" });
@@ -169,7 +176,11 @@ export const updateChucthoProfile = async (req: AuthRequest, res: Response): Pro
 
     const updated = await prisma.chuctho_profiles.update({ where: { id }, data });
     res.json({ success: true, data: updated });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "P2025") {
+      res.status(404).json({ error: "Hồ sơ không tồn tại" });
+      return;
+    }
     res.status(500).json({ error: "Lỗi khi cập nhật hồ sơ" });
   }
 };
@@ -177,10 +188,18 @@ export const updateChucthoProfile = async (req: AuthRequest, res: Response): Pro
 export const markChucthoReceived = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = String(req.params.id);
+    if (!isValidUuid(id)) {
+      res.status(400).json({ error: "Mã định danh hồ sơ không hợp lệ (yêu cầu định dạng UUID)" });
+      return;
+    }
     const received = req.body.received !== undefined ? Boolean(req.body.received) : true;
     const updated = await prisma.chuctho_profiles.update({ where: { id }, data: { received } });
     res.json({ success: true, data: updated });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "P2025") {
+      res.status(404).json({ error: "Hồ sơ không tồn tại" });
+      return;
+    }
     res.status(500).json({ error: "Lỗi cập nhật trạng thái nhận quà" });
   }
 };
@@ -188,9 +207,17 @@ export const markChucthoReceived = async (req: AuthRequest, res: Response): Prom
 export const deleteChucthoProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = String(req.params.id);
+    if (!isValidUuid(id)) {
+      res.status(400).json({ error: "Mã định danh hồ sơ không hợp lệ (yêu cầu định dạng UUID)" });
+      return;
+    }
     await prisma.chuctho_profiles.update({ where: { id }, data: { is_deleted: true, deleted_at: new Date() } });
     res.json({ success: true, message: "Đã xóa hồ sơ thành công" });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "P2025") {
+      res.status(404).json({ error: "Hồ sơ không tồn tại" });
+      return;
+    }
     res.status(500).json({ error: "Lỗi khi xóa hồ sơ" });
   }
 };

@@ -22,10 +22,12 @@ describe("Policy Chúc Thọ Controller", () => {
     return res;
   };
 
+  const validUuid = "00000000-0000-4000-8000-000000000001";
+
   it("creates chuctho profile with calculated age milestones", async () => {
     const req: any = { body: { name: "Nguyễn Văn A", dob: "1954", calculation_year: 2024, currentAddress: "Thôn 1", villageId: "v-1" }, user: { role: "admin", village_id: "v-1" } };
     const res = mockRes();
-    (prisma.chuctho_profiles.create as any).mockResolvedValue({ id: "p-1", name: "Nguyễn Văn A", age70: "x" });
+    (prisma.chuctho_profiles.create as any).mockResolvedValue({ id: validUuid, name: "Nguyễn Văn A", age70: "x" });
     await createChucthoProfile(req, res);
     expect(res.status).toHaveBeenCalledWith(201);
   });
@@ -33,7 +35,7 @@ describe("Policy Chúc Thọ Controller", () => {
   it("retrieves chuctho profiles with camelCase and status filters", async () => {
     const req: any = { query: { villageId: "v-1", calculationYear: "2024", status: "received", sortKey: "name", sortDirection: "desc" }, user: { role: "admin" } };
     const res = mockRes();
-    (prisma.chuctho_profiles.findMany as any).mockResolvedValue([{ id: "p-1", name: "Nguyễn Văn A" }]);
+    (prisma.chuctho_profiles.findMany as any).mockResolvedValue([{ id: validUuid, name: "Nguyễn Văn A" }]);
     (prisma.chuctho_profiles.count as any).mockResolvedValue(1);
     await getChucthoProfiles(req, res);
     expect(prisma.chuctho_profiles.findMany).toHaveBeenCalledWith(expect.objectContaining({
@@ -42,20 +44,45 @@ describe("Policy Chúc Thọ Controller", () => {
     }));
   });
 
+  it("rejects non-uuid id with 400 bad request", async () => {
+    const req: any = { params: { id: "ct-2" }, body: {}, user: { role: "admin" } };
+    const res1 = mockRes();
+    await updateChucthoProfile(req, res1);
+    expect(res1.status).toHaveBeenCalledWith(400);
+
+    const res2 = mockRes();
+    await markChucthoReceived(req, res2);
+    expect(res2.status).toHaveBeenCalledWith(400);
+
+    const res3 = mockRes();
+    await deleteChucthoProfile(req, res3);
+    expect(res3.status).toHaveBeenCalledWith(400);
+  });
+
   it("detects OCC version collision and returns 409", async () => {
-    const req: any = { params: { id: "p-1" }, body: { name: "Nguyễn Văn B", version: 1 }, user: { role: "admin" } };
+    const req: any = { params: { id: validUuid }, body: { name: "Nguyễn Văn B", version: 1 }, user: { role: "admin" } };
     const res = mockRes();
-    (prisma.chuctho_profiles.findUnique as any).mockResolvedValue({ id: "p-1", version: 2, is_deleted: false });
+    (prisma.chuctho_profiles.findUnique as any).mockResolvedValue({ id: validUuid, version: 2, is_deleted: false });
     await updateChucthoProfile(req, res);
     expect(res.status).toHaveBeenCalledWith(409);
   });
 
-  it("updates received status and soft deletes profile", async () => {
+  it("updates received status and soft deletes profile with valid uuid", async () => {
     const res = mockRes();
-    (prisma.chuctho_profiles.update as any).mockResolvedValue({ id: "p-1", received: true });
-    await markChucthoReceived({ params: { id: "p-1" }, body: { received: true } } as any, res);
+    (prisma.chuctho_profiles.update as any).mockResolvedValue({ id: validUuid, received: true });
+    await markChucthoReceived({ params: { id: validUuid }, body: { received: true } } as any, res);
     expect(prisma.chuctho_profiles.update).toHaveBeenCalled();
-    await deleteChucthoProfile({ params: { id: "p-1" } } as any, res);
+    await deleteChucthoProfile({ params: { id: validUuid } } as any, res);
     expect(prisma.chuctho_profiles.update).toHaveBeenCalled();
+  });
+
+  it("handles P2025 record not found error with 404", async () => {
+    const p2025Error = new Error("Record not found");
+    (p2025Error as any).code = "P2025";
+    (prisma.chuctho_profiles.update as any).mockRejectedValue(p2025Error);
+
+    const res = mockRes();
+    await markChucthoReceived({ params: { id: validUuid }, body: { received: true } } as any, res);
+    expect(res.status).toHaveBeenCalledWith(404);
   });
 });

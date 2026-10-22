@@ -10,8 +10,10 @@ const CATEGORIES = ["age75plus", "age70to74poor", "bao_tro", "huu_tri", "huu_tua
 
 export const getPolicyAnalytics = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const villageId = req.user?.role === "admin" ? (req.query.village_id as string) : req.user?.village_id;
-    const calcYear = req.query.calculation_year ? parseInt(req.query.calculation_year as string, 10) : new Date().getFullYear();
+    const rawVillageId = (req.query.village_id || req.query.villageId) as string;
+    const villageId = req.user?.role === "admin" ? rawVillageId : req.user?.village_id;
+    const rawCalcYear = req.query.calculation_year || req.query.calculationYear;
+    const calcYear = rawCalcYear ? parseInt(rawCalcYear as string, 10) : new Date().getFullYear();
     const cacheKey = `${villageId || "all"}-${calcYear}`;
     const cached = analyticsCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
@@ -28,17 +30,25 @@ export const getPolicyAnalytics = async (req: AuthRequest, res: Response): Promi
       prisma.villages.findMany({ select: { id: true, name: true } }),
     ]);
 
+    const chucthoReceived = chucthoList.filter((c) => c.received).length;
+    const chucthoUnreceived = chucthoList.filter((c) => !c.received).length;
     const chuctho = {
       total: chucthoList.length,
-      received: chucthoList.filter((c) => c.received).length,
-      pending: chucthoList.filter((c) => !c.received).length,
+      received: chucthoReceived,
+      unreceived: chucthoUnreceived,
+      pending: chucthoUnreceived,
+      rate: chucthoList.length > 0 ? ((chucthoReceived / chucthoList.length) * 100).toFixed(1) : "0.0",
       byMilestone: Object.fromEntries(MILESTONES.map((m) => [m, chucthoList.filter((c) => c[m] === "x").length])),
     };
 
+    const htxhReceived = htxhList.filter((h) => h.received).length;
+    const htxhUnreceived = htxhList.filter((h) => !h.received).length;
     const htxh = {
       total: htxhList.length,
-      received: htxhList.filter((h) => h.received).length,
-      pending: htxhList.filter((h) => !h.received).length,
+      received: htxhReceived,
+      unreceived: htxhUnreceived,
+      pending: htxhUnreceived,
+      rate: htxhList.length > 0 ? ((htxhReceived / htxhList.length) * 100).toFixed(1) : "0.0",
       byCategory: Object.fromEntries(CATEGORIES.map((k) => [k, htxhList.filter((h) => h[k] === "x").length])),
     };
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  createHtxhProfile, deleteHtxhProfile,
+  createHtxhProfile, deleteHtxhProfile, getHtxhProfiles,
   markHtxhReceived, updateHtxhProfile,
 } from "../../src/controllers/policyHtxh.controller";
 import { prisma } from "../../src/config/prisma";
@@ -23,11 +23,23 @@ describe("Policy HTXH Controller", () => {
   };
 
   it("creates htxh profile with computed categories", async () => {
-    const req: any = { body: { name: "Trần Thị B", dob: "1940", village_id: "v-1", bao_tro: "x" }, user: { role: "admin" } };
+    const req: any = { body: { name: "Trần Thị B", dob: "1940", villageId: "v-1", bao_tro: "x" }, user: { role: "admin" } };
     const res = mockRes();
     (prisma.htxh_profiles.create as any).mockResolvedValue({ id: "h-1", name: "Trần Thị B", age75plus: "x", bao_tro: "x" });
     await createHtxhProfile(req, res);
     expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  it("retrieves htxh profiles with camelCase and category filters", async () => {
+    const req: any = { query: { villageId: "v-1", calculationYear: "2024", status: "unreceived", category: "bao_tro", sortKey: "dob", sortDirection: "asc" }, user: { role: "admin" } };
+    const res = mockRes();
+    (prisma.htxh_profiles.findMany as any).mockResolvedValue([{ id: "h-1", name: "Trần Thị B" }]);
+    (prisma.htxh_profiles.count as any).mockResolvedValue(1);
+    await getHtxhProfiles(req, res);
+    expect(prisma.htxh_profiles.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ village_id: "v-1", calculation_year: 2024, received: false, bao_tro: "x" }),
+      orderBy: { dob: "asc" },
+    }));
   });
 
   it("detects OCC conflict in htxh profile update", async () => {

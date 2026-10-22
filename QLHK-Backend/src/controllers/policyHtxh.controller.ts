@@ -4,27 +4,64 @@ import { AuthRequest } from "../middlewares/auth.middleware";
 import { computeHtxhMilestones, parseDobValue } from "../utils/age";
 import { encryptCCCD, removeAccents } from "../utils/crypto";
 
+const SORT_KEY_MAP: Record<string, string> = {
+  stt: "stt",
+  name: "name",
+  dob: "dob",
+  gender: "gender",
+  cccd: "cccd_last4",
+  ethnicity: "ethnicity",
+  residence: "residence",
+  currentAddress: "current_address",
+  current_address: "current_address",
+  received: "received",
+  calculationYear: "calculation_year",
+  calculation_year: "calculation_year",
+  createdAt: "created_at",
+  created_at: "created_at",
+};
+
 export const getHtxhProfiles = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 20));
-    const villageId = req.user?.role === "admin" ? (req.query.village_id as string) : req.user?.village_id;
+    const rawVillageId = (req.query.village_id || req.query.villageId) as string;
+    const villageId = req.user?.role === "admin" ? rawVillageId : req.user?.village_id;
     const search = (req.query.search as string)?.trim();
-    const category = req.query.category as string;
-    const received = req.query.received !== undefined ? req.query.received === "true" : undefined;
-    const calcYear = req.query.calculation_year ? parseInt(req.query.calculation_year as string, 10) : undefined;
+    const category = ((req.query.category || req.query.ageGroup || req.query.milestone) as string)?.trim();
+    const statusQuery = ((req.query.status || req.query.received) as string)?.trim()?.toLowerCase();
+    const rawCalcYear = req.query.calculation_year || req.query.calculationYear;
+    const calcYear = rawCalcYear ? parseInt(rawCalcYear as string, 10) : undefined;
+    const gender = (req.query.gender as string)?.trim();
+    const ethnicity = (req.query.ethnicity as string)?.trim();
+    const residence = (req.query.residence as string)?.trim();
+
+    let received: boolean | undefined = undefined;
+    if (statusQuery === "received" || statusQuery === "true") {
+      received = true;
+    } else if (statusQuery === "unreceived" || statusQuery === "false") {
+      received = false;
+    }
 
     const where: Record<string, unknown> = { is_deleted: false };
     if (villageId) where.village_id = villageId;
     if (received !== undefined) where.received = received;
     if (calcYear) where.calculation_year = calcYear;
+    if (gender) where.gender = gender;
+    if (ethnicity) where.ethnicity = ethnicity;
+    if (residence) where.residence = residence;
     if (category) where[category] = "x";
     if (search) {
       where.OR = [{ name_unaccented: { contains: removeAccents(search) } }, { cccd_last4: search.slice(-4) }];
     }
 
+    const rawSortKey = (req.query.sortKey as string) || "stt";
+    const sortField = SORT_KEY_MAP[rawSortKey] || "stt";
+    const sortDirection = ((req.query.sortDirection as string) || "asc").toLowerCase() === "desc" ? "desc" : "asc";
+    const orderBy = { [sortField]: sortDirection };
+
     const [items, total] = await Promise.all([
-      prisma.htxh_profiles.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { stt: "asc" }, include: { village: true } }),
+      prisma.htxh_profiles.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy, include: { village: true } }),
       prisma.htxh_profiles.count({ where }),
     ]);
 
@@ -36,9 +73,13 @@ export const getHtxhProfiles = async (req: AuthRequest, res: Response): Promise<
 
 export const getHtxhStream = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const villageId = req.user?.role === "admin" ? (req.query.village_id as string) : req.user?.village_id;
+    const rawVillageId = (req.query.village_id || req.query.villageId) as string;
+    const villageId = req.user?.role === "admin" ? rawVillageId : req.user?.village_id;
+    const rawCalcYear = req.query.calculation_year || req.query.calculationYear;
+    const calcYear = rawCalcYear ? parseInt(rawCalcYear as string, 10) : undefined;
     const where: Record<string, unknown> = { is_deleted: false };
     if (villageId) where.village_id = villageId;
+    if (calcYear) where.calculation_year = calcYear;
 
     res.setHeader("Content-Type", "application/x-ndjson");
     res.setHeader("Transfer-Encoding", "chunked");
@@ -58,8 +99,12 @@ export const getHtxhStream = async (req: AuthRequest, res: Response): Promise<vo
 
 export const createHtxhProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { name, dob, cccd, village_id, stt, gender, ethnicity, residence, current_address, notes, calculation_year, ...categories } = req.body;
+    const { name, dob, cccd, stt, gender, ethnicity, residence, notes, ...categories } = req.body;
+    const village_id = req.body.village_id || req.body.villageId;
+    const current_address = req.body.current_address || req.body.currentAddress;
+    const calculation_year = req.body.calculation_year || req.body.calculationYear;
     const targetVillageId = req.user?.role === "admin" ? (village_id || req.user?.village_id) : req.user?.village_id;
+
     if (!name || !targetVillageId) {
       res.status(400).json({ error: "Họ tên và thôn là bắt buộc" });
       return;
@@ -96,13 +141,21 @@ export const updateHtxhProfile = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    const { name, dob, cccd, calculation_year, ...rest } = req.body;
+    const { name, dob, cccd, village_id, villageId, current_address, currentAddress, calculation_year, calculationYear, ...rest } = req.body;
     const data: Record<string, unknown> = { ...rest, version: (current.version || 1) + 1 };
     if (name) {
       data.name = name;
       data.name_unaccented = removeAccents(name);
     }
-    const calcYear = calculation_year || current.calculation_year || new Date().getFullYear();
+    const targetVillageId = village_id || villageId;
+    if (targetVillageId && req.user?.role === "admin") {
+      data.village_id = targetVillageId;
+    }
+    const targetAddress = current_address || currentAddress;
+    if (targetAddress !== undefined) {
+      data.current_address = targetAddress;
+    }
+    const calcYear = calculation_year || calculationYear || current.calculation_year || new Date().getFullYear();
     data.calculation_year = calcYear;
     if (dob) {
       const parsed = parseDobValue(dob);

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  createChucthoProfile, deleteChucthoProfile,
+  createChucthoProfile, deleteChucthoProfile, getChucthoProfiles,
   markChucthoReceived, updateChucthoProfile,
 } from "../../src/controllers/policyChuctho.controller";
 import { prisma } from "../../src/config/prisma";
@@ -23,11 +23,23 @@ describe("Policy Chúc Thọ Controller", () => {
   };
 
   it("creates chuctho profile with calculated age milestones", async () => {
-    const req: any = { body: { name: "Nguyễn Văn A", dob: "1954", calculation_year: 2024 }, user: { role: "admin", village_id: "v-1" } };
+    const req: any = { body: { name: "Nguyễn Văn A", dob: "1954", calculation_year: 2024, currentAddress: "Thôn 1", villageId: "v-1" }, user: { role: "admin", village_id: "v-1" } };
     const res = mockRes();
     (prisma.chuctho_profiles.create as any).mockResolvedValue({ id: "p-1", name: "Nguyễn Văn A", age70: "x" });
     await createChucthoProfile(req, res);
     expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  it("retrieves chuctho profiles with camelCase and status filters", async () => {
+    const req: any = { query: { villageId: "v-1", calculationYear: "2024", status: "received", sortKey: "name", sortDirection: "desc" }, user: { role: "admin" } };
+    const res = mockRes();
+    (prisma.chuctho_profiles.findMany as any).mockResolvedValue([{ id: "p-1", name: "Nguyễn Văn A" }]);
+    (prisma.chuctho_profiles.count as any).mockResolvedValue(1);
+    await getChucthoProfiles(req, res);
+    expect(prisma.chuctho_profiles.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ village_id: "v-1", calculation_year: 2024, received: true }),
+      orderBy: { name: "desc" },
+    }));
   });
 
   it("detects OCC version collision and returns 409", async () => {

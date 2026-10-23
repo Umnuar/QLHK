@@ -30,7 +30,6 @@ import {
 } from "../components/analytics/policyAnalyticsData";
 import { DistributionCard } from "../components/analytics/DistributionCard";
 import { GenderRatioBar } from "../components/analytics/GenderRatioBar";
-import { PolicyCompositeCard } from "../components/analytics/PolicyCompositeCard";
 import { PolicyKpiRow } from "../components/analytics/PolicyKpiRow";
 
 export const PolicyAnalyticsPage: React.FC = () => {
@@ -494,8 +493,6 @@ export const PolicyAnalyticsPage: React.FC = () => {
 						/>
 					}
 				/>
-
-				<PolicyCompositeCard data={policyData} />
 			</section>
 
 			<div className={TABLE_STYLES.card}>

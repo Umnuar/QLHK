@@ -23,7 +23,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK/QLHK-Client && npx vitest run src/components/common/__tests__/CustomSelect.test.tsx`
   - Static Check: `cd QLHK/QLHK-Client && npx tsc --noEmit`
-- [ ] Step 2: Remove PolicyCompositeCard from PolicyAnalyticsPage
+- [x] Step 2: Remove PolicyCompositeCard from PolicyAnalyticsPage
   - Target Files: `QLHK/QLHK-Client/src/features/qlcs/pages/PolicyAnalyticsPage.tsx`
   - Role Focus: Remove PolicyCompositeCard render and clean unused imports
   - Diff Budget: <= 200 gross LOC

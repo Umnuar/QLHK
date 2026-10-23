@@ -15,6 +15,7 @@ import type React from "react";
 import { useState } from "react";
 import { useApp } from "../../AppContext";
 import { useNetwork } from "../../context/NetworkContext";
+import { BackendSwitcher } from "../common/BackendSwitcher";
 import { ServerStatusModal } from "../network/ServerStatusModal";
 
 export const Header: React.FC = () => {
@@ -120,6 +121,8 @@ export const Header: React.FC = () => {
 								(user?.role === "admin" ? "Toàn xã" : "Chưa chọn thôn")}
 						</span>
 					</div>
+
+					<BackendSwitcher variant="compact" className="hidden sm:inline-flex" />
 
 					<button
 						type="button"

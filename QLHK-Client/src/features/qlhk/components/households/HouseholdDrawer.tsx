@@ -335,7 +335,7 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 	};
 
 	const inputClasses =
-		"w-full px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all outline-hidden bg-slate-50 border border-slate-300 text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:bg-slate-800/80 dark:border-slate-700/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:bg-slate-800 dark:focus:border-emerald-500 dark:focus:ring-2 dark:focus:ring-emerald-500/20";
+		"w-full px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all outline-hidden bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:bg-slate-800 dark:focus:border-emerald-500 dark:focus:ring-2 dark:focus:ring-emerald-500";
 
 	const getStatusBadgeStyle = (st: string) => {
 		switch (st) {
@@ -592,7 +592,11 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 										return (
 											<div
 												key={m.id || idx}
-												className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 shadow-2xs hover:shadow-sm transition-all flex items-center justify-between gap-3 group"
+												className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 group ${
+													isHead
+														? "bg-amber-50/40 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700/80 shadow-xs ring-1 ring-amber-400/20"
+														: "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 shadow-2xs hover:shadow-sm"
+												}`}
 											>
 												<div className="space-y-1.5 min-w-0 flex-1">
 													<div className="flex items-center gap-2 min-w-0">
@@ -600,17 +604,20 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 															#{m.stt || idx + 1}
 														</span>
 														<span
-															className={`px-2 py-0.5 rounded-md text-[11px] font-bold border shrink-0 ${
+															className={`px-2.5 py-0.5 rounded-md text-[11px] font-extrabold border shrink-0 ${
 																isHead
-																	? "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800"
+																	? "bg-amber-500 text-white border-amber-600 shadow-xs dark:bg-amber-600 dark:border-amber-500"
 																	: "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
 															}`}
 														>
 															{relationshipLabel}
 														</span>
-														<span className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+														<span className={`text-sm truncate ${isHead ? "font-black text-amber-950 dark:text-amber-100" : "font-bold text-slate-900 dark:text-slate-100"}`}>
 															{m.full_name}
 														</span>
+														{isHead && (
+															<span className="text-amber-500 font-bold text-xs" title="Chủ hộ gia đình">★</span>
+														)}
 														{m.gender && (
 															<span
 																className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
@@ -751,8 +758,11 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 											`mem-${editingMemberIndex}`
 									] || members[editingMemberIndex].cccd,
 							}
-						: null
+						: members.length === 0
+							? { relationship: "Chủ hộ", is_head: true }
+							: null
 				}
+				existingMembers={members}
 				onClose={() => {
 					setIsCitizenModalOpen(false);
 					setEditingMemberIndex(null);

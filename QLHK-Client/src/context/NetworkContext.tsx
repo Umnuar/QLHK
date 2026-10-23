@@ -72,9 +72,13 @@ export const NetworkProvider: React.FC<{ children: React.ReactNode }> = ({
 			setIsOnline(false);
 			setLatency(null);
 		};
+		const handlePortChanged = () => {
+			checkServerHealth();
+		};
 
 		window.addEventListener("online", handleOnline);
 		window.addEventListener("offline", handleOffline);
+		window.addEventListener("backend:port_changed", handlePortChanged);
 
 		const interval = setInterval(() => {
 			if (typeof navigator !== "undefined" && navigator.onLine) {
@@ -85,6 +89,7 @@ export const NetworkProvider: React.FC<{ children: React.ReactNode }> = ({
 		return () => {
 			window.removeEventListener("online", handleOnline);
 			window.removeEventListener("offline", handleOffline);
+			window.removeEventListener("backend:port_changed", handlePortChanged);
 			clearInterval(interval);
 		};
 	}, [checkServerHealth]);

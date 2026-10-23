@@ -2,15 +2,96 @@ import axios from "axios";
 import { secureStorage } from "../utils/secureStorage";
 import { getTauriAxiosAdapter } from "./tauriHttpAdapter";
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "https://qlhk.dulieudakha.vn/api";
+export type BackendPort = 5002 | 5012;
 
-let currentApiBaseUrl = API_BASE_URL;
+export const STORAGE_KEY_BACKEND_PORT = "qlhk_backend_port";
+
+export const BACKEND_PORT_METADATA: Record<
+	BackendPort,
+	{ name: string; engine: string; url: string; port: BackendPort }
+> = {
+	5002: {
+		name: "Backend Node.js",
+		engine: "Express.js & Prisma",
+		url: "http://localhost:5002/api",
+		port: 5002,
+	},
+	5012: {
+		name: "Backend Rust Axum",
+		engine: "Axum & SQLx",
+		url: "http://localhost:5012/api",
+		port: 5012,
+	},
+};
+
+export const getActiveBackendPort = (): BackendPort => {
+	if (typeof window !== "undefined") {
+		const saved = localStorage.getItem(STORAGE_KEY_BACKEND_PORT);
+		if (saved === "5012") return 5012;
+		if (saved === "5002") return 5002;
+	}
+	return 5002;
+};
+
+export const API_BASE_URL =
+	import.meta.env.VITE_API_URL || "https://qlhk.dulieudakha.vn/api";
+
+const getInitialBaseUrl = (): string => {
+	if (typeof window !== "undefined") {
+		const saved = localStorage.getItem(STORAGE_KEY_BACKEND_PORT);
+		if (saved === "5012") return "http://localhost:5012/api";
+		if (saved === "5002") return "http://localhost:5002/api";
+	}
+	return API_BASE_URL;
+};
+
+let currentApiBaseUrl = getInitialBaseUrl();
 
 export const getActiveApiBaseUrl = (): string => currentApiBaseUrl;
 
 export const setApiBaseUrl = (url: string): void => {
 	currentApiBaseUrl = url;
 	apiClient.defaults.baseURL = url;
+};
+
+export const switchBackendPort = (port: BackendPort): void => {
+	if (typeof window !== "undefined") {
+		localStorage.setItem(STORAGE_KEY_BACKEND_PORT, String(port));
+	}
+	const newUrl = `http://localhost:${port}/api`;
+	setApiBaseUrl(newUrl);
+	if (typeof window !== "undefined") {
+		window.dispatchEvent(
+			new CustomEvent("backend:port_changed", {
+				detail: { port, url: newUrl },
+			}),
+		);
+	}
+};
+
+export const checkBackendHealth = async (
+	port: BackendPort,
+): Promise<{ online: boolean; latencyMs: number }> => {
+	const start = performance.now();
+	try {
+		const testClient = axios.create({
+			baseURL: `http://localhost:${port}/api`,
+			timeout: 2000,
+			adapter: getTauriAxiosAdapter(),
+		});
+		const res = await testClient.get("/ping");
+		const latencyMs = Math.round(performance.now() - start);
+		if (res.status === 200 || res.status === 204) {
+			return { online: true, latencyMs };
+		}
+		return { online: false, latencyMs };
+	} catch (err: any) {
+		if (err?.response) {
+			const latencyMs = Math.round(performance.now() - start);
+			return { online: true, latencyMs };
+		}
+		return { online: false, latencyMs: -1 };
+	}
 };
 
 export const apiClient = axios.create({
@@ -23,6 +104,23 @@ export const apiClient = axios.create({
 });
 
 export const detectAndSetOptimalApiGateway = async (): Promise<string> => {
+	const activePort = getActiveBackendPort();
+	const preferredLocalUrl = `http://localhost:${activePort}/api`;
+
+	try {
+		const testClient = axios.create({
+			baseURL: preferredLocalUrl,
+			timeout: 1500,
+			adapter: getTauriAxiosAdapter(),
+		});
+		const localRes = await testClient.get("/ping");
+		if (localRes.status === 204 || localRes.status === 200) {
+			setApiBaseUrl(preferredLocalUrl);
+			return preferredLocalUrl;
+		}
+	} catch {
+	}
+
 	const domainUrl = API_BASE_URL;
 	try {
 		const res = await apiClient.get("/ping", { timeout: 2000 });
@@ -31,23 +129,10 @@ export const detectAndSetOptimalApiGateway = async (): Promise<string> => {
 			return domainUrl;
 		}
 	} catch {
-		try {
-			const localUrl = "http://localhost:5002/api";
-			const testClient = axios.create({
-				baseURL: localUrl,
-				timeout: 1500,
-				adapter: getTauriAxiosAdapter(),
-			});
-			const localRes = await testClient.get("/ping");
-			if (localRes.status === 204 || localRes.status === 200) {
-				setApiBaseUrl(localUrl);
-				return localUrl;
-			}
-		} catch {
-		}
 	}
-	setApiBaseUrl(domainUrl);
-	return domainUrl;
+
+	setApiBaseUrl(preferredLocalUrl);
+	return preferredLocalUrl;
 };
 
 detectAndSetOptimalApiGateway().catch(() => {});

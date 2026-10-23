@@ -20,6 +20,7 @@ import { createPortal } from "react-dom";
 import { useApp } from "../AppContext";
 import { authApi } from "../api/authApi";
 import { CustomSelect } from "../components/common/CustomSelect";
+import { BackendSwitcher } from "../components/common/BackendSwitcher";
 import { BackupRestoreTab } from "../components/settings/BackupRestoreTab";
 import { ProfileCard } from "../components/settings/ProfileCard";
 import { TimeCard } from "../components/settings/TimeCard";
@@ -847,6 +848,8 @@ export const SettingsPage: React.FC = () => {
 
 			{activeTab === "system" && (
 				<div className="space-y-6">
+					<BackendSwitcher variant="card" />
+
 					<TimeCard />
 
 					<form

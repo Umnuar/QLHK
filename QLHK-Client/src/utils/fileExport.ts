@@ -1,5 +1,7 @@
 import { isTauri } from "@tauri-apps/api/core";
 
+export * from "./tauriExcel";
+
 export const loadXlsx = async () => await import("xlsx");
 
 export interface FileExportResult {

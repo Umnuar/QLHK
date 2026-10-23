@@ -349,4 +349,160 @@ describe("CitizenModal Component", () => {
 		expect(saved.native_place).toBe("Xã Đăk Hà");
 		expect(saved.notes).toBe("Đã qua đào tạo");
 	});
+
+	it("10. Tự động autofocus vào ô Họ và tên khi mở CitizenModal", async () => {
+		render(
+			<CitizenModal
+				isOpen={true}
+				initialMember={null}
+				onClose={mockOnClose}
+				onSave={mockOnSave}
+			/>,
+		);
+
+		const nameInput = screen.getByLabelText(/Họ và Tên/i);
+		await waitFor(() => {
+			expect(document.activeElement).toBe(nameInput);
+		});
+	});
+
+	it("11. Phím Enter chuyển focus sang trường tiếp theo và lưu form khi ở trường cuối", () => {
+		render(
+			<CitizenModal
+				isOpen={true}
+				initialMember={null}
+				onClose={mockOnClose}
+				onSave={mockOnSave}
+			/>,
+		);
+
+		const nameInput = screen.getByLabelText(/Họ và Tên/i);
+		const relInput = screen.getByLabelText(/Quan hệ với chủ hộ/i);
+		const dobInput = screen.getByLabelText(/Ngày sinh/i);
+		const notesInput = screen.getByLabelText(/Ghi chú nhân khẩu \/ Nghề nghiệp/i);
+
+		fireEvent.change(nameInput, { target: { value: "A Hiếu" } });
+		fireEvent.keyDown(nameInput, { key: "Enter" });
+		expect(document.activeElement).toBe(relInput);
+
+		fireEvent.keyDown(relInput, { key: "Enter" });
+		expect(document.activeElement).toBe(dobInput);
+
+		fireEvent.change(dobInput, { target: { value: "1995" } });
+		fireEvent.change(notesInput, { target: { value: "Công an viên" } });
+		fireEvent.keyDown(notesInput, { key: "Enter" });
+
+		expect(mockOnSave).toHaveBeenCalledTimes(1);
+		expect(mockOnSave.mock.calls[0][0].full_name).toBe("A Hiếu");
+	});
+
+	it("12. Phím tắt Ctrl+Enter lưu tức thì tại bất kỳ ô nhập liệu nào", () => {
+		render(
+			<CitizenModal
+				isOpen={true}
+				initialMember={null}
+				onClose={mockOnClose}
+				onSave={mockOnSave}
+			/>,
+		);
+
+		const nameInput = screen.getByLabelText(/Họ và Tên/i);
+		const dobInput = screen.getByLabelText(/Ngày sinh/i);
+
+		fireEvent.change(nameInput, { target: { value: "Y Rung" } });
+		fireEvent.change(dobInput, { target: { value: "2001" } });
+
+		fireEvent.keyDown(dobInput, { key: "Enter", ctrlKey: true });
+
+		expect(mockOnSave).toHaveBeenCalledTimes(1);
+		expect(mockOnSave.mock.calls[0][0].full_name).toBe("Y Rung");
+		expect(mockOnSave.mock.calls[0][0].birth_year).toBe(2001);
+	});
+
+	it("13. Cảnh báo trùng CCCD tức thì khi nhập đủ 12 số trùng với nhân khẩu trong hộ", () => {
+		const existingMembers: Partial<Person>[] = [
+			{
+				id: "mem-001",
+				household_id: "hh-1",
+				stt: 1,
+				full_name: "A Trưởng",
+				last_name: "A",
+				first_name: "Trưởng",
+				name_unaccented: "a truong",
+				relationship: "Chủ hộ",
+				is_head: true,
+				gender: "Nam",
+				dob: "1980",
+				dob_raw: "1980",
+				dob_formatted: "1980",
+				birth_year: 1980,
+				age: 46,
+				cccd: "060080001234",
+				cccd_masked: "060080****34",
+				ethnicity: "Xơ Đăng",
+				is_minority: true,
+				religion: "Không",
+			},
+		];
+
+		render(
+			<CitizenModal
+				isOpen={true}
+				initialMember={null}
+				existingMembers={existingMembers}
+				onClose={mockOnClose}
+				onSave={mockOnSave}
+			/>,
+		);
+
+		const nameInput = screen.getByLabelText(/Họ và Tên/i);
+		const dobInput = screen.getByLabelText(/Ngày sinh/i);
+		const cccdInput = screen.getByLabelText(/Số CCCD/i);
+		const submitBtn = screen.getByRole("button", { name: /Lưu nhân khẩu/i });
+
+		fireEvent.change(nameInput, { target: { value: "A Hai" } });
+		fireEvent.change(dobInput, { target: { value: "2005" } });
+		fireEvent.change(cccdInput, { target: { value: "060080001234" } });
+
+		expect(screen.getAllByText(/Cảnh báo: Trùng CCCD/i).length).toBeGreaterThan(0);
+		expect(screen.getByText(/Trùng với A Trưởng/i)).toBeInTheDocument();
+
+		fireEvent.click(submitBtn);
+		expect(mockOnSave).not.toHaveBeenCalled();
+		expect(screen.getByText(/Cảnh báo: Trùng CCCD với nhân khẩu "A Trưởng"/i)).toBeInTheDocument();
+
+		fireEvent.change(cccdInput, { target: { value: "060080009999" } });
+		expect(screen.queryByText(/Trùng với A Trưởng/i)).toBeNull();
+		expect(screen.getByText(/CCCD hợp lệ/i)).toBeInTheDocument();
+
+		fireEvent.click(submitBtn);
+		expect(mockOnSave).toHaveBeenCalledTimes(1);
+	});
+
+	it("14. Hiển thị badge Chủ hộ nổi bật và hỗ trợ chọn nhanh quan hệ gia đình", () => {
+		render(
+			<CitizenModal
+				isOpen={true}
+				initialMember={{
+					id: "mem-head",
+					full_name: "A Krol",
+					relationship: "Chủ hộ",
+					is_head: true,
+					dob: "1970",
+				}}
+				onClose={mockOnClose}
+				onSave={mockOnSave}
+			/>,
+		);
+
+		expect(screen.getByText("Chủ hộ gia đình")).toBeInTheDocument();
+		expect(screen.getAllByText("Chủ hộ").length).toBeGreaterThanOrEqual(2);
+
+		const voButton = screen.getByRole("button", { name: "Vợ" });
+		fireEvent.click(voButton);
+
+		const relInput = screen.getByLabelText(/Quan hệ với chủ hộ/i) as HTMLInputElement;
+		expect(relInput.value).toBe("Vợ");
+		expect(screen.queryByText("Chủ hộ gia đình")).toBeNull();
+	});
 });

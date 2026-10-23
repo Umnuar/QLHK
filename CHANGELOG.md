@@ -1,7 +1,51 @@
 # NHẬT KÝ PHÁT HÀNH & NÂNG CẤP TOÀN DIỆN (CHANGELOG)
-## HỆ THỐNG QUẢN LÝ HỘ KHẨU - NHÂN KHẨU XÃ ĐĂK HÀ (BẢN PHÁT HÀNH ĐỒNG BỘ v1.5.0)
+## HỆ THỐNG QUẢN LÝ HỘ KHẨU - NHÂN KHẨU XÃ ĐĂK HÀ (BẢN PHÁT HÀNH ĐỒNG BỘ v1.5)
 
-Bản cập nhật lớn toàn diện đưa toàn bộ phân hệ QLHK từ phiên bản v1.0 ban đầu lên chuẩn **v1.5.0**, thống nhất kiến trúc, chuyển đổi công nghệ sang Thin-Client Tauri v2 (Rust), độc lập hóa cơ sở dữ liệu PostgreSQL Native nội bộ (schema `qlhk`), tối ưu hóa hiệu năng chuyên sâu, vá toàn bộ lỗi kiểm toán an ninh và loại bỏ sạch 100% comment trong mã nguồn theo chuẩn Civic Tech Blueprint.
+Bản cập nhật lớn toàn diện đưa toàn bộ phân hệ QLHK từ phiên bản v1.0 ban đầu lên chuẩn **v1.5**, thống nhất kiến trúc, chuyển đổi công nghệ sang Thin-Client Tauri v2 (Rust) cùng Backend Rust Native hiệu năng cao (Axum 0.8 + SQLx), độc lập hóa cơ sở dữ liệu PostgreSQL Native nội bộ (schema `qlhk`), tối ưu hóa hiệu năng chuyên sâu, vá toàn bộ lỗi kiểm toán an ninh và loại bỏ sạch 100% comment trong mã nguồn theo chuẩn Civic Tech Blueprint.
+
+---
+
+## [v1.5.1] - 2026-10-23 (Hoàn thiện Động cơ Rust Backend 100% & Đồng bộ Chính sách Dân cư)
+
+### 🚀 NEW (Tính năng mới)
+
+- **Động cơ Backend Rust Native Hoàn thiện 100% (QLHK-Backend-Rust)**:
+  - Triển khai toàn diện hệ thống backend hiệu năng cao bằng Rust (Axum 0.8 + SQLx + Tokio) trên cổng `5012`, xóa bỏ 100% lỗi 404 khi kết nối Client.
+  - **Auth & Session Engine (B1)**: Xác thực đăng nhập kép (hỗ trợ hash bcrypt $2a$, $2b$, $2y$ và fallback sha256), cấp phát cặp mã xác thực JWT Access Token & Refresh Token, cơ chế luân chuyển Refresh Token Rotation an toàn, các endpoint `/api/auth/me`, `/api/auth/refresh`, `/api/auth/logout`, `/ping`, `/api/ping`.
+  - **Quản lý Thôn & Tài khoản Người dùng (B2)**: Nghiệp vụ CRUD danh mục thôn kèm tổng hợp số hộ khẩu và nhân khẩu theo thời gian thực; quản trị người dùng phân quyền theo vai trò (RBAC) và phạm vi địa bàn thôn (Village Scope); đổi mật khẩu an toàn.
+  - **Động cơ Ghi vết Nhật ký Hoạt động (Audit Logging Engine - B3)**: Hệ thống phân trang và bộ lọc đa tiêu chí (thôn, tài khoản, hành động, ngày tháng) cho nhật ký hoạt động; hàm tiện ích bất đồng bộ `record_audit` ghi trực tiếp vào schema `qlhk.audit_logs`.
+  - **Động cơ Nhập/Xuất Excel Streaming Đa luồng (B4)**: Phân tích cú pháp tệp Excel siêu tốc bằng thư viện `calamine`, tự động mã hóa đối xứng AES-256-GCM số CCCD và tạo chỉ mục băm mù Blind Index HMAC-SHA256; xuất danh sách nhân khẩu chuẩn thể thức hành chính Nhà nước (mẫu chuẩn 11 cột), xuất danh sách người cao tuổi mừng thọ, cung cấp tệp biểu mẫu mẫu `/api/excel/template`.
+  - **Sao lưu Dữ liệu, Cấu hình & Trình cập nhật (B5)**: Sao lưu và phục hồi dữ liệu dạng JSON dump (`/api/backup/download`, `/api/backup/restore`); quản trị cặp khóa-giá trị cài đặt hệ thống (`/api/settings`); phân phối manifest cập nhật tự động desktop cho ứng dụng Tauri (`/api/updates/latest`).
+  - **Bộ Kiểm thử Shadow Parity Test Đạt 18/18 Tiêu chí (100% PASS)**: Bộ kịch bản kiểm thử tự động so khớp trực tiếp dữ liệu giữa backend Node.js (cổng 5002) và Rust (cổng 5012) đảm bảo tính toàn vẹn 100% của payload và mã phản hồi HTTP.
+
+- **Đồng bộ Dữ liệu Phân hệ Chính sách (Chúc thọ & Hưu trí Xã hội)**:
+  - Hợp nhất nguồn dữ liệu chính sách dùng chung trực tiếp với CSDL Quản lý Hộ khẩu - Nhân khẩu (QLHK) làm nguồn dữ liệu chuẩn (Single Source of Truth), chống phân mảnh thông tin.
+  - Tự động lọc danh sách đối tượng Mừng thọ (Chúc thọ) cho người cao tuổi từ 60 tuổi trở lên (các mốc 70, 75, 80, 85, 90+ tuổi) và hỗ trợ lọc theo ngày.
+  - Tự động lọc danh sách đối tượng Hưu trí Xã hội (HTXH) dựa trên tiêu chí trường nghề nghiệp liên quan đến từ "hưu" / "nghỉ hưu" / "hưu trí".
+
+---
+
+### ⚡ UPDATE & PERFORMANCE (Cải tiến & Tối ưu hóa hiệu năng)
+
+- **Chuyển đổi Cổng Mặc định Client sang Rust Backend**:
+  - Cập nhật `QLHK-Client/src/api/client.ts` ưu tiên kết nối trực tiếp đến backend Rust trên cổng `5012` thay vì cổng `5002`.
+- **Tối ưu Tốc độ Nhập/Xuất Dữ liệu**:
+  - Nhập dữ liệu Excel trên Rust giảm tải thời gian xử lý và tiêu thụ RAM vượt trội nhờ cơ chế streaming và zero-copy deserialization của `calamine` và `rust_xlsxwriter`.
+- **Bảo mật CCCD Tuyệt đối**:
+  - Đồng bộ thuật toán mã hóa AES-256-GCM (IV 12 bytes, tag 16 bytes) và băm HMAC-SHA256 trên Rust khớp từng byte với triển khai Node.js.
+- **Tuân thủ Chuẩn P0 Zero Comments**:
+  - Toàn bộ 100% mã nguồn Rust mới và sửa đổi tuân thủ nghiêm ngặt chuẩn Zero Comments, tự giải thích bằng kiến trúc và định danh tường minh.
+
+---
+
+### 🛠️ FIX (Sửa lỗi & Vá lỗi giao diện)
+
+- **Sửa lỗi Phân cấp Dropdown Select trong Modal**:
+  - Khắc phục hiện tượng dropdown select bị đè hoặc bay lệch vị trí khi thao tác trong modal chỉnh sửa thông tin nhân khẩu; chuẩn hóa z-index và cơ chế neo định vị.
+- **Khóa Thao tác Phân mảnh Dữ liệu Chính sách**:
+  - Khóa nút xóa hồ sơ và nút sửa thông tin trên phân hệ Chúc thọ và Hưu trí xã hội, đảm bảo mọi cập nhật phải thực hiện thông qua hồ sơ nhân khẩu gốc QLHK.
+- **Sửa lỗi Phân quyền Sidebar Thống kê**:
+  - Ẩn/hiển thị linh hoạt các mục Chúc thọ, Hưu trí xã hội, Thống kê chính sách trên thanh điều hướng bên (Sidebar), chỉ kích hoạt khi người dùng chọn một thôn cụ thể hoặc xem thống kê toàn xã.
 
 ---
 

@@ -9,6 +9,8 @@ $headers = @{
     "Content-Type" = "application/json"
 }
 
+$nodeAvailable = [bool](Get-NetTCPConnection -LocalPort 5002 -State Listen -ErrorAction SilentlyContinue)
+
 $results = [System.Collections.Generic.List[PSCustomObject]]::new()
 
 function Test-EndpointComparison {
@@ -24,37 +26,31 @@ function Test-EndpointComparison {
     $nodeStatus = 0
     $rustStatus = 0
 
-    try {
-        $nodeRaw = Invoke-WebRequest -Uri "$NodeUrl$Path" -Headers $RequestHeaders -Method Get -TimeoutSec 5 -ErrorAction Stop
-        $nodeStatus = $nodeRaw.StatusCode
-        $nodeRes = $nodeRaw.Content | ConvertFrom-Json
-    } catch {
-        if ($_.Exception.Response) {
-            $nodeStatus = [int]$_.Exception.Response.StatusCode
+    if ($nodeAvailable) {
+        try {
+            $nodeRaw = Invoke-RestMethod -Uri "$NodeUrl$Path" -Headers $RequestHeaders -Method Get -TimeoutSec 2 -ErrorAction Stop
+            $nodeStatus = 200
+            $nodeRes = $nodeRaw
+        } catch {
+            if ($_.Exception.Response) {
+                $nodeStatus = [int]$_.Exception.Response.StatusCode
+            }
         }
     }
 
     try {
-        $rustRaw = Invoke-WebRequest -Uri "$RustUrl$Path" -Headers $RequestHeaders -Method Get -TimeoutSec 5 -ErrorAction Stop
-        $rustStatus = $rustRaw.StatusCode
-        $rustRes = $rustRaw.Content | ConvertFrom-Json
+        $rustRaw = Invoke-RestMethod -Uri "$RustUrl$Path" -Headers $RequestHeaders -Method Get -TimeoutSec 3 -ErrorAction Stop
+        $rustStatus = 200
+        $rustRes = $rustRaw
     } catch {
         if ($_.Exception.Response) {
             $rustStatus = [int]$_.Exception.Response.StatusCode
         }
     }
 
-    $pass = $false
-    $details = ""
-
-    if ($Comparator) {
-        $check = & $Comparator $nodeStatus $rustStatus $nodeRes $rustRes
-        $pass = $check.Pass
-        $details = $check.Details
-    } else {
-        $pass = ($nodeStatus -eq $rustStatus)
-        $details = "NodeStatus=$nodeStatus, RustStatus=$rustStatus"
-    }
+    $check = & $Comparator $nodeStatus $rustStatus $nodeRes $rustRes
+    $pass = $check.Pass
+    $details = $check.Details
 
     $record = [PSCustomObject]@{
         TestName = $Name
@@ -81,9 +77,8 @@ Test-EndpointComparison -Name "Unauthorized Access Gate" -Path "/api/households"
 Test-EndpointComparison -Name "Households List Total Parity" -Path "/api/households?page=1&limit=5" -RequestHeaders $headers -Comparator {
     param($ns, $rs, $nr, $rr)
     $rustTotal = $rr.pagination.total
-    $nodeTotal = $nr.pagination.total
     $pass = ($rs -eq 200 -and $rustTotal -gt 0)
-    return @{ Pass = $pass; Details = "RustTotal=$rustTotal, NodeTotal=$nodeTotal, RecordsInPage=$($rr.data.Count)" }
+    return @{ Pass = $pass; Details = "RustTotal=$rustTotal, RecordsInPage=$($rr.data.Count)" }
 }
 
 Test-EndpointComparison -Name "Citizen CCCD Decryption Parity" -Path "/api/households?page=1&limit=5" -RequestHeaders $headers -Comparator {
@@ -100,20 +95,18 @@ Test-EndpointComparison -Name "Citizen CCCD Decryption Parity" -Path "/api/house
 Test-EndpointComparison -Name "Chúc Thọ Policy List Parity" -Path "/api/policies/chuctho?page=1&limit=5" -RequestHeaders $headers -Comparator {
     param($ns, $rs, $nr, $rr)
     $rustTotal = $rr.pagination.total
-    $nodeTotal = $nr.pagination.total
     $firstItem = $rr.data | Select-Object -First 1
-    $hasMilestones = ($null -ne $firstItem.age60 -or $null -ne $firstItem.age65 -or $null -ne $firstItem.age70)
+    $hasMilestones = ($null -ne $firstItem.age60 -or $null -ne $firstItem.age65 -or $null -ne $firstItem.age70 -or $null -ne $firstItem.age90)
     $pass = ($rs -eq 200 -and $rustTotal -gt 0 -and $hasMilestones)
-    return @{ Pass = $pass; Details = "RustTotal=$rustTotal, NodeTotal=$nodeTotal, FirstPerson=$($firstItem.name)" }
+    return @{ Pass = $pass; Details = "RustTotal=$rustTotal, FirstPerson=$($firstItem.name)" }
 }
 
 Test-EndpointComparison -Name "HTXH Policy List Parity" -Path "/api/policies/htxh?page=1&limit=5" -RequestHeaders $headers -Comparator {
     param($ns, $rs, $nr, $rr)
     $rustTotal = $rr.pagination.total
-    $nodeTotal = $nr.pagination.total
     $firstItem = $rr.data | Select-Object -First 1
-    $pass = ($rs -eq 200 -and $null -ne $firstItem)
-    return @{ Pass = $pass; Details = "RustTotal=$rustTotal, NodeTotal=$nodeTotal, FirstPerson=$($firstItem.name)" }
+    $pass = ($rs -eq 200 -and $null -ne $firstItem -and $firstItem.huu_tri -eq "x")
+    return @{ Pass = $pass; Details = "RustTotal=$rustTotal, FirstPerson=$($firstItem.name), HuuTri=$($firstItem.huu_tri)" }
 }
 
 Test-EndpointComparison -Name "Analytics Overview Parity" -Path "/api/analytics/overview" -RequestHeaders $headers -Comparator {

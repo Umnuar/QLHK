@@ -6,7 +6,10 @@ use axum::{
 };
 use qlhk_backend_rust::{
     config::AppConfig,
-    handlers::{analytics, citizens, households, policies},
+    handlers::{
+        analytics, audit, auth, backup, citizens, excel, households, policies, settings, updates,
+        users, villages,
+    },
     middlewares::auth::auth_middleware,
     state::AppState,
 };
@@ -23,8 +26,9 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 async fn health_check() -> Json<serde_json::Value> {
     Json(json!({
         "status": "ok",
+        "app": "qlhk-backend-rust",
         "service": "qlhk-backend-rust",
-        "version": "0.1.0"
+        "version": "1.5.1"
     }))
 }
 
@@ -61,12 +65,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest("/citizens", citizens::router())
         .nest("/policies", policies::router())
         .nest("/analytics", analytics::router())
+        .nest("/villages", villages::router())
+        .nest("/users", users::router())
+        .nest("/audit", audit::router())
+        .nest("/audit-logs", audit::router())
+        .nest("/excel", excel::router())
+        .nest("/backup", backup::router())
+        .nest("/settings", settings::router())
         .layer(from_fn(auth_middleware));
+
+    let public_api_routes = Router::new()
+        .nest("/auth", auth::router())
+        .nest("/updates", updates::router())
+        .route("/health", get(health_check))
+        .route("/ping", get(auth::ping).post(auth::ping).options(auth::ping));
 
     let app = Router::new()
         .route("/health", get(health_check))
-        .route("/api/health", get(health_check))
-        .nest("/api", protected_routes)
+        .route("/ping", get(auth::ping).post(auth::ping).options(auth::ping))
+        .nest("/updates", updates::router())
+        .nest("/api", public_api_routes.merge(protected_routes))
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state);

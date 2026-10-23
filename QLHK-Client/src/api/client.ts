@@ -27,20 +27,20 @@ export const BACKEND_PORT_METADATA: Record<
 export const getActiveBackendPort = (): BackendPort => {
 	if (typeof window !== "undefined") {
 		const saved = localStorage.getItem(STORAGE_KEY_BACKEND_PORT);
-		if (saved === "5012") return 5012;
 		if (saved === "5002") return 5002;
+		if (saved === "5012") return 5012;
 	}
-	return 5002;
+	return 5012;
 };
 
 export const API_BASE_URL =
-	import.meta.env.VITE_API_URL || "https://qlhk.dulieudakha.vn/api";
+	import.meta.env.VITE_API_URL || "http://localhost:5012/api";
 
 const getInitialBaseUrl = (): string => {
 	if (typeof window !== "undefined") {
 		const saved = localStorage.getItem(STORAGE_KEY_BACKEND_PORT);
-		if (saved === "5012") return "http://localhost:5012/api";
 		if (saved === "5002") return "http://localhost:5002/api";
+		if (saved === "5012") return "http://localhost:5012/api";
 	}
 	return API_BASE_URL;
 };

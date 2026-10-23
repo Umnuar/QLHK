@@ -1,4 +1,12 @@
 pub mod analytics;
+pub mod audit;
+pub mod auth;
+pub mod backup;
 pub mod citizens;
+pub mod excel;
 pub mod households;
 pub mod policies;
+pub mod settings;
+pub mod updates;
+pub mod users;
+pub mod villages;

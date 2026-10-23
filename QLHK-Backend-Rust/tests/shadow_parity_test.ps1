@@ -39,9 +39,11 @@ function Test-EndpointComparison {
     }
 
     try {
-        $rustRaw = Invoke-RestMethod -Uri "$RustUrl$Path" -Headers $RequestHeaders -Method Get -TimeoutSec 3 -ErrorAction Stop
-        $rustStatus = 200
-        $rustRes = $rustRaw
+        $rustRaw = Invoke-WebRequest -Uri "$RustUrl$Path" -Headers $RequestHeaders -Method Get -TimeoutSec 3 -UseBasicParsing -ErrorAction Stop
+        $rustStatus = [int]$rustRaw.StatusCode
+        if ($rustRaw.Content) {
+            try { $rustRes = $rustRaw.Content | ConvertFrom-Json } catch { $rustRes = $rustRaw.Content }
+        }
     } catch {
         if ($_.Exception.Response) {
             $rustStatus = [int]$_.Exception.Response.StatusCode
@@ -115,6 +117,72 @@ Test-EndpointComparison -Name "Analytics Overview Parity" -Path "/api/analytics/
     $totalCit = $rr.data.totalCitizens
     $pass = ($rs -eq 200 -and $totalHh -gt 0 -and $totalCit -gt 0)
     return @{ Pass = $pass; Details = "TotalHouseholds=$totalHh, TotalCitizens=$totalCit, Male=$($rr.data.gender.male.count), Female=$($rr.data.gender.female.count)" }
+}
+
+Test-EndpointComparison -Name "Villages List Parity" -Path "/api/villages" -RequestHeaders $headers -Comparator {
+    param($ns, $rs, $nr, $rr)
+    $pass = ($rs -eq 200 -and $rr.success -eq $true -and $rr.data.Count -gt 0)
+    return @{ Pass = $pass; Details = "RustStatus=$rs, VillagesCount=$($rr.data.Count)" }
+}
+
+Test-EndpointComparison -Name "Users List Parity" -Path "/api/users" -RequestHeaders $headers -Comparator {
+    param($ns, $rs, $nr, $rr)
+    $pass = ($rs -eq 200 -and $rr.success -eq $true -and $rr.data.Count -gt 0)
+    return @{ Pass = $pass; Details = "RustStatus=$rs, UsersCount=$($rr.data.Count)" }
+}
+
+Test-EndpointComparison -Name "Audit Logs List Parity" -Path "/api/audit?page=1&limit=5" -RequestHeaders $headers -Comparator {
+    param($ns, $rs, $nr, $rr)
+    $pass = ($rs -eq 200 -and $rr.success -eq $true -and $rr.pagination.total -gt 0)
+    return @{ Pass = $pass; Details = "RustStatus=$rs, TotalLogs=$($rr.pagination.total)" }
+}
+
+Test-EndpointComparison -Name "Audit Logs Alias Parity" -Path "/api/audit-logs?page=1&limit=5" -RequestHeaders $headers -Comparator {
+    param($ns, $rs, $nr, $rr)
+    $pass = ($rs -eq 200 -and $rr.success -eq $true -and $rr.pagination.total -gt 0)
+    return @{ Pass = $pass; Details = "RustStatus=$rs, TotalLogs=$($rr.pagination.total)" }
+}
+
+Test-EndpointComparison -Name "Settings List Parity" -Path "/api/settings" -RequestHeaders $headers -Comparator {
+    param($ns, $rs, $nr, $rr)
+    $pass = ($rs -eq 200 -and $rr.success -eq $true -and $rr.data.Count -gt 0)
+    return @{ Pass = $pass; Details = "RustStatus=$rs, SettingsCount=$($rr.data.Count)" }
+}
+
+Test-EndpointComparison -Name "Backup List Parity" -Path "/api/backup/list" -RequestHeaders $headers -Comparator {
+    param($ns, $rs, $nr, $rr)
+    $pass = ($rs -eq 200 -and $rr.success -eq $true)
+    return @{ Pass = $pass; Details = "RustStatus=$rs, Success=$($rr.success)" }
+}
+
+Test-EndpointComparison -Name "Desktop Updates Latest Parity" -Path "/api/updates/latest" -RequestHeaders @{} -Comparator {
+    param($ns, $rs, $nr, $rr)
+    $pass = ($rs -eq 200 -and $null -ne $rr.version)
+    return @{ Pass = $pass; Details = "RustStatus=$rs, Version=$($rr.version)" }
+}
+
+Test-EndpointComparison -Name "Root Ping Parity" -Path "/ping" -RequestHeaders @{} -Comparator {
+    param($ns, $rs, $nr, $rr)
+    $pass = ($rs -eq 204)
+    return @{ Pass = $pass; Details = "RustStatus=$rs (expected 204)" }
+}
+
+Test-EndpointComparison -Name "API Ping Parity" -Path "/api/ping" -RequestHeaders @{} -Comparator {
+    param($ns, $rs, $nr, $rr)
+    $pass = ($rs -eq 204)
+    return @{ Pass = $pass; Details = "RustStatus=$rs (expected 204)" }
+}
+
+Test-EndpointComparison -Name "Excel Template Download Parity" -Path "/api/excel/template" -RequestHeaders $headers -Comparator {
+    param($ns, $rs, $nr, $rr)
+    $pass = ($rs -eq 200)
+    return @{ Pass = $pass; Details = "RustStatus=$rs (expected 200 binary stream)" }
+}
+
+Test-EndpointComparison -Name "Excel ChucTho Export Parity" -Path "/api/excel/export/chuctho" -RequestHeaders $headers -Comparator {
+    param($ns, $rs, $nr, $rr)
+    $pass = ($rs -eq 200)
+    return @{ Pass = $pass; Details = "RustStatus=$rs (expected 200 binary stream)" }
 }
 
 $passedCount = ($results | Where-Object { $_.Passed }).Count

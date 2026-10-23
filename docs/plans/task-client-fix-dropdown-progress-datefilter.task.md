@@ -35,7 +35,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK/QLHK-Client && npx vitest run src/pages/__tests__/ChucThoPage.test.tsx`
   - Static Check: `cd QLHK/QLHK-Client && npx tsc --noEmit`
-- [ ] Step 4: Final Verification Gate & Zero Comments Invariant Audit
+- [x] Step 4: Final Verification Gate & Zero Comments Invariant Audit
   - Target Files: All modified client files
   - Role Focus: Full test suite pass (>= 182 tests), zero tsc errors, successful build, zero comments
   - Verification: `cd QLHK/QLHK-Client && npm test -- --run && npm run build`

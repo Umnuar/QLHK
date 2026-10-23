@@ -5,6 +5,7 @@ import type { SortDirection, SortKey, TabType } from "../types";
 export function useFilters(activeTab: TabType) {
 	const [ctSearch, setCtSearch] = useState("");
 	const ctDebouncedSearch = useDebounce(ctSearch, 250);
+	const [ctDateFilter, setCtDateFilter] = useState("");
 	const [ctAgeFilters, setCtAgeFilters] = useState<string[]>([]);
 	const [ctVillageFilters, setCtVillageFilters] = useState<number[]>([]);
 	const [ctStatusFilter, setCtStatusFilter] = useState("all");
@@ -20,6 +21,7 @@ export function useFilters(activeTab: TabType) {
 
 	const [hxSearch, setHxSearch] = useState("");
 	const hxDebouncedSearch = useDebounce(hxSearch, 250);
+	const [hxDateFilter, setHxDateFilter] = useState("");
 	const [hxAgeFilters, setHxAgeFilters] = useState<string[]>([]);
 	const [hxVillageFilters, setHxVillageFilters] = useState<number[]>([]);
 	const [hxStatusFilter, setHxStatusFilter] = useState("all");
@@ -44,6 +46,7 @@ export function useFilters(activeTab: TabType) {
 	useEffect(() => {
 		if (
 			ctDebouncedSearch !== undefined ||
+			ctDateFilter !== undefined ||
 			ctStatusFilter !== undefined ||
 			ctAgeFilters.length >= 0 ||
 			ctVillageFilters.length >= 0 ||
@@ -53,11 +56,12 @@ export function useFilters(activeTab: TabType) {
 		) {
 			setCtCurrentPage(1);
 		}
-	}, [ctDebouncedSearch, ctStatusFilter, ctAgeFilters, ctVillageFilters, ctGenderFilter, ctEthnicityFilter, ctResidenceFilter]);
+	}, [ctDebouncedSearch, ctDateFilter, ctStatusFilter, ctAgeFilters, ctVillageFilters, ctGenderFilter, ctEthnicityFilter, ctResidenceFilter]);
 
 	useEffect(() => {
 		if (
 			hxDebouncedSearch !== undefined ||
+			hxDateFilter !== undefined ||
 			hxStatusFilter !== undefined ||
 			hxAgeFilters.length >= 0 ||
 			hxVillageFilters.length >= 0 ||
@@ -67,7 +71,7 @@ export function useFilters(activeTab: TabType) {
 		) {
 			setHxCurrentPage(1);
 		}
-	}, [hxDebouncedSearch, hxStatusFilter, hxAgeFilters, hxVillageFilters, hxGenderFilter, hxEthnicityFilter, hxResidenceFilter]);
+	}, [hxDebouncedSearch, hxDateFilter, hxStatusFilter, hxAgeFilters, hxVillageFilters, hxGenderFilter, hxEthnicityFilter, hxResidenceFilter]);
 
 	const isCt = activeTab === "chuctho";
 
@@ -75,6 +79,9 @@ export function useFilters(activeTab: TabType) {
 	const setSearch = (val: string) => (isCt ? setCtSearch(val) : setHxSearch(val));
 
 	const debouncedSearch = isCt ? ctDebouncedSearch : hxDebouncedSearch;
+
+	const dateFilter = isCt ? ctDateFilter : hxDateFilter;
+	const setDateFilter = (val: string) => (isCt ? setCtDateFilter(val) : setHxDateFilter(val));
 
 	const ageFilters = isCt ? ctAgeFilters : hxAgeFilters;
 	const setAgeFilters = (val: string[] | ((prev: string[]) => string[])) =>
@@ -119,6 +126,7 @@ export function useFilters(activeTab: TabType) {
 	const resetFilters = () => {
 		if (isCt) {
 			setCtSearch("");
+			setCtDateFilter("");
 			setCtStatusFilter("all");
 			setCtGenderFilter("");
 			setCtEthnicityFilter("");
@@ -128,6 +136,7 @@ export function useFilters(activeTab: TabType) {
 			setCtCurrentPage(1);
 		} else {
 			setHxSearch("");
+			setHxDateFilter("");
 			setHxStatusFilter("all");
 			setHxGenderFilter("");
 			setHxEthnicityFilter("");
@@ -153,6 +162,8 @@ export function useFilters(activeTab: TabType) {
 		search,
 		setSearch,
 		debouncedSearch,
+		dateFilter,
+		setDateFilter,
 		ageFilters,
 		setAgeFilters,
 		villageFilters,

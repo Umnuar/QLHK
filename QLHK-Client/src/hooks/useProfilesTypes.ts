@@ -10,6 +10,7 @@ export interface FilterParams {
 	genderFilter?: string;
 	ethnicityFilter?: string;
 	residenceFilter?: string;
+	dateFilter?: string;
 	setCurrentPage?: (page: number) => void;
 	setItemsPerPage?: (limit: number) => void;
 	setPage?: (page: number) => void;

@@ -109,6 +109,7 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 	const profileFilters = useMemo(
 		() => ({
 			debouncedSearch: filters.debouncedSearch,
+			dateFilter: filters.dateFilter,
 			statusFilter: filters.statusFilter,
 			ageFilters: ageMilestoneFilter ? [ageMilestoneFilter] : EMPTY_AGE_FILTERS,
 			villageFilters: filters.villageFilters,
@@ -124,6 +125,7 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 		}),
 		[
 			filters.debouncedSearch,
+			filters.dateFilter,
 			filters.statusFilter,
 			ageMilestoneFilter,
 			filters.villageFilters,
@@ -478,6 +480,8 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 				activeTab={activeTab}
 				search={filters.search}
 				setSearch={filters.setSearch}
+				dateFilter={filters.dateFilter}
+				onDateChange={filters.setDateFilter}
 				loading={isLoadingLogs || isBulkUpdating}
 				onRefresh={loadProfiles}
 				selectedVillageId={effectiveVillageId}

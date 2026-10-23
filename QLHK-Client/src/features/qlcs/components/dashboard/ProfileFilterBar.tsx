@@ -1,4 +1,5 @@
 import {
+	Calendar,
 	CheckCircle2,
 	ChevronDown,
 	Circle,
@@ -20,6 +21,8 @@ export interface ProfileFilterBarProps {
 	activeTab: "chuctho" | "htxh";
 	search: string;
 	setSearch: (val: string) => void;
+	dateFilter?: string;
+	onDateChange?: (val: string) => void;
 	loading: boolean;
 	onRefresh: () => void;
 	selectedVillageId: string;
@@ -104,6 +107,8 @@ export const ProfileFilterBar: React.FC<ProfileFilterBarProps> = ({
 	activeTab,
 	search,
 	setSearch,
+	dateFilter,
+	onDateChange,
 	loading,
 	onRefresh,
 	selectedVillageId,
@@ -155,6 +160,7 @@ export const ProfileFilterBar: React.FC<ProfileFilterBarProps> = ({
 
 	const activeFiltersCount = [
 		Boolean(search.trim()),
+		Boolean(dateFilter?.trim()),
 		Boolean(ageMilestoneFilter),
 		Boolean(genderFilter),
 		Boolean(ethnicityFilter),
@@ -173,6 +179,7 @@ export const ProfileFilterBar: React.FC<ProfileFilterBarProps> = ({
 			onClearAllFilters();
 		} else {
 			setSearch("");
+			if (onDateChange) onDateChange("");
 			onAgeMilestoneChange("");
 			setGenderFilter("");
 			setEthnicityFilter("");
@@ -256,6 +263,40 @@ export const ProfileFilterBar: React.FC<ProfileFilterBarProps> = ({
 					onYearChange={onYearChange}
 				/>
 			</div>
+
+			{activeTab === "chuctho" && (
+				<div className="relative w-36 sm:w-44 shrink-0">
+					<Calendar
+						className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+							dateFilter?.trim()
+								? "text-emerald-600 dark:text-emerald-400"
+								: "text-slate-400 dark:text-slate-500"
+						}`}
+						strokeWidth={1.5}
+					/>
+					<input
+						type="text"
+						value={dateFilter || ""}
+						onChange={(e) => onDateChange?.(e.target.value)}
+						placeholder="Lọc ngày sinh..."
+						className={`w-full h-8 sm:h-9 pl-8.5 pr-8 rounded-xl text-xs placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden transition-all ${
+							dateFilter?.trim()
+								? "bg-emerald-50/70 dark:bg-emerald-950/50 border border-emerald-500/80 dark:border-emerald-600 text-emerald-900 dark:text-emerald-200 font-bold focus:ring-2 focus:ring-emerald-500/20"
+								: "bg-white dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-medium hover:border-slate-300 dark:hover:border-slate-600 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+						}`}
+					/>
+					{dateFilter && (
+						<button
+							type="button"
+							onClick={() => onDateChange?.("")}
+							aria-label="Xóa lọc ngày"
+							className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-emerald-700 hover:text-emerald-900 dark:text-emerald-300 dark:hover:text-emerald-100 rounded-full hover:bg-emerald-200/60 dark:hover:bg-emerald-900/60 transition-colors cursor-pointer"
+						>
+							<X className="w-3.5 h-3.5" strokeWidth={2} />
+						</button>
+					)}
+				</div>
+			)}
 
 			<div className="w-40 shrink-0">
 				<CustomSelect

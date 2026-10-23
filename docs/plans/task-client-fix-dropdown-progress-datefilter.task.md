@@ -29,7 +29,7 @@
   - Diff Budget: <= 200 gross LOC
   - Verification: `cd QLHK/QLHK-Client && npx vitest run src/pages/__tests__/PolicyAnalyticsPage.test.tsx`
   - Static Check: `cd QLHK/QLHK-Client && npx tsc --noEmit`
-- [ ] Step 3: Implement Chúc Thọ Date Filter in ProfileFilterBar and Dashboard
+- [x] Step 3: Implement Chúc Thọ Date Filter in ProfileFilterBar and Dashboard
   - Target Files: `QLHK/QLHK-Client/src/features/qlcs/components/dashboard/ProfileFilterBar.tsx`, `QLHK/QLHK-Client/src/hooks/useFilters.ts`, `QLHK/QLHK-Client/src/hooks/useProfilesTypes.ts`, `QLHK/QLHK-Client/src/hooks/useProfiles.ts`, `QLHK/QLHK-Client/src/features/qlcs/pages/DashboardPage.tsx`
   - Role Focus: Date filter input, dateFilter state wiring, passing dob to queryParams, clear-all support
   - Diff Budget: <= 200 gross LOC

@@ -173,7 +173,7 @@ export function useProfiles(
 	const {
 		debouncedSearch, statusFilter, ageFilters, genderFilter,
 		ethnicityFilter, residenceFilter, sortKey, sortDirection,
-		currentPage, itemsPerPage,
+		currentPage, itemsPerPage, dateFilter,
 	} = filters;
 
 	const ageGroup = ageFilters?.[0] || undefined;
@@ -185,7 +185,7 @@ export function useProfiles(
 
 		const vid = isGlobal || !villageId || villageId === "all" ? undefined : villageId?.trim() || undefined;
 		const yearTag = globalCalculationYear && globalCalculationYear > 0 ? `y${globalCalculationYear}` : "yall";
-		const cacheKey = `profiles_${activeTab}_${vid || "all"}_${yearTag}_p${currentPage}_l${itemsPerPage}_${statusFilter}_${genderFilter || ""}_${ethnicityFilter || ""}_${residenceFilter || ""}_${ageGroup || ""}_${debouncedSearch || ""}`;
+		const cacheKey = `profiles_${activeTab}_${vid || "all"}_${yearTag}_p${currentPage}_l${itemsPerPage}_${statusFilter}_${genderFilter || ""}_${ethnicityFilter || ""}_${residenceFilter || ""}_${ageGroup || ""}_${debouncedSearch || ""}_${dateFilter || ""}`;
 
 		try {
 			const cached = await getCache<any>(cacheKey);
@@ -209,6 +209,7 @@ export function useProfiles(
 		try {
 			const queryParams = {
 				villageId: vid, search: debouncedSearch || undefined,
+				dob: dateFilter?.trim() || undefined,
 				status: statusFilter !== "all" ? statusFilter : undefined, ageGroup,
 				gender: genderFilter || undefined, ethnicity: ethnicityFilter || undefined,
 				residence: residenceFilter || undefined, sortKey: sortKey || undefined,
@@ -245,7 +246,7 @@ export function useProfiles(
 				setTotal(fallback.length);
 			}
 		}
-	}, [isGlobal, villageId, activeTab, currentPage, itemsPerPage, statusFilter, ageGroup, genderFilter, ethnicityFilter, residenceFilter, debouncedSearch, sortKey, sortDirection, globalCalculationYear]);
+	}, [isGlobal, villageId, activeTab, currentPage, itemsPerPage, statusFilter, ageGroup, genderFilter, ethnicityFilter, residenceFilter, debouncedSearch, dateFilter, sortKey, sortDirection, globalCalculationYear]);
 
 	const loadStats = useCallback(async () => {
 		try {

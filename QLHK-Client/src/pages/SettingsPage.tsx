@@ -2,6 +2,7 @@ import {
 	Building2,
 	CheckCircle2,
 	Database,
+	Edit3,
 	Eye,
 	EyeOff,
 	Info,
@@ -63,6 +64,17 @@ export const SettingsPage: React.FC = () => {
 	const [newUserPassword, setNewUserPassword] = useState("");
 	const [newUserVillageId, setNewUserVillageId] = useState("");
 	const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
+	const [newUserModuleAccess, setNewUserModuleAccess] = useState<
+		"all" | "qlhk" | "qlcs"
+	>("all");
+
+	const [editUser, setEditUser] = useState<User | null>(null);
+	const [editRole, setEditRole] = useState<"admin" | "user">("user");
+	const [editVillageId, setEditVillageId] = useState("");
+	const [editModuleAccess, setEditModuleAccess] = useState<
+		"all" | "qlhk" | "qlcs"
+	>("all");
+	const [loadingEditUser, setLoadingEditUser] = useState(false);
 
 	const [resetPwdUser, setResetPwdUser] = useState<User | null>(null);
 	const [resetPwdValue, setResetPwdValue] = useState("");
@@ -124,12 +136,14 @@ export const SettingsPage: React.FC = () => {
 					newUserRole === "user"
 						? newUserVillageId || villages[0]?.id || null
 						: null,
+				module_access: newUserModuleAccess,
 			});
 			setIsAddUserOpen(false);
 			setNewUsername("");
 			setNewUserPassword("");
 			setNewUserVillageId("");
 			setNewUserRole("user");
+			setNewUserModuleAccess("all");
 			fetchUsers();
 			showModal({
 				title: "Thành công",
@@ -143,6 +157,42 @@ export const SettingsPage: React.FC = () => {
 					err.response?.data?.error || err.message || "Không thể tạo tài khoản",
 				type: "danger",
 			});
+		}
+	};
+
+	const handleOpenEditUser = (u: User) => {
+		setEditUser(u);
+		setEditRole(u.role || "user");
+		setEditVillageId(u.village_id || "");
+		setEditModuleAccess(u.module_access || "all");
+	};
+
+	const handleSaveEditUser = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!editUser) return;
+		setLoadingEditUser(true);
+		try {
+			await authApi.updateUser(editUser.id, {
+				role: editRole,
+				village_id: editRole === "user" ? editVillageId || null : null,
+				module_access: editModuleAccess,
+			});
+			setEditUser(null);
+			fetchUsers();
+			showModal({
+				title: "Thành công",
+				message: `Cập nhật thông tin cán bộ ${editUser.username} thành công.`,
+				type: "success",
+			});
+		} catch (err: any) {
+			showModal({
+				title: "Lỗi",
+				message:
+					err?.response?.data?.message || err.message || "Cập nhật thất bại.",
+				type: "danger",
+			});
+		} finally {
+			setLoadingEditUser(false);
 		}
 	};
 
@@ -426,6 +476,21 @@ export const SettingsPage: React.FC = () => {
 										/>
 									</div>
 								)}
+								<div>
+									<CustomSelect
+										label="Phân quyền Module"
+										value={newUserModuleAccess}
+										onChange={(val) => setNewUserModuleAccess(val as any)}
+										options={[
+											{
+												value: "all",
+												label: "Toàn bộ hệ thống (Hộ khẩu & Chính sách)",
+											},
+											{ value: "qlhk", label: "Chỉ Quản lý Hộ khẩu" },
+											{ value: "qlcs", label: "Chỉ Quản lý Chính sách" },
+										]}
+									/>
+								</div>
 							</div>
 
 							<div className="flex justify-end gap-2 pt-2">
@@ -526,6 +591,101 @@ export const SettingsPage: React.FC = () => {
 							document.body,
 						)}
 
+					{editUser &&
+						typeof document !== "undefined" &&
+						createPortal(
+							<div
+								className="fixed inset-0 !m-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 dark:bg-black/70 backdrop-blur-xs select-none animate-in fade-in duration-150"
+								onClick={(e) => {
+									if (e.target === e.currentTarget) setEditUser(null);
+								}}
+								role="dialog"
+								aria-modal="true"
+							>
+								<form
+									onSubmit={handleSaveEditUser}
+									className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-w-md w-full animate-in zoom-in-95 duration-150"
+									onClick={(e) => e.stopPropagation()}
+								>
+									<div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+										<h4 className="text-sm font-bold text-slate-900 dark:text-white">
+											Phân Quyền & Vai Trò:{" "}
+											<strong className="text-emerald-600">
+												{editUser.username}
+											</strong>
+										</h4>
+										<button
+											type="button"
+											onClick={() => setEditUser(null)}
+											className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+											aria-label="Đóng modal"
+										>
+											<X className="w-4 h-4" strokeWidth={1.5} />
+										</button>
+									</div>
+									<div className="space-y-3">
+										<div>
+											<CustomSelect
+												label="Vai trò"
+												value={editRole}
+												onChange={(val) => setEditRole(val as any)}
+												options={[
+													{ value: "user", label: "Cán bộ Thôn (User)" },
+													{ value: "admin", label: "Quản trị viên Xã (Admin)" },
+												]}
+											/>
+										</div>
+										{editRole === "user" && (
+											<div>
+												<CustomSelect
+													label="Phân công Thôn"
+													value={editVillageId}
+													onChange={(val) => setEditVillageId(String(val))}
+													options={villages.map((v) => ({
+														value: v.id,
+														label: v.name,
+													}))}
+													placeholder="Chọn thôn phụ trách"
+												/>
+											</div>
+										)}
+										<div>
+											<CustomSelect
+												label="Phân quyền Module"
+												value={editModuleAccess}
+												onChange={(val) => setEditModuleAccess(val as any)}
+												options={[
+													{
+														value: "all",
+														label: "Toàn bộ hệ thống (Hộ khẩu & Chính sách)",
+													},
+													{ value: "qlhk", label: "Chỉ Quản lý Hộ khẩu" },
+													{ value: "qlcs", label: "Chỉ Quản lý Chính sách" },
+												]}
+											/>
+										</div>
+									</div>
+									<div className="flex justify-end gap-2 pt-2">
+										<button
+											type="button"
+											onClick={() => setEditUser(null)}
+											className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold cursor-pointer active:scale-95"
+										>
+											Hủy
+										</button>
+										<button
+											type="submit"
+											disabled={loadingEditUser}
+											className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold shadow-xs cursor-pointer active:scale-95 disabled:opacity-50"
+										>
+											{loadingEditUser ? "Đang lưu..." : "Lưu Thay Đổi"}
+										</button>
+									</div>
+								</form>
+							</div>,
+							document.body,
+						)}
+
 					<div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
 						<div className="overflow-x-auto">
 							<table className="w-full text-xs text-left border-separate border-spacing-0 whitespace-nowrap">
@@ -539,6 +699,9 @@ export const SettingsPage: React.FC = () => {
 										</th>
 										<th className="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
 											Địa Bàn Phụ Trách
+										</th>
+										<th className="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
+											Phân Quyền Module
 										</th>
 										<th className="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
 											Trạng Thái
@@ -584,6 +747,23 @@ export const SettingsPage: React.FC = () => {
 													{villageName}
 												</td>
 												<td className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+													<span
+														className={`px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase ${
+															u.module_access === "qlcs"
+																? "bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60"
+																: u.module_access === "qlhk"
+																? "bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60"
+																: "bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+														}`}
+													>
+														{u.module_access === "qlcs"
+															? "Chính sách"
+															: u.module_access === "qlhk"
+															? "Hộ khẩu"
+															: "Toàn bộ"}
+													</span>
+												</td>
+												<td className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
 													<div className="flex items-center gap-1.5">
 														<span
 															className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"}`}
@@ -595,6 +775,18 @@ export const SettingsPage: React.FC = () => {
 												</td>
 												<td className="px-4 py-3 text-right border-b border-slate-100 dark:border-slate-800">
 													<div className="flex items-center justify-end gap-1.5">
+														<button
+															type="button"
+															onClick={() => handleOpenEditUser(u)}
+															className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors cursor-pointer"
+															title="Sửa thông tin / phân quyền cán bộ"
+															aria-label={`Sửa tài khoản ${u.username}`}
+														>
+															<Edit3
+																className="w-3.5 h-3.5"
+																strokeWidth={1.5}
+															/>
+														</button>
 														<button
 															type="button"
 															onClick={() => {
@@ -633,7 +825,7 @@ export const SettingsPage: React.FC = () => {
 									{usersList.length === 0 && (
 										<tr>
 											<td
-												colSpan={5}
+												colSpan={6}
 												className="px-4 py-8 text-center text-slate-400"
 											>
 												Chưa có tài khoản cán bộ nào

@@ -47,7 +47,7 @@ export interface ProfileModalProps {
 export type ProfileDrawerProps = ProfileModalProps;
 
 const inputClasses =
-	"w-full px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all outline-hidden bg-slate-50 border border-slate-300 text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:bg-slate-800/80 dark:border-slate-700/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:bg-slate-800 dark:focus:border-emerald-500 dark:focus:ring-2 dark:focus:ring-emerald-500/20";
+	"w-full px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all outline-hidden bg-slate-50 border border-slate-300 text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100 dark:bg-slate-800/80 dark:border-slate-700/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:bg-slate-800 dark:focus:border-emerald-500 dark:focus:ring-2 dark:focus:ring-emerald-500/20 dark:disabled:bg-slate-800/40";
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({
 	isOpen,
@@ -65,6 +65,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 }) => {
 	const { user } = useApp();
 	const isVillageOfficer = user?.role === "user";
+	const isHtxhEdit = activeTab === "htxh" && !isNew;
 
 	const [currentTab, setCurrentTab] = useState<"info" | "history">("info");
 	const [isSaving, setIsSaving] = useState(false);
@@ -267,6 +268,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 	};
 
 	const validate = () => {
+		if (isHtxhEdit) return true;
 		const errors: Record<string, string> = {};
 		if (!formData.name || !formData.name.trim()) {
 			errors.name = "Họ và tên không được để trống";
@@ -298,6 +300,27 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
 		setIsSaving(true);
 		try {
+			if (isHtxhEdit) {
+				const htxhPayload: any = {
+					age75plus: formData.age75plus ? "x" : "",
+					age70to74poor: formData.age70to74poor ? "x" : "",
+					bao_tro: formData.bao_tro ? "x" : "",
+					huu_tri: formData.huu_tri ? "x" : "",
+					huu_tuat_bao_hiem: formData.huu_tuat_bao_hiem ? "x" : "",
+					nguoi_co_cong: formData.nguoi_co_cong ? "x" : "",
+					current_address:
+						formData.currentAddress || formData.current_address || "",
+					notes: formData.notes || "",
+					received: Boolean(formData.received),
+					calculation_year: calculationYear,
+				};
+				const saveResult = await onSave(htxhPayload);
+				if (saveResult === false) {
+					return;
+				}
+				onClose();
+				return;
+			}
 			const payload: any = { ...formData };
 			if (isVillageOfficer && user?.village_id) {
 				payload.village_id = user.village_id;
@@ -457,6 +480,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 							onSubmit={handleSave}
 							className="space-y-4"
 						>
+							{isHtxhEdit && (
+								<div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-semibold">
+									Thông tin nhân khẩu được liên kết từ Quản lý Hộ khẩu (QLHK). Chỉ được chỉnh sửa nơi ở hiện nay, ghi chú và các diện hưởng HTXH.
+								</div>
+							)}
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
 								<div>
@@ -470,6 +498,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 										id="modal-input-name"
 										ref={nameInputRef}
 										type="text"
+										disabled={isHtxhEdit}
 										value={formData.name || ""}
 										onChange={(e) =>
 											setFormData({ ...formData, name: e.target.value })
@@ -495,6 +524,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 									<input
 										id="modal-input-dob"
 										type="text"
+										disabled={isHtxhEdit}
 										value={formData.dob || ""}
 										onChange={(e) =>
 											setFormData({ ...formData, dob: e.target.value })
@@ -512,6 +542,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 								<div>
 									<CustomSelect
 										label="Giới tính"
+										disabled={isHtxhEdit}
 										value={formData.gender || "Nam"}
 										onChange={(val) =>
 											setFormData({ ...formData, gender: val })
@@ -530,6 +561,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 									<input
 										id="modal-input-cccd"
 										type="text"
+										disabled={isHtxhEdit}
 										value={formData.cccd || ""}
 										maxLength={12}
 										onChange={(e) =>
@@ -548,6 +580,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 								<div>
 									<CustomSelect
 										label="Dân tộc"
+										disabled={isHtxhEdit}
 										value={formData.ethnicity || "Kinh"}
 										onChange={(val) =>
 											setFormData({ ...formData, ethnicity: val })
@@ -580,6 +613,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 										<div>
 											<CustomSelect
 												label="Thuộc Thôn"
+												disabled={isHtxhEdit}
 												value={formData.village_id || ""}
 												onChange={(val) =>
 													setFormData({ ...formData, village_id: val })
@@ -610,6 +644,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 									<input
 										id="modal-input-residence"
 										type="text"
+										disabled={isHtxhEdit}
 										value={formData.residence || ""}
 										onChange={(e) =>
 											setFormData({ ...formData, residence: e.target.value })

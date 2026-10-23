@@ -1,6 +1,7 @@
 import { Check, ChevronDown, Search, X } from "lucide-react";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export interface SelectOption<T = string | number> {
 	value: T;
@@ -60,7 +61,14 @@ export function CustomSelect<T extends string | number = string | number>({
 	const [isOpen, setIsOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [openUpward, setOpenUpward] = useState(false);
+	const [menuPosition, setMenuPosition] = useState<{
+		top: number;
+		left: number;
+		width: number;
+	}>({ top: 0, left: 0, width: 0 });
+
 	const containerRef = useRef<HTMLDivElement>(null);
+	const dropdownRef = useRef<HTMLDivElement>(null);
 	const searchInputRef = useRef<HTMLInputElement>(null);
 
 	const normalizedOptions = useMemo<SelectOption<T>[]>(() => {
@@ -99,12 +107,43 @@ export function CustomSelect<T extends string | number = string | number>({
 		});
 	}, [normalizedOptions, searchQuery, shouldShowSearch]);
 
+	const updatePosition = () => {
+		if (!containerRef.current) return;
+		const rect = containerRef.current.getBoundingClientRect();
+		const spaceBelow = window.innerHeight - rect.bottom;
+		const upward = spaceBelow < 240 && rect.top > spaceBelow;
+		setOpenUpward(upward);
+
+		const menuHeight = dropdownRef.current?.offsetHeight || 220;
+		const measuredWidth =
+			rect.width > 0 ? rect.width : containerRef.current.offsetWidth || 160;
+		const targetTop = upward
+			? Math.max(8, rect.top - menuHeight - 6)
+			: rect.bottom + 6;
+
+		setMenuPosition({
+			top: targetTop,
+			left: rect.left,
+			width: measuredWidth,
+		});
+	};
+
 	useEffect(() => {
-		if (isOpen && containerRef.current) {
-			const rect = containerRef.current.getBoundingClientRect();
-			const spaceBelow = window.innerHeight - rect.bottom;
-			setOpenUpward(spaceBelow < 240);
-		}
+		if (!isOpen) return;
+
+		updatePosition();
+
+		const handleScrollOrResize = () => {
+			updatePosition();
+		};
+
+		window.addEventListener("scroll", handleScrollOrResize, true);
+		window.addEventListener("resize", handleScrollOrResize);
+
+		return () => {
+			window.removeEventListener("scroll", handleScrollOrResize, true);
+			window.removeEventListener("resize", handleScrollOrResize);
+		};
 	}, [isOpen]);
 
 	useEffect(() => {
@@ -120,10 +159,11 @@ export function CustomSelect<T extends string | number = string | number>({
 		if (!isOpen) return;
 
 		const handleClickOutside = (e: MouseEvent) => {
-			if (
-				containerRef.current &&
-				!containerRef.current.contains(e.target as Node)
-			) {
+			const target = e.target as Node;
+			const isInsideContainer = containerRef.current?.contains(target);
+			const isInsideDropdown = dropdownRef.current?.contains(target);
+
+			if (!isInsideContainer && !isInsideDropdown) {
 				setIsOpen(false);
 				setSearchQuery("");
 			}
@@ -334,102 +374,112 @@ export function CustomSelect<T extends string | number = string | number>({
 				</p>
 			)}
 
-			{isOpen && (
-				<div
-					role="listbox"
-					className={`absolute left-0 right-0 z-[120] ${
-						openUpward ? "bottom-full mb-1.5" : "top-full mt-1.5"
-					} bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-2xl shadow-xl shadow-slate-950/20 dark:shadow-slate-950/60 overflow-hidden animate-in fade-in zoom-in-95 duration-150 ${dropdownClassName}`}
-				>
-					{shouldShowSearch && (
-						<div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
-							<div className="relative flex items-center">
-								<Search
-									className="w-3.5 h-3.5 absolute left-2.5 text-slate-400 dark:text-slate-500 pointer-events-none"
-									strokeWidth={1.5}
-								/>
-								<input
-									ref={searchInputRef}
-									type="text"
-									value={searchQuery}
-									onChange={(e) => setSearchQuery(e.target.value)}
-									placeholder="Tìm kiếm..."
-									className="w-full pl-8 pr-7 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-									onClick={(e) => e.stopPropagation()}
-								/>
-								{searchQuery && (
-									<button
-										type="button"
-										onClick={() => setSearchQuery("")}
-										aria-label="Xóa tìm kiếm"
-										className="absolute right-2 p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-									>
-										<X className="w-3.5 h-3.5" strokeWidth={1.5} />
-									</button>
-								)}
+			{isOpen &&
+				typeof document !== "undefined" &&
+				createPortal(
+					<div
+						ref={dropdownRef}
+						role="listbox"
+						style={{
+							position: "fixed",
+							top: `${menuPosition.top}px`,
+							left: `${menuPosition.left}px`,
+							width: `${menuPosition.width}px`,
+							minWidth: "160px",
+							zIndex: 9999,
+						}}
+						className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-2xl shadow-xl shadow-slate-950/20 dark:shadow-slate-950/60 overflow-hidden animate-in fade-in zoom-in-95 duration-150 ${dropdownClassName}`}
+					>
+						{shouldShowSearch && (
+							<div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
+								<div className="relative flex items-center">
+									<Search
+										className="w-3.5 h-3.5 absolute left-2.5 text-slate-400 dark:text-slate-500 pointer-events-none"
+										strokeWidth={1.5}
+									/>
+									<input
+										ref={searchInputRef}
+										type="text"
+										value={searchQuery}
+										onChange={(e) => setSearchQuery(e.target.value)}
+										placeholder="Tìm kiếm..."
+										className="w-full pl-8 pr-7 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+										onClick={(e) => e.stopPropagation()}
+									/>
+									{searchQuery && (
+										<button
+											type="button"
+											onClick={() => setSearchQuery("")}
+											aria-label="Xóa tìm kiếm"
+											className="absolute right-2 p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+										>
+											<X className="w-3.5 h-3.5" strokeWidth={1.5} />
+										</button>
+									)}
+								</div>
 							</div>
-						</div>
-					)}
+						)}
 
-					<div className="max-h-56 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
-						{filteredOptions.length === 0 ? (
-							<div className="py-6 px-3 text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
-								Không tìm thấy kết quả
-							</div>
-						) : (
-							filteredOptions.map((opt) => {
-								const isSelected = opt.value === value;
-								return (
-									<button
-										key={String(opt.value)}
-										type="button"
-										role="option"
-										aria-selected={isSelected}
-										disabled={opt.disabled}
-										onClick={() => handleSelect(opt)}
-										className={`w-full flex items-center justify-between gap-2 rounded-xl text-left transition-colors cursor-pointer select-none ${
-											sizeStyles.option
-										} ${
-											isSelected
-												? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold"
-												: "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/90"
-										} ${opt.disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
-									>
-										<div className="flex flex-col min-w-0 flex-1">
-											<div className="flex items-center gap-1.5">
-												<span className="truncate">{opt.label}</span>
-												{opt.badge && (
-													<span
-														className={`shrink-0 px-1.5 py-0.2 text-[10px] font-semibold rounded-md border ${
-															isSelected
-																? "bg-emerald-100/80 dark:bg-emerald-900/80 text-emerald-900 dark:text-emerald-200 border-emerald-300/80 dark:border-emerald-700/80"
-																: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
-														}`}
-													>
-														{opt.badge}
+						<div className="max-h-56 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
+							{filteredOptions.length === 0 ? (
+								<div className="py-6 px-3 text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
+									Không tìm thấy kết quả
+								</div>
+							) : (
+								filteredOptions.map((opt) => {
+									const isSelected = opt.value === value;
+									return (
+										<button
+											key={String(opt.value)}
+											type="button"
+											role="option"
+											aria-selected={isSelected}
+											disabled={opt.disabled}
+											onClick={() => handleSelect(opt)}
+											className={`w-full flex items-center justify-between gap-2 rounded-xl text-left transition-colors cursor-pointer select-none ${
+												sizeStyles.option
+											} ${
+												isSelected
+													? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold"
+													: "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/90"
+											} ${opt.disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
+										>
+											<div className="flex flex-col min-w-0 flex-1">
+												<div className="flex items-center gap-1.5">
+													<span className="truncate">{opt.label}</span>
+													{opt.badge && (
+														<span
+															className={`shrink-0 px-1.5 py-0.2 text-[10px] font-semibold rounded-md border ${
+																isSelected
+																	? "bg-emerald-100/80 dark:bg-emerald-900/80 text-emerald-900 dark:text-emerald-200 border-emerald-300/80 dark:border-emerald-700/80"
+																	: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+															}`}
+														>
+															{opt.badge}
+														</span>
+													)}
+												</div>
+												{opt.subLabel && (
+													<span className="text-[11px] text-slate-400 dark:text-slate-500 font-normal truncate">
+														{opt.subLabel}
 													</span>
 												)}
 											</div>
-											{opt.subLabel && (
-												<span className="text-[11px] text-slate-400 dark:text-slate-500 font-normal truncate">
-													{opt.subLabel}
-												</span>
-											)}
-										</div>
 
-										{isSelected && (
-											<Check
-												className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 ml-1.5"
-												strokeWidth={2}
-											/>
-										)}
-									</button>
-								);
-							})
-						)}
-					</div>
-				</div>
-			)}
+											{isSelected && (
+												<Check
+													className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 ml-1.5"
+													strokeWidth={2}
+												/>
+											)}
+										</button>
+									);
+								})
+							)}
+						</div>
+					</div>,
+					document.body,
+				)}
 		</div>
 	);
 }

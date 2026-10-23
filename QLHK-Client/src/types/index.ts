@@ -61,6 +61,7 @@ export interface User {
 	full_name?: string;
 	created_at?: string;
 	is_online?: boolean;
+	module_access?: "all" | "qlhk" | "qlcs";
 }
 
 export interface Village {

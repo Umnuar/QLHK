@@ -219,6 +219,7 @@ export const authApi = {
 			full_name?: string;
 			role?: "admin" | "user";
 			village_id?: string | null;
+			module_access?: "all" | "qlhk" | "qlcs";
 		},
 	): Promise<User> {
 		const res = await apiClient.put(`/users/${userId}`, data);
@@ -239,6 +240,7 @@ export const authApi = {
 		role: "admin" | "user";
 		village_id?: string | null;
 		full_name?: string;
+		module_access?: "all" | "qlhk" | "qlcs";
 	}): Promise<User> {
 		const res = await apiClient.post("/users", userData);
 		const createdUser = res.data?.data || res.data?.user || res.data;

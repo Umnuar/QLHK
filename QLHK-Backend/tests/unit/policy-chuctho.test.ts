@@ -67,6 +67,39 @@ describe("Policy Chúc Thọ Controller", () => {
     expect(res.status).toHaveBeenCalledWith(409);
   });
 
+  it("strips system and relation fields before updating", async () => {
+    const req: any = {
+      params: { id: validUuid },
+      body: {
+        id: validUuid,
+        village: { id: "v-1", name: "Thôn 1" },
+        created_at: new Date(),
+        updated_at: new Date(),
+        is_deleted: false,
+        deleted_at: null,
+        cccd_hash: "old_hash",
+        cccd_last4: "1234",
+        name: "Cụ A Đã Sửa",
+        notes: "Ghi chú mới",
+      },
+      user: { role: "admin" },
+    };
+    const res = mockRes();
+    (prisma.chuctho_profiles.findUnique as any).mockResolvedValue({ id: validUuid, version: 1, is_deleted: false });
+    (prisma.chuctho_profiles.update as any).mockResolvedValue({ id: validUuid, name: "Cụ A Đã Sửa" });
+    await updateChucthoProfile(req, res);
+    expect(prisma.chuctho_profiles.update).toHaveBeenCalledWith({
+      where: { id: validUuid },
+      data: expect.not.objectContaining({
+        village: expect.anything(),
+        created_at: expect.anything(),
+        updated_at: expect.anything(),
+        deleted_at: expect.anything(),
+      }),
+    });
+    expect(res.json).toHaveBeenCalled();
+  });
+
   it("updates received status and soft deletes profile with valid uuid", async () => {
     const res = mockRes();
     (prisma.chuctho_profiles.update as any).mockResolvedValue({ id: validUuid, received: true });

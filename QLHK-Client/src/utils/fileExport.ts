@@ -14,7 +14,21 @@ export async function exportExcelWithDialog(
 	workbook: any,
 	defaultFilename: string,
 ): Promise<FileExportResult> {
-	const XLSX = await loadXlsx();
+	let arrayBuffer: ArrayBuffer;
+	if (typeof Blob !== "undefined" && workbook instanceof Blob) {
+		arrayBuffer = await workbook.arrayBuffer();
+	} else if (workbook instanceof ArrayBuffer) {
+		arrayBuffer = workbook;
+	} else if (typeof Uint8Array !== "undefined" && workbook instanceof Uint8Array) {
+		arrayBuffer = workbook.buffer as ArrayBuffer;
+	} else {
+		const XLSX = await loadXlsx();
+		arrayBuffer = XLSX.write(workbook, {
+			bookType: "xlsx",
+			type: "array",
+		});
+	}
+
 	if (typeof window !== "undefined" && isTauri()) {
 		try {
 			const { save } = await import("@tauri-apps/plugin-dialog");
@@ -32,10 +46,6 @@ export async function exportExcelWithDialog(
 				return { success: false, fileName: defaultFilename, cancelled: true };
 			}
 
-			const arrayBuffer = XLSX.write(workbook, {
-				bookType: "xlsx",
-				type: "array",
-			});
 			await writeFile(selectedPath, new Uint8Array(arrayBuffer));
 
 			return {
@@ -65,10 +75,6 @@ export async function exportExcelWithDialog(
 			});
 
 			const writable = await handle.createWritable();
-			const arrayBuffer = XLSX.write(workbook, {
-				bookType: "xlsx",
-				type: "array",
-			});
 			await writable.write(new Uint8Array(arrayBuffer));
 			await writable.close();
 
@@ -89,7 +95,30 @@ export async function exportExcelWithDialog(
 	}
 
 	try {
-		XLSX.writeFile(workbook, defaultFilename);
+		if (typeof Blob !== "undefined" && workbook instanceof Blob) {
+			const url = URL.createObjectURL(workbook);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = defaultFilename;
+			a.click();
+			URL.revokeObjectURL(url);
+		} else if (
+			workbook instanceof ArrayBuffer ||
+			(typeof Uint8Array !== "undefined" && workbook instanceof Uint8Array)
+		) {
+			const blob = new Blob([arrayBuffer], {
+				type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+			});
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = defaultFilename;
+			a.click();
+			URL.revokeObjectURL(url);
+		} else {
+			const XLSX = await loadXlsx();
+			XLSX.writeFile(workbook, defaultFilename);
+		}
 		return {
 			success: true,
 			filePath: defaultFilename,

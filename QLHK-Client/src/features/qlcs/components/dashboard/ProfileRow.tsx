@@ -162,21 +162,28 @@ export const ProfileRow = React.memo(function ProfileRow({
 
 	return (
 		<tr
-			onClick={() => onEdit(profile)}
-			onKeyDown={(e) => {
-				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
+			onClick={() => {
+				if (activeTab !== "chuctho") {
 					onEdit(profile);
 				}
 			}}
-			tabIndex={0}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					if (activeTab !== "chuctho") {
+						onEdit(profile);
+					}
+				}
+			}}
+			tabIndex={activeTab === "chuctho" ? -1 : 0}
 			className={clsx(
-				"group transition-colors cursor-pointer text-[13px] outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500",
+				"group transition-colors text-[13px] outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500",
+				activeTab !== "chuctho" ? "cursor-pointer" : "cursor-default",
 				isFirstOfGroup &&
 					"border-t-2 border-emerald-500/30 dark:border-emerald-500/50",
 				rowBgClass,
 			)}
-			title="Bấm để xem và chỉnh sửa thông tin chi tiết hồ sơ"
+			title={activeTab === "chuctho" ? undefined : "Bấm để xem và chỉnh sửa thông tin chi tiết hồ sơ"}
 		>
 
 			<td
@@ -505,24 +512,28 @@ export const ProfileRow = React.memo(function ProfileRow({
 				)}
 			>
 				<div className="flex items-center justify-center gap-1">
-					<button
-						type="button"
-						onClick={() => onEdit(profile)}
-						aria-label={`Sửa hồ sơ ${profile.name}`}
-						title="Xem & sửa thông tin hồ sơ"
-						className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 dark:text-slate-400 dark:hover:text-emerald-300 transition-colors cursor-pointer select-none"
-					>
-						<Edit3 strokeWidth={1.75} className="w-4 h-4" />
-					</button>
-					<button
-						type="button"
-						onClick={() => onDelete(profile)}
-						aria-label={`Xóa hồ sơ ${profile.name}`}
-						title="Chuyển vào Thùng rác"
-						className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 dark:text-slate-400 dark:hover:text-rose-300 transition-colors cursor-pointer select-none"
-					>
-						<Trash2 strokeWidth={1.75} className="w-4 h-4" />
-					</button>
+					{activeTab !== "chuctho" && (
+						<button
+							type="button"
+							onClick={() => onEdit(profile)}
+							aria-label={`Sửa hồ sơ ${profile.name}`}
+							title="Xem & sửa thông tin hồ sơ"
+							className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 dark:text-slate-400 dark:hover:text-emerald-300 transition-colors cursor-pointer select-none"
+						>
+							<Edit3 strokeWidth={1.75} className="w-4 h-4" />
+						</button>
+					)}
+					{activeTab !== "chuctho" && activeTab !== "htxh" && (
+						<button
+							type="button"
+							onClick={() => onDelete(profile)}
+							aria-label={`Xóa hồ sơ ${profile.name}`}
+							title="Chuyển vào Thùng rác"
+							className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 dark:text-slate-400 dark:hover:text-rose-300 transition-colors cursor-pointer select-none"
+						>
+							<Trash2 strokeWidth={1.75} className="w-4 h-4" />
+						</button>
+					)}
 				</div>
 			</td>
 		</tr>

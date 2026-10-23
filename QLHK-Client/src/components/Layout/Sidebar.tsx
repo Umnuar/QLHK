@@ -28,16 +28,38 @@ export const Sidebar: React.FC = () => {
 		selectedVillageId,
 	} = useApp();
 
+	const isQlcsOnly = user?.module_access === "qlcs";
+	const isQlhkOnly = user?.module_access === "qlhk";
+
+	const showPolicyItems =
+		!isQlhkOnly &&
+		(isQlcsOnly ||
+			Boolean(selectedVillageId) ||
+			activeTab === "analytics" ||
+			activeTab === "chuctho" ||
+			activeTab === "htxh" ||
+			activeTab === "policy-analytics");
+
+	const showHouseholdItems =
+		!isQlcsOnly &&
+		(user?.role !== "admin" ||
+			Boolean(selectedVillageId) ||
+			activeTab === "analytics");
+
 	let navItems: any[] = [];
 
 	if (user?.role === "admin") {
 		navItems = [
-			{
-				id: "villages",
-				label: "Quản Lý Thôn",
-				icon: Map,
-			},
-			...(selectedVillageId
+			...(!isQlcsOnly
+				? [
+						{
+							id: "villages",
+							label: "Quản Lý Thôn",
+							icon: Map,
+						},
+					]
+				: []),
+			...(showHouseholdItems
 				? [
 						{
 							id: "analytics",
@@ -52,26 +74,34 @@ export const Sidebar: React.FC = () => {
 						},
 					]
 				: []),
-			{
-				id: "chuctho",
-				label: "Chúc Thọ",
-				icon: Award,
-			},
-			{
-				id: "htxh",
-				label: "Hỗ Trợ Xã Hội",
-				icon: HeartHandshake,
-			},
-			{
-				id: "policy-analytics",
-				label: "TK Chính Sách",
-				icon: BarChart2,
-			},
-			{
-				id: "recycle-bin",
-				label: "Thùng Rác",
-				icon: Trash2,
-			},
+			...(showPolicyItems
+				? [
+						{
+							id: "chuctho",
+							label: "Chúc Thọ",
+							icon: Award,
+						},
+						{
+							id: "htxh",
+							label: "Hỗ Trợ Xã Hội",
+							icon: HeartHandshake,
+						},
+						{
+							id: "policy-analytics",
+							label: "TK Chính Sách",
+							icon: BarChart2,
+						},
+					]
+				: []),
+			...(!isQlcsOnly
+				? [
+						{
+							id: "recycle-bin",
+							label: "Thùng Rác",
+							icon: Trash2,
+						},
+					]
+				: []),
 			{
 				id: "audit",
 				label: "Nhật Ký Hoạt Động",
@@ -85,37 +115,49 @@ export const Sidebar: React.FC = () => {
 		];
 	} else {
 		navItems = [
-			{
-				id: "households",
-				label: "Hộ Gia Đình",
-				icon: Users,
-			},
-			{
-				id: "analytics",
-				label: "Thống Kê",
-				icon: BarChart3,
-				badge: "Chính",
-			},
-			{
-				id: "chuctho",
-				label: "Chúc Thọ",
-				icon: Award,
-			},
-			{
-				id: "htxh",
-				label: "Hỗ Trợ Xã Hội",
-				icon: HeartHandshake,
-			},
-			{
-				id: "policy-analytics",
-				label: "TK Chính Sách",
-				icon: BarChart2,
-			},
-			{
-				id: "recycle-bin",
-				label: "Thùng Rác",
-				icon: Trash2,
-			},
+			...(showHouseholdItems
+				? [
+						{
+							id: "households",
+							label: "Hộ Gia Đình",
+							icon: Users,
+						},
+						{
+							id: "analytics",
+							label: "Thống Kê",
+							icon: BarChart3,
+							badge: "Chính",
+						},
+					]
+				: []),
+			...(showPolicyItems
+				? [
+						{
+							id: "chuctho",
+							label: "Chúc Thọ",
+							icon: Award,
+						},
+						{
+							id: "htxh",
+							label: "Hỗ Trợ Xã Hội",
+							icon: HeartHandshake,
+						},
+						{
+							id: "policy-analytics",
+							label: "TK Chính Sách",
+							icon: BarChart2,
+						},
+					]
+				: []),
+			...(!isQlcsOnly
+				? [
+						{
+							id: "recycle-bin",
+							label: "Thùng Rác",
+							icon: Trash2,
+						},
+					]
+				: []),
 		];
 	}
 
@@ -182,77 +224,77 @@ export const Sidebar: React.FC = () => {
 												setSidebarCollapsed(true);
 											}
 										}}
-									className={`flex items-center gap-3 rounded-2xl transition-all duration-150 relative cursor-pointer overflow-hidden ${
-										isSidebarCollapsed
-											? "w-12 h-12 justify-center shrink-0 mx-auto"
-											: "w-full py-2.5 px-3 min-h-[44px]"
-									} ${
-										isActive
-											? "bg-emerald-600 text-white shadow-md shadow-emerald-950/30"
-											: "text-slate-400 hover:text-emerald-400 hover:bg-slate-800/50"
-									}`}
-								>
-									<Icon
-										className={`w-5 h-5 shrink-0 ${isActive ? "text-white" : ""}`}
-									/>
-
-									<div
-										className={`overflow-hidden whitespace-nowrap transition-all duration-200 ease-out text-left ${
+										className={`flex items-center gap-3 rounded-2xl transition-all duration-150 relative cursor-pointer overflow-hidden ${
 											isSidebarCollapsed
-												? "max-w-0 opacity-0 pointer-events-none hidden"
-												: "max-w-[180px] opacity-100 flex-1 flex items-center justify-between"
+												? "w-12 h-12 justify-center shrink-0 mx-auto"
+												: "w-full py-2.5 px-3 min-h-[44px]"
+										} ${
+											isActive
+												? "bg-emerald-600 text-white shadow-md shadow-emerald-950/30"
+												: "text-slate-400 hover:text-emerald-400 hover:bg-slate-800/50"
 										}`}
 									>
-										<span className="text-[13.5px] tracking-tight font-bold">
-											{item.label}
-										</span>
-										{item.badge && (
-											<span
-												className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider ml-1.5 ${
-													isActive
-														? "bg-emerald-800/90 text-emerald-100"
-														: "bg-slate-800 text-slate-300"
-												}`}
-											>
-												{item.badge}
-											</span>
-										)}
-									</div>
-								</button>
+										<Icon
+											className={`w-5 h-5 shrink-0 ${isActive ? "text-white" : ""}`}
+										/>
 
-								{isSidebarCollapsed && (
-									<div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 z-50 px-3.5 py-2 bg-slate-900 text-white text-xs font-bold rounded-2xl shadow-2xl border border-slate-700/90 whitespace-nowrap pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150">
-										<div className="flex items-center gap-1.5">
-											<span className="text-sm">{item.label}</span>
+										<div
+											className={`overflow-hidden whitespace-nowrap transition-all duration-200 ease-out text-left ${
+												isSidebarCollapsed
+													? "max-w-0 opacity-0 pointer-events-none hidden"
+													: "max-w-[180px] opacity-100 flex-1 flex items-center justify-between"
+											}`}
+										>
+											<span className="text-[13.5px] tracking-tight font-bold">
+												{item.label}
+											</span>
 											{item.badge && (
-												<span className="text-[9px] font-bold px-1 py-0.5 rounded bg-emerald-700 text-white uppercase">
+												<span
+													className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider ml-1.5 ${
+														isActive
+															? "bg-emerald-800/90 text-emerald-100"
+															: "bg-slate-800 text-slate-300"
+													}`}
+												>
 													{item.badge}
 												</span>
 											)}
 										</div>
-									</div>
-								)}
-							</div>
-						);
-					})}
-				</nav>
-			</div>
+									</button>
 
-			<div className="p-3.5 border-t border-slate-900 bg-slate-950 text-xs text-slate-400 overflow-hidden">
-				{!isSidebarCollapsed ? (
-					<div className="space-y-1 whitespace-nowrap overflow-hidden">
-						<div className="flex items-center gap-2 text-slate-200 font-bold text-xs">
-							<ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-							<span>QLHK v1.5.0</span>
+									{isSidebarCollapsed && (
+										<div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 z-50 px-3.5 py-2 bg-slate-900 text-white text-xs font-bold rounded-2xl shadow-2xl border border-slate-700/90 whitespace-nowrap pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150">
+											<div className="flex items-center gap-1.5">
+												<span className="text-sm">{item.label}</span>
+												{item.badge && (
+													<span className="text-[9px] font-bold px-1 py-0.5 rounded bg-emerald-700 text-white uppercase">
+														{item.badge}
+													</span>
+												)}
+											</div>
+										</div>
+									)}
+								</div>
+							);
+						})}
+					</nav>
+				</div>
+
+				<div className="p-3.5 border-t border-slate-900 bg-slate-950 text-xs text-slate-400 overflow-hidden">
+					{!isSidebarCollapsed ? (
+						<div className="space-y-1 whitespace-nowrap overflow-hidden">
+							<div className="flex items-center gap-2 text-slate-200 font-bold text-xs">
+								<ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+								<span>QLHK v1.5.0</span>
+							</div>
 						</div>
-					</div>
-				) : (
-					<div className="flex justify-center">
-						<ShieldCheck className="w-4 h-4 text-emerald-400" />
-					</div>
-				)}
-			</div>
-		</aside>
-	</>
+					) : (
+						<div className="flex justify-center">
+							<ShieldCheck className="w-4 h-4 text-emerald-400" />
+						</div>
+					)}
+				</div>
+			</aside>
+		</>
 	);
 };

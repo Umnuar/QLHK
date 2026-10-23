@@ -749,161 +749,27 @@ export const HouseholdsPage: React.FC = () => {
 				return;
 			}
 
-			const rows: any[][] = [
-				[
-					"UBND TỈNH QUẢNG NGÃI\nUBND XÃ ĐĂK HÀ",
-					null,
-					null,
-					null,
-					null,
-					"CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự Do - Hạnh Phúc",
-				],
-				[
-					"THÔN: " + (selectedVillageName || "TOÀN XÃ ĐĂK HÀ"),
-					null,
-					null,
-					null,
-					null,
-					"Đăk Hà, ngày " +
-						now.getDate() +
-						" tháng " +
-						(now.getMonth() + 1) +
-						" năm " +
-						now.getFullYear(),
-				],
-				["DỮ LIỆU HỘ - NHÂN KHẨU"],
-				[],
-				[
-					"STT",
-					"HỘ GIA ĐÌNH",
-					null,
-					"HỌ VÀ TÊN",
-					null,
-					"PHÂN TÍCH HỘ GIA ĐÌNH",
-					null,
-					null,
-					null,
-					null,
-					"Ghi chú",
-				],
-				[
-					null,
-					"Chủ hộ",
-					"Thành viên",
-					null,
-					null,
-					"Ngày, tháng, năm sinh ",
-					"Tuổi",
-					"Nữ",
-					"DTTS",
-					"Tôn giáo",
-					null,
-				],
-			];
-
-			sourceList.forEach((hh) => {
-				const membersList =
-					hh.members && hh.members.length > 0
-						? hh.members
-						: [
-								{
-									id: "head-" + hh.id,
-									household_id: hh.id,
-									stt: 1,
-									full_name: hh.head_name || "Chưa rõ",
-									last_name: "",
-									first_name: "",
-									name_unaccented: "",
-									relationship: "Chủ hộ" as const,
-									is_head: true,
-									gender: "Nam" as const,
-									dob: "",
-									dob_raw: "",
-									dob_formatted: "",
-									birth_year: 2000,
-									age: 0,
-									cccd: hh.head_cccd || "",
-									cccd_masked: "",
-									ethnicity: "Kinh",
-									is_minority: false,
-									religion: "Không",
-									notes: hh.notes || "",
-								},
-							];
-
-				membersList.forEach((m, memIdx) => {
-					const isHead = m.is_head || m.relationship === "Chủ hộ";
-					const { lastName, firstName } = splitFullName(m.full_name || "");
-					const chuHoVal = isHead ? "CH" : null;
-					const thanhVienVal = memIdx + 1;
-					const hoDemVal = (lastName || "").toUpperCase();
-					const tenVal = (firstName || "").toUpperCase();
-					const dobVal = m.dob_formatted || m.dob_raw || m.dob || "";
-					const ageVal =
-						(dobVal ? calculateAge(dobVal, calculationYear) : m.age) || "";
-					const nuVal = m.gender === "Nữ" ? "X" : null;
-					const dttsVal = m.ethnicity || "Kinh";
-					let religionVal = m.religion || "Không";
-					if (religionVal === "CG") religionVal = "Công giáo";
-					else if (religionVal === "TL") religionVal = "Tin lành";
-					else if (religionVal === "PG") religionVal = "Phật giáo";
-					const ghiChuVal = m.notes || "";
-
-					rows.push([
-						currentStt++,
-						chuHoVal,
-						thanhVienVal,
-						hoDemVal,
-						tenVal,
-						dobVal,
-						ageVal,
-						nuVal,
-						dttsVal,
-						religionVal,
-						ghiChuVal,
-					]);
-				});
+			const excelBlob = await householdApi.exportExcel({
+				village_id: selectedVillageId || undefined,
+				status:
+					statusFilter && statusFilter !== "all" && statusFilter !== "Tất cả"
+						? statusFilter
+						: undefined,
+				household_ids: config.scope === "selected" ? selectedIds : undefined,
+				search: debouncedSearch.trim() || undefined,
+				year: calculationYear,
+				gender: genderFilter || undefined,
+				ethnicity: ethnicityFilter || undefined,
 			});
 
-			const sanitizedRows = rows.map(sanitizeExcelRow);
-			const XLSX = await loadXlsx();
-			const ws = XLSX.utils.aoa_to_sheet(sanitizedRows);
-			ws["!merges"] = [
-				{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
-				{ s: { r: 0, c: 5 }, e: { r: 0, c: 9 } },
-				{ s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
-				{ s: { r: 1, c: 5 }, e: { r: 1, c: 9 } },
-				{ s: { r: 2, c: 0 }, e: { r: 2, c: 10 } },
-				{ s: { r: 4, c: 0 }, e: { r: 5, c: 0 } },
-				{ s: { r: 4, c: 1 }, e: { r: 4, c: 2 } },
-				{ s: { r: 4, c: 3 }, e: { r: 5, c: 4 } },
-				{ s: { r: 4, c: 5 }, e: { r: 4, c: 9 } },
-				{ s: { r: 4, c: 10 }, e: { r: 5, c: 10 } },
-			];
-			ws["!cols"] = [
-				{ wch: 6 },
-				{ wch: 10 },
-				{ wch: 12 },
-				{ wch: 22 },
-				{ wch: 10 },
-				{ wch: 22 },
-				{ wch: 8 },
-				{ wch: 8 },
-				{ wch: 14 },
-				{ wch: 14 },
-				{ wch: 20 },
-			];
-
-			const wb = XLSX.utils.book_new();
-			XLSX.utils.book_append_sheet(wb, ws, "Dl Hộ");
 			const filename = `NhanHoKhau_DakHa_${new Date().toISOString().slice(0, 10)}.xlsx`;
-			const exportRes = await exportExcelWithDialog(wb, filename);
+			const exportRes = await exportExcelWithDialog(excelBlob, filename);
 
 			setExportModalOpen(false);
 			if (exportRes.success) {
 				showModal({
 					title: "Xuất file thành công",
-					message: `Đã xuất ${currentStt - 1} nhân khẩu ra tệp:\n${exportRes.filePath || exportRes.fileName}`,
+					message: `Đã xuất tệp dữ liệu Hộ - Nhân khẩu ra:\n${exportRes.filePath || exportRes.fileName}`,
 					type: "success",
 				});
 			} else if (!exportRes.cancelled) {

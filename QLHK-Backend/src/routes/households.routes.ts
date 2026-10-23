@@ -3,6 +3,7 @@ import {
 	batchDeleteHouseholds,
 	createHousehold,
 	deleteHousehold,
+	exportHouseholdExcel,
 	getHouseholdById,
 	getHouseholds,
 	getRecycleBin,
@@ -22,6 +23,8 @@ router.use(authorizeVillageScope);
 
 router.get("/", getHouseholds);
 router.get("/recycle-bin", getRecycleBin);
+router.get("/export-excel", exportHouseholdExcel);
+router.post("/export-excel", exportHouseholdExcel);
 router.post("/batch-delete", batchDeleteHouseholds);
 router.post("/:id/restore", restoreHousehold);
 router.delete("/:id/hard", hardDeleteHousehold);

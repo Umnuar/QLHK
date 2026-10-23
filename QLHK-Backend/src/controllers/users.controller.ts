@@ -16,6 +16,7 @@ export const getUsers = async (
 				full_name: true,
 				role: true,
 				village_id: true,
+				module_access: true,
 				created_at: true,
 				updated_at: true,
 				village: {
@@ -30,7 +31,10 @@ export const getUsers = async (
 
 		res.json({
 			success: true,
-			data: users,
+			data: users.map((u) => ({
+				...u,
+				module_access: u.module_access || "all",
+			})),
 		});
 	} catch (error) {
 		console.error("Lỗi getUsers:", error);
@@ -43,7 +47,7 @@ export const createUser = async (
 	res: Response,
 ): Promise<void> => {
 	try {
-		const { username, password, role, village_id, full_name } = req.body;
+		const { username, password, role, village_id, full_name, module_access } = req.body;
 
 		if (!username || !password) {
 			res
@@ -73,6 +77,10 @@ export const createUser = async (
 		}
 
 		const password_hash = await bcrypt.hash(password, 10);
+		const validModuleAccess =
+			module_access === "qlhk" || module_access === "qlcs" || module_access === "all"
+				? module_access
+				: "all";
 
 		const newUser = await prisma.users.create({
 			data: {
@@ -81,6 +89,7 @@ export const createUser = async (
 				role: role === "admin" ? "admin" : "user",
 				village_id: role === "admin" ? null : village_id || null,
 				full_name: full_name ? String(full_name).trim() : null,
+				module_access: validModuleAccess,
 			},
 			select: {
 				id: true,
@@ -88,6 +97,7 @@ export const createUser = async (
 				full_name: true,
 				role: true,
 				village_id: true,
+				module_access: true,
 				created_at: true,
 				updated_at: true,
 				village: {
@@ -103,7 +113,10 @@ export const createUser = async (
 		res.status(201).json({
 			success: true,
 			message: "Tạo tài khoản thành công",
-			data: newUser,
+			data: {
+				...newUser,
+				module_access: newUser.module_access || "all",
+			},
 		});
 	} catch (error) {
 		console.error("Lỗi createUser:", error);
@@ -217,7 +230,7 @@ export const updateUser = async (
 ): Promise<void> => {
 	try {
 		const id = req.params.id as string;
-		const { full_name, role, village_id } = req.body;
+		const { full_name, role, village_id, module_access } = req.body;
 
 		const existing = await prisma.users.findUnique({
 			where: { id },
@@ -241,6 +254,13 @@ export const updateUser = async (
 					? village_id || null
 					: existing.village_id;
 
+		const updatedModuleAccess =
+			module_access !== undefined
+				? module_access === "qlhk" || module_access === "qlcs" || module_access === "all"
+					? module_access
+					: existing.module_access || "all"
+				: existing.module_access || "all";
+
 		const updated = await prisma.users.update({
 			where: { id },
 			data: {
@@ -252,6 +272,7 @@ export const updateUser = async (
 						: existing.full_name,
 				role: updatedRole,
 				village_id: updatedVillageId,
+				module_access: updatedModuleAccess,
 			},
 			select: {
 				id: true,
@@ -259,6 +280,7 @@ export const updateUser = async (
 				full_name: true,
 				role: true,
 				village_id: true,
+				module_access: true,
 				created_at: true,
 				updated_at: true,
 				village: {
@@ -274,7 +296,10 @@ export const updateUser = async (
 		res.json({
 			success: true,
 			message: "Cập nhật tài khoản và phân công thôn thành công",
-			data: updated,
+			data: {
+				...updated,
+				module_access: updated.module_access || "all",
+			},
 		});
 	} catch (error) {
 		console.error("Lỗi updateUser:", error);

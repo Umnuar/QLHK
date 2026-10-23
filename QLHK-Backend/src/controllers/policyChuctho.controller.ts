@@ -166,6 +166,14 @@ export const updateChucthoProfile = async (req: AuthRequest, res: Response): Pro
 
     const { name, dob, cccd, village_id, villageId, current_address, currentAddress, calculation_year, calculationYear, ...rest } = req.body;
     const data: Record<string, unknown> = { ...rest, version: (current.version || 1) + 1 };
+    delete data.id;
+    delete data.village;
+    delete data.created_at;
+    delete data.updated_at;
+    delete data.is_deleted;
+    delete data.deleted_at;
+    delete data.cccd_hash;
+    delete data.cccd_last4;
     if (name) {
       data.name = name;
       data.name_unaccented = removeAccents(name);

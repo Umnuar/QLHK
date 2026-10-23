@@ -1081,3 +1081,5 @@ export const getRecycleBin = async (
 		res.status(500).json({ error: "Lỗi máy chủ khi lấy danh sách thùng rác" });
 	}
 };
+
+export { exportHouseholdExcel } from "./householdExcel.controller";

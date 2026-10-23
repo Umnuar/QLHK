@@ -239,6 +239,31 @@ export const householdApi = {
 		}
 	},
 
+	async exportExcel(params?: {
+		village_id?: string;
+		status?: string;
+		household_ids?: string[];
+		search?: string;
+		year?: number;
+		gender?: string;
+		ethnicity?: string;
+	}): Promise<Blob> {
+		const res = await apiClient.post(
+			"/households/export-excel",
+			{
+				village_id: params?.village_id,
+				status: params?.status,
+				household_ids: params?.household_ids,
+				search: params?.search,
+				year: params?.year,
+				gender: params?.gender,
+				ethnicity: params?.ethnicity,
+			},
+			{ responseType: "blob" },
+		);
+		return res.data;
+	},
+
 	async revealCitizenCCCD(citizenId: string): Promise<string | null> {
 		if (!citizenId || citizenId.startsWith("mem-")) return null;
 		try {

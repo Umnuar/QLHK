@@ -67,6 +67,39 @@ describe("Policy HTXH Controller", () => {
     expect(res.status).toHaveBeenCalledWith(409);
   });
 
+  it("strips system and relation fields before updating", async () => {
+    const req: any = {
+      params: { id: validUuid },
+      body: {
+        id: validUuid,
+        village: { id: "v-1", name: "Thôn 1" },
+        created_at: new Date(),
+        updated_at: new Date(),
+        is_deleted: false,
+        deleted_at: null,
+        cccd_hash: "old_hash",
+        cccd_last4: "1234",
+        name: "Bác B Đã Sửa",
+        notes: "Ghi chú mới",
+      },
+      user: { role: "admin" },
+    };
+    const res = mockRes();
+    (prisma.htxh_profiles.findUnique as any).mockResolvedValue({ id: validUuid, version: 1, is_deleted: false });
+    (prisma.htxh_profiles.update as any).mockResolvedValue({ id: validUuid, name: "Bác B Đã Sửa" });
+    await updateHtxhProfile(req, res);
+    expect(prisma.htxh_profiles.update).toHaveBeenCalledWith({
+      where: { id: validUuid },
+      data: expect.not.objectContaining({
+        village: expect.anything(),
+        created_at: expect.anything(),
+        updated_at: expect.anything(),
+        deleted_at: expect.anything(),
+      }),
+    });
+    expect(res.json).toHaveBeenCalled();
+  });
+
   it("updates received and soft deletes htxh profile with valid uuid", async () => {
     const res = mockRes();
     (prisma.htxh_profiles.update as any).mockResolvedValue({ id: validUuid, received: true });

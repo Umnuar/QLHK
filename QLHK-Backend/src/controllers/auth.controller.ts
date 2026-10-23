@@ -82,6 +82,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 				role: user.role,
 				village_id: user.village_id,
 				village_name: user.village?.name || null,
+				module_access: user.module_access || "all",
 			},
 			accessToken,
 			refreshToken,
@@ -158,6 +159,14 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
 		res.json({
 			accessToken: newAccessToken,
 			refreshToken: newRefreshToken,
+			user: {
+				id: user.id,
+				username: user.username,
+				full_name: user.full_name,
+				role: user.role,
+				village_id: user.village_id,
+				module_access: user.module_access || "all",
+			},
 		});
 	} catch (error: any) {
 		if (error?.code === "P2025") {
@@ -204,6 +213,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 				full_name: true,
 				role: true,
 				village_id: true,
+				module_access: true,
 				created_at: true,
 				village: {
 					select: {
@@ -220,7 +230,12 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 			return;
 		}
 
-		res.json({ user });
+		res.json({
+			user: {
+				...user,
+				module_access: user.module_access || "all",
+			},
+		});
 	} catch (error) {
 		console.error("Lỗi getMe:", error);
 		res.status(500).json({ error: "Lỗi máy chủ" });

@@ -441,7 +441,7 @@ export const ProfileFilterBar: React.FC<ProfileFilterBarProps> = ({
 						)}
 					</div>
 
-					{Boolean(onBulkDelete) && (
+					{Boolean(onBulkDelete) && activeTab !== "chuctho" && activeTab !== "htxh" && (
 						<button
 							type="button"
 							disabled={isBulkUpdating}

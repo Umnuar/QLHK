@@ -26,18 +26,21 @@ import {
 import { authApi } from "../../api/authApi";
 import type { User } from "../../types";
 import { CustomSelect } from "../common/CustomSelect";
+import { TablePagination } from "../common/TablePagination";
 
 const FIELD_LABELS: Record<string, string> = {
 	book_number: "Mã định danh hộ",
 	code: "Mã định danh",
 	head_name: "Chủ hộ",
 	head_cccd: "Số CCCD chủ hộ",
-	address: "Địa chỉ cư trú",
+	address: "Địa chỉ thường trú",
+	residence: "Nơi thường trú",
 	status: "Trạng thái cư trú",
 	notes: "Ghi chú",
 	village_name: "Thôn",
 	village_id: "Mã thôn",
 	full_name: "Họ và tên",
+	name: "Họ và tên",
 	relationship: "Quan hệ với chủ hộ",
 	dob: "Ngày sinh",
 	dob_formatted: "Ngày sinh",
@@ -46,9 +49,30 @@ const FIELD_LABELS: Record<string, string> = {
 	cccd_last4: "4 số cuối CCCD",
 	ethnicity: "Dân tộc",
 	religion: "Tôn giáo",
+	military_status: "Nghĩa vụ quân sự",
+	education: "Học vấn",
 	occupation: "Nghề nghiệp",
 	members_count: "Số nhân khẩu",
 	is_head: "Là chủ hộ",
+	received: "Trạng thái nhận quà",
+	calculation_year: "Năm tính toán",
+	age60: "Tròn 60 tuổi",
+	age65: "Tròn 65 tuổi",
+	age70: "Tròn 70 tuổi",
+	age75: "Tròn 75 tuổi",
+	age80: "Tròn 80 tuổi",
+	age85: "Tròn 85 tuổi",
+	age90: "Tròn 90 tuổi",
+	age95: "Tròn 95 tuổi",
+	age100: "Tròn 100 tuổi",
+	age_over_100: "Trên 100 tuổi",
+	age75plus: "Đủ 75 tuổi trở lên",
+	age70to74poor: "70-74 tuổi hộ nghèo/cận nghèo",
+	bao_tro: "Bảo trợ xã hội",
+	huu_tri: "Hưu trí",
+	huu_tuat_bao_hiem: "Hưu tuất BHXH",
+	nguoi_co_cong: "Người có công",
+	current_address: "Nơi ở hiện nay",
 	is_deleted: "Đã xóa",
 	deleted_at: "Thời điểm xóa",
 	restored_at: "Thời điểm khôi phục",
@@ -109,7 +133,7 @@ export const AuditLogView: React.FC = () => {
 	const [logs, setLogs] = useState<AuditLogItem[]>([]);
 	const [total, setTotal] = useState<number>(0);
 	const [page, setPage] = useState<number>(1);
-	const [limit] = useState<number>(10);
+	const [limit, setLimit] = useState<number>(10);
 	const [totalPages, setTotalPages] = useState<number>(1);
 	const [loading, setLoading] = useState<boolean>(false);
 	const [userList, setUserList] = useState<User[]>([]);
@@ -160,12 +184,14 @@ export const AuditLogView: React.FC = () => {
 		fetchLogs(1, false);
 	}, [fetchLogs]);
 
-	const handleLoadMore = () => {
-		if (page < totalPages && !loading) {
-			const nextPage = page + 1;
-			setPage(nextPage);
-			fetchLogs(nextPage, true);
-		}
+	const handlePageChange = (newPage: number) => {
+		setPage(newPage);
+		fetchLogs(newPage, false);
+	};
+
+	const handleLimitChange = (newLimit: number) => {
+		setLimit(newLimit);
+		setPage(1);
 	};
 
 	const getActionConfig = (action: AuditAction) => {
@@ -940,17 +966,17 @@ export const AuditLogView: React.FC = () => {
 					</div>
 				)}
 
-				{page < totalPages && (
-					<div className="pt-6 flex justify-center border-t border-slate-100 dark:border-slate-800 mt-4">
-						<button
-							type="button"
-							onClick={handleLoadMore}
-							disabled={loading}
-							className="h-10 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
-						>
-							<ArrowDownCircle className="w-4 h-4" strokeWidth={1.5} />
-							<span>{loading ? "Đang tải thêm..." : "Tải Thêm Dữ Liệu"}</span>
-						</button>
+				{total > 0 && (
+					<div className="pt-4 border-t border-slate-100 dark:border-slate-800 -mx-6 -mb-6 mt-4">
+						<TablePagination
+							itemCount={logs.length}
+							total={total}
+							page={page}
+							limit={limit}
+							totalPages={totalPages}
+							onPageChange={handlePageChange}
+							onLimitChange={handleLimitChange}
+						/>
 					</div>
 				)}
 			</div>

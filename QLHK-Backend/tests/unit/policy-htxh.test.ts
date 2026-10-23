@@ -39,8 +39,19 @@ describe("Policy HTXH Controller", () => {
     (prisma.htxh_profiles.count as any).mockResolvedValue(1);
     await getHtxhProfiles(req, res);
     expect(prisma.htxh_profiles.findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({ village_id: "v-1", calculation_year: 2024, received: false, bao_tro: "x" }),
+      where: expect.objectContaining({ village_id: "v-1", calculation_year: 2024, received: false, bao_tro: "x", huu_tri: "x" }),
       orderBy: { dob: "asc" },
+    }));
+  });
+
+  it("strictly enforces retiree condition huu_tri = x in getHtxhProfiles query", async () => {
+    const req: any = { query: {}, user: { role: "admin" } };
+    const res = mockRes();
+    (prisma.htxh_profiles.findMany as any).mockResolvedValue([{ id: validUuid, name: "Trần Thị B", huu_tri: "x" }]);
+    (prisma.htxh_profiles.count as any).mockResolvedValue(1);
+    await getHtxhProfiles(req, res);
+    expect(prisma.htxh_profiles.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ is_deleted: false, huu_tri: "x" }),
     }));
   });
 

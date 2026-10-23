@@ -54,6 +54,12 @@ export const getChucthoProfiles = async (req: AuthRequest, res: Response): Promi
     const gender = (req.query.gender as string)?.trim();
     const ethnicity = (req.query.ethnicity as string)?.trim();
     const residence = (req.query.residence as string)?.trim();
+    const day = ((req.query.day as string) || "").trim();
+    const month = ((req.query.month as string) || "").trim();
+    const rawDob = ((req.query.dob as string) || "").trim();
+    const exactDate = (((req.query.exact_date || req.query.exactDate) as string) || "").trim();
+    const dateFrom = (((req.query.date_from || req.query.dateFrom) as string) || "").trim();
+    const dateTo = (((req.query.date_to || req.query.dateTo) as string) || "").trim();
 
     let received: boolean | undefined = undefined;
     if (statusQuery === "received" || statusQuery === "true") {
@@ -72,6 +78,40 @@ export const getChucthoProfiles = async (req: AuthRequest, res: Response): Promi
     if (milestone) where[milestone] = "x";
     if (search) {
       where.OR = [{ name_unaccented: { contains: removeAccents(search) } }, { cccd_last4: search.slice(-4) }];
+    }
+
+    const targetDob = exactDate || rawDob;
+    if (targetDob) {
+      where.dob = { contains: targetDob };
+    } else if (dateFrom || dateTo) {
+      const range: Record<string, string> = {};
+      if (dateFrom) range.gte = dateFrom;
+      if (dateTo) range.lte = dateTo;
+      where.dob = range;
+    }
+
+    if (day) {
+      const dayStr = day.padStart(2, "0");
+      const dayConditions = [
+        { dob: { startsWith: `${dayStr}/` } },
+        { dob: { startsWith: `${day}/` } },
+        { dob: { contains: `-${dayStr}` } },
+        { dob: { contains: `-${day}` } },
+      ];
+      if (!where.AND) where.AND = [];
+      (where.AND as any[]).push({ OR: dayConditions });
+    }
+
+    if (month) {
+      const monthStr = month.padStart(2, "0");
+      const monthConditions = [
+        { dob: { contains: `/${monthStr}/` } },
+        { dob: { contains: `/${month}/` } },
+        { dob: { contains: `-${monthStr}-` } },
+        { dob: { contains: `-${month}-` } },
+      ];
+      if (!where.AND) where.AND = [];
+      (where.AND as any[]).push({ OR: monthConditions });
     }
 
     const rawSortKey = (req.query.sortKey as string) || "stt";

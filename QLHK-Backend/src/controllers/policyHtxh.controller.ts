@@ -62,7 +62,7 @@ export const getHtxhProfiles = async (req: AuthRequest, res: Response): Promise<
       received = false;
     }
 
-    const where: Record<string, unknown> = { is_deleted: false };
+    const where: Record<string, unknown> = { is_deleted: false, huu_tri: "x" };
     if (villageId) where.village_id = villageId;
     if (received !== undefined) where.received = received;
     if (calcYear) where.calculation_year = calcYear;
@@ -96,7 +96,7 @@ export const getHtxhStream = async (req: AuthRequest, res: Response): Promise<vo
     const villageId = req.user?.role === "admin" ? rawVillageId : req.user?.village_id;
     const rawCalcYear = req.query.calculation_year || req.query.calculationYear;
     const calcYear = rawCalcYear ? parseInt(rawCalcYear as string, 10) : undefined;
-    const where: Record<string, unknown> = { is_deleted: false };
+    const where: Record<string, unknown> = { is_deleted: false, huu_tri: "x" };
     if (villageId) where.village_id = villageId;
     if (calcYear) where.calculation_year = calcYear;
 

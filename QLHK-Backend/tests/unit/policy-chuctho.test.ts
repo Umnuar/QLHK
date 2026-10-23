@@ -44,6 +44,19 @@ describe("Policy Chúc Thọ Controller", () => {
     }));
   });
 
+  it("filters chuctho profiles by day, month, and exact dob", async () => {
+    const req: any = { query: { day: "15", month: "08", exactDate: "15/08/1954" }, user: { role: "admin" } };
+    const res = mockRes();
+    (prisma.chuctho_profiles.findMany as any).mockResolvedValue([{ id: validUuid, name: "Nguyễn Văn A" }]);
+    (prisma.chuctho_profiles.count as any).mockResolvedValue(1);
+    await getChucthoProfiles(req, res);
+    expect(prisma.chuctho_profiles.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        dob: { contains: "15/08/1954" },
+      }),
+    }));
+  });
+
   it("rejects non-uuid id with 400 bad request", async () => {
     const req: any = { params: { id: "ct-2" }, body: {}, user: { role: "admin" } };
     const res1 = mockRes();

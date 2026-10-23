@@ -11,12 +11,15 @@ import {
 } from "../controllers/policyHtxh.controller";
 import { getPolicyAnalytics } from "../controllers/policyAnalytics.controller";
 import { exportPolicyExcel, importPolicyExcel } from "../controllers/policyExcel.controller";
+import { syncPolicyData } from "../controllers/policySync.controller";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const router = Router();
 
 router.use(authenticateToken);
 router.use(authorizeVillageScope);
+
+router.post("/sync", syncPolicyData);
 
 router.get("/chuctho", getChucthoProfiles);
 router.get("/chuctho/stream", getChucthoStream);

@@ -150,7 +150,14 @@ export const householdApi = {
 			book_number: data.book_number || data.code,
 			address: data.address,
 			status: data.status || "Thường trú",
-			members: data.members,
+			members: data.members?.map((m: any) => {
+				const isTempId = !m.id || String(m.id).startsWith("mem-") || String(m.id).includes("-hh");
+				return {
+					...m,
+					id: isTempId ? undefined : m.id,
+					household_id: undefined,
+				};
+			}),
 		};
 		const res = await apiClient.post("/households", payload);
 		const item = res.data?.data || res.data;
@@ -162,7 +169,14 @@ export const householdApi = {
 			book_number: data.book_number || data.code,
 			address: data.address,
 			status: data.status,
-			members: data.members,
+			members: data.members?.map((m: any) => {
+				const isTempId = !m.id || String(m.id).startsWith("mem-") || String(m.id).includes("-hh");
+				return {
+					...m,
+					id: isTempId ? undefined : m.id,
+					household_id: undefined,
+				};
+			}),
 			version: (data as any).version,
 		};
 		const res = await apiClient.put(`/households/${id}`, payload);

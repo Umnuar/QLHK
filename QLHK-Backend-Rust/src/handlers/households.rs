@@ -2,7 +2,7 @@ use axum::{
     extract::{Extension, Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{get, post},
+    routing::{delete, get, post},
     Json, Router,
 };
 use chrono::Utc;
@@ -28,12 +28,16 @@ use crate::{
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(get_households).post(create_household))
+        .route("/recycle-bin", get(get_recycle_bin))
+        .route("/batch-delete", post(batch_delete_households))
         .route(
             "/{id}",
             get(get_household_by_id)
                 .put(update_household)
                 .delete(delete_household),
         )
+        .route("/{id}/restore", post(restore_household))
+        .route("/{id}/hard", delete(hard_delete_household))
         .route("/{id}/split", post(split_household))
         .route("/{id}/merge", post(merge_household))
         .route("/{id}/change-head", post(change_head))
@@ -958,6 +962,245 @@ pub async fn delete_household(
     }
 
     Json(json!({ "message": "Xóa mềm hộ khẩu thành công" })).into_response()
+}
+
+pub async fn get_recycle_bin(
+    State(state): State<AppState>,
+    claims_ext: Option<Extension<Claims>>,
+    Query(mut filter): Query<HouseholdFilter>,
+) -> Response {
+    filter.include_deleted = Some(true);
+    get_households(State(state), claims_ext, Query(filter)).await
+}
+
+pub async fn restore_household(
+    State(state): State<AppState>,
+    claims_ext: Option<Extension<Claims>>,
+    Path(id): Path<Uuid>,
+) -> Response {
+    let claims = claims_ext.map(|Extension(c)| c);
+    let current = match sqlx::query_as::<_, HouseholdDb>(
+        "SELECT id, village_id, book_number, address, status, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.households WHERE id = $1",
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await
+    {
+        Ok(Some(h)) if h.is_deleted => h,
+        Ok(Some(_)) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "Hộ khẩu không nằm trong thùng rác" })),
+            )
+                .into_response();
+        }
+        _ => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "Không tìm thấy hộ khẩu trong thùng rác" })),
+            )
+                .into_response();
+        }
+    };
+
+    if let Some(c) = &claims {
+        if c.role != "admin" {
+            if let Some(user_vid) = c.village_id.as_deref().and_then(|v| Uuid::parse_str(v).ok()) {
+                if current.village_id != user_vid {
+                    return (
+                        StatusCode::FORBIDDEN,
+                        Json(json!({ "error": "Không có quyền khôi phục hộ khẩu của thôn khác" })),
+                    )
+                        .into_response();
+                }
+            }
+        }
+    }
+
+    let mut tx = match state.pool.begin().await {
+        Ok(t) => t,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Lỗi khởi tạo giao dịch cơ sở dữ liệu" })),
+            )
+                .into_response();
+        }
+    };
+
+    let hh_restore = sqlx::query(
+        "UPDATE qlhk.households SET is_deleted = false, deleted_at = NULL, version = version + 1, updated_at = NOW() WHERE id = $1",
+    )
+    .bind(id)
+    .execute(&mut *tx)
+    .await;
+
+    if hh_restore.is_err() {
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Lỗi khi khôi phục hộ khẩu" })),
+        )
+            .into_response();
+    }
+
+    let citizens_restore = sqlx::query(
+        "UPDATE qlhk.citizens SET is_deleted = false, deleted_at = NULL, updated_at = NOW() WHERE household_id = $1 AND is_deleted = true",
+    )
+    .bind(id)
+    .execute(&mut *tx)
+    .await;
+
+    if citizens_restore.is_err() {
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Lỗi khi khôi phục nhân khẩu" })),
+        )
+            .into_response();
+    }
+
+    if tx.commit().await.is_err() {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Lỗi hoàn tất giao dịch khôi phục hộ khẩu" })),
+        )
+            .into_response();
+    }
+
+    Json(json!({
+        "message": "Khôi phục hộ khẩu thành công",
+        "data": { "id": id, "is_deleted": false }
+    }))
+    .into_response()
+}
+
+pub async fn hard_delete_household(
+    State(state): State<AppState>,
+    claims_ext: Option<Extension<Claims>>,
+    Path(id): Path<Uuid>,
+) -> Response {
+    let claims = claims_ext.map(|Extension(c)| c);
+    if let Some(c) = &claims {
+        if c.role != "admin" {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(json!({ "error": "Chỉ Admin mới có quyền xóa vĩnh viễn" })),
+            )
+                .into_response();
+        }
+    }
+
+    let _current = match sqlx::query_as::<_, HouseholdDb>(
+        "SELECT id, village_id, book_number, address, status, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.households WHERE id = $1",
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await
+    {
+        Ok(Some(h)) => h,
+        _ => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "Không tìm thấy hộ khẩu" })),
+            )
+                .into_response();
+        }
+    };
+
+    let mut tx = match state.pool.begin().await {
+        Ok(t) => t,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Lỗi khởi tạo giao dịch cơ sở dữ liệu" })),
+            )
+                .into_response();
+        }
+    };
+
+    let _ = sqlx::query("DELETE FROM qlhk.citizens WHERE household_id = $1")
+        .bind(id)
+        .execute(&mut *tx)
+        .await;
+
+    let _ = sqlx::query("DELETE FROM qlhk.households WHERE id = $1")
+        .bind(id)
+        .execute(&mut *tx)
+        .await;
+
+    if tx.commit().await.is_err() {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Lỗi xóa vĩnh viễn hộ khẩu" })),
+        )
+            .into_response();
+    }
+
+    Json(json!({
+        "message": "Đã xóa vĩnh viễn hộ khẩu",
+        "data": { "id": id }
+    }))
+    .into_response()
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct BatchDeleteRequest {
+    pub ids: Vec<Uuid>,
+}
+
+pub async fn batch_delete_households(
+    State(state): State<AppState>,
+    claims_ext: Option<Extension<Claims>>,
+    Json(req): Json<BatchDeleteRequest>,
+) -> Response {
+    let _claims = claims_ext.map(|Extension(c)| c);
+    if req.ids.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Danh sách ID không hợp lệ" })),
+        )
+            .into_response();
+    }
+
+    let mut tx = match state.pool.begin().await {
+        Ok(t) => t,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Lỗi khởi tạo giao dịch cơ sở dữ liệu" })),
+            )
+                .into_response();
+        }
+    };
+
+    let _ = sqlx::query(
+        "UPDATE qlhk.households SET is_deleted = true, deleted_at = NOW(), version = version + 1, updated_at = NOW() WHERE id = ANY($1)",
+    )
+    .bind(&req.ids)
+    .execute(&mut *tx)
+    .await;
+
+    let _ = sqlx::query(
+        "UPDATE qlhk.citizens SET is_deleted = true, deleted_at = NOW(), updated_at = NOW() WHERE household_id = ANY($1)",
+    )
+    .bind(&req.ids)
+    .execute(&mut *tx)
+    .await;
+
+    if tx.commit().await.is_err() {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Lỗi xóa hàng loạt hộ khẩu" })),
+        )
+            .into_response();
+    }
+
+    Json(json!({
+        "message": "Đã chuyển vào thùng rác thành công",
+        "count": req.ids.len()
+    }))
+    .into_response()
 }
 
 pub async fn split_household(

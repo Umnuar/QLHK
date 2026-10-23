@@ -127,9 +127,29 @@ pub fn format_citizen(c: CitizenDb) -> CitizenResponse {
     CitizenResponse::from_db(c, decrypted)
 }
 
+fn deserialize_optional_uuid<'de, D>(deserializer: D) -> Result<Option<Uuid>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = Option::<serde_json::Value>::deserialize(deserializer)?;
+    match opt {
+        Some(serde_json::Value::String(s)) => {
+            let trimmed = s.trim();
+            if trimmed.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Uuid::parse_str(trimmed).ok())
+            }
+        }
+        _ => Ok(None),
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct CreateCitizenInput {
+    #[serde(default, deserialize_with = "deserialize_optional_uuid")]
     pub id: Option<Uuid>,
+    #[serde(default, deserialize_with = "deserialize_optional_uuid")]
     pub household_id: Option<Uuid>,
     pub stt: Option<i32>,
     pub is_head: Option<bool>,
@@ -149,6 +169,7 @@ pub struct CreateCitizenInput {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct UpdateCitizenInput {
+    #[serde(default, deserialize_with = "deserialize_optional_uuid")]
     pub id: Option<Uuid>,
     pub stt: Option<i32>,
     pub is_head: Option<bool>,

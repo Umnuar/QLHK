@@ -1,6 +1,6 @@
 import { Check, ChevronDown, Search, X } from "lucide-react";
 import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 export interface SelectOption<T = string | number> {
@@ -128,7 +128,7 @@ export function CustomSelect<T extends string | number = string | number>({
 		});
 	};
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (!isOpen) return;
 
 		updatePosition();
@@ -193,8 +193,11 @@ export function CustomSelect<T extends string | number = string | number>({
 
 	const toggleDropdown = () => {
 		if (disabled) return;
-		setIsOpen((prev) => !prev);
-		if (isOpen) {
+		if (!isOpen) {
+			updatePosition();
+			setIsOpen(true);
+		} else {
+			setIsOpen(false);
 			setSearchQuery("");
 		}
 	};
@@ -248,7 +251,13 @@ export function CustomSelect<T extends string | number = string | number>({
 				<label
 					htmlFor={id}
 					className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 cursor-pointer"
-					onClick={() => !disabled && setIsOpen(true)}
+					onClick={() => {
+						if (disabled) return;
+						if (!isOpen) {
+							updatePosition();
+							setIsOpen(true);
+						}
+					}}
 				>
 					{label}
 					{required && <span className="text-rose-500 ml-1">*</span>}
@@ -375,6 +384,7 @@ export function CustomSelect<T extends string | number = string | number>({
 			)}
 
 			{isOpen &&
+				menuPosition.width > 0 &&
 				typeof document !== "undefined" &&
 				createPortal(
 					<div
@@ -387,6 +397,7 @@ export function CustomSelect<T extends string | number = string | number>({
 							width: `${menuPosition.width}px`,
 							minWidth: "160px",
 							zIndex: 9999,
+							transformOrigin: openUpward ? "bottom center" : "top center",
 						}}
 						className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-2xl shadow-xl shadow-slate-950/20 dark:shadow-slate-950/60 overflow-hidden animate-in fade-in zoom-in-95 duration-150 ${dropdownClassName}`}
 					>

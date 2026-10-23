@@ -17,7 +17,7 @@
 
 ## Execution Checklist
 
-- [ ] Step 1: Fix CustomSelect Dropdown Portal (0,0) Coordinate Jump
+- [x] Step 1: Fix CustomSelect Dropdown Portal (0,0) Coordinate Jump
   - Target Files: `QLHK/QLHK-Client/src/components/common/CustomSelect.tsx`
   - Role Focus: Synchronous getBoundingClientRect in toggleDropdown, useLayoutEffect, portal render guard, transformOrigin
   - Diff Budget: <= 200 gross LOC

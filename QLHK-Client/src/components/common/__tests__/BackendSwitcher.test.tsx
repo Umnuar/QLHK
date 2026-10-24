@@ -18,6 +18,7 @@ vi.mock("../../../api/client", async () => {
 describe("BackendSwitcher Component", () => {
 	beforeEach(() => {
 		localStorage.clear();
+		localStorage.setItem("qlhk_backend_port", "5002");
 		vi.clearAllMocks();
 	});
 

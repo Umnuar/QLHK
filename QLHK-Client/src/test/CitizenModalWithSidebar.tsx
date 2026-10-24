@@ -386,9 +386,9 @@ export const CitizenModalWithSidebar: React.FC<CitizenModalWithSidebarProps> = (
 		>
 			<div
 				ref={modalRef}
-				className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col md:flex-row overflow-hidden max-h-[90vh] animate-in zoom-in-95 duration-150"
+				className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[580px] max-h-[92vh] animate-in zoom-in-95 duration-150"
 			>
-				<aside className="w-full md:w-20 shrink-0 bg-slate-50/90 dark:bg-slate-950/50 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 py-5 px-2 flex flex-row md:flex-col items-center justify-between">
+				<aside className="w-full md:w-20 shrink-0 bg-slate-50/90 dark:bg-slate-950/50 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 py-5 px-2 flex flex-row md:flex-col items-center justify-between h-full">
 					<div className="flex flex-row md:flex-col items-center gap-4">
 						<div
 							className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-xs shrink-0 border relative transition-colors ${
@@ -813,12 +813,12 @@ export const CitizenModalWithSidebar: React.FC<CitizenModalWithSidebarProps> = (
 										</label>
 										<textarea
 											id="modal-sidebar-notes"
-											rows={3}
+											rows={4}
 											spellCheck={false}
 											value={notes}
 											onChange={(e) => setNotes(e.target.value)}
 											placeholder="Tiền sử, nơi cư trú trước đây, ghi chú chính sách đặc thù..."
-											className={`${inputClasses} resize-none`}
+											className={`${inputClasses} resize-none min-h-[110px]`}
 										/>
 									</div>
 								</div>

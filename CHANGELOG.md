@@ -5,65 +5,7 @@ Bản cập nhật lớn toàn diện đưa toàn bộ hệ thống QLHK từ ph
 
 ---
 
-## [v1.5.2] - 2026-10-25 (Đột phá Công thái học Modal Nhân khẩu 2-Tab & Tối ưu Trải nghiệm Cán bộ)
-
-Bản phát hành tập trung nâng tầm trải nghiệm người dùng (UX) và tối ưu hóa công thái học nhập liệu hành chính: tái cấu trúc toàn diện cửa sổ chỉnh sửa nhân khẩu với kiến trúc Dock Icon Sidebar 2 tab chuyên biệt, triệt tiêu hoàn toàn rung lắc giao diện (Zero CLS), tối ưu phím tắt nhập liệu siêu tốc và đối soát cảnh báo trùng số CCCD thời gian thực.
-
-### ✨ WHAT'S NEW (Có gì mới?)
-
-- **Tái thiết kế Toàn diện Modal Nhân khẩu (CitizenModal) chuẩn Civic Ergonomics**:
-  - **Dock Sidebar Điều hướng Biểu tượng (`w-20`)**: Thay thế giao diện 1 cột cuộn dài dễ gây ngợp thông tin bằng thanh dock biểu tượng tối giản, tinh tế bên trái. Tích hợp avatar nhận diện thông minh với chữ cái viết tắt, đính kèm huy hiệu sao vàng `★` nổi bật cho Chủ hộ gia đình.
-  - **Phân tách 2 Không gian Dữ liệu Chuyên biệt**:
-    - **Tab 1: Thông tin cơ bản**: Tập trung vào nhân thân cốt lõi (Họ và tên, quan hệ gia đình, giới tính, ngày tháng năm sinh, số CCCD bảo mật, dân tộc, tôn giáo và quê quán) kèm chỉ báo hoàn tất thông tin bằng chấm tròn xanh thanh thoát.
-    - **Tab 2: Nghề nghiệp & Nghĩa vụ**: Quản lý chuyên sâu về trình độ học vấn, việc làm chính, tình hình thực hiện nghĩa vụ quân sự và ghi chú nhân khẩu mở rộng (`textarea` 4 dòng rộng rãi) kèm huy hiệu đếm số trường dữ liệu đã điền.
-  - **Khóa Cố định Chiều cao Khung nhìn (`h-[580px]`) - Zero Cumulative Layout Shift (Zero CLS)**:
-    - Loại bỏ 100% hiện tượng co giãn, giật layout khi chuyển đổi giữa tab ngắn và tab dài; thanh công cụ hành động phía dưới (`Hủy`, `Lưu nhân khẩu`, `← Quay lại`, `Mục tiếp theo →`) luôn giữ nguyên tọa độ vật lý, loại bỏ hoàn toàn rủi ro bấm trượt nút.
-  - **Chuẩn hóa Tối giản Trường Quan hệ**:
-    - Rút gọn nhãn hiển thị thành `"Quan hệ *"`, dọn sạch toàn bộ các chip nút bấm gợi ý rườm rà dưới ô nhập; trang bị danh mục gợi ý gốc HTML5 `datalist` (`#rel-options`) hỗ trợ gõ nhanh hoặc chọn tự động.
-    - Tự động nhận diện và hiển thị huy hiệu `Chủ hộ gia đình` nổi bật khi nhân khẩu mang vai trò chủ hộ.
-
-- **Động cơ Công thái học Nhập liệu Siêu tốc (Rapid Data Entry Engine)**:
-  - **Autofocus Thông minh**: Tự động đưa con trỏ vào ô "Họ và tên" ngay khi mở modal; tự động focus vào ô "Nghề nghiệp" khi cán bộ chuyển sang Tab 2, không cần chạm chuột.
-  - **Hệ thống Phím tắt Liền mạch**:
-    - Phím `Enter`: Tự động chuyển vùng chọn tuần tự sang trường tiếp theo và tự động lưu khi ở trường cuối cùng.
-    - Tổ hợp `Ctrl + Enter`: Lưu tức thì hồ sơ tại bất kỳ ô nhập liệu nào.
-    - Phím `Esc`: Đóng an toàn modal, không lo mất tập trung.
-  - **Cảnh báo Trùng lặp CCCD Thời gian thực (Real-time Duplicate CCCD Guard)**:
-    - Ngay khi nhập đủ 12 chữ số CCCD, hệ thống tự động quét và đối soát tức thì với toàn bộ nhân khẩu trong hộ; hiển thị huy hiệu nhấp nháy đỏ kèm tên nhân khẩu bị trùng, chặn đứng nguy cơ sai sót dữ liệu ngay từ bước nhập liệu.
-  - **Tính toán Tuổi & Năm sinh Động (Live Age & Birth Year)**:
-    - Tính toán và hiển thị tuổi tức thời ngay cạnh ô ngày sinh và trên tooltip avatar thanh dock.
-
-- **Bộ chuyển đổi Máy chủ Kép (Dual Backend Switcher)**:
-  - Bổ sung nút chuyển đổi máy chủ `BackendSwitcher` dạng compact trên Header, hỗ trợ cán bộ kỹ thuật chuyển đổi tức thời giữa Backend Node.js (cổng 5002) và Backend Rust Native (cổng 5012) để đối soát dữ liệu song song (Shadow Testing) mà không cần tải lại trang.
-
----
-
-### ⚡ PERFORMANCE & QUALITY (Hiệu năng & Chất lượng)
-
-- **Đóng gói Bản dựng Siêu tốc (Vite Production Build)**:
-  - Hoàn tất đóng gói ứng dụng toàn diện trong **5.35 giây**, bundle nạp nhanh, giao diện phản hồi dưới 16ms (chuẩn 60fps).
-- **Hệ thống Kiểm thử Tự động Đạt 100% (25/25 Test Files, 205/205 Tests PASS)**:
-  - Cập nhật toàn diện bộ kiểm thử `CitizenModal.test.tsx` (14/14 tests) bao phủ toàn bộ luồng tương tác 2 tab, phím tắt, cảnh báo trùng CCCD và validation ngày sinh/CCCD.
-  - Đảm bảo 205 bài kiểm thử unit, integration, và E2E trên toàn hệ thống chạy thành công tuyệt đối.
-- **Tuân thủ Bất biến P0 Zero Comments**:
-  - Toàn bộ mã nguồn mới và chỉnh sửa tuân thủ 100% không comment (`//`, `/* */`, JSDoc/TSDoc), tự tường minh qua kiến trúc và định danh chuẩn mực.
-
----
-
-### 🛠️ FIXES & POLISH (Vá lỗi & Hoàn thiện)
-
-- **Khắc phục Triệt để Lỗi Dropdown Bị Giật từ Góc Màn hình**:
-  - Tối ưu hóa component `CustomSelect.tsx` với cơ chế tính toán trước tọa độ và `useLayoutEffect`, triệt tiêu hoàn toàn hiện tượng menu nhảy giật từ góc trên bên trái `(0, 0)` khi bung mở.
-- **Nâng cấp Bộ lọc Ngày sinh cho Phân hệ Chúc thọ**:
-  - Bổ sung trường lọc theo ngày/tháng/năm sinh cụ thể trên thanh lọc `ProfileFilterBar.tsx` của phân hệ Chúc thọ, giúp lập danh sách mừng thọ cho các cụ cao tuổi nhanh chóng, chính xác.
-- **Thanh lọc Giao diện Phân tích Chính sách**:
-  - Tạm thời gỡ bỏ thẻ `PolicyCompositeCard` trong `PolicyAnalyticsPage.tsx` nhằm đơn giản hóa màn hình phân tích, tập trung vào các chỉ số trọng yếu.
-- **Dọn dẹp Không gian Mã nguồn**:
-  - Gỡ bỏ hoàn toàn nút bấm xem thử test trên Header và xóa sạch thư mục thử nghiệm `src/test/`, giữ cho cây thư mục dự án gọn gàng, chuẩn production.
-
----
-
-## [v1.5.1] - 2026-10-23 (Hoàn thiện Động cơ Rust Backend 100% & Hợp nhất Dữ liệu Chính sách)
+## [v1.5.1] - 2026-10-23 (Hoàn thiện Động cơ Rust Backend 100%, Hợp nhất Dữ liệu Chính sách & Đột phá Công thái học Modal Nhân khẩu)
 
 ### 🚀 NEW (Tính năng mới)
 
@@ -81,6 +23,26 @@ Bản phát hành tập trung nâng tầm trải nghiệm người dùng (UX) v�
   - Tự động hóa hoàn toàn danh sách Mừng thọ (Chúc thọ): Tự động lọc toàn bộ công dân từ 60 tuổi trở lên theo các mốc tuổi quy định (70, 75, 80, 85, 90+ tuổi) và hỗ trợ lọc linh hoạt theo ngày/tháng/năm sinh.
   - Tự động hóa danh sách Hưu trí Xã hội: Tự động trích xuất các hồ sơ có trường nghề nghiệp ghi nhận thông tin liên quan đến "hưu", "nghỉ hưu", "hưu trí", không cần lập danh sách thủ công.
 
+- **Tái thiết kế Toàn diện Modal Nhân khẩu (CitizenModal) chuẩn Civic Ergonomics**:
+  - **Dock Sidebar Điều hướng Biểu tượng (`w-20`)**: Thay thế giao diện 1 cột cuộn dài dễ gây ngợp thông tin bằng thanh dock biểu tượng tối giản, tinh tế bên trái. Tích hợp avatar nhận diện thông minh với chữ cái viết tắt, đính kèm huy hiệu sao vàng `★` nổi bật cho Chủ hộ gia đình.
+  - **Phân tách 2 Không gian Dữ liệu Chuyên biệt**:
+    - **Tab 1: Thông tin cơ bản**: Tập trung vào nhân thân cốt lõi (Họ và tên, quan hệ gia đình, giới tính, ngày tháng năm sinh, số CCCD bảo mật, dân tộc, tôn giáo và quê quán) kèm chỉ báo hoàn tất thông tin bằng chấm tròn xanh thanh thoát.
+    - **Tab 2: Nghề nghiệp & Nghĩa vụ**: Quản lý chuyên sâu về trình độ học vấn, việc làm chính, tình hình thực hiện nghĩa vụ quân sự và ghi chú nhân khẩu mở rộng (`textarea` 4 dòng rộng rãi) kèm huy hiệu đếm số trường dữ liệu đã điền.
+  - **Khóa Cố định Chiều cao Khung nhìn (`h-[580px]`) - Zero Cumulative Layout Shift (Zero CLS)**:
+    - Loại bỏ 100% hiện tượng co giãn, giật layout khi chuyển đổi giữa tab ngắn và tab dài; thanh công cụ hành động phía dưới (`Hủy`, `Lưu nhân khẩu`, `← Quay lại`, `Mục tiếp theo →`) luôn giữ nguyên tọa độ vật lý, loại bỏ hoàn toàn rủi ro bấm trượt nút.
+  - **Chuẩn hóa Tối giản Trường Quan hệ**:
+    - Rút gọn nhãn hiển thị thành `"Quan hệ *"`, dọn sạch toàn bộ các chip nút bấm gợi ý rườm rà dưới ô nhập; trang bị danh mục gợi ý gốc HTML5 `datalist` (`#rel-options`) hỗ trợ gõ nhanh hoặc chọn tự động.
+    - Tự động nhận diện và hiển thị huy hiệu `Chủ hộ gia đình` nổi bật khi nhân khẩu mang vai trò chủ hộ.
+
+- **Động cơ Công thái học Nhập liệu Siêu tốc cho Cán bộ (Rapid Data Entry Engine)**:
+  - **Autofocus Thông minh**: Tự động đưa con trỏ vào ô "Họ và tên" ngay khi mở modal; tự động focus vào ô "Nghề nghiệp" khi cán bộ chuyển sang Tab 2, không cần chạm chuột.
+  - **Hệ thống Phím tắt Liền mạch**: Phím `Enter` tự động chuyển vùng chọn tuần tự sang trường tiếp theo và tự động lưu khi ở trường cuối cùng; tổ hợp `Ctrl + Enter` lưu tức thì hồ sơ tại bất kỳ ô nhập liệu nào; phím `Esc` đóng an toàn modal.
+  - **Cảnh báo Trùng lặp CCCD Thời gian thực (Real-time Duplicate CCCD Guard)**: Ngay khi nhập đủ 12 chữ số CCCD, hệ thống tự động quét và đối soát tức thì với toàn bộ nhân khẩu trong hộ; hiển thị huy hiệu nhấp nháy đỏ kèm tên nhân khẩu bị trùng, chặn đứng nguy cơ sai sót dữ liệu ngay từ bước nhập liệu.
+  - **Tính toán Tuổi & Năm sinh Động (Live Age & Birth Year)**: Tính toán và hiển thị tuổi tức thời ngay cạnh ô ngày sinh và trên tooltip avatar thanh dock.
+
+- **Bộ chuyển đổi Máy chủ Kép (Dual Backend Switcher)**:
+  - Bổ sung nút chuyển đổi máy chủ `BackendSwitcher` dạng compact trên Header, hỗ trợ cán bộ kỹ thuật chuyển đổi tức thời giữa Backend Node.js (cổng 5002) và Backend Rust Native (cổng 5012) để đối soát dữ liệu song song (Shadow Testing) mà không cần tải lại trang.
+
 ---
 
 ### ⚡ UPDATE & PERFORMANCE (Cải tiến & Tối ưu hóa hiệu năng)
@@ -89,6 +51,11 @@ Bản phát hành tập trung nâng tầm trải nghiệm người dùng (UX) v�
   - Cập nhật `QLHK-Client/src/api/client.ts` ưu tiên kết nối trực tiếp đến backend Rust trên cổng `5012`, tăng tốc độ tải dữ liệu ban đầu và phản hồi thao tác.
 - **Tối ưu Hóa Tốc độ Đọc/Ghi Excel & Tiết kiệm Bộ nhớ**:
   - Thay thế hoàn toàn cách đọc toàn bộ file vào RAM bằng cơ chế đọc stream và giải mã zero-copy của `calamine` và `rust_xlsxwriter`, xử lý tệp dữ liệu hàng nghìn nhân khẩu mà không gây nghẽn tài nguyên.
+- **Tối ưu Hóa Đóng gói Vite & Phản hồi Tức thời**:
+  - Hoàn tất đóng gói ứng dụng toàn diện trong **5.35 giây**, bundle nạp nhanh, giao diện phản hồi dưới 16ms (chuẩn 60fps).
+- **Hệ thống Kiểm định Tự động Đạt 100% (25/25 Test Files, 205/205 Tests PASS)**:
+  - Cập nhật toàn diện bộ kiểm thử `CitizenModal.test.tsx` (14/14 tests) bao phủ toàn bộ luồng tương tác 2 tab, phím tắt, cảnh báo trùng CCCD và validation ngày sinh/CCCD.
+  - Đảm bảo 205 bài kiểm thử unit, integration, và E2E trên toàn hệ thống chạy thành công tuyệt đối.
 - **Bảo mật Dữ liệu CCCD Tuyệt đối**:
   - Đồng bộ chuẩn thuật toán mã hóa đối xứng AES-256-GCM (IV 12 bytes ngẫu nhiên, authentication tag 16 bytes) và băm HMAC-SHA256 kết hợp chuỗi secret pepper, đảm bảo tương thích 100% với dữ liệu đã lưu trữ.
 - **Chuẩn hóa Mã nguồn P0 Zero Comments**:
@@ -98,6 +65,12 @@ Bản phát hành tập trung nâng tầm trải nghiệm người dùng (UX) v�
 
 ### 🛠️ FIX (Sửa lỗi & Vá lỗi giao diện)
 
+- **Khắc phục Triệt để Lỗi Dropdown Bị Giật từ Góc Màn hình**:
+  - Tối ưu hóa component `CustomSelect.tsx` với cơ chế tính toán trước tọa độ và `useLayoutEffect`, triệt tiêu hoàn toàn hiện tượng menu nhảy giật từ góc trên bên trái `(0, 0)` khi bung mở.
+- **Nâng cấp Bộ lọc Ngày sinh cho Phân hệ Chúc thọ**:
+  - Bổ sung trường lọc theo ngày/tháng/năm sinh cụ thể trên thanh lọc `ProfileFilterBar.tsx` của phân hệ Chúc thọ, giúp lập danh sách mừng thọ cho các cụ cao tuổi nhanh chóng, chính xác.
+- **Thanh lọc Giao diện Phân tích Chính sách & Dọn dẹp Thư mục Tạm**:
+  - Tạm thời gỡ bỏ thẻ `PolicyCompositeCard` trong `PolicyAnalyticsPage.tsx` nhằm đơn giản hóa màn hình phân tích; gỡ bỏ hoàn toàn nút bấm xem thử test trên Header và xóa sạch thư mục thử nghiệm `src/test/`.
 - **Sửa Lỗi Phân cấp & Neo Vị trí Dropdown Select trong Modal**:
   - Khắc phục triệt để lỗi menu thả xuống (dropdown select) bị nhảy lệch vị trí lên góc màn hình hoặc bị che khuất khi thao tác sửa thông tin nhân khẩu; chuẩn hóa thuộc tính z-index và cơ chế neo vị trí trong container modal.
 - **Bảo vệ Tính Toàn vẹn Dữ liệu Chính sách**:

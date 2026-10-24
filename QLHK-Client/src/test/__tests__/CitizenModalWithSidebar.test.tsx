@@ -32,12 +32,16 @@ describe("CitizenModalWithSidebar Component", () => {
 		);
 
 		expect(screen.getByText("Sửa Thông Tin Nhân Khẩu")).toBeInTheDocument();
-		expect(screen.getByText("Thông tin cơ bản")).toBeInTheDocument();
-		expect(screen.getByText("Nghề nghiệp & Nghĩa vụ")).toBeInTheDocument();
+		expect(screen.getByText("Mục 1/2: Thông tin cơ bản")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Thông tin cơ bản" }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Nghề nghiệp & Nghĩa vụ" }),
+		).toBeInTheDocument();
 
 		expect(screen.getByText("ĐH")).toBeInTheDocument();
-		expect(screen.getByText("★ Chủ hộ")).toBeInTheDocument();
-		expect(screen.getByText("11 tuổi")).toBeInTheDocument();
+		expect(screen.getByText("★")).toBeInTheDocument();
 
 		const nameInput = screen.getByDisplayValue("ĐINH THANH HIẾU");
 		expect(nameInput).toBeInTheDocument();

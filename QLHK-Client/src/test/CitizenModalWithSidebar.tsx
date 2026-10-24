@@ -3,15 +3,8 @@ import {
 	ArrowRight,
 	Briefcase,
 	Check,
-	CheckCircle2,
-	ChevronRight,
 	Eye,
 	EyeOff,
-	GraduationCap,
-	IdCard,
-	Info,
-	MapPin,
-	Shield,
 	Sparkles,
 	User,
 	X,
@@ -61,20 +54,6 @@ const CITIZEN_RELATIONSHIPS = [
 	"Chị",
 	"Em",
 	"Khác",
-] as const;
-
-const FAMILY_RELATIONSHIPS_SUGGESTIONS = [
-	"Chủ hộ",
-	"Vợ",
-	"Chồng",
-	"Con đẻ",
-	"Con nuôi",
-	"Cha",
-	"Mẹ",
-	"Bố",
-	"Bà",
-	"Ông",
-	"Cháu",
 ] as const;
 
 function getAvatarInitials(name: string): string {
@@ -407,180 +386,70 @@ export const CitizenModalWithSidebar: React.FC<CitizenModalWithSidebarProps> = (
 		>
 			<div
 				ref={modalRef}
-				className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col md:flex-row overflow-hidden max-h-[90vh] animate-in zoom-in-95 duration-150"
+				className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col md:flex-row overflow-hidden max-h-[90vh] animate-in zoom-in-95 duration-150"
 			>
-				<aside className="w-full md:w-72 shrink-0 bg-slate-50/90 dark:bg-slate-950/50 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 p-5 flex flex-col justify-between">
-					<div className="space-y-5">
-						<div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-							<div
-								className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 border transition-colors ${
-									headStatus
-										? "bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400"
-										: "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-								}`}
-							>
-								{getAvatarInitials(fullName)}
-							</div>
-							<div className="min-w-0 flex-1">
-								<div className="flex items-center gap-1.5 flex-wrap">
-									<span className="text-xs font-black truncate text-slate-900 dark:text-slate-100 max-w-[130px]">
-										{fullName.trim() || "Chưa nhập họ tên"}
-									</span>
-								</div>
-								<div className="flex items-center gap-1.5 mt-1 flex-wrap">
-									{headStatus ? (
-										<span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-500 text-white shadow-xs">
-											★ Chủ hộ
-										</span>
-									) : (
-										<span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-											{relationship}
-										</span>
-									)}
-									{parsedDobInfo && (
-										<span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-											{parsedDobInfo.age} tuổi
-										</span>
-									)}
-								</div>
-							</div>
+				<aside className="w-full md:w-20 shrink-0 bg-slate-50/90 dark:bg-slate-950/50 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 py-5 px-2 flex flex-row md:flex-col items-center justify-between">
+					<div className="flex flex-row md:flex-col items-center gap-4">
+						<div
+							className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-xs shrink-0 border relative transition-colors ${
+								headStatus
+									? "bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400"
+									: "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+							}`}
+							title={`${fullName.trim() || "Nhân khẩu"} (${headStatus ? "Chủ hộ" : relationship})${parsedDobInfo ? ` • ${parsedDobInfo.age} tuổi` : ""}`}
+						>
+							{getAvatarInitials(fullName)}
+							{headStatus && (
+								<span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center shadow-xs">
+									★
+								</span>
+							)}
 						</div>
 
-						<nav className="space-y-1.5" aria-label="Các mục thông tin nhân khẩu">
+						<nav className="flex flex-row md:flex-col items-center gap-2" aria-label="Các mục thông tin nhân khẩu">
 							<button
 								type="button"
 								onClick={() => setActiveTab("basic")}
-								className={`w-full flex items-center justify-between p-3 rounded-2xl text-left transition-all cursor-pointer ${
+								aria-label="Thông tin cơ bản"
+								title="Thông tin cơ bản (Nhân thân, CCCD & Quê quán)"
+								className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer relative ${
 									activeTab === "basic"
-										? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
-										: "text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60"
+										? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
+										: "text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100"
 								}`}
 							>
-								<div className="flex items-center gap-3">
-									<div
-										className={`p-2 rounded-xl transition-colors ${
-											activeTab === "basic"
-												? "bg-white/20 text-white"
-												: "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-										}`}
-									>
-										<User className="w-4 h-4" strokeWidth={2} />
-									</div>
-									<div>
-										<div className="text-xs font-bold leading-tight">
-											Thông tin cơ bản
-										</div>
-										<div
-											className={`text-[10px] leading-tight mt-0.5 ${
-												activeTab === "basic"
-													? "text-emerald-100"
-													: "text-slate-400 dark:text-slate-500"
-											}`}
-										>
-											Nhân thân, CCCD & Quê quán
-										</div>
-									</div>
-								</div>
-								{isBasicInfoComplete ? (
-									<CheckCircle2
-										className={`w-4 h-4 shrink-0 ${
-											activeTab === "basic"
-												? "text-emerald-200"
-												: "text-emerald-600 dark:text-emerald-400"
-										}`}
-									/>
-								) : (
-									<ChevronRight
-										className={`w-4 h-4 shrink-0 ${
-											activeTab === "basic"
-												? "text-emerald-200"
-												: "text-slate-400"
-										}`}
-									/>
+								<User className="w-5 h-5" strokeWidth={activeTab === "basic" ? 2.2 : 1.8} />
+								{isBasicInfoComplete && (
+									<span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900" />
 								)}
 							</button>
 
 							<button
 								type="button"
 								onClick={() => setActiveTab("career")}
-								className={`w-full flex items-center justify-between p-3 rounded-2xl text-left transition-all cursor-pointer ${
+								aria-label="Nghề nghiệp & Nghĩa vụ"
+								title="Nghề nghiệp & Nghĩa vụ (Học vấn, việc làm & NVQS)"
+								className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer relative ${
 									activeTab === "career"
-										? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
-										: "text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60"
+										? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
+										: "text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100"
 								}`}
 							>
-								<div className="flex items-center gap-3">
-									<div
-										className={`p-2 rounded-xl transition-colors ${
-											activeTab === "career"
-												? "bg-white/20 text-white"
-												: "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-										}`}
-									>
-										<Briefcase className="w-4 h-4" strokeWidth={2} />
-									</div>
-									<div>
-										<div className="text-xs font-bold leading-tight">
-											Nghề nghiệp & Nghĩa vụ
-										</div>
-										<div
-											className={`text-[10px] leading-tight mt-0.5 ${
-												activeTab === "career"
-													? "text-emerald-100"
-													: "text-slate-400 dark:text-slate-500"
-											}`}
-										>
-											Học vấn, việc làm & NVQS
-										</div>
-									</div>
-								</div>
-								<div className="flex items-center gap-1.5">
-									{careerFieldsFilledCount > 0 && (
-										<span
-											className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-												activeTab === "career"
-													? "bg-white/25 text-white"
-													: "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-											}`}
-										>
-											{careerFieldsFilledCount}/4
-										</span>
-									)}
-									<ChevronRight
-										className={`w-4 h-4 shrink-0 ${
-											activeTab === "career"
-												? "text-emerald-200"
-												: "text-slate-400"
-										}`}
-									/>
-								</div>
+								<Briefcase className="w-5 h-5" strokeWidth={activeTab === "career" ? 2.2 : 1.8} />
+								{careerFieldsFilledCount > 0 && (
+									<span className="absolute -top-1 -right-1 px-1 min-w-4 h-4 rounded-full bg-slate-700 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
+										{careerFieldsFilledCount}
+									</span>
+								)}
 							</button>
 						</nav>
 					</div>
 
-					<div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 space-y-1.5 hidden md:block">
-						<div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
-							<Sparkles className="w-3.5 h-3.5 text-amber-500" />
-							<span>Phím tắt tiện lợi</span>
-						</div>
-						<div className="flex items-center justify-between">
-							<span>Chuyển ô input:</span>
-							<kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-mono text-[10px] font-bold">
-								Enter
-							</kbd>
-						</div>
-						<div className="flex items-center justify-between">
-							<span>Lưu nhanh form:</span>
-							<kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-mono text-[10px] font-bold">
-								Ctrl+Enter
-							</kbd>
-						</div>
-						<div className="flex items-center justify-between">
-							<span>Đóng cửa sổ:</span>
-							<kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-mono text-[10px] font-bold">
-								Esc
-							</kbd>
-						</div>
+					<div
+						className="hidden md:flex flex-col items-center justify-center p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-help transition-colors"
+						title="Phím tắt: Enter (chuyển ô) | Ctrl+Enter (lưu nhanh) | Esc (đóng)"
+					>
+						<Sparkles className="w-4 h-4 text-amber-500/80" />
 					</div>
 				</aside>
 
@@ -665,7 +534,7 @@ export const CitizenModalWithSidebar: React.FC<CitizenModalWithSidebarProps> = (
 													htmlFor="modal-sidebar-relationship"
 													className="block text-xs font-bold text-slate-800 dark:text-slate-200"
 												>
-													Quan hệ với chủ hộ <span className="text-rose-500">*</span>
+													Quan hệ <span className="text-rose-500">*</span>
 												</label>
 												{headStatus && (
 													<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-700">
@@ -682,7 +551,7 @@ export const CitizenModalWithSidebar: React.FC<CitizenModalWithSidebarProps> = (
 												spellCheck={false}
 												value={relationship}
 												onChange={(e) => handleRelationshipChange(e.target.value)}
-												placeholder="Nhập hoặc chọn gợi ý..."
+												placeholder="Nhập quan hệ gia đình..."
 												className={inputClasses}
 											/>
 											<datalist id="modal-sidebar-relationships-list">
@@ -690,30 +559,6 @@ export const CitizenModalWithSidebar: React.FC<CitizenModalWithSidebarProps> = (
 													<option key={rel} value={rel} />
 												))}
 											</datalist>
-											<div className="flex flex-wrap gap-1 mt-2">
-												{FAMILY_RELATIONSHIPS_SUGGESTIONS.map((rel) => {
-													const isSelected = relationship === rel;
-													return (
-														<button
-															key={rel}
-															type="button"
-															tabIndex={-1}
-															onClick={() => handleRelationshipChange(rel)}
-															className={`px-2 py-0.5 text-[11px] rounded-lg font-bold transition-all cursor-pointer ${
-																isSelected
-																	? rel === "Chủ hộ"
-																		? "bg-amber-500 text-white shadow-xs"
-																		: "bg-emerald-600 text-white shadow-xs"
-																	: rel === "Chủ hộ"
-																		? "bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
-																		: "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
-															}`}
-														>
-															{rel}
-														</button>
-													);
-												})}
-											</div>
 										</div>
 
 										<div>

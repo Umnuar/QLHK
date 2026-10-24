@@ -30,7 +30,7 @@ describe("CitizenModal Component", () => {
 
 		expect(screen.getByText("Thêm Nhân Khẩu Mới")).toBeInTheDocument();
 		expect(
-			screen.getByText("Nhập đầy đủ thông tin nhân khẩu thuộc xã Đăk Hà"),
+			screen.getByText(/Quản lý nhân thân, số định danh/i),
 		).toBeInTheDocument();
 
 		const submitBtn = screen.getByRole("button", { name: /Lưu nhân khẩu/i });
@@ -177,16 +177,18 @@ describe("CitizenModal Component", () => {
 		const nameInput = screen.getByLabelText(/Họ và Tên/i);
 		const dobInput = screen.getByLabelText(/Ngày sinh/i);
 		const cccdInput = screen.getByLabelText(/Số CCCD/i);
-		const notesInput = screen.getByLabelText(
-			/Ghi chú nhân khẩu \/ Nghề nghiệp/i,
-		);
-		const submitBtn = screen.getByRole("button", { name: /Lưu nhân khẩu/i });
 
 		fireEvent.change(nameInput, { target: { value: "Trần Văn Nam" } });
 		fireEvent.change(dobInput, { target: { value: "10/05/2000" } });
 		fireEvent.change(cccdInput, { target: { value: "060200001234" } });
+
+		const careerTabBtn = screen.getByRole("button", { name: "Nghề nghiệp & Nghĩa vụ" });
+		fireEvent.click(careerTabBtn);
+
+		const notesInput = screen.getByLabelText(/Ghi chú/i);
 		fireEvent.change(notesInput, { target: { value: "Kỹ sư nông nghiệp" } });
 
+		const submitBtn = screen.getByRole("button", { name: /Lưu nhân khẩu/i });
 		fireEvent.click(submitBtn);
 
 		expect(mockOnSave).toHaveBeenCalledTimes(1);
@@ -275,22 +277,27 @@ describe("CitizenModal Component", () => {
 		);
 
 		const nameInput = screen.getByLabelText(/Họ và Tên/i);
-		const relInput = screen.getByLabelText(/Quan hệ với chủ hộ/i);
+		const relInput = screen.getByLabelText(/Quan hệ/i);
 		const dobInput = screen.getByLabelText(/Ngày sinh/i);
-		const milInput = screen.getByLabelText(/Tình hình thực hiện nghĩa vụ quân sự/i);
-		const eduInput = screen.getByLabelText(/Trình độ học vấn/i);
-		const occInput = screen.getByLabelText(/^Nghề nghiệp/i);
 		const placeInput = screen.getByLabelText(/Quê quán/i);
-		const submitBtn = screen.getByRole("button", { name: /Lưu nhân khẩu/i });
 
 		fireEvent.change(nameInput, { target: { value: "Nguyễn Văn B" } });
 		fireEvent.change(relInput, { target: { value: "Cha ruột" } });
 		fireEvent.change(dobInput, { target: { value: "1965" } });
+		fireEvent.change(placeInput, { target: { value: "Xã Đăk Hà" } });
+
+		const careerTabBtn = screen.getByRole("button", { name: "Nghề nghiệp & Nghĩa vụ" });
+		fireEvent.click(careerTabBtn);
+
+		const milInput = screen.getByLabelText(/Tình hình thực hiện nghĩa vụ quân sự/i);
+		const eduInput = screen.getByLabelText(/Trình độ học vấn/i);
+		const occInput = screen.getByRole("textbox", { name: /^Nghề nghiệp/i });
+
 		fireEvent.change(milInput, { target: { value: "Bộ đội xuất ngũ" } });
 		fireEvent.change(eduInput, { target: { value: "12/12" } });
 		fireEvent.change(occInput, { target: { value: "Làm rẫy" } });
-		fireEvent.change(placeInput, { target: { value: "Xã Đăk Hà" } });
 
+		const submitBtn = screen.getByRole("button", { name: /Lưu nhân khẩu/i });
 		fireEvent.click(submitBtn);
 
 		expect(mockOnSave).toHaveBeenCalledTimes(1);
@@ -326,16 +333,20 @@ describe("CitizenModal Component", () => {
 			/>,
 		);
 
+		const placeInput = screen.getByLabelText(/Quê quán/i) as HTMLInputElement;
+		expect(placeInput.value).toBe("Xã Đăk Hà");
+
+		const careerTabBtn = screen.getByRole("button", { name: "Nghề nghiệp & Nghĩa vụ" });
+		fireEvent.click(careerTabBtn);
+
 		const milInput = screen.getByLabelText(/Tình hình thực hiện nghĩa vụ quân sự/i) as HTMLInputElement;
 		const eduInput = screen.getByLabelText(/Trình độ học vấn/i) as HTMLInputElement;
-		const occInput = screen.getByLabelText(/^Nghề nghiệp/i) as HTMLInputElement;
-		const placeInput = screen.getByLabelText(/Quê quán/i) as HTMLInputElement;
-		const notesInput = screen.getByLabelText(/Ghi chú nhân khẩu \/ Nghề nghiệp/i) as HTMLTextAreaElement;
+		const occInput = screen.getByRole("textbox", { name: /^Nghề nghiệp/i }) as HTMLInputElement;
+		const notesInput = screen.getByLabelText(/Ghi chú/i) as HTMLTextAreaElement;
 
 		expect(milInput.value).toBe("Không thuộc diện");
 		expect(eduInput.value).toBe("Cao đẳng");
 		expect(occInput.value).toBe("Y tế thôn bản");
-		expect(placeInput.value).toBe("Xã Đăk Hà");
 		expect(notesInput.value).toBe("Đã qua đào tạo");
 
 		const submitBtn = screen.getByRole("button", { name: /Lưu nhân khẩu/i });
@@ -377,9 +388,10 @@ describe("CitizenModal Component", () => {
 		);
 
 		const nameInput = screen.getByLabelText(/Họ và Tên/i);
-		const relInput = screen.getByLabelText(/Quan hệ với chủ hộ/i);
+		const relInput = screen.getByLabelText(/Quan hệ/i);
 		const dobInput = screen.getByLabelText(/Ngày sinh/i);
-		const notesInput = screen.getByLabelText(/Ghi chú nhân khẩu \/ Nghề nghiệp/i);
+		const cccdInput = screen.getByLabelText(/Số CCCD/i);
+		const placeInput = screen.getByLabelText(/Quê quán/i);
 
 		fireEvent.change(nameInput, { target: { value: "A Hiếu" } });
 		fireEvent.keyDown(nameInput, { key: "Enter" });
@@ -389,8 +401,13 @@ describe("CitizenModal Component", () => {
 		expect(document.activeElement).toBe(dobInput);
 
 		fireEvent.change(dobInput, { target: { value: "1995" } });
-		fireEvent.change(notesInput, { target: { value: "Công an viên" } });
-		fireEvent.keyDown(notesInput, { key: "Enter" });
+		fireEvent.keyDown(dobInput, { key: "Enter" });
+		expect(document.activeElement).toBe(cccdInput);
+
+		fireEvent.keyDown(cccdInput, { key: "Enter" });
+		expect(document.activeElement).toBe(placeInput);
+
+		fireEvent.keyDown(placeInput, { key: "Enter" });
 
 		expect(mockOnSave).toHaveBeenCalledTimes(1);
 		expect(mockOnSave.mock.calls[0][0].full_name).toBe("A Hiếu");
@@ -479,7 +496,7 @@ describe("CitizenModal Component", () => {
 		expect(mockOnSave).toHaveBeenCalledTimes(1);
 	});
 
-	it("14. Hiển thị badge Chủ hộ nổi bật và hỗ trợ chọn nhanh quan hệ gia đình", () => {
+	it("14. Hiển thị badge Chủ hộ nổi bật và hỗ trợ cập nhật quan hệ gia đình", () => {
 		render(
 			<CitizenModal
 				isOpen={true}
@@ -496,12 +513,10 @@ describe("CitizenModal Component", () => {
 		);
 
 		expect(screen.getByText("Chủ hộ gia đình")).toBeInTheDocument();
-		expect(screen.getAllByText("Chủ hộ").length).toBeGreaterThanOrEqual(2);
+		const relInput = screen.getByLabelText(/Quan hệ/i) as HTMLInputElement;
+		expect(relInput.value).toBe("Chủ hộ");
 
-		const voButton = screen.getByRole("button", { name: "Vợ" });
-		fireEvent.click(voButton);
-
-		const relInput = screen.getByLabelText(/Quan hệ với chủ hộ/i) as HTMLInputElement;
+		fireEvent.change(relInput, { target: { value: "Vợ" } });
 		expect(relInput.value).toBe("Vợ");
 		expect(screen.queryByText("Chủ hộ gia đình")).toBeNull();
 	});

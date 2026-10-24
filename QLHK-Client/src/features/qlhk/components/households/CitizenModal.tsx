@@ -1,6 +1,16 @@
-import { AlertCircle, Check, Eye, EyeOff, User, X } from "lucide-react";
+import {
+	AlertCircle,
+	ArrowRight,
+	Briefcase,
+	Check,
+	Eye,
+	EyeOff,
+	Sparkles,
+	User,
+	X,
+} from "lucide-react";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { householdApi } from "@/api/householdApi";
 import { ETHNIC_GROUPS, RELIGIONS } from "@/data/constants";
@@ -23,6 +33,8 @@ export interface CitizenModalProps {
 	onSave: (memberData: Partial<Person>) => void;
 }
 
+export type CitizenModalTab = "basic" | "career";
+
 const CITIZEN_RELATIONSHIPS = [
 	"Chủ hộ",
 	"Thành viên",
@@ -44,19 +56,13 @@ const CITIZEN_RELATIONSHIPS = [
 	"Khác",
 ] as const;
 
-const FAMILY_RELATIONSHIPS_SUGGESTIONS = [
-	"Chủ hộ",
-	"Vợ",
-	"Chồng",
-	"Con đẻ",
-	"Con nuôi",
-	"Cha",
-	"Mẹ",
-	"Bố",
-	"Bà",
-	"Ông",
-	"Cháu",
-] as const;
+function getAvatarInitials(name: string): string {
+	const trimmed = name.trim();
+	if (!trimmed) return "NK";
+	const parts = trimmed.split(/\s+/).filter(Boolean);
+	if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+	return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 export const CitizenModal: React.FC<CitizenModalProps> = ({
 	isOpen,
@@ -66,8 +72,10 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 	onSave,
 }) => {
 	const fullNameInputRef = useRef<HTMLInputElement>(null);
+	const occupationInputRef = useRef<HTMLInputElement>(null);
 	const formRef = useRef<HTMLFormElement>(null);
 
+	const [activeTab, setActiveTab] = useState<CitizenModalTab>("basic");
 	const [fullName, setFullName] = useState("");
 	const [relationship, setRelationship] = useState<string>("Con đẻ");
 	const [isHead, setIsHead] = useState(false);
@@ -94,7 +102,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 					setCccd(plain);
 				}
 			} catch (err) {
-				console.error("[CitizenModal] Lỗi mở khóa CCCD:", err);
+				console.error(err);
 			} finally {
 				setIsRevealingCccd(false);
 			}
@@ -146,6 +154,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				setNotes("");
 			}
 			setError(null);
+			setActiveTab("basic");
 
 			const timer = setTimeout(() => {
 				fullNameInputRef.current?.focus();
@@ -154,13 +163,22 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 		}
 	}, [isOpen, initialMember]);
 
+	useEffect(() => {
+		if (activeTab === "career") {
+			const timer = setTimeout(() => {
+				occupationInputRef.current?.focus();
+			}, 50);
+			return () => clearTimeout(timer);
+		}
+	}, [activeTab]);
+
 	const modalRef = useFocusTrap<HTMLDivElement>({
 		isActive: isOpen,
 		onEscape: onClose,
 		initialFocusRef: fullNameInputRef,
 	});
 
-	if (!isOpen || typeof document === "undefined") return null;
+	const headStatus = relationship === "Chủ hộ" || isHead;
 
 	const handleRelationshipChange = (val: string) => {
 		setRelationship(val);
@@ -171,7 +189,20 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 		}
 	};
 
-	const headStatus = relationship === "Chủ hộ" || isHead;
+	const parsedDobInfo = useMemo(() => {
+		const trimmedDob = dob.trim();
+		if (!trimmedDob) return null;
+		const res = parseAndValidateDob(trimmedDob);
+		if (res.isValid && res.birthYear) {
+			const computedAge = calculateAge(res.formatted || trimmedDob, new Date().getFullYear());
+			return {
+				age: computedAge,
+				formatted: res.formatted || trimmedDob,
+				birthYear: res.birthYear,
+			};
+		}
+		return null;
+	}, [dob]);
 
 	const cleanCccd = cccd.trim().replace(/\D/g, "");
 	const duplicateMember =
@@ -184,22 +215,35 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 			: null;
 	const isDuplicateCccd = Boolean(duplicateMember);
 
-	const handleSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
+	const careerFieldsFilledCount = useMemo(() => {
+		let count = 0;
+		if (occupation.trim()) count++;
+		if (education.trim()) count++;
+		if (militaryStatus.trim()) count++;
+		if (notes.trim()) count++;
+		return count;
+	}, [occupation, education, militaryStatus, notes]);
+
+	const isBasicInfoComplete = useMemo(() => {
+		return Boolean(fullName.trim() && dob.trim() && relationship.trim());
+	}, [fullName, dob, relationship]);
+
+	if (!isOpen || typeof document === "undefined") return null;
+
+	const handleSubmit = (e?: React.FormEvent) => {
+		if (e) e.preventDefault();
 		setError(null);
 
 		const trimmedName = fullName.trim();
 		if (!trimmedName) {
+			setActiveTab("basic");
 			setError("Vui lòng nhập họ và tên nhân khẩu.");
 			return;
 		}
 
-		let dobFormatted = dob.trim();
-		let birthYear = 2000;
-		let age = 26;
-
 		const trimmedDob = dob.trim();
 		if (!trimmedDob) {
+			setActiveTab("basic");
 			setError(
 				"Vui lòng nhập ngày tháng năm sinh (DD/MM/YYYY, MM/YYYY hoặc YYYY)",
 			);
@@ -208,21 +252,23 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 
 		const dobVal = parseAndValidateDob(trimmedDob);
 		if (!dobVal.isValid) {
+			setActiveTab("basic");
 			setError(
 				dobVal.error ||
 					"Ngày tháng năm sinh không hợp lệ (hỗ trợ DD/MM/YYYY, MM/YYYY hoặc YYYY)",
 			);
 			return;
 		}
-		dobFormatted = dobVal.formatted || trimmedDob;
-		birthYear = dobVal.birthYear ?? 2000;
-		age = calculateAge(dobFormatted, new Date().getFullYear());
+		const dobFormatted = dobVal.formatted || trimmedDob;
+		const birthYear = dobVal.birthYear ?? 2000;
+		const age = calculateAge(dobFormatted, new Date().getFullYear());
 
 		const trimmedCccd = cccd.trim();
 		const isMasked = trimmedCccd.includes("•") || trimmedCccd.includes("*");
 		const hasCccdEntered = Boolean(trimmedCccd) && !trimmedCccd.toLowerCase().includes("chưa có");
 
 		if (isDuplicateCccd) {
+			setActiveTab("basic");
 			setError(
 				`Cảnh báo: Trùng CCCD với nhân khẩu "${duplicateMember?.full_name}" trong hộ gia đình.`,
 			);
@@ -232,6 +278,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 		if (hasCccdEntered && !isMasked) {
 			const cccdVal = validateCccd(trimmedCccd);
 			if (!cccdVal.isValid) {
+				setActiveTab("basic");
 				setError(`Lỗi số CCCD: ${cccdVal.error}`);
 				return;
 			}
@@ -290,7 +337,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
 		if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
 			e.preventDefault();
-			handleSubmit(e);
+			handleSubmit();
 			return;
 		}
 
@@ -310,8 +357,8 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				);
 				const currentIndex = inputs.indexOf(target as HTMLInputElement);
 				if (currentIndex !== -1) {
-					if (target.id === "citizen-notes" || currentIndex === inputs.length - 1) {
-						handleSubmit(e);
+					if (currentIndex === inputs.length - 1) {
+						handleSubmit();
 					} else {
 						const nextInput = inputs[currentIndex + 1];
 						if (nextInput) {
@@ -329,7 +376,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 
 	return createPortal(
 		<div
-			className="fixed inset-0 !m-0 z-[70] flex items-center justify-center p-4 bg-slate-950/45 dark:bg-black/60 backdrop-blur-sm select-none animate-in fade-in duration-150"
+			className="fixed inset-0 !m-0 z-[70] flex items-center justify-center p-3 sm:p-5 bg-slate-950/50 dark:bg-black/70 backdrop-blur-sm select-none animate-in fade-in duration-150"
 			onClick={(e) => {
 				if (e.target === e.currentTarget) onClose();
 			}}
@@ -337,16 +384,77 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 			aria-modal="true"
 			aria-labelledby="citizen-modal-title"
 		>
-			<div ref={modalRef} className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto">
-				<div className="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-slate-800">
-					<div className="flex items-center gap-3">
-						<div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
-							headStatus
-								? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
-								: "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-						}`}>
-							<User className="w-5 h-5" strokeWidth={2} />
+			<div
+				ref={modalRef}
+				className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[580px] max-h-[92vh] animate-in zoom-in-95 duration-150"
+			>
+				<aside className="w-full md:w-20 shrink-0 bg-slate-50/90 dark:bg-slate-950/50 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 py-5 px-2 flex flex-row md:flex-col items-center justify-between h-full">
+					<div className="flex flex-row md:flex-col items-center gap-4">
+						<div
+							className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-xs shrink-0 border relative transition-colors ${
+								headStatus
+									? "bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400"
+									: "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+							}`}
+							title={`${fullName.trim() || "Nhân khẩu"} (${headStatus ? "Chủ hộ" : relationship})${parsedDobInfo ? ` • ${parsedDobInfo.age} tuổi` : ""}`}
+						>
+							{getAvatarInitials(fullName)}
+							{headStatus && (
+								<span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center shadow-xs">
+									★
+								</span>
+							)}
 						</div>
+
+						<nav className="flex flex-row md:flex-col items-center gap-2" aria-label="Các mục thông tin nhân khẩu">
+							<button
+								type="button"
+								onClick={() => setActiveTab("basic")}
+								aria-label="Thông tin cơ bản"
+								title="Thông tin cơ bản (Nhân thân, CCCD & Quê quán)"
+								className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer relative ${
+									activeTab === "basic"
+										? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
+										: "text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100"
+								}`}
+							>
+								<User className="w-5 h-5" strokeWidth={activeTab === "basic" ? 2.2 : 1.8} />
+								{isBasicInfoComplete && (
+									<span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900" />
+								)}
+							</button>
+
+							<button
+								type="button"
+								onClick={() => setActiveTab("career")}
+								aria-label="Nghề nghiệp & Nghĩa vụ"
+								title="Nghề nghiệp & Nghĩa vụ (Học vấn, việc làm & NVQS)"
+								className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer relative ${
+									activeTab === "career"
+										? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
+										: "text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100"
+								}`}
+							>
+								<Briefcase className="w-5 h-5" strokeWidth={activeTab === "career" ? 2.2 : 1.8} />
+								{careerFieldsFilledCount > 0 && (
+									<span className="absolute -top-1 -right-1 px-1 min-w-4 h-4 rounded-full bg-slate-700 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
+										{careerFieldsFilledCount}
+									</span>
+								)}
+							</button>
+						</nav>
+					</div>
+
+					<div
+						className="hidden md:flex flex-col items-center justify-center p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-help transition-colors"
+						title="Phím tắt: Enter (chuyển ô) | Ctrl+Enter (lưu nhanh) | Esc (đóng)"
+					>
+						<Sparkles className="w-4 h-4 text-amber-500/80" />
+					</div>
+				</aside>
+
+				<main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-slate-900 h-full">
+					<header className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
 						<div>
 							<div className="flex items-center gap-2">
 								<h3
@@ -357,340 +465,408 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 										? "Sửa Thông Tin Nhân Khẩu"
 										: "Thêm Nhân Khẩu Mới"}
 								</h3>
-								{headStatus && (
-									<span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-500 text-white shadow-xs border border-amber-600">
-										Chủ hộ
-									</span>
-								)}
+								<span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+									{activeTab === "basic"
+										? "Mục 1/2: Thông tin cơ bản"
+										: "Mục 2/2: Nghề nghiệp & Nghĩa vụ"}
+								</span>
 							</div>
-							<p className="text-xs text-slate-500 dark:text-slate-400">
-								Nhập đầy đủ thông tin nhân khẩu thuộc xã Đăk Hà
+							<p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+								{activeTab === "basic"
+									? "Quản lý nhân thân, số định danh, ngày sinh và quan hệ gia đình"
+									: "Cập nhật thông tin trình độ văn hóa, nghề nghiệp và thực hiện NVQS"}
 							</p>
 						</div>
-					</div>
-					<button
-						type="button"
-						onClick={onClose}
-						aria-label="Đóng cửa sổ"
-						className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-					>
-						<X strokeWidth={1.5} className="w-5 h-5" />
-					</button>
-				</div>
-
-				{error && (
-					<div className="flex items-center gap-2.5 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold animate-in fade-in">
-						<AlertCircle className="w-4 h-4 shrink-0" strokeWidth={1.5} />
-						<span>{error}</span>
-					</div>
-				)}
-
-				<form ref={formRef} onSubmit={handleSubmit} onKeyDown={handleKeyDown} noValidate autoComplete="off" className="space-y-3.5">
-					<div>
-						<label htmlFor="citizen-full-name" className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-							Họ và Tên <span className="text-rose-500">*</span>
-						</label>
-						<input
-							ref={fullNameInputRef}
-							id="citizen-full-name"
-							type="text"
-							required
-							autoFocus
-							autoComplete="off"
-							spellCheck={false}
-							value={fullName}
-							onChange={(e) => setFullName(e.target.value)}
-							placeholder="Ví dụ: A Đôi, Y Bluih, Nguyễn Văn A..."
-							className={inputClasses}
-						/>
-					</div>
-
-					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-						<div>
-							<div className="flex items-center justify-between mb-1.5">
-								<label htmlFor="citizen-relationship" className="block text-xs font-bold text-slate-800 dark:text-slate-200">
-									Quan hệ với chủ hộ <span className="text-rose-500">*</span>
-								</label>
-								{headStatus && (
-									<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-700">
-										Chủ hộ gia đình
-									</span>
-								)}
-							</div>
-							<input
-								id="citizen-relationship"
-								list="citizen-relationships-list"
-								type="text"
-								required
-								autoComplete="off"
-								spellCheck={false}
-								value={relationship}
-								onChange={(e) => handleRelationshipChange(e.target.value)}
-								placeholder="Nhập hoặc chọn gợi ý..."
-								className={inputClasses}
-							/>
-							<datalist id="citizen-relationships-list">
-								{CITIZEN_RELATIONSHIPS.map((rel) => (
-									<option key={rel} value={rel} />
-								))}
-							</datalist>
-							<div className="flex flex-wrap gap-1 mt-2">
-								{FAMILY_RELATIONSHIPS_SUGGESTIONS.map((rel) => {
-									const isSelected = relationship === rel;
-									return (
-										<button
-											key={rel}
-											type="button"
-											tabIndex={-1}
-											onClick={() => handleRelationshipChange(rel)}
-											className={`px-2 py-0.5 text-[11px] rounded-lg font-bold transition-all cursor-pointer ${
-												isSelected
-													? rel === "Chủ hộ"
-														? "bg-amber-500 text-white shadow-xs"
-														: "bg-emerald-600 text-white shadow-xs"
-													: rel === "Chủ hộ"
-														? "bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
-														: "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
-											}`}
-										>
-											{rel}
-										</button>
-									);
-								})}
-							</div>
-						</div>
-
-						<div>
-							<CustomSelect
-								id="citizen-gender"
-								value={gender}
-								onChange={(val) => setGender(val as Gender)}
-								options={["Nam", "Nữ"]}
-								label="Giới tính"
-								required
-							/>
-						</div>
-					</div>
-
-					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-						<div>
-							<label htmlFor="citizen-dob" className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-								Ngày sinh (DD/MM/YYYY) <span className="text-rose-500">*</span>
-							</label>
-							<input
-								id="citizen-dob"
-								type="text"
-								required
-								autoComplete="off"
-								spellCheck={false}
-								value={dob}
-								onChange={(e) => setDob(e.target.value)}
-								placeholder="Ví dụ: 13/12/1987"
-								className={inputClasses}
-							/>
-						</div>
-
-						<div>
-							<div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
-								<div className="flex items-center gap-1.5">
-									<label htmlFor="citizen-cccd" className="block text-xs font-bold text-slate-800 dark:text-slate-200">
-										Số CCCD (12 số)
-									</label>
-									{isDuplicateCccd && (
-										<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white shadow-xs border border-rose-700 animate-pulse">
-											<AlertCircle className="w-3 h-3" />
-											Cảnh báo: Trùng CCCD
-										</span>
-									)}
-								</div>
-								{Boolean(initialMember?.id) &&
-									!initialMember?.id?.startsWith("mem-") &&
-									Boolean(
-										(initialMember?.cccd_last4 && /^\d{4}$/.test(String(initialMember.cccd_last4).trim())) ||
-										(initialMember?.cccd && /\d{4}/.test(String(initialMember.cccd)) && !String(initialMember.cccd).toLowerCase().includes("có"))
-									) &&
-									Boolean(cccd.trim()) && (
-									<button
-										type="button"
-										onClick={handleToggleRevealCccd}
-										disabled={isRevealingCccd}
-										className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-60"
-									>
-										{isRevealingCccd ? (
-											<span className="w-3 h-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-										) : cccd.includes("•") ? (
-											<>
-												<Eye className="w-3 h-3" />
-												<span>Xem đầy đủ</span>
-											</>
-										) : (
-											<>
-												<EyeOff className="w-3 h-3" />
-												<span>Ẩn bớt</span>
-											</>
-										)}
-									</button>
-								)}
-							</div>
-							<input
-								id="citizen-cccd"
-								type="text"
-								maxLength={12}
-								autoComplete="off"
-								spellCheck={false}
-								value={cccd}
-								onChange={(e) => setCccd(e.target.value.replace(/\D/g, ""))}
-								placeholder="12 chữ số (để trống nếu chưa có)"
-								className={`${inputClasses} ${
-									isDuplicateCccd
-										? "border-rose-500 focus:border-rose-600 focus:ring-2 focus:ring-rose-500 bg-rose-50/40 dark:bg-rose-950/20 text-rose-900 dark:text-rose-100"
-										: ""
-								}`}
-							/>
-							{isDuplicateCccd ? (
-								<div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
-									<AlertCircle className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
-									<span>
-										Trùng với {duplicateMember?.full_name} ({duplicateMember?.relationship || "Thành viên"})
-									</span>
-								</div>
-							) : cleanCccd.length > 0 && cleanCccd.length < 12 && cleanCccd.length !== 9 && !cccd.includes("•") ? (
-								<div className="mt-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-									Đã nhập {cleanCccd.length}/12 số
-								</div>
-							) : cleanCccd.length === 12 ? (
-								<div className="mt-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
-									<Check className="w-3.5 h-3.5" strokeWidth={2} />
-									<span>CCCD hợp lệ (12 số)</span>
-								</div>
-							) : null}
-						</div>
-					</div>
-
-					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-						<div>
-							<CustomSelect
-								id="citizen-ethnicity"
-								value={ethnicity}
-								onChange={(val) => setEthnicity(String(val))}
-								options={[...ETHNIC_GROUPS]}
-								searchable
-								label="Dân tộc"
-							/>
-						</div>
-
-						<div>
-							<CustomSelect
-								id="citizen-religion"
-								value={religion}
-								onChange={(val) => setReligion(String(val))}
-								options={[...RELIGIONS]}
-								searchable
-								label="Tôn giáo"
-							/>
-						</div>
-					</div>
-
-					<div>
-						<label htmlFor="citizen-military-status" className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-							Tình hình thực hiện nghĩa vụ quân sự
-						</label>
-						<input
-							id="citizen-military-status"
-							type="text"
-							autoComplete="off"
-							spellCheck={false}
-							value={militaryStatus}
-							onChange={(e) => setMilitaryStatus(e.target.value)}
-							placeholder="VD: Đủ điều kiện gọi nhập ngũ, Bộ đội xuất ngũ năm 2024, Du kích thôn..."
-							className={inputClasses}
-						/>
-					</div>
-
-					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-						<div>
-							<label htmlFor="citizen-education" className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-								Trình độ học vấn
-							</label>
-							<input
-								id="citizen-education"
-								type="text"
-								autoComplete="off"
-								spellCheck={false}
-								value={education}
-								onChange={(e) => setEducation(e.target.value)}
-								placeholder="VD: 12/12, Đại học, Cao đẳng, Biết chữ..."
-								className={inputClasses}
-							/>
-						</div>
-
-						<div>
-							<label htmlFor="citizen-occupation" className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-								Nghề nghiệp
-							</label>
-							<input
-								id="citizen-occupation"
-								type="text"
-								autoComplete="off"
-								spellCheck={false}
-								value={occupation}
-								onChange={(e) => setOccupation(e.target.value)}
-								placeholder="VD: Làm nông, Buôn bán, Công nhân..."
-								className={inputClasses}
-							/>
-						</div>
-					</div>
-
-					<div>
-						<label htmlFor="citizen-native-place" className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-							Quê quán
-						</label>
-						<input
-							id="citizen-native-place"
-							type="text"
-							autoComplete="off"
-							spellCheck={false}
-							value={nativePlace}
-							onChange={(e) => setNativePlace(e.target.value)}
-							placeholder="VD: Xã Đăk Hà, Huyện Tu Mơ Rông, Kon Tum..."
-							className={inputClasses}
-						/>
-					</div>
-
-					<div>
-						<label htmlFor="citizen-notes" className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-							Ghi chú nhân khẩu / Nghề nghiệp
-						</label>
-						<input
-							id="citizen-notes"
-							type="text"
-							autoComplete="off"
-							spellCheck={false}
-							value={notes}
-							onChange={(e) => setNotes(e.target.value)}
-							placeholder="Tiền sử, nơi cư trú trước đây, thông tin bổ sung..."
-							className={inputClasses}
-						/>
-					</div>
-
-					<div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2.5">
 						<button
 							type="button"
 							onClick={onClose}
-							className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+							aria-label="Đóng cửa sổ"
+							className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
 						>
-							Hủy
+							<X strokeWidth={1.5} className="w-5 h-5" />
 						</button>
-						<button
-							type="submit"
-							className="flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-[0.99] cursor-pointer focus:ring-2 focus:ring-emerald-500"
-						>
-							<Check className="w-4 h-4 mr-0.5" strokeWidth={2} />
-							<span>Lưu nhân khẩu</span>
-							<span className="text-[10px] opacity-75 font-normal">(Ctrl+Enter)</span>
-						</button>
-					</div>
-				</form>
+					</header>
+
+					{error && (
+						<div className="mx-6 mt-4 flex items-center gap-2.5 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold animate-in fade-in">
+							<AlertCircle className="w-4 h-4 shrink-0" strokeWidth={1.5} />
+							<span>{error}</span>
+						</div>
+					)}
+
+					<form
+						ref={formRef}
+						onSubmit={handleSubmit}
+						onKeyDown={handleKeyDown}
+						noValidate
+						autoComplete="off"
+						className="flex-1 overflow-y-auto px-6 py-4 flex flex-col justify-between"
+					>
+						<div className="space-y-4">
+							{activeTab === "basic" && (
+								<div className="space-y-3.5 animate-in fade-in duration-100">
+									<div>
+										<label
+											htmlFor="citizen-full-name"
+											className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5"
+										>
+											Họ và Tên <span className="text-rose-500">*</span>
+										</label>
+										<input
+											ref={fullNameInputRef}
+											id="citizen-full-name"
+											type="text"
+											required
+											autoFocus
+											autoComplete="off"
+											spellCheck={false}
+											value={fullName}
+											onChange={(e) => setFullName(e.target.value)}
+											placeholder="Ví dụ: ĐINH THANH HIẾU, Y Bluih, A Đôi..."
+											className={inputClasses}
+										/>
+									</div>
+
+									<div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+										<div>
+											<div className="flex items-center justify-between mb-1.5">
+												<label
+													htmlFor="citizen-relationship"
+													className="block text-xs font-bold text-slate-800 dark:text-slate-200"
+												>
+													Quan hệ <span className="text-rose-500">*</span>
+												</label>
+												{headStatus && (
+													<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-700">
+														Chủ hộ gia đình
+													</span>
+												)}
+											</div>
+											<input
+												id="citizen-relationship"
+												list="citizen-relationships-list"
+												type="text"
+												required
+												autoComplete="off"
+												spellCheck={false}
+												value={relationship}
+												onChange={(e) => handleRelationshipChange(e.target.value)}
+												placeholder="Nhập quan hệ gia đình..."
+												className={inputClasses}
+											/>
+											<datalist id="citizen-relationships-list">
+												{CITIZEN_RELATIONSHIPS.map((rel) => (
+													<option key={rel} value={rel} />
+												))}
+											</datalist>
+										</div>
+
+										<div>
+											<CustomSelect
+												id="citizen-gender"
+												value={gender}
+												onChange={(val) => setGender(val as Gender)}
+												options={["Nam", "Nữ"]}
+												label="Giới tính"
+												required
+											/>
+										</div>
+									</div>
+
+									<div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+										<div>
+											<div className="flex items-center justify-between mb-1.5">
+												<label
+													htmlFor="citizen-dob"
+													className="block text-xs font-bold text-slate-800 dark:text-slate-200"
+												>
+													Ngày sinh (DD/MM/YYYY) <span className="text-rose-500">*</span>
+												</label>
+												{parsedDobInfo && (
+													<span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+														Độ tuổi: {parsedDobInfo.age} tuổi
+													</span>
+												)}
+											</div>
+											<input
+												id="citizen-dob"
+												type="text"
+												required
+												autoComplete="off"
+												spellCheck={false}
+												value={dob}
+												onChange={(e) => setDob(e.target.value)}
+												placeholder="Ví dụ: 02/05/2015 hoặc 1987"
+												className={inputClasses}
+											/>
+										</div>
+
+										<div>
+											<div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+												<div className="flex items-center gap-1.5">
+													<label
+														htmlFor="citizen-cccd"
+														className="block text-xs font-bold text-slate-800 dark:text-slate-200"
+													>
+														Số CCCD (12 số)
+													</label>
+													{isDuplicateCccd && (
+														<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white shadow-xs border border-rose-700 animate-pulse">
+															<AlertCircle className="w-3 h-3" />
+															Cảnh báo: Trùng CCCD
+														</span>
+													)}
+												</div>
+												{Boolean(initialMember?.id) &&
+													!initialMember?.id?.startsWith("mem-") &&
+													Boolean(
+														(initialMember?.cccd_last4 &&
+															/^\d{4}$/.test(
+																String(initialMember.cccd_last4).trim(),
+															)) ||
+															(initialMember?.cccd &&
+																/\d{4}/.test(String(initialMember.cccd)) &&
+																!String(initialMember.cccd)
+																	.toLowerCase()
+																	.includes("có")),
+													) &&
+													Boolean(cccd.trim()) && (
+														<button
+															type="button"
+															onClick={handleToggleRevealCccd}
+															disabled={isRevealingCccd}
+															className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-60"
+														>
+															{isRevealingCccd ? (
+																<span className="w-3 h-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+															) : cccd.includes("•") ? (
+																<>
+																	<Eye className="w-3 h-3" />
+																	<span>Xem đầy đủ</span>
+																</>
+															) : (
+																<>
+																	<EyeOff className="w-3 h-3" />
+																	<span>Ẩn bớt</span>
+																</>
+															)}
+														</button>
+													)}
+											</div>
+											<input
+												id="citizen-cccd"
+												type="text"
+												maxLength={12}
+												autoComplete="off"
+												spellCheck={false}
+												value={cccd}
+												onChange={(e) =>
+													setCccd(e.target.value.replace(/\D/g, ""))
+												}
+												placeholder="12 chữ số (để trống nếu chưa có)"
+												className={`${inputClasses} ${
+													isDuplicateCccd
+														? "border-rose-500 focus:border-rose-600 focus:ring-2 focus:ring-rose-500 bg-rose-50/40 dark:bg-rose-950/20 text-rose-900 dark:text-rose-100"
+														: ""
+												}`}
+											/>
+											{isDuplicateCccd ? (
+												<div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+													<AlertCircle
+														className="w-3.5 h-3.5 shrink-0"
+														strokeWidth={2}
+													/>
+													<span>
+														Trùng với {duplicateMember?.full_name} (
+														{duplicateMember?.relationship || "Thành viên"})
+													</span>
+												</div>
+											) : cleanCccd.length > 0 &&
+											  cleanCccd.length < 12 &&
+											  cleanCccd.length !== 9 &&
+											  !cccd.includes("•") ? (
+												<div className="mt-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+													Đã nhập {cleanCccd.length}/12 số
+												</div>
+											) : cleanCccd.length === 12 ? (
+												<div className="mt-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
+													<Check className="w-3.5 h-3.5" strokeWidth={2} />
+													<span>CCCD hợp lệ (12 số)</span>
+												</div>
+											) : null}
+										</div>
+									</div>
+
+									<div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+										<div>
+											<CustomSelect
+												id="citizen-ethnicity"
+												value={ethnicity}
+												onChange={(val) => setEthnicity(String(val))}
+												options={[...ETHNIC_GROUPS]}
+												searchable
+												label="Dân tộc"
+											/>
+										</div>
+
+										<div>
+											<CustomSelect
+												id="citizen-religion"
+												value={religion}
+												onChange={(val) => setReligion(String(val))}
+												options={[...RELIGIONS]}
+												searchable
+												label="Tôn giáo"
+											/>
+										</div>
+									</div>
+
+									<div>
+										<label
+											htmlFor="citizen-native-place"
+											className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5"
+										>
+											Quê quán
+										</label>
+										<input
+											id="citizen-native-place"
+											type="text"
+											autoComplete="off"
+											spellCheck={false}
+											value={nativePlace}
+											onChange={(e) => setNativePlace(e.target.value)}
+											placeholder="VD: Xã Đăk Hà, Huyện Tu Mơ Rông, Kon Tum..."
+											className={inputClasses}
+										/>
+									</div>
+								</div>
+							)}
+
+							{activeTab === "career" && (
+								<div className="space-y-3.5 animate-in fade-in duration-100">
+									<div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+										<div>
+											<label
+												htmlFor="citizen-occupation"
+												className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5"
+											>
+												Nghề nghiệp
+											</label>
+											<input
+												ref={occupationInputRef}
+												id="citizen-occupation"
+												type="text"
+												autoComplete="off"
+												spellCheck={false}
+												value={occupation}
+												onChange={(e) => setOccupation(e.target.value)}
+												placeholder="VD: Làm nông, Buôn bán, Công nhân, Học sinh..."
+												className={inputClasses}
+											/>
+										</div>
+
+										<div>
+											<label
+												htmlFor="citizen-education"
+												className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5"
+											>
+												Trình độ học vấn
+											</label>
+											<input
+												id="citizen-education"
+												type="text"
+												autoComplete="off"
+												spellCheck={false}
+												value={education}
+												onChange={(e) => setEducation(e.target.value)}
+												placeholder="VD: 12/12, Đại học, Cao đẳng, Biết chữ..."
+												className={inputClasses}
+											/>
+										</div>
+									</div>
+
+									<div>
+										<label
+											htmlFor="citizen-military-status"
+											className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5"
+										>
+											Tình hình thực hiện nghĩa vụ quân sự
+										</label>
+										<input
+											id="citizen-military-status"
+											type="text"
+											autoComplete="off"
+											spellCheck={false}
+											value={militaryStatus}
+											onChange={(e) => setMilitaryStatus(e.target.value)}
+											placeholder="VD: Đủ điều kiện gọi nhập ngũ, Xuất ngũ 2024, Dân quân tự vệ..."
+											className={inputClasses}
+										/>
+									</div>
+
+									<div>
+										<label
+											htmlFor="citizen-notes"
+											className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5"
+										>
+											Ghi chú nhân khẩu / Bổ sung
+										</label>
+										<textarea
+											id="citizen-notes"
+											rows={4}
+											spellCheck={false}
+											value={notes}
+											onChange={(e) => setNotes(e.target.value)}
+											placeholder="Tiền sử, nơi cư trú trước đây, ghi chú chính sách đặc thù..."
+											className={`${inputClasses} resize-none min-h-[110px]`}
+										/>
+									</div>
+								</div>
+							)}
+						</div>
+
+						<footer className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
+							<div>
+								{activeTab === "basic" ? (
+									<button
+										type="button"
+										onClick={() => setActiveTab("career")}
+										className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl transition-colors cursor-pointer border border-emerald-200 dark:border-emerald-800"
+									>
+										<span>Mục tiếp theo: Nghề nghiệp</span>
+										<ArrowRight className="w-3.5 h-3.5" />
+									</button>
+								) : (
+									<button
+										type="button"
+										onClick={() => setActiveTab("basic")}
+										className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+									>
+										<span>← Quay lại: Thông tin cơ bản</span>
+									</button>
+								)}
+							</div>
+
+							<div className="flex items-center gap-2">
+								<button
+									type="button"
+									onClick={onClose}
+									className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+								>
+									Hủy
+								</button>
+								<button
+									type="submit"
+									className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-[0.99] cursor-pointer focus:ring-2 focus:ring-emerald-500"
+								>
+									<Check className="w-4 h-4 mr-0.5" strokeWidth={2} />
+									<span>Lưu nhân khẩu</span>
+									<span className="text-[10px] opacity-75 font-normal">(Ctrl+Enter)</span>
+								</button>
+							</div>
+						</footer>
+					</form>
+				</main>
 			</div>
 		</div>,
 		document.body,

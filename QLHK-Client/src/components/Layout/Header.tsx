@@ -3,6 +3,7 @@ import {
 	MapPin,
 	Moon,
 	Shield,
+	Sparkles,
 	Sun,
 	User as UserIcon,
 	Users,
@@ -17,6 +18,10 @@ import { useApp } from "../../AppContext";
 import { useNetwork } from "../../context/NetworkContext";
 import { BackendSwitcher } from "../common/BackendSwitcher";
 import { ServerStatusModal } from "../network/ServerStatusModal";
+import {
+	CitizenModalWithSidebar,
+	SAMPLE_CITIZEN_FROM_SCREENSHOT,
+} from "../../test";
 
 export const Header: React.FC = () => {
 	const {
@@ -34,6 +39,7 @@ export const Header: React.FC = () => {
 	const { isOnline, isBackendHealthy, latency } = useNetwork();
 
 	const [showStatusModal, setShowStatusModal] = useState(false);
+	const [showTestModal, setShowTestModal] = useState(false);
 
 	return (
 		<>
@@ -126,6 +132,17 @@ export const Header: React.FC = () => {
 
 					<button
 						type="button"
+						onClick={() => setShowTestModal(true)}
+						aria-label="Xem thử Modal Mẫu (Sidebar)"
+						title="Xem thử Modal Mẫu có Sidebar (Phân tách thông tin cơ bản & nghề nghiệp)"
+						className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+					>
+						<Sparkles className="w-3.5 h-3.5 text-amber-400" />
+						<span className="hidden md:inline">Mẫu Modal (Sidebar)</span>
+					</button>
+
+					<button
+						type="button"
 						onClick={() => setShowStatusModal(true)}
 						aria-label="Xem chẩn đoán kết nối máy chủ"
 						title="Bấm để xem chẩn đoán kết nối máy chủ"
@@ -195,6 +212,13 @@ export const Header: React.FC = () => {
 				onClose={() => setShowStatusModal(false)}
 				latency={latency}
 				isBackendHealthy={isBackendHealthy}
+			/>
+
+			<CitizenModalWithSidebar
+				isOpen={showTestModal}
+				initialMember={SAMPLE_CITIZEN_FROM_SCREENSHOT}
+				onClose={() => setShowTestModal(false)}
+				onSave={() => setShowTestModal(false)}
 			/>
 		</>
 	);

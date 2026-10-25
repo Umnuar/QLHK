@@ -24,6 +24,7 @@ import { authApi } from "@/api/authApi";
 import { villageApi } from "@/api/villageApi";
 import { getCache, setCache } from "@/db/indexedDB";
 import { useModal } from "@/hooks/useModal";
+import { ModernVillageTable } from "@/features/qlhk/components/villages";
 import type { User, Village } from "@/types";
 import { normalizeUnaccented } from "@/utils/vietnamese";
 
@@ -42,6 +43,7 @@ export const VillagesPage: React.FC = () => {
 	} = useApp();
 	const { showModal } = useModal();
 	const isAdmin = user?.role === "admin";
+	const [uiMode, setUiMode] = useState<"modern" | "legacy">("modern");
 
 	const [searchTerm, setSearchTerm] = useState("");
 	const [editingId, setEditingId] = useState<string | null>(null);
@@ -285,6 +287,54 @@ export const VillagesPage: React.FC = () => {
 		}
 	};
 
+	const handleCreateModern = async (name: string, code?: string, officerId?: string) => {
+		const created = await villageApi.create(name, code);
+		if (officerId) {
+			try {
+				await authApi.updateUser(officerId, { village_id: created.id });
+				await fetchUsers(true);
+			} catch (uErr) {
+				console.warn("Lỗi phân công cán bộ:", uErr);
+			}
+		}
+		cachedStatsTime = 0;
+		await refreshVillages(true);
+		await fetchVillageStats(true);
+		showModal({
+			title: "Thành công",
+			message: `Đã thêm thôn "${name}" thành công`,
+			type: "success",
+		});
+	};
+
+	const handleUpdateModern = async (id: string, name: string, code?: string, officerId?: string) => {
+		await villageApi.update(id, name, code);
+		if (officerId !== undefined) {
+			const currentOfficer = userList.find((u) => u.village_id === id);
+			if (currentOfficer && currentOfficer.id !== officerId) {
+				try {
+					await authApi.updateUser(currentOfficer.id, { village_id: null });
+				} catch {}
+			}
+			if (officerId) {
+				try {
+					await authApi.updateUser(officerId, { village_id: id });
+				} catch (uErr) {
+					console.warn("Lỗi phân công cán bộ:", uErr);
+				}
+			}
+			await fetchUsers(true);
+		}
+		cachedStatsTime = 0;
+		await refreshVillages(true);
+		await fetchVillageStats(true);
+		showModal({
+			title: "Thành công",
+			message: "Cập nhật thông tin thôn thành công",
+			type: "success",
+		});
+	};
+
 	const totalHouseholds = overview?.totalHouseholds ?? 0;
 	const totalCitizens = overview?.totalCitizens ?? 0;
 	const avgSize = overview?.averageHouseholdSize ?? 0;
@@ -303,7 +353,58 @@ export const VillagesPage: React.FC = () => {
 
 	return (
 		<div className="space-y-6 animate-in fade-in pb-10">
-			<div className="rounded-3xl p-6 bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900 text-white shadow-xl shadow-emerald-950/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+			<div className="flex items-center justify-between pb-1 flex-wrap gap-3">
+				<div className="flex items-center p-1 rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border border-slate-300/60 dark:border-slate-700/60 shadow-xs">
+					<button
+						type="button"
+						onClick={() => setUiMode("modern")}
+						className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+							uiMode === "modern"
+								? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm"
+								: "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+						}`}
+					>
+						Bảng Thôn Mới (UI Test)
+					</button>
+					<button
+						type="button"
+						onClick={() => setUiMode("legacy")}
+						className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+							uiMode === "legacy"
+								? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm"
+								: "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+						}`}
+					>
+						Giao Diện Thôn Cũ
+					</button>
+				</div>
+			</div>
+
+			{uiMode === "modern" ? (
+				<ModernVillageTable
+					villages={villages}
+					villageStats={villageStats}
+					overview={overview}
+					userList={userList}
+					isAdmin={isAdmin}
+					onSelectVillage={(id, dest) => {
+						setSelectedVillageId(id);
+						setActiveTab(dest);
+					}}
+					onCreateVillage={handleCreateModern}
+					onUpdateVillage={handleUpdateModern}
+					onDeleteVillage={handleDelete}
+					onRefresh={async () => {
+						cachedStatsTime = 0;
+						cachedUsersTime = 0;
+						await refreshVillages(true);
+						await fetchVillageStats(true);
+						await fetchUsers(true);
+					}}
+				/>
+			) : (
+				<>
+					<div className="rounded-3xl p-6 bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900 text-white shadow-xl shadow-emerald-950/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
 				<div className="flex items-center gap-4 relative z-10">
 					<div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 backdrop-blur-xs">
 						<BarChart3 className="w-7 h-7 text-white" strokeWidth={1.5} />
@@ -674,6 +775,8 @@ export const VillagesPage: React.FC = () => {
 					);
 				})}
 			</div>
+				</>
+			)}
 		</div>
 	);
 };

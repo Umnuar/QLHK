@@ -1,1 +1,1 @@
-export {};
+export * from "@/features/qlhk/components/villages";

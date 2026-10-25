@@ -30,7 +30,9 @@ export interface CitizenModalProps {
 	initialMember?: Partial<Person> | null;
 	existingMembers?: (Partial<Person> | Person)[];
 	onClose: () => void;
-	onSave: (memberData: Partial<Person>) => void;
+	onSave?: (memberData: Partial<Person>) => void;
+	readOnly?: boolean;
+	zIndex?: number;
 }
 
 export type CitizenModalTab = "basic" | "career";
@@ -70,6 +72,8 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 	existingMembers,
 	onClose,
 	onSave,
+	readOnly = false,
+	zIndex = 70,
 }) => {
 	const fullNameInputRef = useRef<HTMLInputElement>(null);
 	const occupationInputRef = useRef<HTMLInputElement>(null);
@@ -232,6 +236,10 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 
 	const handleSubmit = (e?: React.FormEvent) => {
 		if (e) e.preventDefault();
+		if (readOnly) {
+			onClose();
+			return;
+		}
 		setError(null);
 
 		const trimmedName = fullName.trim();
@@ -330,11 +338,14 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 			notes: notes.trim(),
 		};
 
-		onSave(memberData);
+		if (onSave) {
+			onSave(memberData);
+		}
 		onClose();
 	};
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+		if (readOnly) return;
 		if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
 			e.preventDefault();
 			handleSubmit();
@@ -371,12 +382,14 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 		}
 	};
 
-	const inputClasses =
-		"w-full px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all outline-hidden bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:bg-slate-800 dark:focus:border-emerald-500 dark:focus:ring-2 dark:focus:ring-emerald-500";
+	const inputClasses = readOnly
+		? "w-full px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all outline-hidden bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 cursor-not-allowed select-text"
+		: "w-full px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all outline-hidden bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:bg-slate-800 dark:focus:border-emerald-500 dark:focus:ring-2 dark:focus:ring-emerald-500";
 
 	return createPortal(
 		<div
-			className="fixed inset-0 !m-0 z-[70] flex items-center justify-center p-3 sm:p-5 bg-slate-950/50 dark:bg-black/70 backdrop-blur-sm select-none animate-in fade-in duration-150"
+			className="fixed inset-0 !m-0 flex items-center justify-center p-3 sm:p-5 bg-slate-950/50 dark:bg-black/70 backdrop-blur-sm select-none animate-in fade-in duration-150"
+			style={{ zIndex }}
 			onClick={(e) => {
 				if (e.target === e.currentTarget) onClose();
 			}}
@@ -461,20 +474,30 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 									id="citizen-modal-title"
 									className="text-base font-bold text-slate-900 dark:text-slate-100"
 								>
-									{initialMember
-										? "Sửa Thông Tin Nhân Khẩu"
-										: "Thêm Nhân Khẩu Mới"}
+									{readOnly
+										? "Xem Thông Tin Nhân Khẩu"
+										: initialMember
+											? "Sửa Thông Tin Nhân Khẩu"
+											: "Thêm Nhân Khẩu Mới"}
 								</h3>
-								<span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-									{activeTab === "basic"
-										? "Mục 1/2: Thông tin cơ bản"
-										: "Mục 2/2: Nghề nghiệp & Nghĩa vụ"}
-								</span>
+								{readOnly ? (
+									<span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+										Chỉ xem (Không thể sửa)
+									</span>
+								) : (
+									<span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+										{activeTab === "basic"
+											? "Mục 1/2: Thông tin cơ bản"
+											: "Mục 2/2: Nghề nghiệp & Nghĩa vụ"}
+									</span>
+								)}
 							</div>
 							<p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-								{activeTab === "basic"
-									? "Quản lý nhân thân, số định danh, ngày sinh và quan hệ gia đình"
-									: "Cập nhật thông tin trình độ văn hóa, nghề nghiệp và thực hiện NVQS"}
+								{readOnly
+									? "Dữ liệu nhân khẩu lưu trữ trong thùng rác (chế độ bảo vệ dữ liệu)"
+									: activeTab === "basic"
+										? "Quản lý nhân thân, số định danh, ngày sinh và quan hệ gia đình"
+										: "Cập nhật thông tin trình độ văn hóa, nghề nghiệp và thực hiện NVQS"}
 							</p>
 						</div>
 						<button
@@ -510,19 +533,21 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 											htmlFor="citizen-full-name"
 											className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5"
 										>
-											Họ và Tên <span className="text-rose-500">*</span>
+											Họ và Tên {!readOnly && <span className="text-rose-500">*</span>}
 										</label>
 										<input
 											ref={fullNameInputRef}
 											id="citizen-full-name"
 											type="text"
-											required
-											autoFocus
+											required={!readOnly}
+											readOnly={readOnly}
+											disabled={readOnly}
+											autoFocus={!readOnly}
 											autoComplete="off"
 											spellCheck={false}
 											value={fullName}
 											onChange={(e) => setFullName(e.target.value)}
-											placeholder="Ví dụ: ĐINH THANH HIẾU, Y Bluih, A Đôi..."
+											placeholder={readOnly ? "—" : "Ví dụ: ĐINH THANH HIẾU, Y Bluih, A Đôi..."}
 											className={inputClasses}
 										/>
 									</div>
@@ -534,7 +559,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 													htmlFor="citizen-relationship"
 													className="block text-xs font-bold text-slate-800 dark:text-slate-200"
 												>
-													Quan hệ <span className="text-rose-500">*</span>
+													Quan hệ {!readOnly && <span className="text-rose-500">*</span>}
 												</label>
 												{headStatus && (
 													<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-700">
@@ -546,12 +571,14 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 												id="citizen-relationship"
 												list="citizen-relationships-list"
 												type="text"
-												required
+												required={!readOnly}
+												readOnly={readOnly}
+												disabled={readOnly}
 												autoComplete="off"
 												spellCheck={false}
 												value={relationship}
 												onChange={(e) => handleRelationshipChange(e.target.value)}
-												placeholder="Nhập quan hệ gia đình..."
+												placeholder={readOnly ? "—" : "Nhập quan hệ gia đình..."}
 												className={inputClasses}
 											/>
 											<datalist id="citizen-relationships-list">
@@ -568,7 +595,9 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 												onChange={(val) => setGender(val as Gender)}
 												options={["Nam", "Nữ"]}
 												label="Giới tính"
-												required
+												required={!readOnly}
+												disabled={readOnly}
+												className={readOnly ? "!bg-slate-100 dark:!bg-slate-800/90 !border-slate-200 dark:!border-slate-700 !text-slate-800 dark:!text-slate-200" : ""}
 											/>
 										</div>
 									</div>
@@ -580,7 +609,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 													htmlFor="citizen-dob"
 													className="block text-xs font-bold text-slate-800 dark:text-slate-200"
 												>
-													Ngày sinh (DD/MM/YYYY) <span className="text-rose-500">*</span>
+													Ngày sinh (DD/MM/YYYY) {!readOnly && <span className="text-rose-500">*</span>}
 												</label>
 												{parsedDobInfo && (
 													<span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
@@ -591,12 +620,14 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 											<input
 												id="citizen-dob"
 												type="text"
-												required
+												required={!readOnly}
+												readOnly={readOnly}
+												disabled={readOnly}
 												autoComplete="off"
 												spellCheck={false}
 												value={dob}
 												onChange={(e) => setDob(e.target.value)}
-												placeholder="Ví dụ: 02/05/2015 hoặc 1987"
+												placeholder={readOnly ? "—" : "Ví dụ: 02/05/2015 hoặc 1987"}
 												className={inputClasses}
 											/>
 										</div>
@@ -610,7 +641,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 													>
 														Số CCCD (12 số)
 													</label>
-													{isDuplicateCccd && (
+													{!readOnly && isDuplicateCccd && (
 														<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white shadow-xs border border-rose-700 animate-pulse">
 															<AlertCircle className="w-3 h-3" />
 															Cảnh báo: Trùng CCCD
@@ -657,20 +688,22 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 												id="citizen-cccd"
 												type="text"
 												maxLength={12}
+												readOnly={readOnly}
+												disabled={readOnly}
 												autoComplete="off"
 												spellCheck={false}
 												value={cccd}
 												onChange={(e) =>
 													setCccd(e.target.value.replace(/\D/g, ""))
 												}
-												placeholder="12 chữ số (để trống nếu chưa có)"
+												placeholder={readOnly ? "Chưa có CCCD" : "12 chữ số (để trống nếu chưa có)"}
 												className={`${inputClasses} ${
-													isDuplicateCccd
+													!readOnly && isDuplicateCccd
 														? "border-rose-500 focus:border-rose-600 focus:ring-2 focus:ring-rose-500 bg-rose-50/40 dark:bg-rose-950/20 text-rose-900 dark:text-rose-100"
 														: ""
 												}`}
 											/>
-											{isDuplicateCccd ? (
+											{!readOnly && isDuplicateCccd ? (
 												<div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
 													<AlertCircle
 														className="w-3.5 h-3.5 shrink-0"
@@ -681,14 +714,14 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 														{duplicateMember?.relationship || "Thành viên"})
 													</span>
 												</div>
-											) : cleanCccd.length > 0 &&
+											) : !readOnly && cleanCccd.length > 0 &&
 											  cleanCccd.length < 12 &&
 											  cleanCccd.length !== 9 &&
 											  !cccd.includes("•") ? (
 												<div className="mt-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
 													Đã nhập {cleanCccd.length}/12 số
 												</div>
-											) : cleanCccd.length === 12 ? (
+											) : !readOnly && cleanCccd.length === 12 ? (
 												<div className="mt-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
 													<Check className="w-3.5 h-3.5" strokeWidth={2} />
 													<span>CCCD hợp lệ (12 số)</span>
@@ -704,8 +737,10 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 												value={ethnicity}
 												onChange={(val) => setEthnicity(String(val))}
 												options={[...ETHNIC_GROUPS]}
-												searchable
+												searchable={!readOnly}
 												label="Dân tộc"
+												disabled={readOnly}
+												className={readOnly ? "!bg-slate-100 dark:!bg-slate-800/90 !border-slate-200 dark:!border-slate-700 !text-slate-800 dark:!text-slate-200" : ""}
 											/>
 										</div>
 
@@ -715,8 +750,10 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 												value={religion}
 												onChange={(val) => setReligion(String(val))}
 												options={[...RELIGIONS]}
-												searchable
+												searchable={!readOnly}
 												label="Tôn giáo"
+												disabled={readOnly}
+												className={readOnly ? "!bg-slate-100 dark:!bg-slate-800/90 !border-slate-200 dark:!border-slate-700 !text-slate-800 dark:!text-slate-200" : ""}
 											/>
 										</div>
 									</div>
@@ -731,11 +768,13 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 										<input
 											id="citizen-native-place"
 											type="text"
+											readOnly={readOnly}
+											disabled={readOnly}
 											autoComplete="off"
 											spellCheck={false}
 											value={nativePlace}
 											onChange={(e) => setNativePlace(e.target.value)}
-											placeholder="VD: Xã Đăk Hà, Huyện Tu Mơ Rông, Kon Tum..."
+											placeholder={readOnly ? "—" : "VD: Xã Đăk Hà, Huyện Tu Mơ Rông, Kon Tum..."}
 											className={inputClasses}
 										/>
 									</div>
@@ -756,11 +795,13 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 												ref={occupationInputRef}
 												id="citizen-occupation"
 												type="text"
+												readOnly={readOnly}
+												disabled={readOnly}
 												autoComplete="off"
 												spellCheck={false}
 												value={occupation}
 												onChange={(e) => setOccupation(e.target.value)}
-												placeholder="VD: Làm nông, Buôn bán, Công nhân, Học sinh..."
+												placeholder={readOnly ? "—" : "VD: Làm nông, Buôn bán, Công nhân, Học sinh..."}
 												className={inputClasses}
 											/>
 										</div>
@@ -775,11 +816,13 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 											<input
 												id="citizen-education"
 												type="text"
+												readOnly={readOnly}
+												disabled={readOnly}
 												autoComplete="off"
 												spellCheck={false}
 												value={education}
 												onChange={(e) => setEducation(e.target.value)}
-												placeholder="VD: 12/12, Đại học, Cao đẳng, Biết chữ..."
+												placeholder={readOnly ? "—" : "VD: 12/12, Đại học, Cao đẳng, Biết chữ..."}
 												className={inputClasses}
 											/>
 										</div>
@@ -795,11 +838,13 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 										<input
 											id="citizen-military-status"
 											type="text"
+											readOnly={readOnly}
+											disabled={readOnly}
 											autoComplete="off"
 											spellCheck={false}
 											value={militaryStatus}
 											onChange={(e) => setMilitaryStatus(e.target.value)}
-											placeholder="VD: Đủ điều kiện gọi nhập ngũ, Xuất ngũ 2024, Dân quân tự vệ..."
+											placeholder={readOnly ? "—" : "VD: Đủ điều kiện gọi nhập ngũ, Xuất ngũ 2024, Dân quân tự vệ..."}
 											className={inputClasses}
 										/>
 									</div>
@@ -814,10 +859,12 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 										<textarea
 											id="citizen-notes"
 											rows={4}
+											readOnly={readOnly}
+											disabled={readOnly}
 											spellCheck={false}
 											value={notes}
 											onChange={(e) => setNotes(e.target.value)}
-											placeholder="Tiền sử, nơi cư trú trước đây, ghi chú chính sách đặc thù..."
+											placeholder={readOnly ? "Không có ghi chú" : "Tiền sử, nơi cư trú trước đây, ghi chú chính sách đặc thù..."}
 											className={`${inputClasses} resize-none min-h-[110px]`}
 										/>
 									</div>
@@ -848,21 +895,33 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 							</div>
 
 							<div className="flex items-center gap-2">
-								<button
-									type="button"
-									onClick={onClose}
-									className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
-								>
-									Hủy
-								</button>
-								<button
-									type="submit"
-									className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-[0.99] cursor-pointer focus:ring-2 focus:ring-emerald-500"
-								>
-									<Check className="w-4 h-4 mr-0.5" strokeWidth={2} />
-									<span>Lưu nhân khẩu</span>
-									<span className="text-[10px] opacity-75 font-normal">(Ctrl+Enter)</span>
-								</button>
+								{readOnly ? (
+									<button
+										type="button"
+										onClick={onClose}
+										className="px-5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl transition-colors cursor-pointer"
+									>
+										Đóng cửa sổ
+									</button>
+								) : (
+									<>
+										<button
+											type="button"
+											onClick={onClose}
+											className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+										>
+											Hủy
+										</button>
+										<button
+											type="submit"
+											className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-[0.99] cursor-pointer focus:ring-2 focus:ring-emerald-500"
+										>
+											<Check className="w-4 h-4 mr-0.5" strokeWidth={2} />
+											<span>Lưu nhân khẩu</span>
+											<span className="text-[10px] opacity-75 font-normal">(Ctrl+Enter)</span>
+										</button>
+									</>
+								)}
 							</div>
 						</footer>
 					</form>

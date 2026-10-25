@@ -29,13 +29,14 @@ import {
 	Users,
 	X,
 } from "lucide-react";
-import type { Household, Village } from "@/types";
+import type { Household, Person, Village } from "@/types";
 import { calculateAge } from "@/utils/date";
 import { exportExcelWithDialog, loadXlsx } from "@/utils/fileExport";
 import { normalizeUnaccented } from "@/utils/vietnamese";
 import { TablePagination } from "@/components/common/TablePagination";
 import { formatVietnameseNumber } from "@/components/common/tableStyles";
 import { CustomSelect } from "@/components/common/CustomSelect";
+import { CitizenModal } from "./CitizenModal";
 
 export interface ModernRecycleBinTableProps {
 	households: Household[];
@@ -92,6 +93,7 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [isExporting, setIsExporting] = useState(false);
 	const [inspectingHousehold, setInspectingHousehold] = useState<Household | null>(null);
+	const [viewingCitizen, setViewingCitizen] = useState<Partial<Person> | null>(null);
 
 	const enrichedHouseholds = useMemo(() => {
 		const now = Date.now();
@@ -1055,6 +1057,9 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 												0}{" "}
 											người)
 										</h4>
+										<span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+											Bấm vào dòng để xem chi tiết
+										</span>
 									</div>
 
 									{!inspectingHousehold.members ||
@@ -1082,12 +1087,14 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 														return (
 															<tr
 																key={m.id || mIdx}
-																className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+																onClick={() => setViewingCitizen(m)}
+																title="Bấm để xem thông tin chi tiết nhân khẩu"
+																className="hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer transition-colors group"
 															>
-																<td className="py-2.5 px-3 text-center font-mono text-slate-400">
+																<td className="py-2.5 px-3 text-center font-mono text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300">
 																	{m.stt ?? mIdx + 1}
 																</td>
-																<td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white">
+																<td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
 																	<div className="flex items-center gap-1.5">
 																		<span>{m.full_name}</span>
 																		{m.is_head && (
@@ -1159,6 +1166,15 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 					</div>,
 					document.body,
 				)}
+
+			<CitizenModal
+				isOpen={Boolean(viewingCitizen)}
+				initialMember={viewingCitizen}
+				existingMembers={inspectingHousehold?.members}
+				onClose={() => setViewingCitizen(null)}
+				readOnly={true}
+				zIndex={1100}
+			/>
 		</div>
 	);
 };

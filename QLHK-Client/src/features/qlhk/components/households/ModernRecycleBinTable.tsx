@@ -983,60 +983,74 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 
 			{inspectingHousehold &&
 				createPortal(
-					<div className="fixed inset-0 z-[1000] select-none" role="presentation">
+					<div
+						className="fixed inset-0 !m-0 z-[1000] flex items-center justify-center p-3 sm:p-5 bg-slate-950/50 dark:bg-black/70 backdrop-blur-sm select-none animate-in fade-in duration-150"
+						onClick={(e) => {
+							if (e.target === e.currentTarget && !viewingCitizen) {
+								setInspectingHousehold(null);
+							}
+						}}
+						role="presentation"
+					>
 						<div
-							className="fixed inset-0 w-screen h-screen h-[100dvh] bg-slate-950/60 backdrop-blur-xs transition-opacity cursor-pointer z-[1001]"
-							onClick={() => setInspectingHousehold(null)}
-							aria-hidden="true"
-						/>
-
-						<div
-							className="fixed top-0 right-0 bottom-0 w-full max-w-2xl h-screen h-[100dvh] bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 flex flex-col z-[1002] animate-in slide-in-from-right duration-200"
+							className="w-full max-w-3xl h-[88vh] max-h-[88vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 relative z-[1002]"
 							role="dialog"
 							aria-modal="true"
-							aria-labelledby="recycle-bin-drawer-title"
+							aria-labelledby="recycle-bin-modal-title"
 							onClick={(e) => e.stopPropagation()}
 						>
-							<div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/70 shrink-0">
-								<div className="flex items-center gap-3">
-									<div className="w-11 h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center shadow-xs shrink-0">
-										<Trash2 className="w-5 h-5" />
-									</div>
-									<div>
-										<div className="flex items-center gap-2">
-											<h3
-												id="recycle-bin-drawer-title"
-												className="text-lg font-black text-slate-900 dark:text-white"
-											>
-												Hộ: {inspectingHousehold.head_name}
-											</h3>
-											<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400">
-												Đã xóa tạm
-											</span>
+							<div className="p-4 px-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-950/80 shrink-0">
+								<div className="space-y-1">
+									<div className="flex items-center gap-2">
+										<div className="w-8 h-8 rounded-xl bg-rose-600/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+											<Trash2 className="w-4 h-4" />
 										</div>
-										<p className="text-xs text-slate-400">
-											{inspectingHousehold.village_name || "Chưa gán thôn"} •{" "}
-											{inspectingHousehold.address || "Chưa có địa chỉ"}
-										</p>
+										<h2
+											id="recycle-bin-modal-title"
+											className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2"
+										>
+											<span>Hộ: {inspectingHousehold.head_name || "Chưa xác định"}</span>
+										</h2>
+									</div>
+
+									<div className="flex items-center gap-2 flex-wrap">
+										<span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+											Chủ hộ:{" "}
+											<span className="text-rose-600 dark:text-rose-400">
+												{inspectingHousehold.head_name || "Chưa xác định"}
+											</span>
+										</span>
+										<span className="text-slate-300 dark:text-slate-700">•</span>
+										<span className="px-2 py-0.5 rounded-md text-[11px] font-bold border bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800">
+											{inspectingHousehold.village_name || "Chưa gán thôn"}
+										</span>
+										<span className="text-slate-300 dark:text-slate-700">•</span>
+										<span className="px-2 py-0.5 rounded-md text-[11px] font-bold border bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800">
+											Đã xóa tạm
+										</span>
+										<span className="text-slate-300 dark:text-slate-700">•</span>
+										<span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+											{inspectingHousehold.members?.length || inspectingHousehold.members_count || 0} nhân khẩu
+										</span>
 									</div>
 								</div>
 
 								<button
 									type="button"
 									onClick={() => setInspectingHousehold(null)}
-									aria-label="Đóng chi tiết"
-									className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+									aria-label="Đóng cửa sổ"
+									className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer"
 								>
-									<X className="w-5 h-5" />
+									<X strokeWidth={1.5} className="w-5 h-5" />
 								</button>
 							</div>
 
-							<div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-6">
+							<div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
 								<div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 flex items-start gap-3">
 									<AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
 									<div className="text-xs text-amber-800 dark:text-amber-200">
 										<p className="font-bold">
-											Hộ gia đình này hiện đang nằm trong thùng rác
+											Hộ gia đình này hiện đang lưu trong thùng rác
 										</p>
 										<p className="text-[11px] text-amber-700/90 dark:text-amber-300/80 mt-0.5">
 											Thời điểm xóa:{" "}
@@ -1048,17 +1062,67 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 									</div>
 								</div>
 
-								<div className="space-y-3">
-									<div className="flex items-center justify-between">
-										<h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-											Danh Sách Nhân Khẩu Trong Hộ (
-											{inspectingHousehold.members?.length ||
-												inspectingHousehold.members_count ||
-												0}{" "}
-											người)
-										</h4>
+								<div className="space-y-4">
+									<div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+										<span className="w-2 h-2 rounded-full bg-rose-500"></span>
+										<h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+											1. Thông Tin Chung Hộ Gia Đình (Chế độ lưu trữ)
+										</h3>
+									</div>
+
+									<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+										<div>
+											<label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+												Thôn quản lý
+											</label>
+											<div className="w-full px-3.5 py-2.5 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-not-allowed">
+												{inspectingHousehold.village_name || "Chưa gán thôn"}
+											</div>
+										</div>
+
+										<div>
+											<label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+												Trạng thái cư trú
+											</label>
+											<div className="w-full px-3.5 py-2.5 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-not-allowed">
+												{inspectingHousehold.status || "Thường trú"}
+											</div>
+										</div>
+
+										<div>
+											<label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+												Địa chỉ cư trú
+											</label>
+											<div className="w-full px-3.5 py-2.5 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-not-allowed">
+												{inspectingHousehold.address || "Chưa có địa chỉ"}
+											</div>
+										</div>
+
+										<div>
+											<label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+												Ghi chú hộ gia đình
+											</label>
+											<div className="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-not-allowed">
+												{inspectingHousehold.notes || "Không có ghi chú"}
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div className="space-y-4">
+									<div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+										<div className="flex items-center gap-2">
+											<span className="w-2 h-2 rounded-full bg-rose-500"></span>
+											<h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+												2. Danh Sách Nhân Khẩu (
+												{inspectingHousehold.members?.length ||
+													inspectingHousehold.members_count ||
+													0}{" "}
+												người)
+											</h3>
+										</div>
 										<span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-											Bấm vào dòng để xem chi tiết
+											Bấm vào nhân khẩu để xem chi tiết
 										</span>
 									</div>
 
@@ -1138,29 +1202,39 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 								</div>
 							</div>
 
-							<div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/70 flex items-center justify-end gap-3 shrink-0">
+							<div className="p-4 px-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 flex items-center justify-between shrink-0">
 								<button
 									type="button"
-									onClick={() => {
-										onHardDelete(inspectingHousehold);
-										setInspectingHousehold(null);
-									}}
-									className="px-4 py-2.5 rounded-xl border border-rose-300 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all cursor-pointer"
+									onClick={() => setInspectingHousehold(null)}
+									className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer"
 								>
-									Xóa Vĩnh Viễn
+									Đóng cửa sổ
 								</button>
 
-								<button
-									type="button"
-									onClick={() => {
-										onRestore(inspectingHousehold);
-										setInspectingHousehold(null);
-									}}
-									className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-95"
-								>
-									<RotateCcw className="w-4 h-4 stroke-[2.5]" />
-									<span>Khôi Phục Hộ Này</span>
-								</button>
+								<div className="flex items-center gap-2.5">
+									<button
+										type="button"
+										onClick={() => {
+											onHardDelete(inspectingHousehold);
+											setInspectingHousehold(null);
+										}}
+										className="px-4 py-2.5 rounded-xl border border-rose-300 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all cursor-pointer"
+									>
+										Xóa Vĩnh Viễn
+									</button>
+
+									<button
+										type="button"
+										onClick={() => {
+											onRestore(inspectingHousehold);
+											setInspectingHousehold(null);
+										}}
+										className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-95"
+									>
+										<RotateCcw className="w-4 h-4 stroke-[2.5]" />
+										<span>Khôi Phục Hộ Này</span>
+									</button>
+								</div>
 							</div>
 						</div>
 					</div>,

@@ -5,4 +5,5 @@ export * from "./CitizenModal";
 export * from "./ConflictResolutionModal";
 export * from "./AgeFilterPopover";
 export * from "./RecycleBinTable";
+export * from "./ModernRecycleBinTable";
 export * from "./YearSelector";

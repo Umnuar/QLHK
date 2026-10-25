@@ -4,12 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/AppContext";
 import { householdApi } from "@/api/householdApi";
 import { RecycleBinTable } from "../components/households/RecycleBinTable";
+import { ModernRecycleBinTable } from "../components/households/ModernRecycleBinTable";
 import { useModal } from "@/hooks/useModal";
 import type { Household } from "@/types";
 
 export const RecycleBinPage: React.FC = () => {
-	const { setActiveTab } = useApp();
+	const { setActiveTab, villages } = useApp();
 	const { showModal } = useModal();
+	const [uiMode, setUiMode] = useState<"modern" | "legacy">("modern");
 
 	const [deletedHouseholds, setDeletedHouseholds] = useState<Household[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -171,7 +173,56 @@ export const RecycleBinPage: React.FC = () => {
 
 	return (
 		<div className="space-y-6 animate-in fade-in pb-10">
-			<div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors duration-150">
+			<div className="flex items-center justify-between pb-1 flex-wrap gap-3">
+				<div className="flex items-center p-1 rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border border-slate-300/60 dark:border-slate-700/60 shadow-xs">
+					<button
+						type="button"
+						onClick={() => setUiMode("modern")}
+						className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+							uiMode === "modern"
+								? "bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm"
+								: "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+						}`}
+					>
+						Bảng Thùng Rác Mới (UI Test)
+					</button>
+					<button
+						type="button"
+						onClick={() => setUiMode("legacy")}
+						className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+							uiMode === "legacy"
+								? "bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm"
+								: "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+						}`}
+					>
+						Giao Diện Thùng Rác Cũ
+					</button>
+				</div>
+			</div>
+
+			{uiMode === "modern" ? (
+				<ModernRecycleBinTable
+					households={deletedHouseholds}
+					villages={villages}
+					loading={loading}
+					total={total}
+					page={page}
+					limit={limit}
+					totalPages={totalPages}
+					selectedIds={selectedIds}
+					onToggleSelect={handleToggleSelect}
+					onToggleSelectAll={handleToggleSelectAll}
+					onPageChange={setPage}
+					onLimitChange={setLimit}
+					onRestore={handleRestore}
+					onHardDelete={handleHardDelete}
+					onBatchRestore={handleBatchRestore}
+					onBatchHardDelete={handleBatchHardDelete}
+					onRefresh={fetchDeleted}
+				/>
+			) : (
+				<>
+					<div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors duration-150">
 				<div>
 					<div className="flex items-center gap-2.5">
 						<span className="px-3 py-1 rounded-xl text-xs font-black bg-rose-50 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 uppercase tracking-wider">
@@ -240,6 +291,8 @@ export const RecycleBinPage: React.FC = () => {
 				onRestore={handleRestore}
 				onHardDelete={handleHardDelete}
 			/>
+				</>
+			)}
 		</div>
 	);
 };

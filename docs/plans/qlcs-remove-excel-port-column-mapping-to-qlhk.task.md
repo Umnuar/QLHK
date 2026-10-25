@@ -65,10 +65,10 @@
   - Diff Budget: <= 200 gross LOC (Actual: 112 LOC)
   - Verification: `cd QLHK/QLHK-Client; npx vitest run src/utils/__tests__/householdExcelMapping.test.ts src/components/excel/__tests__/ImportPreviewModal.test.tsx` (Passed, 15 tests)
   - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit` (Passed, 0 errors)
-- [ ] Step 8: Final Verification Gate
-  - Full Test Suite: `cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml; cd QLHK/QLHK-Client; npx vitest run`
-  - Typecheck: `cd QLHK/QLHK-Client; npx tsc --noEmit; cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml`
-  - Working Tree Cleanliness: `git status --porcelain` must be empty
+- [x] Step 8: Final Verification Gate
+  - Full Test Suite: `cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml; cd QLHK/QLHK-Client; npx vitest run` (Passed, 221 tests)
+  - Typecheck: `cd QLHK/QLHK-Client; npx tsc --noEmit; cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml` (Passed, 0 errors)
+  - Working Tree Cleanliness: Verified and committed
 
 ## Project Gotchas & Learned Invariants
 - Zero Comments Rule: Never add comments (`//`, `/* */`, `#`, JSDoc) in code.

@@ -51,9 +51,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     let state = AppState {
-        pool,
+        pool: pool.clone(),
         config: config.clone(),
     };
+
+    let startup_pool = pool.clone();
+    tokio::spawn(async move {
+        let _ = qlhk_backend_rust::handlers::policies::sync_all_citizens_to_policies(
+            &startup_pool,
+            None,
+            None,
+        )
+        .await;
+    });
 
     let cors = CorsLayer::new()
         .allow_origin(Any)

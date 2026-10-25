@@ -967,6 +967,21 @@ pub async fn delete_household(
             .into_response();
     }
 
+    let sync_pool = state.pool.clone();
+    tokio::spawn(async move {
+        let citizen_ids = sqlx::query_scalar::<_, Uuid>(
+            "SELECT id FROM qlhk.citizens WHERE household_id = $1",
+        )
+        .bind(id)
+        .fetch_all(&sync_pool)
+        .await
+        .unwrap_or_default();
+
+        for cid in citizen_ids {
+            let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, cid).await;
+        }
+    });
+
     Json(json!({ "message": "Xóa mềm hộ khẩu thành công" })).into_response()
 }
 
@@ -1073,6 +1088,21 @@ pub async fn restore_household(
         )
             .into_response();
     }
+
+    let sync_pool = state.pool.clone();
+    tokio::spawn(async move {
+        let citizen_ids = sqlx::query_scalar::<_, Uuid>(
+            "SELECT id FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false",
+        )
+        .bind(id)
+        .fetch_all(&sync_pool)
+        .await
+        .unwrap_or_default();
+
+        for cid in citizen_ids {
+            let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, cid).await;
+        }
+    });
 
     Json(json!({
         "message": "Khôi phục hộ khẩu thành công",

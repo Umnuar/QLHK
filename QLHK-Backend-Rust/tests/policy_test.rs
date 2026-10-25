@@ -76,3 +76,61 @@ fn test_largest_remainder_percentages() {
     let sum2: f64 = pcts2.iter().sum();
     assert!((sum2 - 100.0).abs() < 0.001);
 }
+
+#[test]
+fn test_retiree_occupation_matching() {
+    let check_retiree = |raw: &str| -> bool {
+        let occ_lower = raw.to_lowercase();
+        let occ_unacc = qlhk_backend_rust::crypto::remove_accents(raw).to_lowercase();
+        occ_lower.contains("hưu") || occ_unacc.contains("huu")
+    };
+
+    assert!(check_retiree("Hưu trí"));
+    assert!(check_retiree("hưu trí"));
+    assert!(check_retiree("Cán bộ hưu trí"));
+    assert!(check_retiree("Nghỉ hưu"));
+    assert!(check_retiree("Cán bộ nghỉ hưu"));
+    assert!(check_retiree("Hưu"));
+    assert!(check_retiree("huu tri"));
+    assert!(check_retiree("nghi huu"));
+    assert!(check_retiree("can bo huu"));
+
+    assert!(!check_retiree("Làm nông"));
+    assert!(!check_retiree("Công nhân"));
+    assert!(!check_retiree("Buôn bán"));
+    assert!(!check_retiree("Giáo viên"));
+    assert!(!check_retiree(""));
+}
+
+#[test]
+fn test_all_ages_over_60_have_milestone() {
+    for age in 60..=120 {
+        let m = compute_chuctho_milestones(age);
+        let has_milestone = !m.age60.is_empty()
+            || !m.age65.is_empty()
+            || !m.age70.is_empty()
+            || !m.age75.is_empty()
+            || !m.age80.is_empty()
+            || !m.age85.is_empty()
+            || !m.age90.is_empty()
+            || !m.age95.is_empty()
+            || !m.age100.is_empty()
+            || !m.age_over_100.is_empty();
+        assert!(has_milestone, "Age {} must have a milestone marked", age);
+    }
+
+    for age in 0..60 {
+        let m = compute_chuctho_milestones(age);
+        let has_milestone = !m.age60.is_empty()
+            || !m.age65.is_empty()
+            || !m.age70.is_empty()
+            || !m.age75.is_empty()
+            || !m.age80.is_empty()
+            || !m.age85.is_empty()
+            || !m.age90.is_empty()
+            || !m.age95.is_empty()
+            || !m.age100.is_empty()
+            || !m.age_over_100.is_empty();
+        assert!(!has_milestone, "Age {} under 60 must not have any milestone", age);
+    }
+}

@@ -568,6 +568,13 @@ pub async fn import_excel(
             .into_response();
     }
 
+    if imported_count > 0 {
+        let sync_pool = state.pool.clone();
+        tokio::spawn(async move {
+            let _ = crate::handlers::policies::sync_all_citizens_to_policies(&sync_pool, None, None).await;
+        });
+    }
+
     Json(json!({
         "success": true,
         "imported_count": imported_count,

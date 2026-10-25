@@ -587,6 +587,11 @@ pub async fn create_citizen(
             .into_response();
     }
 
+    let sync_pool = state.pool.clone();
+    tokio::spawn(async move {
+        let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, citizen_id).await;
+    });
+
     let resp = format_citizen(created_db);
     (
         StatusCode::CREATED,
@@ -770,6 +775,11 @@ pub async fn update_citizen(
             .into_response();
     }
 
+    let sync_pool = state.pool.clone();
+    tokio::spawn(async move {
+        let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, id).await;
+    });
+
     let resp = format_citizen(updated_db);
     Json(json!({
         "message": "Cập nhật nhân khẩu thành công",
@@ -837,6 +847,11 @@ pub async fn delete_citizen(
         )
             .into_response();
     }
+
+    let sync_pool = state.pool.clone();
+    tokio::spawn(async move {
+        let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, id).await;
+    });
 
     Json(json!({ "message": "Xóa mềm nhân khẩu thành công" })).into_response()
 }

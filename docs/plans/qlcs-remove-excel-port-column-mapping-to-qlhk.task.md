@@ -44,13 +44,13 @@
   - Diff Budget: <= 200 gross LOC (Actual: 173 LOC)
   - Verification: `cd QLHK/QLHK-Client; npx vitest run src/utils/__tests__/excelParser.test.ts` (Passed)
   - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit` (Passed, 0 errors)
-- [ ] Step 5: Interactive Visual Column-Mapping Component
+- [x] Step 5: Interactive Visual Column-Mapping Component
   - Target Files: `QLHK/QLHK-Client/src/components/excel/ColumnMappingStep.tsx`
   - Assigned Role: `.agents/frontend-developer.md`
   - Role Focus: Deliver an intuitive, accessible column-matching table matching project design language
-  - Diff Budget: <= 200 gross LOC
-  - Verification: `cd QLHK/QLHK-Client; npx tsc --noEmit`
-  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit`
+  - Diff Budget: <= 200 gross LOC (Actual: 153 LOC)
+  - Verification: `cd QLHK/QLHK-Client; npx tsc --noEmit` (Passed, 0 errors)
+  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit` (Passed, 0 errors)
 - [ ] Step 6: Upgrade QLHK ImportPreviewModal to 3-Step Wizard
   - Target Files: `QLHK/QLHK-Client/src/components/excel/ImportPreviewModal.tsx`
   - Assigned Role: `.agents/frontend-developer.md`

@@ -302,16 +302,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 		try {
 			if (isHtxhEdit) {
 				const htxhPayload: any = {
-					age75plus: formData.age75plus ? "x" : "",
-					age70to74poor: formData.age70to74poor ? "x" : "",
-					bao_tro: formData.bao_tro ? "x" : "",
-					huu_tri: formData.huu_tri ? "x" : "",
-					huu_tuat_bao_hiem: formData.huu_tuat_bao_hiem ? "x" : "",
-					nguoi_co_cong: formData.nguoi_co_cong ? "x" : "",
-					current_address:
-						formData.currentAddress || formData.current_address || "",
+					...formData,
 					notes: formData.notes || "",
-					received: Boolean(formData.received),
 					calculation_year: calculationYear,
 				};
 				const saveResult = await onSave(htxhPayload);
@@ -482,7 +474,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 						>
 							{isHtxhEdit && (
 								<div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-semibold">
-									Thông tin nhân khẩu được liên kết từ Quản lý Hộ khẩu (QLHK). Chỉ được chỉnh sửa nơi ở hiện nay, ghi chú và các diện hưởng HTXH.
+									Thông tin nhân khẩu được liên kết từ Quản lý Hộ khẩu (QLHK). Chỉ được chỉnh sửa ghi chú hồ sơ.
 								</div>
 							)}
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -664,6 +656,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 									<input
 										id="modal-input-current-address"
 										type="text"
+										disabled={isHtxhEdit}
 										value={
 											formData.currentAddress || formData.current_address || ""
 										}
@@ -682,6 +675,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 								<div>
 									<CustomSelect
 										label="Trạng thái nhận quà"
+										disabled={isHtxhEdit}
 										value={formData.received ? "1" : "0"}
 										onChange={(val) =>
 											setFormData({ ...formData, received: val === "1" })
@@ -713,7 +707,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 								</div>
 							</div>
 
-							{activeTab === "htxh" && (
+							{activeTab === "htxh" && !isHtxhEdit && (
 								<div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
 									<label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
 										Phân loại diện hưởng Hưu Trí Xã Hội:

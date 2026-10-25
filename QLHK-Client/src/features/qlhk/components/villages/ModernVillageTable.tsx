@@ -331,17 +331,6 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 						<span>Báo Cáo Thống Kê Toàn Xã</span>
 						<ArrowRight className="w-4 h-4 stroke-[2]" />
 					</button>
-
-					{isAdmin && (
-						<button
-							type="button"
-							onClick={openCreateModal}
-							className="h-10 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
-						>
-							<Plus className="w-4 h-4 stroke-[2.5]" />
-							<span>Thêm Thôn Mới</span>
-						</button>
-					)}
 				</div>
 			</div>
 

@@ -119,29 +119,6 @@ export function MainTable({
 		});
 	}, [isAllSelected, paginatedProfiles, setSelectedIds]);
 
-	const getGroupKey = (p: TableProfile) => {
-		if (activeTab === "chuctho") {
-			if (p.age60) return "60";
-			if (p.age65) return "65";
-			if (p.age70) return "70";
-			if (p.age75) return "75";
-			if (p.age80) return "80";
-			if (p.age85) return "85";
-			if (p.age90) return "90";
-			if (p.age95) return "95";
-			if (p.age100) return "100";
-			if (p.ageOver100 || p.age_over_100) return ">100";
-			return "other";
-		}
-		if (p.age75plus) return "75plus";
-		if (p.age70to74poor) return "poor";
-		if (p.baoTro || p.bao_tro) return "baotro";
-		if (p.huuTri || p.huu_tri) return "huutri";
-		if (p.huuTuatBaoHiem || p.huu_tuat_bao_hiem) return "huutuat";
-		if (p.nguoiCoCong || p.nguoi_co_cong) return "cocong";
-		return "other";
-	};
-
 	return (
 		<div
 			className={clsx(
@@ -162,7 +139,7 @@ export function MainTable({
 				<div className={TABLE_STYLES.headerTip}>
 					<Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" strokeWidth={1.75} />
 					<span className="hidden sm:inline">
-						Mẹo: Bấm dòng để xem chi tiết • Dùng cột Thao tác bên phải để sửa hoặc xóa
+						Mẹo: Dùng nút Sửa để cập nhật ghi chú hồ sơ
 					</span>
 				</div>
 			</div>
@@ -199,7 +176,7 @@ export function MainTable({
 
 						<col style={{ width: 120 }} />
 
-						<col style={{ width: 96 }} />
+						<col style={{ width: 80 }} />
 					</colgroup>
 					<thead className={TABLE_STYLES.thead}>
 						<tr className={TABLE_STYLES.headerRow}>
@@ -300,13 +277,12 @@ export function MainTable({
 							<th className={clsx(TABLE_STYLES.thCenter, "w-28")}>
 								QUÀ TẶNG
 							</th>
-
-							<th className={TABLE_STYLES.thStickyRight}>
+							<th className={clsx(TABLE_STYLES.thCenter, "w-20")}>
 								THAO TÁC
 							</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+					<tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
 						{paginatedProfiles.length === 0 ? (
 							<tr>
 								<td
@@ -328,10 +304,6 @@ export function MainTable({
 							</tr>
 						) : (
 							paginatedProfiles.map((profile, idx) => {
-							const prevGroup =
-								idx > 0 ? getGroupKey(paginatedProfiles[idx - 1]) : null;
-							const currentGroup = getGroupKey(profile);
-							const isFirstOfGroup = idx > 0 && currentGroup !== prevGroup;
 							const isSelected = selectedIds.has(String(profile.id));
 
 							return (
@@ -352,7 +324,6 @@ export function MainTable({
 									isDarkMode={isDarkMode}
 									panelClass={panelClass}
 									softTextClass={softTextClass}
-									isFirstOfGroup={isFirstOfGroup}
 								/>
 							);
 						})

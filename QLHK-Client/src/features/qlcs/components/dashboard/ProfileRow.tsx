@@ -8,7 +8,6 @@ import {
 	EyeOff,
 	Loader2,
 	MessageSquare,
-	Trash2,
 	X,
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
@@ -29,7 +28,7 @@ interface ProfileRowProps {
 	isSelected: boolean;
 	onToggleSelect: (id: string) => void;
 	onEdit: (profile: TableProfile) => void;
-	onDelete: (profile: TableProfile) => void;
+	onDelete?: (profile: TableProfile) => void;
 	handleToggleReceived: (id: string, newStatus: boolean) => void;
 	openPolicyPopover: string | null;
 	setOpenPolicyPopover: (id: string | null) => void;
@@ -48,14 +47,12 @@ export const ProfileRow = React.memo(function ProfileRow({
 	isSelected,
 	onToggleSelect,
 	onEdit,
-	onDelete,
 	handleToggleReceived,
 	openPolicyPopover,
 	setOpenPolicyPopover,
 	isDarkMode,
 	panelClass,
 	softTextClass,
-	isFirstOfGroup = false,
 }: ProfileRowProps) {
 	const { villages } = useApp();
 	const [showCccd, setShowCccd] = useState(false);
@@ -190,28 +187,10 @@ export const ProfileRow = React.memo(function ProfileRow({
 
 	return (
 		<tr
-			onClick={() => {
-				if (activeTab !== "chuctho") {
-					onEdit(profile);
-				}
-			}}
-			onKeyDown={(e) => {
-				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
-					if (activeTab !== "chuctho") {
-						onEdit(profile);
-					}
-				}
-			}}
-			tabIndex={activeTab === "chuctho" ? -1 : 0}
 			className={clsx(
-				"group transition-colors text-[13px] outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500",
-				activeTab !== "chuctho" ? "cursor-pointer" : "cursor-default",
-				isFirstOfGroup &&
-					"border-t-2 border-emerald-500/30 dark:border-emerald-500/50",
+				"group transition-colors text-[13px] outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-default",
 				rowBgClass,
 			)}
-			title={activeTab === "chuctho" ? undefined : "Bấm để xem và chỉnh sửa thông tin chi tiết hồ sơ"}
 		>
 
 			<td
@@ -248,7 +227,7 @@ export const ProfileRow = React.memo(function ProfileRow({
 			>
 				<div className="flex flex-col justify-center py-0.5">
 					<div className="flex items-center gap-2">
-						<span className="font-bold text-slate-900 dark:text-slate-100 text-sm hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors truncate">
+						<span className="font-bold text-slate-900 dark:text-slate-100 text-sm transition-colors truncate">
 							{profile.name}
 						</span>
 
@@ -480,7 +459,7 @@ export const ProfileRow = React.memo(function ProfileRow({
 				</>
 			)}
 
-			<td className="w-28 py-1 px-2 text-center border-b border-slate-100 dark:border-slate-800/80 whitespace-nowrap">
+			<td className="w-28 py-1 px-2 text-center border-b border-slate-100 dark:border-slate-800/60 whitespace-nowrap">
 				<button
 					type="button"
 					disabled={isTogglingGift}
@@ -532,37 +511,16 @@ export const ProfileRow = React.memo(function ProfileRow({
 				</button>
 			</td>
 
-			<td
-				onClick={(e) => e.stopPropagation()}
-				className={clsx(
-					TABLE_STYLES.stickyRightAction,
-					stickyBgClass,
-				)}
-			>
-				<div className="flex items-center justify-center gap-1">
-					{activeTab !== "chuctho" && (
-						<button
-							type="button"
-							onClick={() => onEdit(profile)}
-							aria-label={`Sửa hồ sơ ${profile.name}`}
-							title="Xem & sửa thông tin hồ sơ"
-							className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 dark:text-slate-400 dark:hover:text-emerald-300 transition-colors cursor-pointer select-none"
-						>
-							<Edit3 strokeWidth={1.75} className="w-4 h-4" />
-						</button>
-					)}
-					{activeTab !== "chuctho" && activeTab !== "htxh" && (
-						<button
-							type="button"
-							onClick={() => onDelete(profile)}
-							aria-label={`Xóa hồ sơ ${profile.name}`}
-							title="Chuyển vào Thùng rác"
-							className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 dark:text-slate-400 dark:hover:text-rose-300 transition-colors cursor-pointer select-none"
-						>
-							<Trash2 strokeWidth={1.75} className="w-4 h-4" />
-						</button>
-					)}
-				</div>
+			<td className="w-20 py-1 px-2 text-center border-b border-slate-100 dark:border-slate-800/60 whitespace-nowrap">
+				<button
+					type="button"
+					onClick={() => onEdit(profile)}
+					title="Chỉnh sửa ghi chú hồ sơ"
+					className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-emerald-700 dark:text-emerald-400 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all cursor-pointer shadow-2xs active:scale-95"
+				>
+					<Edit3 className="w-3.5 h-3.5" strokeWidth={1.75} />
+					<span>Sửa</span>
+				</button>
 			</td>
 		</tr>
 	);

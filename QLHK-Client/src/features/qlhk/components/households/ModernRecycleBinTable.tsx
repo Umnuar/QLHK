@@ -1,5 +1,6 @@
 import type React from "react";
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
 	AlertTriangle,
 	ArrowDown,
@@ -9,6 +10,7 @@ import {
 	Calendar,
 	Check,
 	ChevronRight,
+	Clock,
 	Download,
 	ExternalLink,
 	Eye,
@@ -33,6 +35,7 @@ import { exportExcelWithDialog, loadXlsx } from "@/utils/fileExport";
 import { normalizeUnaccented } from "@/utils/vietnamese";
 import { TablePagination } from "@/components/common/TablePagination";
 import { formatVietnameseNumber } from "@/components/common/tableStyles";
+import { CustomSelect } from "@/components/common/CustomSelect";
 
 export interface ModernRecycleBinTableProps {
 	households: Household[];
@@ -54,10 +57,12 @@ export interface ModernRecycleBinTableProps {
 	onRefresh: () => Promise<void>;
 }
 
-type QuickFilter = "all" | "large_household" | "recent_7_days";
+type QuickFilter = "all" | "large_household" | "recent_7_days" | "expiring_soon";
 type SortField = "deleted_at" | "head_name" | "member_count" | "village_name";
 type SortDirection = "asc" | "desc";
 type ViewMode = "table" | "grid";
+
+const RETENTION_DAYS = 30;
 
 export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 	households,
@@ -89,6 +94,7 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 	const [inspectingHousehold, setInspectingHousehold] = useState<Household | null>(null);
 
 	const enrichedHouseholds = useMemo(() => {
+		const now = Date.now();
 		return households.map((hh) => {
 			const members = hh.members || [];
 			const memberCount =
@@ -100,14 +106,19 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 			const isValidDate = deletedDate && !isNaN(deletedDate.getTime());
 
 			let relativeTime = "Đã xóa";
+			let daysRemaining = RETENTION_DAYS;
+			let isExpiringSoon = false;
+
 			if (isValidDate) {
-				const now = new Date();
 				const diffDays = Math.floor(
-					(now.getTime() - deletedDate.getTime()) / (1000 * 60 * 60 * 24),
+					(now - deletedDate.getTime()) / (1000 * 60 * 60 * 24),
 				);
 				if (diffDays === 0) relativeTime = "Hôm nay";
 				else if (diffDays === 1) relativeTime = "Hôm qua";
 				else relativeTime = `${diffDays} ngày trước`;
+
+				daysRemaining = Math.max(0, RETENTION_DAYS - diffDays);
+				isExpiringSoon = daysRemaining <= 3;
 			}
 
 			return {
@@ -119,6 +130,8 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 				deletedDate,
 				isValidDate,
 				relativeTime,
+				daysRemaining,
+				isExpiringSoon,
 			};
 		});
 	}, [households]);
@@ -133,6 +146,32 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 		);
 		return names.size;
 	}, [enrichedHouseholds]);
+
+	const expiringHouseholdsCount = useMemo(() => {
+		return enrichedHouseholds.filter((h) => h.isValidDate && h.isExpiringSoon).length;
+	}, [enrichedHouseholds]);
+
+	const villageOptions = useMemo(() => {
+		const set = new Set<string>();
+		enrichedHouseholds.forEach((hh) => {
+			if (hh.village_name) set.add(hh.village_name);
+		});
+		return Array.from(set).sort((a, b) => a.localeCompare(b, "vi"));
+	}, [enrichedHouseholds]);
+
+	const villageSelectOptions = useMemo(() => {
+		const opts = [{ value: "all", label: "Toàn xã (Tất cả thôn)" }];
+		if (villages && villages.length > 0) {
+			villages.forEach((v) => {
+				opts.push({ value: v.id, label: v.name });
+			});
+		} else {
+			villageOptions.forEach((v) => {
+				opts.push({ value: v, label: v });
+			});
+		}
+		return opts;
+	}, [villages, villageOptions]);
 
 	const filteredAndSortedHouseholds = useMemo(() => {
 		let list = enrichedHouseholds;
@@ -163,7 +202,8 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 			list = list.filter(
 				(hh) =>
 					hh.village_id === selectedVillage ||
-					hh.village_name?.toLowerCase().trim() === selectedVillage.toLowerCase().trim(),
+					hh.village_name?.toLowerCase().trim() === selectedVillage.toLowerCase().trim() ||
+					villages.find((v) => v.id === selectedVillage)?.name.toLowerCase().trim() === hh.village_name?.toLowerCase().trim(),
 			);
 		}
 
@@ -174,6 +214,8 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 			list = list.filter(
 				(hh) => hh.deletedDate && hh.deletedDate.getTime() >= sevenDaysAgo,
 			);
+		} else if (quickFilter === "expiring_soon") {
+			list = list.filter((hh) => hh.isExpiringSoon);
 		}
 
 		return [...list].sort((a, b) => {
@@ -202,6 +244,7 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 		quickFilter,
 		sortField,
 		sortDirection,
+		villages,
 	]);
 
 	const handleSortClick = (field: SortField) => {
@@ -318,21 +361,45 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 					</div>
 				</div>
 
-				<div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
+				<div
+					className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border shadow-sm flex items-center justify-between hover:shadow-md transition-all ${
+						expiringHouseholdsCount > 0
+							? "border-rose-200 dark:border-rose-800/60 bg-rose-50/20 dark:bg-rose-950/20"
+							: "border-slate-200/90 dark:border-slate-800"
+					}`}
+				>
 					<div className="space-y-1">
-						<span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-							Chế Độ An Toàn Dữ Liệu
+						<span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+							<span>Hộ Chờ Xóa Quá Hạn</span>
+							{expiringHouseholdsCount > 0 && (
+								<span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300">
+									Cần xử lý
+								</span>
+							)}
 						</span>
-						<div className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
-							<ShieldAlert className="w-4 h-4" />
-							<span>Bảo Vệ Hai Lớp</span>
+						<div
+							className={`text-2xl font-black font-mono ${
+								expiringHouseholdsCount > 0
+									? "text-rose-600 dark:text-rose-400"
+									: "text-slate-900 dark:text-white"
+							}`}
+						>
+							{expiringHouseholdsCount.toLocaleString()} Hộ
 						</div>
 						<div className="text-[11px] text-slate-400 font-medium">
-							Chống xóa nhầm, khôi phục 1-click
+							{expiringHouseholdsCount > 0
+								? "Sắp hết hạn lưu trữ (còn ≤ 3 ngày)"
+								: "Chưa có hộ nào sắp hết hạn lưu trữ"}
 						</div>
 					</div>
-					<div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/40 flex items-center justify-center shrink-0">
-						<RotateCcw className="w-6 h-6 text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
+					<div
+						className={`w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 ${
+							expiringHouseholdsCount > 0
+								? "bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/40 text-rose-600 dark:text-rose-400"
+								: "bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-400"
+						}`}
+					>
+						<AlertTriangle className="w-6 h-6" strokeWidth={1.75} />
 					</div>
 				</div>
 			</div>
@@ -362,7 +429,7 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 							onClick={handleRefreshClick}
 							disabled={isRefreshing}
 							title="Làm mới danh sách thùng rác"
-							className="h-[42px] px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+							className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
 						>
 							<RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin text-emerald-600" : ""}`} />
 							<span className="hidden sm:inline">Làm mới</span>
@@ -373,18 +440,18 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 							onClick={handleExportExcel}
 							disabled={isExporting || households.length === 0}
 							title="Xuất bảng thùng rác ra file Excel"
-							className="h-[42px] px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+							className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
 						>
 							<Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
 							<span className="hidden sm:inline">Xuất Excel</span>
 						</button>
 
-						<div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80">
+						<div className="h-10 flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80">
 							<button
 								type="button"
 								onClick={() => setViewMode("table")}
 								title="Chế độ bảng chi tiết"
-								className={`p-2 rounded-lg transition-all cursor-pointer ${
+								className={`h-8 w-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
 									viewMode === "table"
 										? "bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-xs font-bold"
 										: "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
@@ -396,7 +463,7 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 								type="button"
 								onClick={() => setViewMode("grid")}
 								title="Chế độ lưới thẻ"
-								className={`p-2 rounded-lg transition-all cursor-pointer ${
+								className={`h-8 w-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
 									viewMode === "grid"
 										? "bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-xs font-bold"
 										: "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
@@ -416,7 +483,7 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
 							placeholder="Tìm tên chủ hộ, CCCD, địa chỉ, thôn..."
-							className="w-full h-[42px] min-h-[42px] pl-10 pr-9 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+							className="w-full h-10 min-h-[40px] pl-10 pr-9 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
 						/>
 						{searchTerm && (
 							<button
@@ -430,26 +497,24 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 					</div>
 
 					<div className="flex items-center gap-2 flex-wrap">
-						{villages.length > 0 && (
-							<select
+						<div className="w-56 shrink-0">
+							<CustomSelect
+								variant="filter"
+								size="sm"
 								value={selectedVillage}
-								onChange={(e) => setSelectedVillage(e.target.value)}
-								className="h-[42px] min-h-[42px] px-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-hidden focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
-							>
-								<option value="all">Toàn xã (Tất cả thôn)</option>
-								{villages.map((v) => (
-									<option key={v.id} value={v.id}>
-										{v.name}
-									</option>
-								))}
-							</select>
-						)}
+								onChange={(val) => setSelectedVillage(String(val))}
+								options={villageSelectOptions}
+								placeholder="Toàn xã (Tất cả thôn)"
+								className="!h-10 rounded-xl text-xs font-bold"
+								containerClassName="w-full"
+							/>
+						</div>
 
 						<div className="flex items-center gap-1.5 flex-wrap">
 							<button
 								type="button"
 								onClick={() => setQuickFilter("all")}
-								className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+								className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center ${
 									quickFilter === "all"
 										? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs"
 										: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
@@ -460,7 +525,7 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 							<button
 								type="button"
 								onClick={() => setQuickFilter("large_household")}
-								className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+								className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center ${
 									quickFilter === "large_household"
 										? "bg-amber-600 text-white shadow-xs"
 										: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
@@ -471,7 +536,7 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 							<button
 								type="button"
 								onClick={() => setQuickFilter("recent_7_days")}
-								className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+								className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center ${
 									quickFilter === "recent_7_days"
 										? "bg-rose-600 text-white shadow-xs"
 										: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
@@ -479,6 +544,20 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 							>
 								7 ngày gần nhất
 							</button>
+							{expiringHouseholdsCount > 0 && (
+								<button
+									type="button"
+									onClick={() => setQuickFilter("expiring_soon")}
+									className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 ${
+										quickFilter === "expiring_soon"
+											? "bg-red-600 text-white shadow-xs"
+											: "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 hover:bg-rose-100"
+									}`}
+								>
+									<AlertTriangle className="w-3.5 h-3.5" />
+									<span>Sắp hết hạn ({expiringHouseholdsCount})</span>
+								</button>
+							)}
 						</div>
 					</div>
 				</div>
@@ -604,22 +683,21 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 									<th className="py-3.5 px-4 text-right">Thao Tác</th>
 								</tr>
 							</thead>
-							<tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+							<tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
 								{filteredAndSortedHouseholds.map((hh, idx) => {
-									const stt = (page - 1) * limit + idx + 1;
 									const isSelected = selectedIds.includes(hh.id);
-									const initials = getInitials(hh.head_name || "");
-
 									return (
 										<tr
 											key={hh.id}
 											onClick={() => setInspectingHousehold(hh)}
-											className={`hover:bg-rose-50/40 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group ${
-												isSelected ? "bg-rose-50/30 dark:bg-rose-950/20" : ""
+											className={`transition-colors cursor-pointer ${
+												isSelected
+													? "bg-rose-50/70 dark:bg-rose-950/30"
+													: "hover:bg-slate-50/90 dark:hover:bg-slate-800/50"
 											}`}
 										>
 											<td
-												className="py-4 px-4 text-center"
+												className="py-3.5 px-4 text-center"
 												onClick={(e) => e.stopPropagation()}
 											>
 												<input
@@ -629,87 +707,97 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 													className="w-4 h-4 cursor-pointer accent-rose-600 rounded"
 												/>
 											</td>
-											<td className="py-4 px-3 text-center font-mono text-slate-400 font-semibold text-[11px]">
-												{stt}
+											<td className="py-3.5 px-3 text-center font-mono text-slate-400">
+												{(page - 1) * limit + idx + 1}
 											</td>
-											<td className="py-4 px-4">
+											<td className="py-3.5 px-4">
 												<div className="flex items-center gap-3">
-													<div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800/60 font-black text-xs flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-														{initials}
+													<div className="w-9 h-9 rounded-2xl bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900/40 flex items-center justify-center font-black text-xs shrink-0">
+														{getInitials(hh.head_name || "")}
 													</div>
-													<div className="min-w-0">
-														<div className="font-bold text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors text-sm flex items-center gap-2">
-															<span className="truncate">{hh.head_name || "Chưa xác định"}</span>
-															<span className="px-1.5 py-0.2 rounded-md text-[10px] font-bold uppercase bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-																Chủ hộ
-															</span>
+													<div>
+														<div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+															<span>{hh.head_name || "Chưa có tên chủ hộ"}</span>
+															{hh.isExpiringSoon && (
+																<span className="px-1.5 py-0.2 rounded-md text-[9px] font-black bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+																	Còn {hh.daysRemaining} ngày
+																</span>
+															)}
 														</div>
-														<div className="text-[11px] text-slate-400 truncate max-w-xs mt-0.5">
-															{hh.notes || "Không có ghi chú"}
-														</div>
+														{hh.notes && (
+															<div className="text-[11px] text-slate-400 line-clamp-1 italic max-w-xs">
+																{hh.notes}
+															</div>
+														)}
 													</div>
 												</div>
 											</td>
-											<td className="py-4 px-4">
-												<div className="space-y-1">
-													<div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80">
-														<MapPin className="w-3 h-3 text-emerald-600" />
-														<span>{hh.village_name || "Chưa gán thôn"}</span>
-													</div>
-													<div className="text-[11px] text-slate-400 truncate max-w-[220px]">
-														{hh.address || "—"}
-													</div>
-												</div>
-											</td>
-											<td className="py-4 px-4 text-center">
-												<div className="inline-flex flex-col items-center">
-													<span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-2xs">
-														{hh.memberCount} Nhân khẩu
-													</span>
-													{hh.memberCount > 0 && (
-														<span className="text-[10px] text-slate-400 font-mono mt-1">
-															{hh.maleCount} Nam • {hh.femaleCount} Nữ
-														</span>
-													)}
-												</div>
-											</td>
-											<td className="py-4 px-4">
+											<td className="py-3.5 px-4">
 												<div className="space-y-0.5">
-													<div className="font-mono text-xs font-bold text-slate-700 dark:text-slate-300">
-														{hh.isValidDate ? hh.deletedDate?.toLocaleString("vi-VN") : "Đã xóa"}
+													<span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+														{hh.village_name || "Chưa gán thôn"}
+													</span>
+													<div className="text-[11px] text-slate-400 truncate max-w-xs">
+														{hh.address || "Chưa cập nhật địa chỉ"}
 													</div>
-													<div className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold">
+												</div>
+											</td>
+											<td className="py-3.5 px-4 text-center">
+												<div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold text-xs">
+													<Users className="w-3.5 h-3.5 text-slate-400" />
+													<span>{hh.memberCount} khẩu</span>
+												</div>
+												<div className="text-[10px] text-slate-400 mt-0.5">
+													{hh.maleCount} Nam • {hh.femaleCount} Nữ
+												</div>
+											</td>
+											<td className="py-3.5 px-4">
+												<div className="flex flex-col">
+													<span className="font-bold text-slate-700 dark:text-slate-300 text-xs">
 														{hh.relativeTime}
-													</div>
+													</span>
+													<span className="text-[11px] text-slate-400 font-mono">
+														{hh.isValidDate
+															? hh.deletedDate?.toLocaleTimeString("vi-VN", {
+																	hour: "2-digit",
+																	minute: "2-digit",
+																	day: "2-digit",
+																	month: "2-digit",
+																	year: "numeric",
+																})
+															: "—"}
+													</span>
 												</div>
 											</td>
 											<td
-												className="py-4 px-4 text-right"
+												className="py-3.5 px-4 text-right"
 												onClick={(e) => e.stopPropagation()}
 											>
 												<div className="flex items-center justify-end gap-1.5">
 													<button
 														type="button"
 														onClick={() => setInspectingHousehold(hh)}
-														title="Xem chi tiết nhân khẩu"
-														className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+														title="Xem chi tiết hồ sơ hộ"
+														className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
 													>
 														<Eye className="w-4 h-4" />
 													</button>
+
 													<button
 														type="button"
 														onClick={() => onRestore(hh)}
-														title="Khôi phục nguyên trạng hộ dân"
-														className="h-8 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-all border border-emerald-200/80 dark:border-emerald-800/60 flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
+														title="Khôi phục lại hộ gia đình này"
+														className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors flex items-center gap-1 cursor-pointer"
 													>
-														<RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
-														<span>Khôi Phục</span>
+														<RotateCcw className="w-3.5 h-3.5" />
+														<span>Khôi phục</span>
 													</button>
+
 													<button
 														type="button"
 														onClick={() => onHardDelete(hh)}
-														title="Xóa vĩnh viễn khỏi CSDL"
-														className="p-1.5 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/60 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
+														title="Xóa vĩnh viễn"
+														className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
 													>
 														<Trash2 className="w-4 h-4" />
 													</button>
@@ -722,120 +810,126 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 						</table>
 					</div>
 
-					<TablePagination
-						itemCount={filteredAndSortedHouseholds.length}
-						total={total}
-						page={page}
-						limit={limit}
-						totalPages={totalPages}
-						onPageChange={onPageChange}
-						onLimitChange={onLimitChange}
-					/>
+					<div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+						<TablePagination
+							page={page}
+							totalPages={totalPages}
+							limit={limit}
+							total={total}
+							itemCount={filteredAndSortedHouseholds.length}
+							onPageChange={onPageChange}
+							onLimitChange={onLimitChange}
+						/>
+					</div>
 				</div>
 			) : (
-				<div className="space-y-4">
-					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+				<div className="space-y-6">
+					<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
 						{filteredAndSortedHouseholds.map((hh) => {
 							const isSelected = selectedIds.includes(hh.id);
-							const initials = getInitials(hh.head_name || "");
-
 							return (
 								<div
 									key={hh.id}
 									onClick={() => setInspectingHousehold(hh)}
-									className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border shadow-sm hover:shadow-xl hover:border-rose-500/80 transition-all cursor-pointer flex flex-col justify-between group space-y-4 ${
+									className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border transition-all cursor-pointer shadow-xs hover:shadow-md space-y-4 ${
 										isSelected
-											? "border-rose-500 bg-rose-50/20 dark:bg-rose-950/10"
-											: "border-slate-200/90 dark:border-slate-800"
+											? "border-rose-500 dark:border-rose-500 ring-2 ring-rose-500/20"
+											: "border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
 									}`}
 								>
-									<div className="space-y-3">
-										<div className="flex items-start justify-between gap-3">
-											<div className="flex items-center gap-2.5 min-w-0">
-												<div
-													onClick={(e) => {
-														e.stopPropagation();
-														onToggleSelect(hh.id);
-													}}
-													className="p-1 cursor-pointer"
-												>
-													<input
-														type="checkbox"
-														checked={isSelected}
-														onChange={() => onToggleSelect(hh.id)}
-														className="w-4 h-4 cursor-pointer accent-rose-600 rounded"
-													/>
-												</div>
-												<div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800/60 font-black text-xs flex items-center justify-center shrink-0">
-													{initials}
-												</div>
-												<div className="min-w-0">
-													<h4 className="font-black text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors text-base truncate">
-														{hh.head_name || "Chưa xác định"}
+									<div className="flex items-start justify-between gap-3">
+										<div className="flex items-center gap-3">
+											<div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900/40 flex items-center justify-center font-black text-sm shrink-0">
+												{getInitials(hh.head_name || "")}
+											</div>
+											<div>
+												<div className="flex items-center gap-1.5">
+													<h4 className="font-bold text-slate-900 dark:text-white text-sm line-clamp-1">
+														{hh.head_name || "Chưa có tên"}
 													</h4>
-													<span className="text-[11px] text-slate-400 font-medium">
-														{hh.village_name || "Chưa gán thôn"}
-													</span>
+													{hh.isExpiringSoon && (
+														<span className="px-1.5 py-0.2 rounded-md text-[9px] font-black bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shrink-0">
+															Còn {hh.daysRemaining} ngày
+														</span>
+													)}
 												</div>
+												<span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 mt-0.5">
+													{hh.village_name || "Chưa gán thôn"}
+												</span>
 											</div>
 										</div>
 
-										<div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-xs space-y-1.5">
-											<div className="flex items-center justify-between">
-												<span className="text-slate-400">Địa chỉ:</span>
-												<span className="font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[180px]">
-													{hh.address || "—"}
-												</span>
-											</div>
-											<div className="flex items-center justify-between">
-												<span className="text-slate-400">Thời điểm xóa:</span>
-												<span className="font-mono text-rose-600 dark:text-rose-400 font-bold">
-													{hh.relativeTime}
-												</span>
-											</div>
-											<div className="flex items-center justify-between">
-												<span className="text-slate-400">Quy mô:</span>
-												<span className="font-bold text-slate-800 dark:text-slate-100">
-													{hh.memberCount} nhân khẩu ({hh.maleCount} Nam • {hh.femaleCount} Nữ)
-												</span>
-											</div>
+										<div
+											onClick={(e) => e.stopPropagation()}
+											className="flex items-center gap-1"
+										>
+											<input
+												type="checkbox"
+												checked={isSelected}
+												onChange={() => onToggleSelect(hh.id)}
+												className="w-4 h-4 cursor-pointer accent-rose-600 rounded"
+											/>
 										</div>
 									</div>
 
-									<div
-										className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs"
-										onClick={(e) => e.stopPropagation()}
-									>
-										<button
-											type="button"
-											onClick={() => onRestore(hh)}
-											className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
-										>
-											<RotateCcw className="w-3.5 h-3.5" />
-											<span>Khôi Phục</span>
-										</button>
+									<div className="space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
+										<div className="flex items-center gap-2">
+											<MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+											<span className="truncate">{hh.address || "Chưa cập nhật địa chỉ"}</span>
+										</div>
+										<div className="flex items-center gap-2">
+											<Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+											<span>
+												Xóa: {hh.relativeTime} (
+												{hh.isValidDate
+													? hh.deletedDate?.toLocaleDateString("vi-VN")
+													: "—"}
+												)
+											</span>
+										</div>
+									</div>
 
-										<button
-											type="button"
-											onClick={() => onHardDelete(hh)}
-											className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
-											title="Xóa vĩnh viễn"
+									<div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+										<div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+											<Users className="w-4 h-4 text-slate-400" />
+											<span>{hh.memberCount} thành viên</span>
+										</div>
+
+										<div
+											onClick={(e) => e.stopPropagation()}
+											className="flex items-center gap-1.5"
 										>
-											<Trash2 className="w-4 h-4" />
-										</button>
+											<button
+												type="button"
+												onClick={() => onRestore(hh)}
+												className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors flex items-center gap-1 cursor-pointer"
+											>
+												<RotateCcw className="w-3.5 h-3.5" />
+												<span>Khôi phục</span>
+											</button>
+
+											<button
+												type="button"
+												onClick={() => onHardDelete(hh)}
+												className="p-1.5 rounded-xl text-rose-500 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+												title="Xóa vĩnh viễn"
+											>
+												<Trash2 className="w-4 h-4" />
+											</button>
+										</div>
 									</div>
 								</div>
 							);
 						})}
 					</div>
 
-					<div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden">
+					<div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200/90 dark:border-slate-800 shadow-sm">
 						<TablePagination
-							itemCount={filteredAndSortedHouseholds.length}
-							total={total}
 							page={page}
-							limit={limit}
 							totalPages={totalPages}
+							limit={limit}
+							total={total}
+							itemCount={filteredAndSortedHouseholds.length}
 							onPageChange={onPageChange}
 							onLimitChange={onLimitChange}
 						/>
@@ -843,191 +937,228 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 				</div>
 			)}
 
-			{selectedIds.length > 0 && (
-				<div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700/80 animate-in slide-in-from-bottom duration-200">
-					<div className="text-xs font-bold flex items-center gap-2 pr-2 border-r border-slate-700">
-						<span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-						<span>Đã chọn {selectedIds.length} hộ</span>
-					</div>
-
-					<button
-						type="button"
-						onClick={onBatchRestore}
-						className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
-					>
-						<RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
-						<span>Khôi Phục Tất Cả</span>
-					</button>
-
-					<button
-						type="button"
-						onClick={onBatchHardDelete}
-						className="h-9 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
-					>
-						<ShieldAlert className="w-3.5 h-3.5 stroke-[2.5]" />
-						<span>Xóa Vĩnh Viễn</span>
-					</button>
-
-					<button
-						type="button"
-						onClick={onToggleSelectAll}
-						className="p-1.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
-						title="Bỏ chọn"
-					>
-						<X className="w-4 h-4" />
-					</button>
-				</div>
-			)}
-
-			{inspectingHousehold && (
-				<div className="fixed inset-0 z-50 overflow-hidden flex justify-end animate-in fade-in">
-					<div
-						className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs transition-opacity cursor-pointer"
-						onClick={() => setInspectingHousehold(null)}
-					/>
-
-					<div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 shadow-2xl h-full border-l border-slate-200 dark:border-slate-800 flex flex-col z-10 animate-in slide-in-from-right duration-200">
-						<div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
-							<div className="flex items-center gap-3">
-								<div className="w-11 h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center shadow-xs">
-									<Trash2 className="w-5 h-5" />
-								</div>
-								<div>
-									<div className="flex items-center gap-2">
-										<h3 className="text-lg font-black text-slate-900 dark:text-white">
-											Hộ: {inspectingHousehold.head_name}
-										</h3>
-										<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400">
-											Đã xóa tạm
-										</span>
-									</div>
-									<p className="text-xs text-slate-400">
-										{inspectingHousehold.village_name || "Chưa gán thôn"} • {inspectingHousehold.address || "Chưa có địa chỉ"}
-									</p>
-								</div>
-							</div>
-
-							<button
-								type="button"
-								onClick={() => setInspectingHousehold(null)}
-								className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-							>
-								<X className="w-5 h-5" />
-							</button>
+			{selectedIds.length > 0 &&
+				createPortal(
+					<div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[900] bg-slate-900 dark:bg-slate-800 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-4 animate-in slide-in-from-bottom duration-200 select-none">
+						<div className="flex items-center gap-2 pr-2 border-r border-slate-700">
+							<span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+							<span className="text-xs font-bold">
+								Đã chọn {selectedIds.length} hộ
+							</span>
 						</div>
 
-						<div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
-							<div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 flex items-start gap-3">
-								<AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-								<div className="text-xs text-amber-800 dark:text-amber-200">
-									<p className="font-bold">Hộ gia đình này hiện đang nằm trong thùng rác</p>
-									<p className="text-[11px] text-amber-700/90 dark:text-amber-300/80 mt-0.5">
-										Thời điểm xóa: {inspectingHousehold.deleted_at ? new Date(inspectingHousehold.deleted_at).toLocaleString("vi-VN") : "Không rõ"}. Bạn có thể khôi phục nguyên trạng toàn bộ nhân khẩu hoặc xóa vĩnh viễn khỏi CSDL.
-									</p>
-								</div>
-							</div>
-
-							<div className="space-y-3">
-								<div className="flex items-center justify-between">
-									<h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-										Danh Sách Nhân Khẩu Trong Hộ ({inspectingHousehold.members?.length || inspectingHousehold.members_count || 0} người)
-									</h4>
-								</div>
-
-								{(!inspectingHousehold.members || inspectingHousehold.members.length === 0) ? (
-									<div className="py-8 text-center text-xs text-slate-400 italic bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-800">
-										Không có thông tin chi tiết các thành viên nhân khẩu
-									</div>
-								) : (
-									<div className="overflow-x-auto rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
-										<table className="w-full text-left border-collapse text-xs">
-											<thead>
-												<tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 font-semibold uppercase tracking-wider text-[11px] border-b border-slate-200/90 dark:border-slate-800">
-													<th className="py-2.5 px-3 text-center w-10">#</th>
-													<th className="py-2.5 px-3">Họ và Tên</th>
-													<th className="py-2.5 px-3">Quan Hệ</th>
-													<th className="py-2.5 px-2 text-center">Giới Tính</th>
-													<th className="py-2.5 px-2 text-center">Năm Sinh</th>
-													<th className="py-2.5 px-2 text-center">Tuổi</th>
-													<th className="py-2.5 px-3">CCCD</th>
-												</tr>
-											</thead>
-											<tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-												{inspectingHousehold.members.map((m, mIdx) => {
-													const age = calculateAge(m.dob || m.dob_raw);
-													return (
-														<tr key={m.id || mIdx} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
-															<td className="py-2.5 px-3 text-center font-mono text-slate-400">
-																{m.stt ?? mIdx + 1}
-															</td>
-															<td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white">
-																<div className="flex items-center gap-1.5">
-																	<span>{m.full_name}</span>
-																	{m.is_head && (
-																		<span className="px-1.5 py-0.2 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-																			Chủ hộ
-																		</span>
-																	)}
-																</div>
-															</td>
-															<td className="py-2.5 px-3 text-slate-600 dark:text-slate-400">
-																{m.relationship || (m.is_head ? "Chủ hộ" : "Thành viên")}
-															</td>
-															<td className="py-2.5 px-2 text-center">
-																<span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-																	m.gender === "Nam"
-																		? "bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300"
-																		: "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300"
-																}`}>
-																	{m.gender || "Nam"}
-																</span>
-															</td>
-															<td className="py-2.5 px-2 text-center font-mono text-slate-600 dark:text-slate-300">
-																{m.dob || m.dob_raw || "—"}
-															</td>
-															<td className="py-2.5 px-2 text-center font-mono font-bold text-slate-800 dark:text-slate-200">
-																{age > 0 ? age : "—"}
-															</td>
-															<td className="py-2.5 px-3 font-mono text-slate-500">
-																{m.cccd_masked || m.cccd || "—"}
-															</td>
-														</tr>
-													);
-												})}
-											</tbody>
-										</table>
-									</div>
-								)}
-							</div>
-						</div>
-
-						<div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-end gap-3">
+						<div className="flex items-center gap-2">
 							<button
 								type="button"
-								onClick={() => {
-									onHardDelete(inspectingHousehold);
-									setInspectingHousehold(null);
-								}}
-								className="px-4 py-2.5 rounded-xl border border-rose-300 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all cursor-pointer"
+								onClick={onBatchRestore}
+								className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
 							>
-								Xóa Vĩnh Viễn
+								<RotateCcw className="w-3.5 h-3.5" />
+								<span>Khôi phục hàng loạt</span>
 							</button>
 
 							<button
 								type="button"
-								onClick={() => {
-									onRestore(inspectingHousehold);
-									setInspectingHousehold(null);
-								}}
-								className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-95"
+								onClick={onBatchHardDelete}
+								className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
 							>
-								<RotateCcw className="w-4 h-4 stroke-[2.5]" />
-								<span>Khôi Phục Hộ Này</span>
+								<Trash2 className="w-3.5 h-3.5" />
+								<span>Xóa vĩnh viễn ({selectedIds.length})</span>
 							</button>
 						</div>
-					</div>
-				</div>
-			)}
+
+						<button
+							type="button"
+							onClick={onToggleSelectAll}
+							className="p-1.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
+							title="Bỏ chọn"
+						>
+							<X className="w-4 h-4" />
+						</button>
+					</div>,
+					document.body,
+				)}
+
+			{inspectingHousehold &&
+				createPortal(
+					<div className="fixed inset-0 z-[1000] select-none" role="presentation">
+						<div
+							className="fixed inset-0 w-screen h-screen h-[100dvh] bg-slate-950/60 backdrop-blur-xs transition-opacity cursor-pointer z-[1001]"
+							onClick={() => setInspectingHousehold(null)}
+							aria-hidden="true"
+						/>
+
+						<div
+							className="fixed top-0 right-0 bottom-0 w-full max-w-2xl h-screen h-[100dvh] bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 flex flex-col z-[1002] animate-in slide-in-from-right duration-200"
+							role="dialog"
+							aria-modal="true"
+							aria-labelledby="recycle-bin-drawer-title"
+							onClick={(e) => e.stopPropagation()}
+						>
+							<div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/70 shrink-0">
+								<div className="flex items-center gap-3">
+									<div className="w-11 h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center shadow-xs shrink-0">
+										<Trash2 className="w-5 h-5" />
+									</div>
+									<div>
+										<div className="flex items-center gap-2">
+											<h3
+												id="recycle-bin-drawer-title"
+												className="text-lg font-black text-slate-900 dark:text-white"
+											>
+												Hộ: {inspectingHousehold.head_name}
+											</h3>
+											<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400">
+												Đã xóa tạm
+											</span>
+										</div>
+										<p className="text-xs text-slate-400">
+											{inspectingHousehold.village_name || "Chưa gán thôn"} •{" "}
+											{inspectingHousehold.address || "Chưa có địa chỉ"}
+										</p>
+									</div>
+								</div>
+
+								<button
+									type="button"
+									onClick={() => setInspectingHousehold(null)}
+									aria-label="Đóng chi tiết"
+									className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+								>
+									<X className="w-5 h-5" />
+								</button>
+							</div>
+
+							<div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-6">
+								<div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 flex items-start gap-3">
+									<AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+									<div className="text-xs text-amber-800 dark:text-amber-200">
+										<p className="font-bold">
+											Hộ gia đình này hiện đang nằm trong thùng rác
+										</p>
+										<p className="text-[11px] text-amber-700/90 dark:text-amber-300/80 mt-0.5">
+											Thời điểm xóa:{" "}
+											{inspectingHousehold.deleted_at
+												? new Date(inspectingHousehold.deleted_at).toLocaleString("vi-VN")
+												: "Không rõ"}
+											. Chính sách lưu trữ {RETENTION_DAYS} ngày trước khi tự động dọn dẹp vĩnh viễn.
+										</p>
+									</div>
+								</div>
+
+								<div className="space-y-3">
+									<div className="flex items-center justify-between">
+										<h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+											Danh Sách Nhân Khẩu Trong Hộ (
+											{inspectingHousehold.members?.length ||
+												inspectingHousehold.members_count ||
+												0}{" "}
+											người)
+										</h4>
+									</div>
+
+									{!inspectingHousehold.members ||
+									inspectingHousehold.members.length === 0 ? (
+										<div className="py-8 text-center text-xs text-slate-400 italic bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-800">
+											Không có thông tin chi tiết các thành viên nhân khẩu
+										</div>
+									) : (
+										<div className="overflow-x-auto rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
+											<table className="w-full text-left border-collapse text-xs">
+												<thead>
+													<tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 font-semibold uppercase tracking-wider text-[11px] border-b border-slate-200/90 dark:border-slate-800">
+														<th className="py-2.5 px-3 text-center w-10">#</th>
+														<th className="py-2.5 px-3">Họ và Tên</th>
+														<th className="py-2.5 px-3">Quan Hệ</th>
+														<th className="py-2.5 px-2 text-center">Giới Tính</th>
+														<th className="py-2.5 px-2 text-center">Năm Sinh</th>
+														<th className="py-2.5 px-2 text-center">Tuổi</th>
+														<th className="py-2.5 px-3">CCCD</th>
+													</tr>
+												</thead>
+												<tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+													{inspectingHousehold.members.map((m, mIdx) => {
+														const age = calculateAge(m.dob || m.dob_raw);
+														return (
+															<tr
+																key={m.id || mIdx}
+																className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+															>
+																<td className="py-2.5 px-3 text-center font-mono text-slate-400">
+																	{m.stt ?? mIdx + 1}
+																</td>
+																<td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white">
+																	<div className="flex items-center gap-1.5">
+																		<span>{m.full_name}</span>
+																		{m.is_head && (
+																			<span className="px-1.5 py-0.2 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+																				Chủ hộ
+																			</span>
+																		)}
+																	</div>
+																</td>
+																<td className="py-2.5 px-3 text-slate-600 dark:text-slate-400">
+																	{m.relationship ||
+																		(m.is_head ? "Chủ hộ" : "Thành viên")}
+																</td>
+																<td className="py-2.5 px-2 text-center">
+																	<span
+																		className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+																			m.gender === "Nam"
+																				? "bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300"
+																				: "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300"
+																		}`}
+																	>
+																		{m.gender || "Nam"}
+																	</span>
+																</td>
+																<td className="py-2.5 px-2 text-center font-mono text-slate-600 dark:text-slate-300">
+																	{m.dob || m.dob_raw || "—"}
+																</td>
+																<td className="py-2.5 px-2 text-center font-mono font-bold text-slate-800 dark:text-slate-200">
+																	{age > 0 ? age : "—"}
+																</td>
+																<td className="py-2.5 px-3 font-mono text-slate-500">
+																	{m.cccd_masked || m.cccd || "—"}
+																</td>
+															</tr>
+														);
+													})}
+												</tbody>
+											</table>
+										</div>
+									)}
+								</div>
+							</div>
+
+							<div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/70 flex items-center justify-end gap-3 shrink-0">
+								<button
+									type="button"
+									onClick={() => {
+										onHardDelete(inspectingHousehold);
+										setInspectingHousehold(null);
+									}}
+									className="px-4 py-2.5 rounded-xl border border-rose-300 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all cursor-pointer"
+								>
+									Xóa Vĩnh Viễn
+								</button>
+
+								<button
+									type="button"
+									onClick={() => {
+										onRestore(inspectingHousehold);
+										setInspectingHousehold(null);
+									}}
+									className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-95"
+								>
+									<RotateCcw className="w-4 h-4 stroke-[2.5]" />
+									<span>Khôi Phục Hộ Này</span>
+								</button>
+							</div>
+						</div>
+					</div>,
+					document.body,
+				)}
 		</div>
 	);
 };

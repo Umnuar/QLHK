@@ -58,13 +58,13 @@
   - Diff Budget: <= 200 gross LOC (Actual: 124 LOC)
   - Verification: `cd QLHK/QLHK-Client; npx vitest run src/components/excel/__tests__/ImportPreviewModal.test.tsx` (Passed)
   - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit` (Passed, 0 errors)
-- [ ] Step 7: Regression Tests & Verification
+- [x] Step 7: Regression Tests & Verification
   - Target Files: `QLHK/QLHK-Client/src/utils/__tests__/householdExcelMapping.test.ts`, `QLHK/QLHK-Client/src/components/excel/__tests__/ImportPreviewModal.test.tsx`
   - Assigned Role: `.agents/test-engineer.md`
   - Role Focus: Ensure zero regression across file formats and verify mapping step accuracy
-  - Diff Budget: <= 200 gross LOC
-  - Verification: `cd QLHK/QLHK-Client; npx vitest run src/utils/__tests__/householdExcelMapping.test.ts src/components/excel/__tests__/ImportPreviewModal.test.tsx`
-  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit`
+  - Diff Budget: <= 200 gross LOC (Actual: 112 LOC)
+  - Verification: `cd QLHK/QLHK-Client; npx vitest run src/utils/__tests__/householdExcelMapping.test.ts src/components/excel/__tests__/ImportPreviewModal.test.tsx` (Passed, 15 tests)
+  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit` (Passed, 0 errors)
 - [ ] Step 8: Final Verification Gate
   - Full Test Suite: `cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml; cd QLHK/QLHK-Client; npx vitest run`
   - Typecheck: `cd QLHK/QLHK-Client; npx tsc --noEmit; cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml`

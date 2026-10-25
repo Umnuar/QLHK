@@ -67,13 +67,13 @@ export const HOUSEHOLD_SYSTEM_FIELDS: readonly HouseholdSystemField[] = [
 		key: "cccd",
 		label: "Số CCCD / CMND",
 		description: "Số định danh cá nhân hoặc CMND (9 hoặc 12 số)",
-		aliases: ["so cccd", "cccd", "cmnd", "so cmnd", "can cuoc cong dan", "so dinh danh ca nhan", "dinh danh ca nhan", "so cccd dinh danh", "the cccd"],
+		aliases: ["so cccd", "cccd", "cmnd", "so cmnd", "can cuoc cong dan", "so dinh danh", "dinh danh", "so dinh danh ca nhan", "dinh danh ca nhan", "so cccd dinh danh", "the cccd"],
 	},
 	{
 		key: "address",
 		label: "Địa chỉ / Thôn",
 		description: "Nơi thường trú hoặc thôn làng",
-		aliases: ["dia chi", "noi thuong tru", "ho khau thuong tru", "hktt", "noi o hien tai", "cho o hien nay", "dia chi thuong tru", "thon", "lang"],
+		aliases: ["dia chi", "noi thuong tru", "thuong tru", "ho khau thuong tru", "hktt", "noi o hien tai", "cho o hien nay", "dia chi thuong tru", "thon", "lang"],
 	},
 	{
 		key: "notes",

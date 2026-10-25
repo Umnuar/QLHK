@@ -419,4 +419,12 @@ describe("ImportPreviewModal Component", () => {
 		const headBadges = screen.getAllByText("[Chủ Hộ]");
 		expect(headBadges).toHaveLength(2);
 	});
+
+	it("12. Hiển thị 3 bước điều hướng trong Stepper Header", () => {
+		render(<ImportPreviewModal isOpen={true} onClose={vi.fn()} />);
+
+		expect(screen.getByText("Chọn tệp")).toBeDefined();
+		expect(screen.getByText("Khớp cột")).toBeDefined();
+		expect(screen.getByText("Xem trước & Xác nhận")).toBeDefined();
+	});
 });

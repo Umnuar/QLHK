@@ -23,13 +23,13 @@
   - Diff Budget: <= 200 gross LOC (Actual: 82 LOC)
   - Verification: `cd QLHK/QLHK-Client; npx vitest run src/pages/__tests__/HtxhPage.test.tsx src/pages/__tests__/ChucThoPage.test.tsx` (Passed)
   - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit` (Passed, 0 errors)
-- [ ] Step 2: Clean Policy Excel Import Handlers in Backend Rust
+- [x] Step 2: Clean Policy Excel Import Handlers in Backend Rust
   - Target Files: `QLHK/QLHK-Backend-Rust/src/handlers/policies.rs`
   - Assigned Role: `.agents/rust-pro.md`
   - Role Focus: Safely decommission redundant policy spreadsheet ingestion routes
-  - Diff Budget: <= 200 gross LOC
-  - Verification: `cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml`
-  - Static Check: `cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml`
+  - Diff Budget: <= 200 gross LOC (Actual: 174 LOC)
+  - Verification: `cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml` (Passed, 0 errors)
+  - Static Check: `cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml` (Passed, 0 errors)
 - [ ] Step 3: Household Column Mapping Dictionary & Auto-Suggest Engine
   - Target Files: `QLHK/QLHK-Client/src/utils/householdExcelFields.ts`, `QLHK/QLHK-Client/src/utils/householdExcelMapping.ts`
   - Assigned Role: `.agents/frontend-developer.md`

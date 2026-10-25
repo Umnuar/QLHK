@@ -11,13 +11,13 @@ export const BACKEND_PORT_METADATA: Record<
 	{ name: string; engine: string; url: string; port: BackendPort }
 > = {
 	5002: {
-		name: "Backend Node.js",
+		name: "Backend Node.js (Dự phòng)",
 		engine: "Express.js & Prisma",
 		url: "http://localhost:5002/api",
 		port: 5002,
 	},
 	5012: {
-		name: "Backend Rust Axum",
+		name: "Backend Rust Axum (Chính thức)",
 		engine: "Axum & SQLx",
 		url: "http://localhost:5012/api",
 		port: 5012,
@@ -25,11 +25,7 @@ export const BACKEND_PORT_METADATA: Record<
 };
 
 export const getActiveBackendPort = (): BackendPort => {
-	if (typeof window !== "undefined") {
-		const saved = localStorage.getItem(STORAGE_KEY_BACKEND_PORT);
-		if (saved === "5002") return 5002;
-		if (saved === "5012") return 5012;
-	}
+	if (currentApiBaseUrl.includes("5002")) return 5002;
 	return 5012;
 };
 
@@ -37,11 +33,6 @@ export const API_BASE_URL =
 	import.meta.env.VITE_API_URL || "http://localhost:5012/api";
 
 const getInitialBaseUrl = (): string => {
-	if (typeof window !== "undefined") {
-		const saved = localStorage.getItem(STORAGE_KEY_BACKEND_PORT);
-		if (saved === "5002") return "http://localhost:5002/api";
-		if (saved === "5012") return "http://localhost:5012/api";
-	}
 	return API_BASE_URL;
 };
 
@@ -104,19 +95,33 @@ export const apiClient = axios.create({
 });
 
 export const detectAndSetOptimalApiGateway = async (): Promise<string> => {
-	const activePort = getActiveBackendPort();
-	const preferredLocalUrl = `http://localhost:${activePort}/api`;
+	const rustLocalUrl = "http://localhost:5012/api";
+	const backupNodeUrl = "http://localhost:5002/api";
 
 	try {
 		const testClient = axios.create({
-			baseURL: preferredLocalUrl,
+			baseURL: rustLocalUrl,
 			timeout: 1500,
 			adapter: getTauriAxiosAdapter(),
 		});
 		const localRes = await testClient.get("/ping");
 		if (localRes.status === 204 || localRes.status === 200) {
-			setApiBaseUrl(preferredLocalUrl);
-			return preferredLocalUrl;
+			setApiBaseUrl(rustLocalUrl);
+			return rustLocalUrl;
+		}
+	} catch {
+	}
+
+	try {
+		const backupClient = axios.create({
+			baseURL: backupNodeUrl,
+			timeout: 1500,
+			adapter: getTauriAxiosAdapter(),
+		});
+		const backupRes = await backupClient.get("/ping");
+		if (backupRes.status === 204 || backupRes.status === 200) {
+			setApiBaseUrl(backupNodeUrl);
+			return backupNodeUrl;
 		}
 	} catch {
 	}
@@ -131,8 +136,8 @@ export const detectAndSetOptimalApiGateway = async (): Promise<string> => {
 	} catch {
 	}
 
-	setApiBaseUrl(preferredLocalUrl);
-	return preferredLocalUrl;
+	setApiBaseUrl(rustLocalUrl);
+	return rustLocalUrl;
 };
 
 detectAndSetOptimalApiGateway().catch(() => {});

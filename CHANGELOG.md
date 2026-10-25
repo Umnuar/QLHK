@@ -40,8 +40,9 @@ Bản cập nhật lớn toàn diện đưa toàn bộ hệ thống QLHK từ ph
   - **Cảnh báo Trùng lặp CCCD Thời gian thực (Real-time Duplicate CCCD Guard)**: Ngay khi nhập đủ 12 chữ số CCCD, hệ thống tự động quét và đối soát tức thì với toàn bộ nhân khẩu trong hộ; hiển thị huy hiệu nhấp nháy đỏ kèm tên nhân khẩu bị trùng, chặn đứng nguy cơ sai sót dữ liệu ngay từ bước nhập liệu.
   - **Tính toán Tuổi & Năm sinh Động (Live Age & Birth Year)**: Tính toán và hiển thị tuổi tức thời ngay cạnh ô ngày sinh và trên tooltip avatar thanh dock.
 
-- **Bộ chuyển đổi Máy chủ Kép (Dual Backend Switcher)**:
-  - Bổ sung nút chuyển đổi máy chủ `BackendSwitcher` dạng compact trên Header, hỗ trợ cán bộ kỹ thuật chuyển đổi tức thời giữa Backend Node.js (cổng 5002) và Backend Rust Native (cổng 5012) để đối soát dữ liệu song song (Shadow Testing) mà không cần tải lại trang.
+- **Chuyển hẳn sang Động cơ Backend Rust Native (Cổng 5012) & Cơ chế Dự phòng Tự động**:
+  - Xác lập Backend Rust Axum trên cổng `5012` làm máy chủ chính thức duy nhất của toàn bộ hệ sinh thái Client; giữ lại Backend Node.js (cổng `5002`) làm cơ chế dự phòng tự động (Automated Failover) trong trường hợp dịch vụ Rust bảo trì.
+  - Sau khi kiểm định Shadow Parity thành công 18/18 tiêu chí (100% PASS), gỡ bỏ hoàn toàn nút chuyển đổi backend thủ công khỏi giao diện (Header và Settings), đảm bảo cán bộ luôn vận hành trên động cơ Rust tốc độ cao.
 
 ---
 

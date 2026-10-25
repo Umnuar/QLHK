@@ -1,0 +1,77 @@
+# Task Progress Tracker
+
+- **Project**: QLHK
+- **Base Branch**: `feat/rust-migration`
+- **Branch**: `roadmap/qlcs-remove-excel-port-column-mapping-to-qlhk`
+- **Plan Reference**: `docs/plans/qlcs-remove-excel-port-column-mapping-to-qlhk.md`
+- **Roadmap Prompt Reference**: `docs/plans/qlcs-remove-excel-port-column-mapping-to-qlhk.roadmap.md`
+- **Baseline Checkpoint**: `7e7e656` (215 passing, verified across 2 baseline runs)
+- **Known Baseline / Flaky Failures (Failed in Either Baseline Run)**:
+  - None
+- **Status Legend**: 
+  - `[ ]` Pending
+  - `[/]` In Progress
+  - `[x]` Completed
+  - `[!]` Blocked (Circuit Breaker Tripped)
+
+## Execution Checklist
+
+- [ ] Step 1: Remove Policy Excel Import from QLCS Frontend
+  - Target Files: `QLHK/QLHK-Client/src/features/qlcs/pages/DashboardPage.tsx`, `QLHK/QLHK-Client/src/hooks/useImportExport.ts`
+  - Assigned Role: `.agents/frontend-developer.md`
+  - Role Focus: Eliminate dead UI affordance without breaking policy export or profile filtering
+  - Diff Budget: <= 200 gross LOC
+  - Verification: `cd QLHK/QLHK-Client; npx vitest run src/pages/__tests__/HtxhPage.test.tsx src/pages/__tests__/ChucThoPage.test.tsx`
+  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit`
+- [ ] Step 2: Clean Policy Excel Import Handlers in Backend Rust
+  - Target Files: `QLHK/QLHK-Backend-Rust/src/handlers/policies.rs`
+  - Assigned Role: `.agents/rust-pro.md`
+  - Role Focus: Safely decommission redundant policy spreadsheet ingestion routes
+  - Diff Budget: <= 200 gross LOC
+  - Verification: `cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml`
+  - Static Check: `cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml`
+- [ ] Step 3: Household Column Mapping Dictionary & Auto-Suggest Engine
+  - Target Files: `QLHK/QLHK-Client/src/utils/householdExcelFields.ts`, `QLHK/QLHK-Client/src/utils/householdExcelMapping.ts`
+  - Assigned Role: `.agents/frontend-developer.md`
+  - Role Focus: Construct robust alias dictionary and scoring algorithm for household/citizen fields
+  - Diff Budget: <= 200 gross LOC
+  - Verification: `cd QLHK/QLHK-Client; npx vitest run src/utils/__tests__/excelParser.test.ts`
+  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit`
+- [ ] Step 4: Mapped Household Excel Row Parser & Normalizer
+  - Target Files: `QLHK/QLHK-Client/src/utils/householdExcelParser.ts`, `QLHK/QLHK-Client/src/utils/excelParser.ts`
+  - Assigned Role: `.agents/frontend-developer.md`
+  - Role Focus: Transform arbitrary mapped 2D Excel rows into standardized ParsedExcelRow[]
+  - Diff Budget: <= 200 gross LOC
+  - Verification: `cd QLHK/QLHK-Client; npx vitest run src/utils/__tests__/excelParser.test.ts`
+  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit`
+- [ ] Step 5: Interactive Visual Column-Mapping Component
+  - Target Files: `QLHK/QLHK-Client/src/components/excel/ColumnMappingStep.tsx`
+  - Assigned Role: `.agents/frontend-developer.md`
+  - Role Focus: Deliver an intuitive, accessible column-matching table matching project design language
+  - Diff Budget: <= 200 gross LOC
+  - Verification: `cd QLHK/QLHK-Client; npx tsc --noEmit`
+  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit`
+- [ ] Step 6: Upgrade QLHK ImportPreviewModal to 3-Step Wizard
+  - Target Files: `QLHK/QLHK-Client/src/components/excel/ImportPreviewModal.tsx`
+  - Assigned Role: `.agents/frontend-developer.md`
+  - Role Focus: Integrate multi-step navigation: Upload -> Khớp cột -> Xem trước & Xác nhận
+  - Diff Budget: <= 200 gross LOC
+  - Verification: `cd QLHK/QLHK-Client; npx vitest run src/components/excel/__tests__/ImportPreviewModal.test.tsx`
+  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit`
+- [ ] Step 7: Regression Tests & Verification
+  - Target Files: `QLHK/QLHK-Client/src/utils/__tests__/householdExcelMapping.test.ts`, `QLHK/QLHK-Client/src/components/excel/__tests__/ImportPreviewModal.test.tsx`
+  - Assigned Role: `.agents/test-engineer.md`
+  - Role Focus: Ensure zero regression across file formats and verify mapping step accuracy
+  - Diff Budget: <= 200 gross LOC
+  - Verification: `cd QLHK/QLHK-Client; npx vitest run src/utils/__tests__/householdExcelMapping.test.ts src/components/excel/__tests__/ImportPreviewModal.test.tsx`
+  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit`
+- [ ] Step 8: Final Verification Gate
+  - Full Test Suite: `cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml; cd QLHK/QLHK-Client; npx vitest run`
+  - Typecheck: `cd QLHK/QLHK-Client; npx tsc --noEmit; cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml`
+  - Working Tree Cleanliness: `git status --porcelain` must be empty
+
+## Project Gotchas & Learned Invariants
+- Zero Comments Rule: Never add comments (`//`, `/* */`, `#`, JSDoc) in code.
+- Policy records are dynamically derived from demographic records in `qlhk.citizens` & `qlhk.households`.
+- Policy export ("Xuất Excel") in QLCS must remain 100% functional.
+- Diff Gate Ceiling: <= 200 gross LOC per step.

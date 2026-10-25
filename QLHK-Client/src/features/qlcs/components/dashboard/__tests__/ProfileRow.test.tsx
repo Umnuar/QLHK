@@ -113,4 +113,64 @@ describe("ProfileRow residence display", () => {
 		expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(1);
 		expect(screen.queryByText("Thôn 1")).toBeNull();
 	});
+
+	it("updates chuctho milestone text dynamically based on calculationYear", () => {
+		const sampleProfile: TableProfile = {
+			id: "ct-3",
+			village_id: "v-1",
+			name: "Phạm Văn D",
+			dob: "1957-01-01",
+			gender: "Nam",
+			cccd: "123456789012",
+			ethnicity: "Kinh",
+			residence: "Thường trú",
+			currentAddress: "Thường trú",
+			received: false,
+		};
+
+		const { rerender } = render(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={sampleProfile}
+						activeTab="chuctho"
+						calculationYear={2026}
+					/>
+				</tbody>
+			</table>,
+		);
+
+		expect(screen.getAllByText("69 tuổi (Mốc 65)").length).toBeGreaterThanOrEqual(1);
+
+		rerender(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={sampleProfile}
+						activeTab="chuctho"
+						calculationYear={2027}
+					/>
+				</tbody>
+			</table>,
+		);
+
+		expect(screen.getAllByText("Tròn 70 tuổi").length).toBeGreaterThanOrEqual(1);
+
+		rerender(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={sampleProfile}
+						activeTab="chuctho"
+						calculationYear={2028}
+					/>
+				</tbody>
+			</table>,
+		);
+
+		expect(screen.getAllByText("71 tuổi (Mốc 70)").length).toBeGreaterThanOrEqual(1);
+	});
 });

@@ -133,7 +133,8 @@ export const htxhApi = {
 	},
 
 	async recalculate(year: number) {
-		return this.getProfiles({ calculationYear: year });
+		const res = await apiClient.post("/policies/recalculate", { year, calculation_year: year });
+		return res.data;
 	},
 
 	async getAuditLog(id: string, options?: any) {

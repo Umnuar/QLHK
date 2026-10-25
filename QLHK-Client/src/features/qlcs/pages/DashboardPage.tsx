@@ -488,6 +488,7 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 				isDarkMode={isDarkMode}
 				panelClass={panelClass}
 				softTextClass={softTextClass}
+				calculationYear={globalCalculationYear}
 			/>
 
 			<ProfileModal

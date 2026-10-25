@@ -158,7 +158,8 @@ export const profilesApi = {
 	},
 
 	async recalculate(year: number) {
-		return this.getProfiles({ calculationYear: year });
+		const res = await apiClient.post("/policies/recalculate", { year, calculation_year: year });
+		return res.data;
 	},
 
 	async getAuditLog(_id: string) {

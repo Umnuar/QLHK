@@ -30,13 +30,13 @@
   - Diff Budget: <= 200 gross LOC (Actual: 174 LOC)
   - Verification: `cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml` (Passed, 0 errors)
   - Static Check: `cargo check --manifest-path QLHK/QLHK-Backend-Rust/Cargo.toml` (Passed, 0 errors)
-- [ ] Step 3: Household Column Mapping Dictionary & Auto-Suggest Engine
+- [x] Step 3: Household Column Mapping Dictionary & Auto-Suggest Engine
   - Target Files: `QLHK/QLHK-Client/src/utils/householdExcelFields.ts`, `QLHK/QLHK-Client/src/utils/householdExcelMapping.ts`
   - Assigned Role: `.agents/frontend-developer.md`
   - Role Focus: Construct robust alias dictionary and scoring algorithm for household/citizen fields
-  - Diff Budget: <= 200 gross LOC
-  - Verification: `cd QLHK/QLHK-Client; npx vitest run src/utils/__tests__/excelParser.test.ts`
-  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit`
+  - Diff Budget: <= 200 gross LOC (Actual: 145 LOC)
+  - Verification: `cd QLHK/QLHK-Client; npx vitest run src/utils/__tests__/excelParser.test.ts` (Passed)
+  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit` (Passed, 0 errors)
 - [ ] Step 4: Mapped Household Excel Row Parser & Normalizer
   - Target Files: `QLHK/QLHK-Client/src/utils/householdExcelParser.ts`, `QLHK/QLHK-Client/src/utils/excelParser.ts`
   - Assigned Role: `.agents/frontend-developer.md`

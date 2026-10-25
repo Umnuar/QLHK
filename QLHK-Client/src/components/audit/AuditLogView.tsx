@@ -860,30 +860,34 @@ export const AuditLogView: React.FC = () => {
 						Không có sự kiện biến động nào phù hợp với bộ lọc đã chọn.
 					</div>
 				) : (
-					<div className="relative ml-2 sm:ml-3 space-y-8">
-						<div className="absolute left-2.5 sm:left-3.5 top-3 bottom-3 w-0.5 bg-slate-200 dark:bg-slate-800 pointer-events-none" />
+					<div className="relative space-y-8">
+						<div className="absolute left-4 sm:left-5 top-2 bottom-2 w-0.5 bg-slate-200 dark:bg-slate-800 pointer-events-none" />
 
 						{groupedByDate.map((group) => (
 							<section key={group.dateKey} className="relative space-y-3">
 								<div
 									style={{ top: "var(--header-height, 0px)" }}
-									className="sticky z-10 pt-1 pb-1 flex items-center pl-7 sm:pl-9"
+									className="sticky z-20 -mx-5 sm:-mx-6 px-5 sm:px-6 py-2.5 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800/90 shadow-sm dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.5)] flex items-center"
 								>
-									<div className="absolute left-2.5 sm:left-3.5 -translate-x-1/2 w-5 h-5 rounded-full bg-emerald-600 dark:bg-emerald-500 text-white ring-4 ring-white dark:ring-slate-900 shadow-xs flex items-center justify-center z-10">
-										<Calendar className="w-2.5 h-2.5 stroke-[2.5]" />
-									</div>
+									<div className="relative w-full flex items-center">
+										<div className="absolute left-4 sm:left-5 -translate-x-1/2 w-6 h-6 rounded-full bg-emerald-600 dark:bg-emerald-500 text-white ring-4 ring-white dark:ring-slate-900 shadow-xs flex items-center justify-center z-20">
+											<Calendar className="w-3 h-3 stroke-[2.5]" />
+										</div>
 
-									<div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-700/80 shadow-xs text-slate-800 dark:text-slate-100 transition-shadow">
-										<span>{group.groupMeta.title}</span>
-										<span className="text-slate-300 dark:text-slate-600 font-bold">·</span>
-										<span className="font-mono text-slate-500 dark:text-slate-400 font-semibold text-[11px]">
-											{group.items.length} sự kiện
-										</span>
-										{group.groupMeta.isToday && (
-											<span className="px-1.5 py-0.2 rounded-md text-[10px] font-extrabold uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-												Mới nhất
-											</span>
-										)}
+										<div className="pl-10 sm:pl-12">
+											<div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700/80 text-slate-800 dark:text-slate-100 shadow-xs">
+												<span>{group.groupMeta.title}</span>
+												<span className="text-slate-300 dark:text-slate-600 font-bold">·</span>
+												<span className="font-mono text-slate-500 dark:text-slate-400 font-semibold text-[11px]">
+													{group.items.length} sự kiện
+												</span>
+												{group.groupMeta.isToday && (
+													<span className="px-1.5 py-0.2 rounded-md text-[10px] font-extrabold uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+														Mới nhất
+													</span>
+												)}
+											</div>
+										</div>
 									</div>
 								</div>
 
@@ -906,9 +910,9 @@ export const AuditLogView: React.FC = () => {
 											: item.created_at;
 
 										return (
-											<div key={item.id} className="relative pl-7 sm:pl-9 group">
+											<div key={item.id} className="relative pl-10 sm:pl-12 group">
 												<div
-													className={`absolute left-2.5 sm:left-3.5 -translate-x-1/2 top-4 w-3 h-3 rounded-full ${actionMeta.dotClass} ring-4 ring-white dark:ring-slate-900 transition-transform group-hover:scale-125 z-10`}
+													className={`absolute left-4 sm:left-5 -translate-x-1/2 top-4 w-3 h-3 rounded-full ${actionMeta.dotClass} ring-4 ring-white dark:ring-slate-900 transition-transform group-hover:scale-125 z-10`}
 												/>
 
 												<div

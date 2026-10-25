@@ -756,19 +756,19 @@ export const AuditLogView: React.FC = () => {
 
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1">
 					<div className="relative">
-						<Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+						<Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
 						<input
 							type="text"
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
 							placeholder="Tìm nhanh họ tên, CCCD, mã sổ..."
-							className="w-full pl-9 pr-8 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium outline-hidden focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+							className="w-full h-[42px] min-h-[42px] pl-9.5 pr-8 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium outline-hidden focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-slate-900 dark:text-slate-100 placeholder-slate-400"
 						/>
 						{searchQuery && (
 							<button
 								type="button"
 								onClick={() => setSearchQuery("")}
-								className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+								className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-1"
 							>
 								<X className="w-3.5 h-3.5" />
 							</button>
@@ -776,7 +776,7 @@ export const AuditLogView: React.FC = () => {
 					</div>
 
 					{selectedVillageId ? (
-						<div className="flex items-center justify-between px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 rounded-xl text-xs">
+						<div className="flex items-center justify-between px-3.5 h-[42px] min-h-[42px] bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 rounded-xl text-xs">
 							<div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-200 truncate">
 								<MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
 								<span className="truncate">
@@ -809,7 +809,7 @@ export const AuditLogView: React.FC = () => {
 							className="rounded-xl text-xs font-bold"
 						/>
 					) : (
-						<div className="flex items-center px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+						<div className="flex items-center px-3.5 h-[42px] min-h-[42px] bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
 							<MapPin className="w-3.5 h-3.5 text-emerald-500 mr-1.5 shrink-0" />
 							<span className="truncate">
 								Đơn vị: {villages.find((v) => v.id === user?.village_id)?.name || "Thôn phụ trách"}
@@ -860,27 +860,34 @@ export const AuditLogView: React.FC = () => {
 						Không có sự kiện biến động nào phù hợp với bộ lọc đã chọn.
 					</div>
 				) : (
-					<div className="space-y-8">
+					<div className="relative ml-2 sm:ml-3 space-y-8">
+						<div className="absolute left-2.5 sm:left-3.5 top-3 bottom-3 w-0.5 bg-slate-200 dark:bg-slate-800 pointer-events-none" />
+
 						{groupedByDate.map((group) => (
-							<section key={group.dateKey} className="space-y-3">
-								<div className="sticky top-16 z-20 flex items-center justify-between bg-slate-50/95 dark:bg-slate-950/90 backdrop-blur-sm px-3.5 py-1.5 rounded-xl border border-slate-200/70 dark:border-slate-800/80">
-									<div className="flex items-center gap-2">
-										<Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-										<span className="text-xs font-black text-slate-800 dark:text-slate-200">
-											{group.groupMeta.title}
+							<section key={group.dateKey} className="relative space-y-3">
+								<div
+									style={{ top: "var(--header-height, 0px)" }}
+									className="sticky z-10 pt-1 pb-1 flex items-center pl-7 sm:pl-9"
+								>
+									<div className="absolute left-2.5 sm:left-3.5 -translate-x-1/2 w-5 h-5 rounded-full bg-emerald-600 dark:bg-emerald-500 text-white ring-4 ring-white dark:ring-slate-900 shadow-xs flex items-center justify-center z-10">
+										<Calendar className="w-2.5 h-2.5 stroke-[2.5]" />
+									</div>
+
+									<div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-700/80 shadow-xs text-slate-800 dark:text-slate-100 transition-shadow">
+										<span>{group.groupMeta.title}</span>
+										<span className="text-slate-300 dark:text-slate-600 font-bold">·</span>
+										<span className="font-mono text-slate-500 dark:text-slate-400 font-semibold text-[11px]">
+											{group.items.length} sự kiện
 										</span>
 										{group.groupMeta.isToday && (
-											<span className="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+											<span className="px-1.5 py-0.2 rounded-md text-[10px] font-extrabold uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
 												Mới nhất
 											</span>
 										)}
 									</div>
-									<span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-mono">
-										{group.items.length} sự kiện
-									</span>
 								</div>
 
-								<div className="relative border-l-2 border-slate-200 dark:border-slate-800 ml-3.5 sm:ml-5 space-y-2.5">
+								<div className="space-y-2.5">
 									{group.items.map((item) => {
 										const isExpanded = expandedIds.has(item.id);
 										const actionMeta = getActionMeta(item.action);
@@ -899,9 +906,9 @@ export const AuditLogView: React.FC = () => {
 											: item.created_at;
 
 										return (
-											<div key={item.id} className="relative pl-5 sm:pl-6 group">
+											<div key={item.id} className="relative pl-7 sm:pl-9 group">
 												<div
-													className={`absolute -left-1.5 top-3.5 w-3 h-3 rounded-full ${actionMeta.dotClass} ring-4 transition-transform group-hover:scale-125`}
+													className={`absolute left-2.5 sm:left-3.5 -translate-x-1/2 top-4 w-3 h-3 rounded-full ${actionMeta.dotClass} ring-4 ring-white dark:ring-slate-900 transition-transform group-hover:scale-125 z-10`}
 												/>
 
 												<div

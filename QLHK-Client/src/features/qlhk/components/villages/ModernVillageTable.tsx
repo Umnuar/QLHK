@@ -73,7 +73,6 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [isExporting, setIsExporting] = useState(false);
 
-	const [inspectingVillageId, setInspectingVillageId] = useState<string | null>(null);
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const [editingVillage, setEditingVillage] = useState<Village | null>(null);
 
@@ -103,19 +102,18 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 		return villages.map((v, index) => {
 			const vStat =
 				villageStats[v.id] ||
-				villageStats[v.short_code] ||
+				villageStats[v.short_code || ""] ||
 				villageStats[v.name] ||
 				villageStats[v.name.toLowerCase().trim()] ||
 				villageStats[normalizeUnaccented(v.name.toLowerCase().trim())];
 
 			const householdCount = vStat?.household_count ?? 0;
 			const citizenCount = vStat?.citizen_count ?? 0;
-			const male = vStat?.male_count ?? 0;
-			const female = vStat?.female_count ?? 0;
 			const dtts = vStat?.dtts_count ?? 0;
 			const dttsPct =
-				vStat?.dtts_percentage ??
-				(citizenCount > 0 ? Math.round((dtts / citizenCount) * 1000) / 10 : 0);
+				citizenCount > 0 ? Math.round((dtts / citizenCount) * 1000) / 10 : 0;
+			const male = vStat?.male_count ?? 0;
+			const female = vStat?.female_count ?? 0;
 
 			const householdShare =
 				totalHouseholds > 0
@@ -128,10 +126,6 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 			const assignedOfficer =
 				userList.find((u) => u.village_id === v.id && u.role === "user") ||
 				userList.find((u) => u.village_id === v.id);
-
-			const chucthoTotal = vStat?.chuctho?.total ?? 0;
-			const htxhTotal = vStat?.htxh?.total ?? 0;
-			const policyTotal = chucthoTotal + htxhTotal;
 
 			return {
 				...v,
@@ -146,9 +140,6 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 				householdShare,
 				avgHousehold,
 				assignedOfficer,
-				policyTotal,
-				chucthoTotal,
-				htxhTotal,
 			};
 		});
 	}, [villages, villageStats, totalHouseholds, totalCitizens, userList]);
@@ -199,11 +190,6 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 		});
 	}, [enrichedVillages, searchTerm, filterType, sortField, sortDirection]);
 
-	const inspectingVillage = useMemo(() => {
-		if (!inspectingVillageId) return null;
-		return enrichedVillages.find((v) => v.id === inspectingVillageId) || null;
-	}, [inspectingVillageId, enrichedVillages]);
-
 	const handleSortClick = (field: SortField) => {
 		if (sortField === field) {
 			setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -231,14 +217,12 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 	};
 
 	const openEditModal = (v: Village) => {
-		const assigned =
-			userList.find((u) => u.village_id === v.id && u.role === "user") ||
-			userList.find((u) => u.village_id === v.id);
-		setEditingVillage(v);
+		const officer = userList.find((u) => u.village_id === v.id);
 		setFormName(v.name);
 		setFormCode(v.short_code || "");
-		setFormOfficerId(assigned ? assigned.id : "");
+		setFormOfficerId(officer ? officer.id : "");
 		setFormError("");
+		setEditingVillage(v);
 	};
 
 	const handleSaveForm = async () => {
@@ -267,7 +251,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 				setIsCreateModalOpen(false);
 			}
 		} catch (err: any) {
-			setFormError(err.message || "Có lỗi xảy ra khi lưu thôn");
+			setFormError(err.response?.data?.error || err.message || "Lỗi thao tác");
 		} finally {
 			setFormSubmitting(false);
 		}
@@ -292,8 +276,6 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 				"Nữ (Người)": v.female,
 				"Đồng Bào DTTS (Người)": v.dtts,
 				"Tỷ Lệ DTTS (%)": `${v.dttsPct}%`,
-				"Chính Sách Chúc Thọ": v.chucthoTotal,
-				"Bảo Trợ Xã Hội": v.htxhTotal,
 			}));
 
 			const worksheet = XLSX.utils.json_to_sheet(rows);
@@ -314,7 +296,55 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 	};
 
 	return (
-		<div className="space-y-6 animate-in fade-in pb-10">
+		<div className="space-y-6 animate-in fade-in pb-16">
+			<div className="rounded-3xl p-6 bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900 text-white shadow-xl shadow-emerald-950/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+				<div className="flex items-center gap-4 relative z-10">
+					<div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 backdrop-blur-xs shadow-inner">
+						<Globe className="w-7 h-7 text-white" strokeWidth={1.75} />
+					</div>
+					<div>
+						<div className="flex items-center gap-2 flex-wrap">
+							<span className="px-2.5 py-0.5 rounded-full bg-white/20 text-emerald-100 text-[11px] font-bold uppercase tracking-wider">
+								UBND Xã Đăk Hà
+							</span>
+							<span className="text-xs text-emerald-200 font-medium">
+								Hệ thống quản lý {villages.length} Thôn Dân Cư
+							</span>
+						</div>
+						<h2 className="text-2xl font-black tracking-tight text-white mt-1">
+							Trung Tâm Quản Lý Địa Bàn Thôn & Làng
+						</h2>
+						<p className="text-xs text-emerald-100/90 mt-1 max-w-2xl font-medium">
+							Toàn xã hiện có <strong className="font-bold text-white">{totalHouseholds.toLocaleString()}</strong> hộ gia đình,{" "}
+							<strong className="font-bold text-white">{totalCitizens.toLocaleString()}</strong> nhân khẩu (Bình quân:{" "}
+							<strong className="font-bold text-white">{avgSize}</strong> người/hộ)
+						</p>
+					</div>
+				</div>
+
+				<div className="flex items-center gap-2.5 relative z-10 w-full md:w-auto justify-end flex-wrap sm:flex-nowrap">
+					<button
+						type="button"
+						onClick={() => onSelectVillage("", "analytics")}
+						className="h-10 px-4 rounded-xl bg-white text-emerald-900 hover:bg-emerald-50 text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
+					>
+						<span>Báo Cáo Thống Kê Toàn Xã</span>
+						<ArrowRight className="w-4 h-4 stroke-[2]" />
+					</button>
+
+					{isAdmin && (
+						<button
+							type="button"
+							onClick={openCreateModal}
+							className="h-10 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
+						>
+							<Plus className="w-4 h-4 stroke-[2.5]" />
+							<span>Thêm Thôn Mới</span>
+						</button>
+					)}
+				</div>
+			</div>
+
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 				<div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
 					<div className="space-y-1">
@@ -324,9 +354,8 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 						<div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
 							{villages.length} Thôn
 						</div>
-						<div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-							<UserCheck className="w-3.5 h-3.5" />
-							<span>{assignedVillagesCount}/{villages.length} thôn có cán bộ</span>
+						<div className="text-[11px] text-slate-400 font-medium">
+							{assignedVillagesCount}/{villages.length} thôn đã gán cán bộ
 						</div>
 					</div>
 					<div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/40 flex items-center justify-center shrink-0">
@@ -342,12 +371,12 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 						<div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
 							{totalHouseholds.toLocaleString()} Hộ
 						</div>
-						<div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-							Bình quân: <strong className="font-bold text-slate-700 dark:text-slate-300">{avgSize}</strong> người/hộ
+						<div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+							Bình quân: {avgSize} người/hộ
 						</div>
 					</div>
-					<div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/40 flex items-center justify-center shrink-0">
-						<Home className="w-6 h-6 text-indigo-600 dark:text-indigo-400" strokeWidth={1.75} />
+					<div className="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-800/40 flex items-center justify-center shrink-0">
+						<Home className="w-6 h-6 text-sky-600 dark:text-sky-400" strokeWidth={1.75} />
 					</div>
 				</div>
 
@@ -359,24 +388,24 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 						<div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
 							{totalCitizens.toLocaleString()} Người
 						</div>
-						<div className="text-[11px] text-sky-600 dark:text-sky-400 font-medium">
+						<div className="text-[11px] text-slate-400 font-mono">
 							Nam: {maleCount} ({malePct}%) • Nữ: {femaleCount} ({femalePct}%)
 						</div>
 					</div>
-					<div className="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-800/40 flex items-center justify-center shrink-0">
-						<Users className="w-6 h-6 text-sky-600 dark:text-sky-400" strokeWidth={1.75} />
+					<div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/40 flex items-center justify-center shrink-0">
+						<Users className="w-6 h-6 text-indigo-600 dark:text-indigo-400" strokeWidth={1.75} />
 					</div>
 				</div>
 
 				<div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
 					<div className="space-y-1">
 						<span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-							Dân Tộc Thiểu Số
+							Đồng Bào DTTS
 						</span>
 						<div className="text-2xl font-black font-mono text-purple-600 dark:text-purple-400">
 							{dttsPercentage}%
 						</div>
-						<div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+						<div className="text-[11px] text-slate-400 font-medium">
 							{dttsCount.toLocaleString()} / {totalCitizens.toLocaleString()} nhân khẩu
 						</div>
 					</div>
@@ -394,13 +423,13 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 						</div>
 						<div>
 							<h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-								<span>Bảng Quản Lý Thôn & Địa Bàn Dân Cư</span>
+								<span>Danh Sách Thôn Dân Cư</span>
 								<span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
 									UI Mới
 								</span>
 							</h3>
 							<p className="text-xs text-slate-500 dark:text-slate-400">
-								Hiển thị {filteredAndSortedVillages.length}/{villages.length} thôn • Quản lý quy mô hộ gia đình, nhân khẩu và phân công cán bộ
+								Hiển thị {filteredAndSortedVillages.length}/{villages.length} thôn • Bấm vào thôn để xem trực tiếp báo cáo thống kê chi tiết
 							</p>
 						</div>
 					</div>
@@ -411,7 +440,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 							onClick={handleRefreshClick}
 							disabled={isRefreshing}
 							title="Làm mới dữ liệu thống kê"
-							className="h-[42px] px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+							className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
 						>
 							<RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin text-emerald-600" : ""}`} />
 							<span className="hidden sm:inline">Làm mới</span>
@@ -422,18 +451,18 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 							onClick={handleExportExcel}
 							disabled={isExporting}
 							title="Xuất bảng thống kê danh sách thôn ra Excel"
-							className="h-[42px] px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+							className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
 						>
 							<Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
 							<span className="hidden sm:inline">Xuất Excel</span>
 						</button>
 
-						<div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80">
+						<div className="h-10 flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80">
 							<button
 								type="button"
 								onClick={() => setViewMode("table")}
 								title="Chế độ bảng chi tiết"
-								className={`p-2 rounded-lg transition-all cursor-pointer ${
+								className={`h-8 w-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
 									viewMode === "table"
 										? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs font-bold"
 										: "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
@@ -445,7 +474,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 								type="button"
 								onClick={() => setViewMode("grid")}
 								title="Chế độ lưới thẻ"
-								className={`p-2 rounded-lg transition-all cursor-pointer ${
+								className={`h-8 w-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
 									viewMode === "grid"
 										? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs font-bold"
 										: "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
@@ -459,7 +488,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 							<button
 								type="button"
 								onClick={openCreateModal}
-								className="h-[42px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-95"
+								className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-95"
 							>
 								<Plus className="w-4 h-4 stroke-[2.5]" />
 								<span>Thêm Thôn</span>
@@ -476,7 +505,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
 							placeholder="Tìm tên thôn, mã thôn, tên cán bộ phụ trách..."
-							className="w-full h-[42px] min-h-[42px] pl-10 pr-9 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+							className="w-full h-10 min-h-[40px] pl-10 pr-9 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
 						/>
 						{searchTerm && (
 							<button
@@ -493,7 +522,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 						<button
 							type="button"
 							onClick={() => setFilterType("all")}
-							className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+							className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center ${
 								filterType === "all"
 									? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs"
 									: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
@@ -504,7 +533,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 						<button
 							type="button"
 							onClick={() => setFilterType("assigned")}
-							className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+							className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center ${
 								filterType === "assigned"
 									? "bg-emerald-600 text-white shadow-xs"
 									: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
@@ -515,7 +544,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 						<button
 							type="button"
 							onClick={() => setFilterType("unassigned")}
-							className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+							className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center ${
 								filterType === "unassigned"
 									? "bg-amber-600 text-white shadow-xs"
 									: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
@@ -526,24 +555,13 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 						<button
 							type="button"
 							onClick={() => setFilterType("high_dtts")}
-							className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+							className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center ${
 								filterType === "high_dtts"
 									? "bg-purple-600 text-white shadow-xs"
 									: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
 							}`}
 						>
 							DTTS ≥ 50%
-						</button>
-						<button
-							type="button"
-							onClick={() => setFilterType("large_household")}
-							className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-								filterType === "large_household"
-									? "bg-indigo-600 text-white shadow-xs"
-									: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
-							}`}
-						>
-							Quy mô lớn (≥100 hộ)
 						</button>
 					</div>
 				</div>
@@ -558,18 +576,17 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 						Không tìm thấy thôn nào phù hợp
 					</h4>
 					<p className="text-xs text-slate-400 max-w-sm mx-auto">
-						Thử thay đổi từ khóa tìm kiếm hoặc bấm &quot;Tất cả&quot; để hiển thị lại toàn bộ danh sách thôn.
+						Thử thay đổi từ khóa tìm kiếm hoặc đặt lại bộ lọc để xem đầy đủ danh sách thôn.
 					</p>
-					<button
-						type="button"
-						onClick={() => {
-							setSearchTerm("");
-							setFilterType("all");
-						}}
-						className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-					>
-						Đặt lại bộ lọc
-					</button>
+					{searchTerm && (
+						<button
+							type="button"
+							onClick={() => setSearchTerm("")}
+							className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+						>
+							Xóa từ khóa tìm kiếm
+						</button>
+					)}
 				</div>
 			) : viewMode === "table" ? (
 				<div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -577,13 +594,13 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 						<table className="w-full text-left text-xs border-collapse">
 							<thead>
 								<tr className="bg-slate-50/90 dark:bg-slate-800/80 border-b border-slate-200/90 dark:border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-									<th className="py-3.5 px-4 w-14 text-center">#</th>
+									<th className="py-3.5 px-4 w-12 text-center">#</th>
 									<th
 										onClick={() => handleSortClick("name")}
 										className="py-3.5 px-4 cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors"
 									>
 										<div className="flex items-center gap-1.5">
-											<span>Thôn / Địa Bàn</span>
+											<span>Tên Thôn / Làng</span>
 											{sortField === "name" ? (
 												sortDirection === "asc" ? (
 													<ArrowUp className="w-3.5 h-3.5 text-emerald-600" />
@@ -601,7 +618,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 										className="py-3.5 px-4 cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors"
 									>
 										<div className="flex items-center gap-1.5">
-											<span>Hộ Gia Đình</span>
+											<span>Số Hộ Dân</span>
 											{sortField === "household_count" ? (
 												sortDirection === "asc" ? (
 													<ArrowUp className="w-3.5 h-3.5 text-emerald-600" />
@@ -635,7 +652,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 										className="py-3.5 px-4 cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors"
 									>
 										<div className="flex items-center gap-1.5">
-											<span>DTTS & Giới Tính</span>
+											<span>Dân Tộc & Giới Tính</span>
 											{sortField === "dtts_percentage" ? (
 												sortDirection === "asc" ? (
 													<ArrowUp className="w-3.5 h-3.5 text-emerald-600" />
@@ -647,7 +664,6 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 											)}
 										</div>
 									</th>
-									<th className="py-3.5 px-4 text-center">Chính Sách An Sinh</th>
 									<th className="py-3.5 px-4 text-right">Thao Tác</th>
 								</tr>
 							</thead>
@@ -659,7 +675,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 									return (
 										<tr
 											key={v.id}
-											onClick={() => setInspectingVillageId(v.id)}
+											onClick={() => onSelectVillage(v.id, "analytics")}
 											className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
 										>
 											<td className="py-4 px-4 text-center font-mono text-slate-400 font-semibold text-[11px]">
@@ -680,7 +696,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 															)}
 														</div>
 														<div className="text-[11px] text-slate-400 font-medium">
-															Địa bàn Xã Đăk Hà
+															Địa bàn Xã Đăk Hà • Bấm để xem thống kê
 														</div>
 													</div>
 												</div>
@@ -759,20 +775,6 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 													</div>
 												</div>
 											</td>
-											<td className="py-4 px-4 text-center">
-												{v.policyTotal > 0 ? (
-													<div className="inline-flex flex-col items-center">
-														<span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-															{v.policyTotal} hồ sơ
-														</span>
-														<span className="text-[10px] text-slate-400 mt-0.5">
-															{v.chucthoTotal} Thọ • {v.htxhTotal} HTXH
-														</span>
-													</div>
-												) : (
-													<span className="text-slate-400 text-[11px] italic">—</span>
-												)}
-											</td>
 											<td className="py-4 px-4 text-right" onClick={(e) => e.stopPropagation()}>
 												<div className="flex items-center justify-end gap-1">
 													<button
@@ -804,7 +806,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 															<button
 																type="button"
 																onClick={() => onDeleteVillage(v.id, v.name)}
-																title="Xóa thôn"
+																title="Xóa thôn khỏi hệ thống"
 																className="p-1.5 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
 															>
 																<Trash2 className="w-4 h-4" />
@@ -821,7 +823,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 					</div>
 				</div>
 			) : (
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+				<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
 					{filteredAndSortedVillages.map((v) => {
 						const officer = v.assignedOfficer;
 						const initials = getInitials(officer?.full_name || officer?.username || "");
@@ -829,13 +831,13 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 						return (
 							<div
 								key={v.id}
-								onClick={() => setInspectingVillageId(v.id)}
+								onClick={() => onSelectVillage(v.id, "analytics")}
 								className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-emerald-500/80 transition-all cursor-pointer flex flex-col justify-between group space-y-4"
 							>
-								<div className="space-y-3">
-									<div className="flex items-start justify-between gap-2">
-										<div className="flex items-center gap-2.5 min-w-0">
-											<div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50 flex items-center justify-center shrink-0">
+								<div className="space-y-4">
+									<div className="flex items-start justify-between gap-3">
+										<div className="flex items-center gap-3">
+											<div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
 												<MapPin className="w-5 h-5" />
 											</div>
 											<div className="min-w-0">
@@ -843,7 +845,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 													{v.name}
 												</h4>
 												<span className="text-[11px] text-slate-400 font-medium">
-													{v.short_code ? `Mã: ${v.short_code}` : "Địa bàn Xã Đăk Hà"}
+													{v.short_code ? `Mã: ${v.short_code}` : "Địa bàn Xã Đăk Hà"} • Bấm để xem thống kê
 												</span>
 											</div>
 										</div>
@@ -928,201 +930,22 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 										onClick={() => onSelectVillage(v.id, "households")}
 										className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
 									>
-										<span>Xem Hộ Dân</span>
-										<ArrowRight className="w-3.5 h-3.5" />
+										<Home className="w-3.5 h-3.5" />
+										<span>Hộ dân</span>
 									</button>
+
 									<button
 										type="button"
 										onClick={() => onSelectVillage(v.id, "analytics")}
-										className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors flex items-center gap-1 cursor-pointer"
+										className="font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
 									>
 										<span>Thống kê</span>
+										<ExternalLink className="w-3.5 h-3.5" />
 									</button>
 								</div>
 							</div>
 						);
 					})}
-				</div>
-			)}
-
-			{inspectingVillage && (
-				<div className="fixed inset-0 z-50 overflow-hidden flex justify-end animate-in fade-in">
-					<div
-						className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs transition-opacity cursor-pointer"
-						onClick={() => setInspectingVillageId(null)}
-					/>
-
-					<div className="relative w-full max-w-lg bg-white dark:bg-slate-900 shadow-2xl h-full border-l border-slate-200 dark:border-slate-800 flex flex-col z-10 animate-in slide-in-from-right duration-200">
-						<div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
-							<div className="flex items-center gap-3">
-								<div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-									<MapPin className="w-5 h-5" />
-								</div>
-								<div>
-									<div className="flex items-center gap-2">
-										<h3 className="text-lg font-black text-slate-900 dark:text-white">
-											{inspectingVillage.name}
-										</h3>
-										{inspectingVillage.short_code && (
-											<span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
-												{inspectingVillage.short_code}
-											</span>
-										)}
-									</div>
-									<p className="text-xs text-slate-400">
-										Địa bàn dân cư trực thuộc UBND Xã Đăk Hà
-									</p>
-								</div>
-							</div>
-
-							<button
-								type="button"
-								onClick={() => setInspectingVillageId(null)}
-								className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-							>
-								<X className="w-5 h-5" />
-							</button>
-						</div>
-
-						<div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
-							<div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
-								<div className="flex items-center justify-between">
-									<span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-										Cán Bộ Phụ Trách Thôn
-									</span>
-									{isAdmin && (
-										<button
-											type="button"
-											onClick={() => {
-												openEditModal(inspectingVillage);
-											}}
-											className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
-										>
-											Đổi Cán Bộ
-										</button>
-									)}
-								</div>
-
-								{inspectingVillage.assignedOfficer ? (
-									<div className="flex items-center gap-3">
-										<div className="w-12 h-12 rounded-full bg-emerald-600 text-white font-black text-base flex items-center justify-center shadow-xs">
-											{getInitials(
-												inspectingVillage.assignedOfficer.full_name ||
-													inspectingVillage.assignedOfficer.username,
-											)}
-										</div>
-										<div className="min-w-0">
-											<div className="font-bold text-slate-900 dark:text-white text-sm">
-												{inspectingVillage.assignedOfficer.full_name ||
-													inspectingVillage.assignedOfficer.username}
-											</div>
-											<div className="text-xs text-slate-400 font-mono">
-												Tài khoản: @{inspectingVillage.assignedOfficer.username}
-											</div>
-											<div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
-												Vai trò: {inspectingVillage.assignedOfficer.role === "admin" ? "Quản trị viên" : "Cán bộ thôn"}
-											</div>
-										</div>
-									</div>
-								) : (
-									<div className="py-2 text-center text-xs text-amber-600 dark:text-amber-400 font-medium">
-										Thôn này hiện chưa có cán bộ phụ trách. Bấm &quot;Đổi Cán Bộ&quot; để gán người theo dõi.
-									</div>
-								)}
-							</div>
-
-							<div className="space-y-3">
-								<h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-									Quy Mô Dân Cư & Tỷ Trọng
-								</h4>
-								<div className="grid grid-cols-2 gap-3">
-									<div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200/90 dark:border-slate-800">
-										<div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
-											{inspectingVillage.householdCount}
-										</div>
-										<div className="text-xs text-slate-500 font-medium mt-0.5">
-											Hộ gia đình ({inspectingVillage.householdShare}% toàn xã)
-										</div>
-									</div>
-									<div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200/90 dark:border-slate-800">
-										<div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
-											{inspectingVillage.citizenCount}
-										</div>
-										<div className="text-xs text-slate-500 font-medium mt-0.5">
-											Nhân khẩu (BQ: {inspectingVillage.avgHousehold} ng/hộ)
-										</div>
-									</div>
-									<div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200/90 dark:border-slate-800">
-										<div className="text-2xl font-black font-mono text-sky-600 dark:text-sky-400">
-											{inspectingVillage.male}
-										</div>
-										<div className="text-xs text-slate-500 font-medium mt-0.5">
-											Nam giới
-										</div>
-									</div>
-									<div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200/90 dark:border-slate-800">
-										<div className="text-2xl font-black font-mono text-rose-500 dark:text-rose-400">
-											{inspectingVillage.female}
-										</div>
-										<div className="text-xs text-slate-500 font-medium mt-0.5">
-											Nữ giới
-										</div>
-									</div>
-								</div>
-							</div>
-
-							<div className="space-y-3">
-								<h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-									Đặc Thù Dân Tộc & Chính Sách
-								</h4>
-								<div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-3 text-xs">
-									<div className="flex items-center justify-between">
-										<span className="text-slate-600 dark:text-slate-400">Đồng bào DTTS:</span>
-										<strong className="font-mono font-bold text-purple-600 dark:text-purple-400">
-											{inspectingVillage.dtts} người ({inspectingVillage.dttsPct}%)
-										</strong>
-									</div>
-									<div className="flex items-center justify-between">
-										<span className="text-slate-600 dark:text-slate-400">Hồ sơ Chúc thọ người cao tuổi:</span>
-										<strong className="font-mono font-bold text-slate-800 dark:text-slate-200">
-											{inspectingVillage.chucthoTotal} hồ sơ
-										</strong>
-									</div>
-									<div className="flex items-center justify-between">
-										<span className="text-slate-600 dark:text-slate-400">Đối tượng Bảo trợ & Hưu tuất:</span>
-										<strong className="font-mono font-bold text-slate-800 dark:text-slate-200">
-											{inspectingVillage.htxhTotal} hồ sơ
-										</strong>
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col gap-2.5">
-							<button
-								type="button"
-								onClick={() => {
-									onSelectVillage(inspectingVillage.id, "households");
-									setInspectingVillageId(null);
-								}}
-								className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-							>
-								<Home className="w-4 h-4" />
-								<span>Mở Danh Sách {inspectingVillage.householdCount} Hộ Gia Đình</span>
-							</button>
-							<button
-								type="button"
-								onClick={() => {
-									onSelectVillage(inspectingVillage.id, "analytics");
-									setInspectingVillageId(null);
-								}}
-								className="w-full h-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
-							>
-								<ExternalLink className="w-4 h-4" />
-								<span>Xem Báo Cáo Phân Tích Thôn</span>
-							</button>
-						</div>
-					</div>
 				</div>
 			)}
 

@@ -28,12 +28,18 @@ use crate::{
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(get_households).post(create_household))
+        .route(
+            "/export-excel",
+            get(crate::handlers::excel::export_excel)
+                .post(crate::handlers::excel::export_excel_post),
+        )
         .route("/recycle-bin", get(get_recycle_bin))
         .route("/batch-delete", post(batch_delete_households))
         .route(
             "/{id}",
             get(get_household_by_id)
                 .put(update_household)
+                .patch(update_household)
                 .delete(delete_household),
         )
         .route("/{id}/restore", post(restore_household))

@@ -21,6 +21,14 @@ pub struct ExportQuery {
     pub village_id: Option<Uuid>,
     #[serde(rename = "villageId")]
     pub village_id_camel: Option<Uuid>,
+    pub status: Option<String>,
+    pub search: Option<String>,
+    pub household_ids: Option<Vec<Uuid>>,
+    #[serde(rename = "householdIds")]
+    pub household_ids_camel: Option<Vec<Uuid>>,
+    pub year: Option<i32>,
+    pub gender: Option<String>,
+    pub ethnicity: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -96,4 +104,41 @@ pub struct ExportChucthoRow {
     pub received: Option<bool>,
     pub calculation_year: Option<i32>,
     pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, FromRow)]
+pub struct ExportHtxhRow {
+    pub stt: Option<i32>,
+    pub name: String,
+    pub dob: Option<String>,
+    pub gender: Option<String>,
+    pub cccd: Option<String>,
+    pub ethnicity: Option<String>,
+    pub residence: Option<String>,
+    pub current_address: Option<String>,
+    pub village_name: Option<String>,
+    pub age75plus: Option<String>,
+    pub age70to74poor: Option<String>,
+    pub bao_tro: Option<String>,
+    pub huu_tri: Option<String>,
+    pub huu_tuat_bao_hiem: Option<String>,
+    pub nguoi_co_cong: Option<String>,
+    pub received: Option<bool>,
+    pub calculation_year: Option<i32>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct PolicyImportPayload {
+    pub r#type: Option<String>,
+    #[serde(rename = "villageId")]
+    pub village_id_camel: Option<Uuid>,
+    pub village_id: Option<Uuid>,
+    #[serde(rename = "calculationYear")]
+    pub calculation_year_camel: Option<i32>,
+    pub calculation_year: Option<i32>,
+    pub file_name: Option<String>,
+    #[serde(rename = "fileName")]
+    pub file_name_camel: Option<String>,
+    pub profiles: Option<Vec<serde_json::Value>>,
 }

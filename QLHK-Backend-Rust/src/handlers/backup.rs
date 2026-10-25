@@ -418,6 +418,7 @@ async fn restore_backup(
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", post(create_backup).get(list_backups))
+        .route("/export", get(create_backup))
         .route("/list", get(list_backups))
         .route("/restore", post(restore_backup))
 }

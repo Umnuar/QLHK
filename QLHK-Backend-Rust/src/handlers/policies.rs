@@ -1,6 +1,6 @@
 use axum::{
     extract::{Extension, Path, Query, State},
-    http::StatusCode,
+    http::{header, HeaderMap, HeaderValue, StatusCode},
     response::{IntoResponse, Response},
     Json,
 };
@@ -1842,6 +1842,371 @@ pub async fn get_policy_analytics(
     .into_response()
 }
 
+pub async fn get_chuctho_stream(
+    State(state): State<AppState>,
+    claims_ext: Option<Extension<Claims>>,
+    Query(params): Query<PolicyQueryParams>,
+) -> Response {
+    let claims = claims_ext.map(|Extension(c)| c);
+    let target_village_id = if let Some(ref c) = claims {
+        if c.role != "admin" {
+            c.village_id.as_deref().and_then(|v| Uuid::parse_str(v).ok())
+        } else {
+            params.village_id.as_deref().or(params.village_id_camel.as_deref()).and_then(|v| Uuid::parse_str(v).ok())
+        }
+    } else {
+        params.village_id.as_deref().or(params.village_id_camel.as_deref()).and_then(|v| Uuid::parse_str(v).ok())
+    };
+
+    let target_year = params.year.or(params.calculation_year).or(params.calculation_year_camel);
+    let mut qb = QueryBuilder::new(
+        "SELECT p.*, v.name as village_name, v.code as village_code FROM qlhk.chuctho_profiles p LEFT JOIN qlhk.villages v ON p.village_id = v.id WHERE p.is_deleted = false",
+    );
+    if let Some(vid) = target_village_id {
+        qb.push(" AND p.village_id = ").push_bind(vid);
+    }
+    if let Some(y) = target_year {
+        qb.push(" AND p.calculation_year = ").push_bind(y);
+    }
+    qb.push(" ORDER BY p.stt ASC NULLS LAST, p.created_at ASC");
+
+    let rows: Vec<ChucthoProfileRow> = match qb.build_query_as::<ChucthoProfileRow>().fetch_all(&state.pool).await {
+        Ok(r) => r,
+        Err(_) => return (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response(),
+    };
+
+    let mut body = String::new();
+    for r in rows {
+        let resp = r.into_response();
+        if let Ok(line) = serde_json::to_string(&resp) {
+            body.push_str(&line);
+            body.push('\n');
+        }
+    }
+
+    (
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, "application/x-ndjson")],
+        body,
+    )
+        .into_response()
+}
+
+pub async fn get_htxh_stream(
+    State(state): State<AppState>,
+    claims_ext: Option<Extension<Claims>>,
+    Query(params): Query<PolicyQueryParams>,
+) -> Response {
+    let claims = claims_ext.map(|Extension(c)| c);
+    let target_village_id = if let Some(ref c) = claims {
+        if c.role != "admin" {
+            c.village_id.as_deref().and_then(|v| Uuid::parse_str(v).ok())
+        } else {
+            params.village_id.as_deref().or(params.village_id_camel.as_deref()).and_then(|v| Uuid::parse_str(v).ok())
+        }
+    } else {
+        params.village_id.as_deref().or(params.village_id_camel.as_deref()).and_then(|v| Uuid::parse_str(v).ok())
+    };
+
+    let target_year = params.year.or(params.calculation_year).or(params.calculation_year_camel);
+    let mut qb = QueryBuilder::new(
+        "SELECT p.*, v.name as village_name, v.code as village_code FROM qlhk.htxh_profiles p LEFT JOIN qlhk.villages v ON p.village_id = v.id WHERE p.is_deleted = false",
+    );
+    if let Some(vid) = target_village_id {
+        qb.push(" AND p.village_id = ").push_bind(vid);
+    }
+    if let Some(y) = target_year {
+        qb.push(" AND p.calculation_year = ").push_bind(y);
+    }
+    qb.push(" ORDER BY p.stt ASC NULLS LAST, p.created_at ASC");
+
+    let rows: Vec<HtxhProfileRow> = match qb.build_query_as::<HtxhProfileRow>().fetch_all(&state.pool).await {
+        Ok(r) => r,
+        Err(_) => return (StatusCode::INTERNAL_SERVER_ERROR, "Database error").into_response(),
+    };
+
+    let mut body = String::new();
+    for r in rows {
+        let resp = r.into_response();
+        if let Ok(line) = serde_json::to_string(&resp) {
+            body.push_str(&line);
+            body.push('\n');
+        }
+    }
+
+    (
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, "application/x-ndjson")],
+        body,
+    )
+        .into_response()
+}
+
+pub async fn export_policy_excel(
+    state: State<AppState>,
+    claims: Option<Extension<Claims>>,
+    uri: axum::http::Uri,
+    Query(params): Query<crate::models::excel::ChucthoExportQuery>,
+) -> Response {
+    let path = uri.path();
+    let query_str = uri.query().unwrap_or_default();
+    let is_htxh = path.contains("/htxh") || query_str.contains("type=htxh");
+    if is_htxh {
+        crate::handlers::excel::export_htxh(state, claims, Query(params)).await
+    } else {
+        crate::handlers::excel::export_chuctho(state, claims, Query(params)).await
+    }
+}
+
+pub async fn import_policy_excel(
+    State(state): State<AppState>,
+    claims_ext: Option<Extension<Claims>>,
+    uri: axum::http::Uri,
+    body: axum::body::Bytes,
+) -> Response {
+    let claims = claims_ext.map(|Extension(c)| c);
+    let payload: Result<crate::models::excel::PolicyImportPayload, _> = serde_json::from_slice(&body);
+    if let Ok(p) = payload {
+        let is_htxh = uri.path().contains("/htxh") || p.r#type.as_deref() == Some("htxh");
+        let target_village_id = if let Some(ref c) = claims {
+            if c.role != "admin" {
+                c.village_id.as_deref().and_then(|v| Uuid::parse_str(v).ok())
+            } else {
+                p.village_id.or(p.village_id_camel)
+            }
+        } else {
+            p.village_id.or(p.village_id_camel)
+        };
+
+        let calc_year = p.calculation_year.or(p.calculation_year_camel).unwrap_or_else(|| Utc::now().year());
+        let profiles = p.profiles.unwrap_or_default();
+        let mut inserted = 0;
+
+        for item in profiles {
+            let name = item.get("name").and_then(|v| v.as_str()).map(|s| s.trim()).unwrap_or_default();
+            if name.is_empty() {
+                continue;
+            }
+            let item_village_id = item.get("village_id")
+                .or_else(|| item.get("villageId"))
+                .and_then(|v| v.as_str())
+                .and_then(|s| Uuid::parse_str(s).ok())
+                .or(target_village_id);
+
+            let vid = match item_village_id {
+                Some(v) => v,
+                None => continue,
+            };
+
+            let dob = item.get("dob").and_then(|v| v.as_str()).unwrap_or_default();
+            let parsed = parse_dob_value(dob);
+            let dob_clean = parsed.as_ref().map(|p| p.0.clone()).unwrap_or_else(|| dob.to_string());
+            let birth_year = parsed.as_ref().map(|p| p.1);
+
+            let cccd_raw = item.get("cccd").and_then(|v| v.as_str()).map(|s| s.trim()).unwrap_or_default();
+            let (enc_cccd, cccd_hash, cccd_last4) = if !cccd_raw.is_empty() {
+                match crate::crypto::encrypt_cccd(cccd_raw) {
+                    Ok(enc) => (Some(enc.encrypted), Some(enc.hash), Some(enc.last4)),
+                    Err(_) => (None, None, None),
+                }
+            } else {
+                (None, None, None)
+            };
+
+            let name_unaccented = crate::crypto::remove_accents(name);
+            let gender = item.get("gender").and_then(|v| v.as_str());
+            let ethnicity = item.get("ethnicity").and_then(|v| v.as_str());
+            let residence = item.get("residence").and_then(|v| v.as_str());
+            let current_address = item.get("current_address").or_else(|| item.get("currentAddress")).and_then(|v| v.as_str());
+            let notes = item.get("notes").and_then(|v| v.as_str());
+            let received = item.get("received").and_then(|v| v.as_bool()).unwrap_or(false);
+            let stt = item.get("stt").and_then(|v| v.as_i64()).map(|n| n as i32);
+
+            if is_htxh {
+                let mut m75plus = item.get("age75plus").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+                let mut m70to74 = item.get("age70to74poor").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+                let bao_tro = item.get("bao_tro").and_then(|v| v.as_str()).unwrap_or_default();
+                let huu_tri = item.get("huu_tri").and_then(|v| v.as_str()).unwrap_or_default();
+                let huu_tuat = item.get("huu_tuat_bao_hiem").and_then(|v| v.as_str()).unwrap_or_default();
+                let nguoi_co_cong = item.get("nguoi_co_cong").and_then(|v| v.as_str()).unwrap_or_default();
+
+                if let Some(by) = birth_year {
+                    let age = calc_year - by;
+                    if age >= 75 {
+                        m75plus = "x".to_string();
+                    } else if age >= 70 {
+                        m70to74 = "x".to_string();
+                    }
+                }
+
+                let _ = sqlx::query(
+                    r#"INSERT INTO qlhk.htxh_profiles (
+                        name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4,
+                        ethnicity, residence, current_address, village_id, stt, notes,
+                        calculation_year, received, is_deleted, version, created_at, updated_at,
+                        age75plus, age70to74poor, bao_tro, huu_tri, huu_tuat_bao_hiem, nguoi_co_cong
+                    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,false,1,NOW(),NOW(),$16,$17,$18,$19,$20,$21)"#
+                )
+                .bind(name)
+                .bind(&name_unaccented)
+                .bind(&dob_clean)
+                .bind(gender)
+                .bind(&enc_cccd)
+                .bind(&cccd_hash)
+                .bind(&cccd_last4)
+                .bind(ethnicity)
+                .bind(residence)
+                .bind(current_address)
+                .bind(vid)
+                .bind(stt)
+                .bind(notes)
+                .bind(calc_year)
+                .bind(received)
+                .bind(&m75plus)
+                .bind(&m70to74)
+                .bind(bao_tro)
+                .bind(huu_tri)
+                .bind(huu_tuat)
+                .bind(nguoi_co_cong)
+                .execute(&state.pool)
+                .await;
+            } else {
+                let milestones = match birth_year {
+                    Some(by) => compute_chuctho_milestones(calc_year - by),
+                    None => Default::default(),
+                };
+
+                let _ = sqlx::query(
+                    r#"INSERT INTO qlhk.chuctho_profiles (
+                        name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4,
+                        ethnicity, residence, current_address, village_id, stt, notes,
+                        calculation_year, received, is_deleted, version, created_at, updated_at,
+                        age60, age65, age70, age75, age80, age85, age90, age95, age100, age_over_100
+                    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,false,1,NOW(),NOW(),$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)"#
+                )
+                .bind(name)
+                .bind(&name_unaccented)
+                .bind(&dob_clean)
+                .bind(gender)
+                .bind(&enc_cccd)
+                .bind(&cccd_hash)
+                .bind(&cccd_last4)
+                .bind(ethnicity)
+                .bind(residence)
+                .bind(current_address)
+                .bind(vid)
+                .bind(stt)
+                .bind(notes)
+                .bind(calc_year)
+                .bind(received)
+                .bind(&milestones.age60)
+                .bind(&milestones.age65)
+                .bind(&milestones.age70)
+                .bind(&milestones.age75)
+                .bind(&milestones.age80)
+                .bind(&milestones.age85)
+                .bind(&milestones.age90)
+                .bind(&milestones.age95)
+                .bind(&milestones.age100)
+                .bind(&milestones.age_over_100)
+                .execute(&state.pool)
+                .await;
+            }
+            inserted += 1;
+        }
+
+        return Json(json!({
+            "success": true,
+            "inserted": inserted,
+            "count": inserted,
+            "updated": 0,
+            "failed": 0,
+            "errorDetails": []
+        })).into_response();
+    }
+
+    (
+        StatusCode::BAD_REQUEST,
+        Json(json!({ "error": "Định dạng tải lên không hợp lệ" })),
+    )
+        .into_response()
+}
+
+pub async fn download_policy_template(
+    Query(query): Query<std::collections::HashMap<String, String>>,
+) -> Response {
+    let policy_type = query.get("type").map(|s| s.as_str()).unwrap_or("chuctho");
+    let mut workbook = rust_xlsxwriter::Workbook::new();
+    let worksheet = workbook.add_worksheet();
+
+    let header_format = rust_xlsxwriter::Format::new()
+        .set_bold()
+        .set_align(rust_xlsxwriter::FormatAlign::Center)
+        .set_align(rust_xlsxwriter::FormatAlign::VerticalCenter)
+        .set_background_color(rust_xlsxwriter::Color::RGB(0xE0F2FE))
+        .set_border(rust_xlsxwriter::FormatBorder::Thin)
+        .set_font_name("Times New Roman")
+        .set_font_size(11);
+
+    let data_format = rust_xlsxwriter::Format::new()
+        .set_border(rust_xlsxwriter::FormatBorder::Thin)
+        .set_font_name("Times New Roman")
+        .set_font_size(11);
+
+    let center_format = rust_xlsxwriter::Format::new()
+        .set_align(rust_xlsxwriter::FormatAlign::Center)
+        .set_border(rust_xlsxwriter::FormatBorder::Thin)
+        .set_font_name("Times New Roman")
+        .set_font_size(11);
+
+    let is_htxh = policy_type == "htxh";
+    let headers: Vec<&str> = if is_htxh {
+        vec!["STT", "Họ và tên", "Ngày sinh", "Số CCCD", "Dân tộc", "Nơi thường trú", "Nơi ở hiện nay", "Đối tượng HTXH", "Ghi chú"]
+    } else {
+        vec!["STT", "Họ và tên", "Ngày sinh", "Số CCCD", "Dân tộc", "Nơi thường trú", "Nơi ở hiện nay", "Ghi chú"]
+    };
+
+    for (col_idx, h) in headers.iter().enumerate() {
+        let _ = worksheet.write_with_format(0, col_idx as u16, *h, &header_format);
+    }
+
+    let _ = worksheet.write_with_format(1, 0, 1, &center_format);
+    let _ = worksheet.write_with_format(1, 1, "Nguyễn Văn Mẫu", &data_format);
+    let _ = worksheet.write_with_format(1, 2, "1954", &center_format);
+    let _ = worksheet.write_with_format(1, 3, "064054000999", &center_format);
+    let _ = worksheet.write_with_format(1, 4, "Kinh", &center_format);
+    let _ = worksheet.write_with_format(1, 5, "Thôn 1, Xã Đăk Hà", &data_format);
+    let _ = worksheet.write_with_format(1, 6, "Thôn 1, Xã Đăk Hà", &data_format);
+    if is_htxh {
+        let _ = worksheet.write_with_format(1, 7, "Hưu trí", &center_format);
+        let _ = worksheet.write_with_format(1, 8, "Mẫu dữ liệu", &data_format);
+    } else {
+        let _ = worksheet.write_with_format(1, 7, "Mẫu dữ liệu", &data_format);
+    }
+
+    for col in 0..headers.len() {
+        let _ = worksheet.set_column_width(col as u16, 20);
+    }
+
+    let buf = match workbook.save_to_buffer() {
+        Ok(b) => b,
+        Err(_) => return (StatusCode::INTERNAL_SERVER_ERROR, "Lỗi tạo mẫu Excel").into_response(),
+    };
+
+    let filename = if is_htxh { "Mau_nhap_lieu_HTXH.xlsx" } else { "Mau_nhap_lieu_chuc_tho.xlsx" };
+    let mut headers_map = HeaderMap::new();
+    headers_map.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+    );
+    headers_map.insert(
+        header::CONTENT_DISPOSITION,
+        HeaderValue::from_str(&format!("attachment; filename=\"{}\"", filename)).unwrap(),
+    );
+
+    (StatusCode::OK, headers_map, buf).into_response()
+}
+
 pub fn router() -> axum::Router<AppState> {
     axum::Router::new()
         .route("/sync", axum::routing::post(sync_policy_data))
@@ -1849,6 +2214,9 @@ pub fn router() -> axum::Router<AppState> {
             "/chuctho",
             axum::routing::get(get_chuctho_profiles).post(create_chuctho_profile),
         )
+        .route("/chuctho/stream", axum::routing::get(get_chuctho_stream))
+        .route("/chuctho/export", axum::routing::get(export_policy_excel))
+        .route("/chuctho/import", axum::routing::post(import_policy_excel))
         .route(
             "/chuctho/{id}",
             axum::routing::put(update_chuctho_profile).delete(delete_chuctho_profile),
@@ -1858,9 +2226,16 @@ pub fn router() -> axum::Router<AppState> {
             axum::routing::patch(mark_chuctho_received),
         )
         .route(
+            "/chuctho/{id}/toggle",
+            axum::routing::patch(mark_chuctho_received),
+        )
+        .route(
             "/htxh",
             axum::routing::get(get_htxh_profiles).post(create_htxh_profile),
         )
+        .route("/htxh/stream", axum::routing::get(get_htxh_stream))
+        .route("/htxh/export", axum::routing::get(export_policy_excel))
+        .route("/htxh/import", axum::routing::post(import_policy_excel))
         .route(
             "/htxh/{id}",
             axum::routing::put(update_htxh_profile).delete(delete_htxh_profile),
@@ -1869,6 +2244,13 @@ pub fn router() -> axum::Router<AppState> {
             "/htxh/{id}/received",
             axum::routing::patch(mark_htxh_received),
         )
+        .route(
+            "/htxh/{id}/toggle",
+            axum::routing::patch(mark_htxh_received),
+        )
         .route("/analytics", axum::routing::get(get_policy_analytics))
+        .route("/excel/import", axum::routing::post(import_policy_excel))
+        .route("/excel/export", axum::routing::get(export_policy_excel))
+        .route("/excel/template", axum::routing::get(download_policy_template))
 }
 

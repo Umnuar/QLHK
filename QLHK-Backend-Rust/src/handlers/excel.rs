@@ -17,8 +17,8 @@ use crate::{
     crypto::{decrypt_cccd, encrypt_cccd, hash_cccd, remove_accents},
     middlewares::auth::Claims,
     models::excel::{
-        ChucthoExportQuery, ExcelCitizenRow, ExportChucthoRow, ExportCitizenRow, ExportQuery,
-        ImportQuery,
+        ChucthoExportQuery, ExcelCitizenRow, ExportChucthoRow, ExportCitizenRow, ExportHtxhRow,
+        ExportQuery, ImportQuery,
     },
     state::AppState,
 };
@@ -26,9 +26,10 @@ use crate::{
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/import", post(import_excel))
-        .route("/export", get(export_excel))
+        .route("/export", get(export_excel).post(export_excel_post))
         .route("/template", get(download_template))
-        .route("/export/chuctho", get(export_chuctho))
+        .route("/export/chuctho", get(export_chuctho).post(export_chuctho))
+        .route("/export/htxh", get(export_htxh).post(export_htxh))
 }
 
 fn cell_to_string(cell: &Data) -> String {
@@ -580,6 +581,38 @@ pub async fn export_excel(
     claims_ext: Option<Extension<Claims>>,
     Query(query): Query<ExportQuery>,
 ) -> Response {
+    export_excel_internal(state, claims_ext, query).await
+}
+
+pub async fn export_excel_post(
+    State(state): State<AppState>,
+    claims_ext: Option<Extension<Claims>>,
+    Query(query): Query<ExportQuery>,
+    body: Option<Json<ExportQuery>>,
+) -> Response {
+    let effective_query = if let Some(Json(b)) = body {
+        ExportQuery {
+            village_id: b.village_id.or(b.village_id_camel).or(query.village_id).or(query.village_id_camel),
+            village_id_camel: None,
+            status: b.status.or(query.status),
+            search: b.search.or(query.search),
+            household_ids: b.household_ids.or(b.household_ids_camel).or(query.household_ids).or(query.household_ids_camel),
+            household_ids_camel: None,
+            year: b.year.or(query.year),
+            gender: b.gender.or(query.gender),
+            ethnicity: b.ethnicity.or(query.ethnicity),
+        }
+    } else {
+        query
+    };
+    export_excel_internal(state, claims_ext, effective_query).await
+}
+
+pub async fn export_excel_internal(
+    state: AppState,
+    claims_ext: Option<Extension<Claims>>,
+    query: ExportQuery,
+) -> Response {
     let claims = claims_ext.map(|Extension(c)| c);
     let target_village_id = if let Some(ref c) = claims {
         if c.role != "admin" {
@@ -598,6 +631,45 @@ pub async fn export_excel(
     if let Some(vid) = target_village_id {
         query_builder.push(" AND h.village_id = ");
         query_builder.push_bind(vid);
+    }
+
+    if let Some(status) = query.status.as_deref().filter(|s| !s.is_empty() && *s != "all" && *s != "Tất cả") {
+        let s = status.trim();
+        if s == "Thường trú" || s == "active" {
+            query_builder.push(" AND h.status IN ('active', 'Thường trú')");
+        } else if s == "Tạm trú" || s == "temporary" {
+            query_builder.push(" AND h.status IN ('temporary', 'Tạm trú')");
+        } else if s == "Tạm vắng" || s == "absent" {
+            query_builder.push(" AND h.status IN ('absent', 'Tạm vắng')");
+        } else if s == "Đã chuyển đi" || s == "moved" {
+            query_builder.push(" AND h.status IN ('moved', 'Đã chuyển đi')");
+        } else {
+            query_builder.push(" AND h.status = ");
+            query_builder.push_bind(s);
+        }
+    }
+
+    let target_household_ids = query.household_ids.or(query.household_ids_camel);
+    if let Some(ref ids) = target_household_ids {
+        if !ids.is_empty() {
+            query_builder.push(" AND h.id = ANY(");
+            query_builder.push_bind(ids);
+            query_builder.push(")");
+        }
+    }
+
+    if let Some(search) = query.search.as_deref().filter(|s| !s.trim().is_empty()) {
+        let pattern = format!("%{}%", search.trim());
+        let unaccent = format!("%{}%", crate::crypto::remove_accents(search.trim()));
+        query_builder.push(" AND (h.book_number ILIKE ");
+        query_builder.push_bind(pattern.clone());
+        query_builder.push(" OR h.address ILIKE ");
+        query_builder.push_bind(pattern.clone());
+        query_builder.push(" OR c.full_name ILIKE ");
+        query_builder.push_bind(pattern);
+        query_builder.push(" OR c.name_unaccented ILIKE ");
+        query_builder.push_bind(unaccent);
+        query_builder.push(")");
     }
 
     query_builder.push(
@@ -1111,6 +1183,197 @@ pub async fn export_chuctho(
     headers_map.insert(
         header::CONTENT_DISPOSITION,
         HeaderValue::from_static("attachment; filename=\"Danh_sach_mung_tho.xlsx\""),
+    );
+
+    (StatusCode::OK, headers_map, buf).into_response()
+}
+
+pub async fn export_htxh(
+    State(state): State<AppState>,
+    claims_ext: Option<Extension<Claims>>,
+    Query(query): Query<ChucthoExportQuery>,
+) -> Response {
+    let claims = claims_ext.map(|Extension(c)| c);
+    let target_village_id = if let Some(ref c) = claims {
+        if c.role != "admin" {
+            c.village_id.as_deref().and_then(|v| Uuid::parse_str(v).ok())
+        } else {
+            query.village_id.or(query.village_id_camel)
+        }
+    } else {
+        query.village_id.or(query.village_id_camel)
+    };
+
+    let target_year = query.year.or(query.calculation_year);
+
+    let mut query_builder = QueryBuilder::new(
+        "SELECT p.stt, p.name, p.dob, p.gender, p.cccd, p.ethnicity, p.residence, p.current_address, v.name as village_name, p.age75plus, p.age70to74poor, p.bao_tro, p.huu_tri, p.huu_tuat_bao_hiem, p.nguoi_co_cong, p.received, p.calculation_year, p.notes FROM qlhk.htxh_profiles p LEFT JOIN qlhk.villages v ON p.village_id = v.id WHERE p.is_deleted = false",
+    );
+
+    if let Some(vid) = target_village_id {
+        query_builder.push(" AND p.village_id = ");
+        query_builder.push_bind(vid);
+    }
+
+    if let Some(y) = target_year {
+        query_builder.push(" AND p.calculation_year = ");
+        query_builder.push_bind(y);
+    }
+
+    query_builder.push(" ORDER BY p.stt ASC NULLS LAST, p.created_at ASC");
+
+    let rows: Vec<ExportHtxhRow> = match query_builder
+        .build_query_as::<ExportHtxhRow>()
+        .fetch_all(&state.pool)
+        .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": format!("Lỗi truy vấn danh sách bảo trợ xã hội: {}", e) })),
+            )
+                .into_response();
+        }
+    };
+
+    let mut workbook = Workbook::new();
+    let worksheet = workbook.add_worksheet();
+
+    let header_format = Format::new()
+        .set_bold()
+        .set_align(FormatAlign::Center)
+        .set_align(FormatAlign::VerticalCenter)
+        .set_background_color(Color::RGB(0xE0F2FE))
+        .set_border(FormatBorder::Thin)
+        .set_font_name("Times New Roman")
+        .set_font_size(11);
+
+    let data_format = Format::new()
+        .set_border(FormatBorder::Thin)
+        .set_font_name("Times New Roman")
+        .set_font_size(11);
+
+    let center_format = Format::new()
+        .set_align(FormatAlign::Center)
+        .set_border(FormatBorder::Thin)
+        .set_font_name("Times New Roman")
+        .set_font_size(11);
+
+    let headers = [
+        "STT",
+        "Họ và tên",
+        "Ngày sinh",
+        "Giới tính",
+        "Số CCCD",
+        "Dân tộc",
+        "Nơi thường trú",
+        "Nơi ở hiện nay",
+        "Thôn",
+        "75+ tuổi",
+        "70-74 nghèo",
+        "Bảo trợ",
+        "Hưu trí",
+        "Hưu tuất",
+        "Người có công",
+        "Đã nhận",
+        "Năm",
+        "Ghi chú",
+    ];
+
+    for (col_idx, header_title) in headers.iter().enumerate() {
+        if worksheet
+            .write_with_format(0, col_idx as u16, *header_title, &header_format)
+            .is_err()
+        {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Lỗi định dạng tiêu đề Excel" })),
+            )
+                .into_response();
+        }
+    }
+
+    for (idx, row) in rows.iter().enumerate() {
+        let r = (idx + 1) as u32;
+        let stt_val = row.stt.unwrap_or((idx + 1) as i32);
+
+        let plain_cccd = row
+            .cccd
+            .as_deref()
+            .map(|enc| {
+                if enc.contains(':') {
+                    decrypt_cccd(enc).unwrap_or_else(|_| enc.to_string())
+                } else {
+                    enc.to_string()
+                }
+            })
+            .unwrap_or_default();
+
+        let _ = worksheet.write_with_format(r, 0, stt_val, &center_format);
+        let _ = worksheet.write_with_format(r, 1, &row.name, &data_format);
+        let _ = worksheet.write_with_format(r, 2, row.dob.as_deref().unwrap_or_default(), &center_format);
+        let _ = worksheet.write_with_format(r, 3, row.gender.as_deref().unwrap_or_default(), &center_format);
+        let _ = worksheet.write_with_format(r, 4, &plain_cccd, &center_format);
+        let _ = worksheet.write_with_format(r, 5, row.ethnicity.as_deref().unwrap_or_default(), &center_format);
+        let _ = worksheet.write_with_format(r, 6, row.residence.as_deref().unwrap_or_default(), &data_format);
+        let _ = worksheet.write_with_format(r, 7, row.current_address.as_deref().unwrap_or_default(), &data_format);
+        let _ = worksheet.write_with_format(r, 8, row.village_name.as_deref().unwrap_or_default(), &data_format);
+        let _ = worksheet.write_with_format(r, 9, row.age75plus.as_deref().unwrap_or_default(), &center_format);
+        let _ = worksheet.write_with_format(r, 10, row.age70to74poor.as_deref().unwrap_or_default(), &center_format);
+        let _ = worksheet.write_with_format(r, 11, row.bao_tro.as_deref().unwrap_or_default(), &center_format);
+        let _ = worksheet.write_with_format(r, 12, row.huu_tri.as_deref().unwrap_or_default(), &center_format);
+        let _ = worksheet.write_with_format(r, 13, row.huu_tuat_bao_hiem.as_deref().unwrap_or_default(), &center_format);
+        let _ = worksheet.write_with_format(r, 14, row.nguoi_co_cong.as_deref().unwrap_or_default(), &center_format);
+        let received_text = match row.received {
+            Some(true) => "Đã nhận",
+            _ => "Chưa nhận",
+        };
+        let _ = worksheet.write_with_format(r, 15, received_text, &center_format);
+        let _ = worksheet.write_with_format(r, 16, row.calculation_year.unwrap_or(2026), &center_format);
+        let _ = worksheet.write_with_format(r, 17, row.notes.as_deref().unwrap_or_default(), &data_format);
+    }
+
+    let _ = worksheet.set_column_width(0, 6);
+    let _ = worksheet.set_column_width(1, 24);
+    let _ = worksheet.set_column_width(2, 14);
+    let _ = worksheet.set_column_width(3, 10);
+    let _ = worksheet.set_column_width(4, 18);
+    let _ = worksheet.set_column_width(5, 12);
+    let _ = worksheet.set_column_width(6, 24);
+    let _ = worksheet.set_column_width(7, 24);
+    let _ = worksheet.set_column_width(8, 20);
+    let _ = worksheet.set_column_width(9, 10);
+    let _ = worksheet.set_column_width(10, 14);
+    let _ = worksheet.set_column_width(11, 10);
+    let _ = worksheet.set_column_width(12, 10);
+    let _ = worksheet.set_column_width(13, 10);
+    let _ = worksheet.set_column_width(14, 14);
+    let _ = worksheet.set_column_width(15, 12);
+    let _ = worksheet.set_column_width(16, 8);
+    let _ = worksheet.set_column_width(17, 20);
+
+    let buf = match workbook.save_to_buffer() {
+        Ok(b) => b,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Lỗi lưu file Excel" })),
+            )
+                .into_response();
+        }
+    };
+
+    let mut headers_map = HeaderMap::new();
+    headers_map.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ),
+    );
+    headers_map.insert(
+        header::CONTENT_DISPOSITION,
+        HeaderValue::from_static("attachment; filename=\"Danh_sach_HTXH.xlsx\""),
     );
 
     (StatusCode::OK, headers_map, buf).into_response()

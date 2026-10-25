@@ -108,6 +108,7 @@ pub fn router() -> Router<AppState> {
             "/{id}",
             get(get_citizen_by_id)
                 .put(update_citizen)
+                .patch(update_citizen)
                 .delete(delete_citizen),
         )
         .route(

@@ -509,6 +509,7 @@ pub struct PolicyQueryParams {
     pub category: Option<String>,
     pub status: Option<String>,
     pub received: Option<String>,
+    pub year: Option<i32>,
     pub calculation_year: Option<i32>,
     #[serde(rename = "calculationYear")]
     pub calculation_year_camel: Option<i32>,

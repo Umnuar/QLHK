@@ -14,7 +14,6 @@ import {
 	Trash2,
 	UserCheck,
 	User as UserIcon,
-	X,
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -27,7 +26,6 @@ import {
 import { authApi } from "../../api/authApi";
 import type { User } from "../../types";
 import { CustomSelect } from "../common/CustomSelect";
-import { TablePagination } from "../common/TablePagination";
 
 const FIELD_LABELS: Record<string, string> = {
 	book_number: "Mã định danh hộ",
@@ -134,7 +132,7 @@ export const AuditLogView: React.FC = () => {
 	const [logs, setLogs] = useState<AuditLogItem[]>([]);
 	const [total, setTotal] = useState<number>(0);
 	const [page, setPage] = useState<number>(1);
-	const [limit, setLimit] = useState<number>(10);
+	const [limit] = useState<number>(10);
 	const [totalPages, setTotalPages] = useState<number>(1);
 	const [loading, setLoading] = useState<boolean>(false);
 	const [userList, setUserList] = useState<User[]>([]);
@@ -185,14 +183,12 @@ export const AuditLogView: React.FC = () => {
 		fetchLogs(1, false);
 	}, [fetchLogs]);
 
-	const handlePageChange = (newPage: number) => {
-		setPage(newPage);
-		fetchLogs(newPage, false);
-	};
-
-	const handleLimitChange = (newLimit: number) => {
-		setLimit(newLimit);
-		setPage(1);
+	const handleLoadMore = () => {
+		if (page < totalPages && !loading) {
+			const nextPage = page + 1;
+			setPage(nextPage);
+			fetchLogs(nextPage, true);
+		}
 	};
 
 	const getActionConfig = (action: AuditAction) => {
@@ -472,9 +468,8 @@ export const AuditLogView: React.FC = () => {
 
 			return (
 				<div className="space-y-2 mt-2">
-					<div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-						<Plus className="w-3.5 h-3.5" strokeWidth={2} />
-						<span>Dữ liệu khởi tạo:</span>
+					<div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+						Dữ liệu khởi tạo:
 					</div>
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
 						{vals.book_number && (
@@ -619,10 +614,7 @@ export const AuditLogView: React.FC = () => {
 			const vals = typeof item.old_values === "object" ? item.old_values : {};
 			return (
 				<div className="mt-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-800 dark:text-rose-200 space-y-1">
-					<div className="font-bold flex items-center gap-1.5 text-rose-700 dark:text-rose-300">
-						<Trash2 className="w-3.5 h-3.5 shrink-0" strokeWidth={1.5} />
-						<span>Đã chuyển vào Thùng rác:</span>
-					</div>
+					<div className="font-bold">Đã chuyển vào Thùng rác:</div>
 					<div>
 						{item.entity_type === "household" ? (
 							<>
@@ -654,18 +646,15 @@ export const AuditLogView: React.FC = () => {
 		if (item.action === "RESTORE") {
 			const vals = typeof item.new_values === "object" ? item.new_values : {};
 			return (
-				<div className="mt-2 p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs text-purple-800 dark:text-purple-200 flex items-center justify-between flex-wrap gap-2">
-					<div className="flex items-center gap-2">
-						<RotateCcw className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" strokeWidth={1.5} />
-						<span>
-							Khôi phục bản ghi:{" "}
-							<strong className="text-slate-900 dark:text-white font-bold">
-								{vals.book_number || vals.full_name || item.entity_id}
-							</strong>
-						</span>
-					</div>
+				<div className="mt-2 p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs text-purple-800 dark:text-purple-200">
+					<span>
+						Khôi phục bản ghi:{" "}
+						<strong>
+							{vals.book_number || vals.full_name || item.entity_id}
+						</strong>
+					</span>
 					{vals.notes && (
-						<div className="text-[11px] text-purple-600 dark:text-purple-400 italic">
+						<div className="text-[11px] mt-1 text-purple-600 dark:text-purple-400">
 							{vals.notes}
 						</div>
 					)}
@@ -724,37 +713,37 @@ export const AuditLogView: React.FC = () => {
 						id: "ALL",
 						label: "Tất Cả",
 						icon: Activity,
-						activeClass: "bg-slate-900 text-white dark:bg-white dark:text-slate-950 font-black shadow-sm ring-1 ring-slate-800 dark:ring-white",
+						color: "bg-slate-900 text-white dark:bg-white dark:text-slate-900",
 					},
 					{
 						id: "CREATE",
 						label: "Thêm Mới",
 						icon: Plus,
-						activeClass: "bg-emerald-600 text-white shadow-xs font-bold",
+						color: "bg-emerald-600 text-white",
 					},
 					{
 						id: "UPDATE",
 						label: "Cập Nhật",
 						icon: RefreshCw,
-						activeClass: "bg-blue-600 text-white shadow-xs font-bold",
+						color: "bg-blue-600 text-white",
 					},
 					{
 						id: "DELETE",
 						label: "Xóa",
 						icon: Trash2,
-						activeClass: "bg-rose-600 text-white shadow-xs font-bold",
+						color: "bg-rose-600 text-white",
 					},
 					{
 						id: "RESTORE",
 						label: "Khôi Phục",
 						icon: RotateCcw,
-						activeClass: "bg-purple-600 text-white shadow-xs font-bold",
+						color: "bg-purple-600 text-white",
 					},
 					{
 						id: "IMPORT",
 						label: "Nhập Excel",
 						icon: FileSpreadsheet,
-						activeClass: "bg-amber-600 text-white shadow-xs font-bold",
+						color: "bg-amber-600 text-white",
 					},
 				].map((item) => {
 					const isActive = actionFilter === item.id;
@@ -764,10 +753,10 @@ export const AuditLogView: React.FC = () => {
 							key={item.id}
 							type="button"
 							onClick={() => setActionFilter(item.id)}
-							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer ${
+							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
 								isActive
-									? item.activeClass
-									: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold"
+									? `${item.color} shadow-xs`
+									: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
 							}`}
 						>
 							<Icon className="w-3.5 h-3.5 shrink-0" strokeWidth={1.5} />
@@ -777,10 +766,10 @@ export const AuditLogView: React.FC = () => {
 				})}
 			</div>
 
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+			<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 				<div className="relative">
 					<Search
-						className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+						className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
 						strokeWidth={1.5}
 					/>
 					<input
@@ -788,22 +777,13 @@ export const AuditLogView: React.FC = () => {
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 						placeholder="Tìm theo nội dung, tên chủ hộ, tên cán bộ..."
-						className="w-full h-[42px] pl-10 pr-8 bg-slate-50 border border-slate-300 text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:bg-slate-800/80 dark:border-slate-700/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:bg-slate-800 rounded-2xl text-xs font-medium focus:outline-hidden transition-all"
+						className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:bg-slate-800/80 dark:border-slate-700/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:bg-slate-800 rounded-2xl text-xs font-medium focus:outline-hidden"
 					/>
-					{search && (
-						<button
-							type="button"
-							onClick={() => setSearch("")}
-							className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-full cursor-pointer"
-						>
-							<X className="w-3.5 h-3.5" strokeWidth={1.5} />
-						</button>
-					)}
 				</div>
 
 				{selectedVillageId ? (
-					<div className="flex items-center justify-between px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 rounded-2xl text-xs h-[42px]">
-						<div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-200 truncate min-w-0">
+					<div className="flex items-center justify-between px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 rounded-2xl text-xs">
+						<div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-200 truncate">
 							<MapPin
 								className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0"
 								strokeWidth={1.5}
@@ -845,10 +825,10 @@ export const AuditLogView: React.FC = () => {
 						}
 						clearable={Boolean(villageFilter)}
 						onClear={() => setVillageFilter("")}
-						className="rounded-2xl text-xs font-bold !min-h-[42px] h-[42px]"
+						className="rounded-2xl text-xs font-bold"
 					/>
 				) : (
-					<div className="flex items-center px-3.5 py-2 bg-slate-100 dark:bg-slate-800 rounded-2xl text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 h-[42px]">
+					<div className="flex items-center px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-2xl text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
 						<span>
 							Đơn vị:{" "}
 							{villages.find((v) => v.id === user?.village_id)?.name ||
@@ -879,7 +859,7 @@ export const AuditLogView: React.FC = () => {
 					}
 					clearable={Boolean(userFilter)}
 					onClear={() => setUserFilter("")}
-					className="rounded-2xl text-xs font-bold !min-h-[42px] h-[42px]"
+					className="rounded-2xl text-xs font-bold"
 				/>
 			</div>
 
@@ -919,12 +899,12 @@ export const AuditLogView: React.FC = () => {
 							return (
 								<div key={item.id} className="relative pl-6 group">
 									<div
-										className={`absolute -left-[11px] top-4 w-5 h-5 rounded-full ${cfg.dotBg} ring-4 ring-white dark:ring-slate-900 flex items-center justify-center text-white shadow-xs transition-transform group-hover:scale-110`}
+										className={`absolute -left-2.25 top-1.5 w-4.5 h-4.5 rounded-full ${cfg.dotBg} ring-4 flex items-center justify-center text-white shadow-xs transition-transform group-hover:scale-110`}
 									>
 										<ActionIcon className="w-2.5 h-2.5 stroke-[3]" />
 									</div>
 
-									<div className="bg-slate-50/60 dark:bg-slate-950/60 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs hover:border-emerald-500/40 transition-all space-y-2">
+									<div className="bg-slate-50/60 dark:bg-slate-950/60 p-4.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs hover:border-emerald-500/40 transition-all space-y-2">
 										<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
 											<div className="flex items-center gap-2 flex-wrap">
 												<span
@@ -983,17 +963,17 @@ export const AuditLogView: React.FC = () => {
 					</div>
 				)}
 
-				{total > 0 && (
-					<div className="pt-4 border-t border-slate-100 dark:border-slate-800 -mx-6 -mb-6 mt-4">
-						<TablePagination
-							itemCount={logs.length}
-							total={total}
-							page={page}
-							limit={limit}
-							totalPages={totalPages}
-							onPageChange={handlePageChange}
-							onLimitChange={handleLimitChange}
-						/>
+				{page < totalPages && (
+					<div className="pt-6 flex justify-center border-t border-slate-100 dark:border-slate-800 mt-4">
+						<button
+							type="button"
+							onClick={handleLoadMore}
+							disabled={loading}
+							className="h-10 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
+						>
+							<ArrowDownCircle className="w-4 h-4" strokeWidth={1.5} />
+							<span>{loading ? "Đang tải thêm..." : "Tải Thêm Dữ Liệu"}</span>
+						</button>
 					</div>
 				)}
 			</div>

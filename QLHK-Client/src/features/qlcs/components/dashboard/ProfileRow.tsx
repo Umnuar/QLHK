@@ -34,6 +34,7 @@ interface ProfileRowProps {
 	panelClass: string;
 	softTextClass: string;
 	isFirstOfGroup?: boolean;
+	calculationYear?: number;
 }
 
 export const ProfileRow = React.memo(function ProfileRow({
@@ -51,6 +52,7 @@ export const ProfileRow = React.memo(function ProfileRow({
 	isDarkMode,
 	panelClass,
 	softTextClass,
+	calculationYear,
 }: ProfileRowProps) {
 	const [showCccd, setShowCccd] = useState(false);
 	const [isTogglingGift, setIsTogglingGift] = useState(false);
@@ -58,20 +60,42 @@ export const ProfileRow = React.memo(function ProfileRow({
 	const milestone = useMemo(() => {
 		const m: string[] = [];
 		if (activeTab === "chuctho") {
-			if (profile.age60) m.push("60");
-			if (profile.age65) m.push("65");
-			if (profile.age70) m.push("70");
-			if (profile.age75) m.push("75");
-			if (profile.age80) m.push("80");
-			if (profile.age85) m.push("85");
-			if (profile.age90) m.push("90");
-			if (profile.age95) m.push("95");
-			if (profile.age100) m.push("100");
-			if (profile.ageOver100 || profile.age_over_100) m.push(">100");
+			const targetYear =
+				calculationYear ||
+				Number(profile.calculation_year || profile.calculationYear) ||
+				new Date().getFullYear();
+			const age = profile.dob ? calculateAge(profile.dob, targetYear) : 0;
+			if (age > 0) {
+				if (age >= 60 && age < 65) m.push("60");
+				else if (age >= 65 && age < 70) m.push("65");
+				else if (age >= 70 && age < 75) m.push("70");
+				else if (age >= 75 && age < 80) m.push("75");
+				else if (age >= 80 && age < 85) m.push("80");
+				else if (age >= 85 && age < 90) m.push("85");
+				else if (age >= 90 && age < 95) m.push("90");
+				else if (age >= 95 && age < 100) m.push("95");
+				else if (age === 100) m.push("100");
+				else if (age > 100) m.push(">100");
+			} else {
+				if (profile.age60) m.push("60");
+				if (profile.age65) m.push("65");
+				if (profile.age70) m.push("70");
+				if (profile.age75) m.push("75");
+				if (profile.age80) m.push("80");
+				if (profile.age85) m.push("85");
+				if (profile.age90) m.push("90");
+				if (profile.age95) m.push("95");
+				if (profile.age100) m.push("100");
+				if (profile.ageOver100 || profile.age_over_100) m.push(">100");
+			}
 		}
 		return m;
 	}, [
 		activeTab,
+		calculationYear,
+		profile.dob,
+		profile.calculation_year,
+		profile.calculationYear,
 		profile.age60,
 		profile.age65,
 		profile.age70,
@@ -88,6 +112,7 @@ export const ProfileRow = React.memo(function ProfileRow({
 	const milestoneText = useMemo(() => {
 		if (activeTab === "chuctho") {
 			const targetYear =
+				calculationYear ||
 				Number(profile.calculation_year || profile.calculationYear) ||
 				new Date().getFullYear();
 			const age = profile.dob ? calculateAge(profile.dob, targetYear) : 0;
@@ -121,6 +146,7 @@ export const ProfileRow = React.memo(function ProfileRow({
 	}, [
 		activeTab,
 		milestone,
+		calculationYear,
 		profile.calculation_year,
 		profile.calculationYear,
 		profile.dob,
@@ -310,22 +336,39 @@ export const ProfileRow = React.memo(function ProfileRow({
 			) : (
 				<>
 					<td className="py-3 px-2 text-center border-b border-slate-100 dark:border-slate-800/80 whitespace-nowrap">
-						{profile.age75plus ? (
-							<span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 rounded-lg text-xs font-bold">
-								CÓ
-							</span>
-						) : (
-							<span className="text-slate-300 dark:text-slate-600">-</span>
-						)}
+						{(() => {
+							const targetYear =
+								calculationYear ||
+								Number(profile.calculation_year || profile.calculationYear) ||
+								new Date().getFullYear();
+							const age = profile.dob ? calculateAge(profile.dob, targetYear) : 0;
+							const is75Plus = age >= 75 || Boolean(profile.age75plus);
+							return is75Plus ? (
+								<span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 rounded-lg text-xs font-bold">
+									CÓ
+								</span>
+							) : (
+								<span className="text-slate-300 dark:text-slate-600">-</span>
+							);
+						})()}
 					</td>
 					<td className="py-3 px-2 text-center border-b border-slate-100 dark:border-slate-800/80 whitespace-nowrap">
-						{profile.age70to74poor ? (
-							<span className="px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800 rounded-lg text-xs font-bold">
-								CÓ
-							</span>
-						) : (
-							<span className="text-slate-300 dark:text-slate-600">-</span>
-						)}
+						{(() => {
+							const targetYear =
+								calculationYear ||
+								Number(profile.calculation_year || profile.calculationYear) ||
+								new Date().getFullYear();
+							const age = profile.dob ? calculateAge(profile.dob, targetYear) : 0;
+							const inRange = age > 0 ? (age >= 70 && age < 75) : true;
+							const isPoor = inRange && Boolean(profile.age70to74poor);
+							return isPoor ? (
+								<span className="px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800 rounded-lg text-xs font-bold">
+									CÓ
+								</span>
+							) : (
+								<span className="text-slate-300 dark:text-slate-600">-</span>
+							);
+						})()}
 					</td>
 					<td className="py-3 px-3 text-center relative border-b border-slate-100 dark:border-slate-800/80 whitespace-nowrap">
 						{(() => {

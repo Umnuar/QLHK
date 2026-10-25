@@ -32,6 +32,7 @@ interface MainTableProps {
 	isDarkMode: boolean;
 	panelClass: string;
 	softTextClass: string;
+	calculationYear?: number;
 }
 
 function SortIcon({
@@ -81,6 +82,7 @@ export function MainTable({
 	isDarkMode,
 	panelClass,
 	softTextClass,
+	calculationYear,
 }: MainTableProps) {
 	const [openPolicyPopover, setOpenPolicyPopover] = useState<string | null>(
 		null,
@@ -287,6 +289,7 @@ export function MainTable({
 									isDarkMode={isDarkMode}
 									panelClass={panelClass}
 									softTextClass={softTextClass}
+									calculationYear={calculationYear}
 								/>
 							);
 						})

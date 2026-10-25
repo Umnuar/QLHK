@@ -190,7 +190,7 @@ export function useProfiles(
 		try {
 			const cached = await getCache<any>(cacheKey);
 			if (abortController.signal.aborted) return;
-			if (cached && cached.data) {
+			if (cached && Array.isArray(cached.data) && cached.data.length > 0) {
 				const hasLegacyIds = Array.isArray(cached.data) && cached.data.some(
 					(p: any) => typeof p?.id === "string" && (p.id.startsWith("ct-") || p.id.startsWith("ht-")),
 				);

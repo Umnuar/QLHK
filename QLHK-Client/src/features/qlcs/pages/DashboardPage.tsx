@@ -1,7 +1,6 @@
 import {
 	Award,
 	Download,
-	FileSpreadsheet,
 	HeartHandshake,
 	Plus,
 } from "lucide-react";
@@ -12,14 +11,12 @@ import { profilesApi } from "@/api/profiles";
 import { settingsApi } from "@/api/settings";
 import { useModal } from "@/hooks/useModal";
 import { useToast } from "@/components/common/Toast";
-import { downloadTemplateClient } from "@/utils/excelExporter";
 import { MainTable } from "../components/dashboard/MainTable";
 import { ProfileFilterBar } from "../components/dashboard/ProfileFilterBar";
 import { useFilters } from "@/hooks/useFilters";
 import { useImportExport } from "@/hooks/useImportExport";
 import { useProfiles } from "@/hooks/useProfiles";
 import { ExportModal } from "../components/dashboard/ExportModal";
-import { ImportModal } from "../components/dashboard/ImportModal";
 import { ProfileModal } from "../components/dashboard/ProfileModal";
 import type { TabType } from "@/types";
 
@@ -162,27 +159,10 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 	);
 
 	const {
-		isImportModalOpen,
-		setIsImportModalOpen,
-		isImporting,
-		importProgress,
-		importResult,
-		setImportResult,
-		previewData,
-		confirmImport,
-		cancelImport,
 		isExportModalOpen,
 		setIsExportModalOpen,
 		isExporting,
-		fileInputRef,
-		handleFileUpload,
 		executeExport,
-		importStep,
-		mappingData,
-		customMapping,
-		applyMapping,
-		goToMappingStep,
-		goToUploadStep,
 	} = useImportExport(
 		effectiveVillageId,
 		activeTab,
@@ -381,10 +361,6 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 		return Boolean(success);
 	};
 
-	const downloadTemplate = () => {
-		downloadTemplateClient(activeTab === "htxh" ? "htxh" : "cth");
-	};
-
 	return (
 		<div className="space-y-4 animate-in fade-in pt-1.5 pb-10 select-none">
 
@@ -425,18 +401,6 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 				</div>
 
 				<div className="flex items-center gap-2.5 flex-wrap">
-					<button
-						type="button"
-						onClick={() => setIsImportModalOpen(true)}
-						className="h-10 flex items-center gap-1.5 px-3.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-bold transition-all active:scale-[0.99] cursor-pointer border border-slate-200 dark:border-slate-700"
-					>
-						<FileSpreadsheet
-							className="w-4 h-4 text-emerald-600"
-							strokeWidth={1.5}
-						/>
-						<span>Nhập Excel</span>
-					</button>
-
 					<button
 						type="button"
 						onClick={() => setIsExportModalOpen(true)}
@@ -539,31 +503,6 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 				auditLogs={auditLogs}
 				isLoadingLogs={isLoadingLogs}
 				loadAuditLogs={loadAuditLogs}
-			/>
-
-			<ImportModal
-				isImportModalOpen={isImportModalOpen}
-				setIsImportModalOpen={setIsImportModalOpen}
-				isImporting={isImporting}
-				importProgress={importProgress}
-				importResult={importResult}
-				setImportResult={setImportResult}
-				previewData={previewData}
-				confirmImport={confirmImport}
-				cancelImport={cancelImport}
-				fileInputRef={fileInputRef}
-				handleFileUpload={handleFileUpload}
-				handleDownloadTemplate={downloadTemplate}
-				activeTab={activeTab}
-				isDarkMode={isDarkMode}
-				panelClass={panelClass}
-				softTextClass={softTextClass}
-				importStep={importStep}
-				mappingData={mappingData}
-				customMapping={customMapping}
-				applyMapping={applyMapping}
-				goToMappingStep={goToMappingStep}
-				goToUploadStep={goToUploadStep}
 			/>
 
 			<ExportModal

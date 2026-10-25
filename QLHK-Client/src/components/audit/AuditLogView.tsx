@@ -1062,182 +1062,562 @@ export const AuditLogView: React.FC = () => {
 																</span>
 															</div>
 
-															{item.action === "UPDATE" && (
-																<div className="space-y-3">
-																	{diffs.length > 0 ? (
-																		<div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden text-xs">
-																			<div className="grid grid-cols-12 bg-slate-100 dark:bg-slate-800/90 font-bold text-slate-700 dark:text-slate-300 p-2.5 border-b border-slate-200 dark:border-slate-700">
-																				<div className="col-span-4 sm:col-span-3">Trường thông tin</div>
-																				<div className="col-span-4 sm:col-span-4 text-rose-600 dark:text-rose-400">
-																					Trước khi sửa (Cũ)
+															{item.action === "UPDATE" && (() => {
+																const newV = item.new_values || {};
+																const updatedMembers = Array.isArray(newV.updated_members)
+																	? newV.updated_members
+																	: [];
+																const addedMembers = Array.isArray(newV.added_members)
+																	? newV.added_members
+																	: [];
+																const removedMembers = Array.isArray(newV.removed_members)
+																	? newV.removed_members
+																	: [];
+																const isRevealCccd = newV.action === "REVEAL_CCCD";
+
+																return (
+																	<div className="space-y-3">
+																		{diffs.length > 0 && (
+																			<div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden text-xs">
+																				<div className="grid grid-cols-12 bg-slate-100 dark:bg-slate-800/90 font-bold text-slate-700 dark:text-slate-300 p-2.5 border-b border-slate-200 dark:border-slate-700">
+																					<div className="col-span-4 sm:col-span-3">Trường thông tin</div>
+																					<div className="col-span-4 sm:col-span-4 text-rose-600 dark:text-rose-400">
+																						Trước khi sửa (Cũ)
+																					</div>
+																					<div className="col-span-4 sm:col-span-5 text-emerald-600 dark:text-emerald-400">
+																						Sau khi sửa (Mới)
+																					</div>
 																				</div>
-																				<div className="col-span-4 sm:col-span-5 text-emerald-600 dark:text-emerald-400">
-																					Sau khi sửa (Mới)
+																				<div className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+																					{diffs.map((diff) => (
+																						<div
+																							key={diff.key}
+																							className="grid grid-cols-12 p-2.5 items-center hover:bg-slate-50/50 dark:hover:bg-slate-800/40"
+																						>
+																							<div className="col-span-4 sm:col-span-3 font-semibold text-slate-800 dark:text-slate-200">
+																								{diff.label}
+																							</div>
+																							<div className="col-span-4 sm:col-span-4 pr-2 font-mono text-[11px] text-rose-700 dark:text-rose-300 line-through">
+																								{formatValue(diff.from)}
+																							</div>
+																							<div className="col-span-4 sm:col-span-5 flex items-center gap-1.5 font-mono text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+																								<ArrowRight className="w-3 h-3 text-slate-400 shrink-0 hidden sm:inline" />
+																								<span>{formatValue(diff.to)}</span>
+																							</div>
+																						</div>
+																					))}
 																				</div>
 																			</div>
-																			<div className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
-																				{diffs.map((diff) => (
+																		)}
+
+																		{updatedMembers.length > 0 && (
+																			<div className="space-y-2">
+																				<div className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+																					<RefreshCw className="w-3.5 h-3.5" />
+																					<span>
+																						Thay đổi thông tin nhân khẩu trong hộ ({updatedMembers.length}):
+																					</span>
+																				</div>
+																				<div className="space-y-2">
+																					{updatedMembers.map((m: any, idx: number) => {
+																						const changesEntries = m.changes
+																							? Object.entries(m.changes)
+																							: [];
+																						return (
+																							<div
+																								key={m.id || `upd-${idx}`}
+																								className="rounded-xl border border-blue-500/25 bg-blue-50/40 dark:bg-blue-950/20 overflow-hidden text-xs"
+																							>
+																								<div className="p-2.5 bg-blue-500/10 border-b border-blue-500/20 flex items-center justify-between flex-wrap gap-1">
+																									<div className="flex items-center gap-2">
+																										<UserIcon className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+																										<span className="font-bold text-blue-950 dark:text-blue-100">
+																											{m.full_name}
+																										</span>
+																										{m.relationship && (
+																											<span className="px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-blue-500/15 text-blue-700 dark:text-blue-300">
+																												{m.relationship}
+																											</span>
+																										)}
+																									</div>
+																									{m.id && (
+																										<span className="font-mono text-[10px] text-slate-400">
+																											ID: {m.id}
+																										</span>
+																									)}
+																								</div>
+
+																								{changesEntries.length > 0 ? (
+																									<div className="divide-y divide-blue-500/10 bg-white/60 dark:bg-slate-900/60">
+																										{changesEntries.map(
+																											([fKey, fVal]: [string, any]) => (
+																												<div
+																													key={fKey}
+																													className="grid grid-cols-12 p-2 items-center text-[11px]"
+																												>
+																													<div className="col-span-4 sm:col-span-3 font-semibold text-slate-700 dark:text-slate-300">
+																														{FIELD_LABELS[fKey] || fKey}
+																													</div>
+																													<div className="col-span-4 sm:col-span-4 font-mono text-rose-700 dark:text-rose-400 line-through">
+																														{formatValue(fVal?.from)}
+																													</div>
+																													<div className="col-span-4 sm:col-span-5 flex items-center gap-1 font-mono font-bold text-emerald-700 dark:text-emerald-400">
+																														<ArrowRight className="w-3 h-3 text-slate-400 shrink-0 hidden sm:inline" />
+																														<span>{formatValue(fVal?.to)}</span>
+																													</div>
+																												</div>
+																											),
+																										)}
+																									</div>
+																								) : (
+																									<div className="p-2 text-slate-400 italic text-[11px]">
+																										Không có chi tiết trường thay đổi cụ thể
+																									</div>
+																								)}
+																							</div>
+																						);
+																					})}
+																				</div>
+																			</div>
+																		)}
+
+																		{addedMembers.length > 0 && (
+																			<div className="space-y-1.5">
+																				<div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+																					<Plus className="w-3.5 h-3.5" />
+																					<span>
+																						Thêm nhân khẩu mới vào hộ ({addedMembers.length}):
+																					</span>
+																				</div>
+																				{addedMembers.map((m: any, idx: number) => (
 																					<div
-																						key={diff.key}
-																						className="grid grid-cols-12 p-2.5 items-center hover:bg-slate-50/50 dark:hover:bg-slate-800/40"
+																						key={m.id || `add-${idx}`}
+																						className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs flex items-center justify-between flex-wrap gap-2"
 																					>
-																						<div className="col-span-4 sm:col-span-3 font-semibold text-slate-800 dark:text-slate-200">
-																							{diff.label}
+																						<div className="flex items-center gap-1.5">
+																							<span className="font-bold text-emerald-950 dark:text-emerald-100">
+																								+ {m.full_name}
+																							</span>
+																							<span className="text-slate-500">
+																								({m.relationship || "Thành viên"})
+																							</span>
 																						</div>
-																						<div className="col-span-4 sm:col-span-4 pr-2 font-mono text-[11px] text-rose-700 dark:text-rose-300 line-through">
-																							{formatValue(diff.from)}
-																						</div>
-																						<div className="col-span-4 sm:col-span-5 flex items-center gap-1.5 font-mono text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
-																							<ArrowRight className="w-3 h-3 text-slate-400 shrink-0 hidden sm:inline" />
-																							<span>{formatValue(diff.to)}</span>
-																						</div>
+																						<span className="font-mono text-[11px] text-slate-500">
+																							{m.gender ? `${m.gender} • ` : ""}
+																							{m.dob ? `NS: ${m.dob} • ` : ""}
+																							CCCD: {m.cccd_last4 ? `•••• ${m.cccd_last4}` : "Chưa có"}
+																						</span>
 																					</div>
 																				))}
 																			</div>
-																		</div>
-																	) : (
-																		<div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-xs text-slate-500 dark:text-slate-400 italic">
-																			Không có trường dữ liệu văn bản thay đổi trực tiếp (thay đổi cấu trúc hoặc danh sách thành viên).
-																		</div>
-																	)}
+																		)}
 
-																	{item.new_values && (
-																		<>
-																			{Array.isArray(item.new_values.added_members) &&
-																				item.new_values.added_members.length > 0 && (
-																					<div className="space-y-1.5">
-																						<div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-																							Thêm nhân khẩu mới vào hộ ({item.new_values.added_members.length}):
-																						</div>
-																						{item.new_values.added_members.map((m: any, idx: number) => (
-																							<div
-																								key={`add-${idx}`}
-																								className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs flex items-center justify-between"
-																							>
-																								<span className="font-bold text-emerald-950 dark:text-emerald-100">
-																									+ {m.full_name} ({m.relationship || "Thành viên"})
-																								</span>
-																								<span className="font-mono text-[11px] text-slate-500">
-																									{m.dob ? `NS: ${m.dob} • ` : ""}
-																									CCCD: {m.cccd_last4 ? `•••• ${m.cccd_last4}` : "Chưa có"}
-																								</span>
-																							</div>
-																						))}
-																					</div>
-																				)}
-
-																			{Array.isArray(item.new_values.removed_members) &&
-																				item.new_values.removed_members.length > 0 && (
-																					<div className="space-y-1.5">
-																						<div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
-																							Tách / gỡ nhân khẩu khỏi hộ ({item.new_values.removed_members.length}):
-																						</div>
-																						{item.new_values.removed_members.map((m: any, idx: number) => (
-																							<div
-																								key={`rem-${idx}`}
-																								className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-xs flex items-center justify-between"
-																							>
-																								<span className="font-bold text-rose-950 dark:text-rose-100 line-through">
-																									- {m.full_name} ({m.relationship || "Thành viên"})
-																								</span>
-																								<span className="font-mono text-[11px] text-slate-500">
-																									{m.dob ? `NS: ${m.dob}` : ""}
-																								</span>
-																							</div>
-																						))}
-																					</div>
-																				)}
-
-																			{item.new_values.action === "REVEAL_CCCD" && (
-																				<div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
-																					<Shield className="w-4 h-4 text-amber-600 shrink-0" />
+																		{removedMembers.length > 0 && (
+																			<div className="space-y-1.5">
+																				<div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider flex items-center gap-1">
+																					<Trash2 className="w-3.5 h-3.5" />
 																					<span>
-																						Tra cứu & hiển thị số Căn cước công dân (Yêu cầu quyền hạn & đã ghi vết kiểm soát).
+																						Tách / gỡ nhân khẩu khỏi hộ ({removedMembers.length}):
 																					</span>
 																				</div>
+																				{removedMembers.map((m: any, idx: number) => (
+																					<div
+																						key={m.id || `rem-${idx}`}
+																						className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-xs flex items-center justify-between flex-wrap gap-2"
+																					>
+																						<span className="font-bold text-rose-950 dark:text-rose-100 line-through">
+																							- {m.full_name} ({m.relationship || "Thành viên"})
+																						</span>
+																						<span className="font-mono text-[11px] text-slate-500">
+																							{m.gender ? `${m.gender} • ` : ""}
+																							{m.dob ? `NS: ${m.dob}` : ""}
+																						</span>
+																					</div>
+																				))}
+																			</div>
+																		)}
+
+																		{isRevealCccd && (
+																			<div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+																				<Shield className="w-4 h-4 text-amber-600 shrink-0" />
+																				<span>
+																					Tra cứu & hiển thị số Căn cước công dân (Yêu cầu quyền hạn & đã ghi vết kiểm soát).
+																				</span>
+																			</div>
+																		)}
+
+																		{diffs.length === 0 &&
+																			updatedMembers.length === 0 &&
+																			addedMembers.length === 0 &&
+																			removedMembers.length === 0 &&
+																			!isRevealCccd && (
+																				<div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-xs text-slate-500 dark:text-slate-400 italic">
+																					Không có trường dữ liệu văn bản thay đổi trực tiếp (thay đổi cấu trúc hoặc danh sách thành viên).
+																				</div>
 																			)}
-																		</>
-																	)}
-																</div>
-															)}
-
-															{item.action === "CREATE" && item.new_values && (
-																<div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-xs">
-																	{item.new_values.head_name && (
-																		<div>
-																			<span className="text-slate-400 text-[11px]">Chủ hộ:</span>
-																			<p className="font-bold text-slate-800 dark:text-slate-200">{item.new_values.head_name}</p>
-																		</div>
-																	)}
-																	{item.new_values.full_name && (
-																		<div>
-																			<span className="text-slate-400 text-[11px]">Họ và tên:</span>
-																			<p className="font-bold text-slate-800 dark:text-slate-200">{item.new_values.full_name}</p>
-																		</div>
-																	)}
-																	{item.new_values.relationship && (
-																		<div>
-																			<span className="text-slate-400 text-[11px]">Quan hệ:</span>
-																			<p className="font-bold text-slate-800 dark:text-slate-200">{item.new_values.relationship}</p>
-																		</div>
-																	)}
-																	{item.new_values.address && (
-																		<div className="col-span-2">
-																			<span className="text-slate-400 text-[11px]">Địa chỉ:</span>
-																			<p className="font-bold text-slate-800 dark:text-slate-200">{item.new_values.address}</p>
-																		</div>
-																	)}
-																	{item.new_values.status && (
-																		<div>
-																			<span className="text-slate-400 text-[11px]">Trạng thái:</span>
-																			<p className="font-bold text-slate-800 dark:text-slate-200">{item.new_values.status}</p>
-																		</div>
-																	)}
-																	{item.new_values.members_count !== undefined && (
-																		<div>
-																			<span className="text-slate-400 text-[11px]">Số nhân khẩu:</span>
-																			<p className="font-bold text-slate-800 dark:text-slate-200">{item.new_values.members_count}</p>
-																		</div>
-																	)}
-																</div>
-															)}
-
-															{item.action === "DELETE" && (
-																<div className="p-3 bg-rose-500/10 border border-rose-500/25 rounded-xl text-xs space-y-1">
-																	<div className="font-bold text-rose-700 dark:text-rose-300">
-																		Bản ghi đã được chuyển vào Thùng rác hệ thống
 																	</div>
-																	{item.new_values?.reason && (
-																		<div className="text-slate-700 dark:text-slate-300">
-																			<strong>Lý do:</strong> {item.new_values.reason}
-																		</div>
-																	)}
-																</div>
-															)}
+																);
+															})()}
 
-															{item.action === "RESTORE" && (
-																<div className="p-3 bg-purple-500/10 border border-purple-500/25 rounded-xl text-xs space-y-1">
-																	<div className="font-bold text-purple-700 dark:text-purple-300">
-																		Dữ liệu đã được khôi phục thành công từ Thùng rác
-																	</div>
-																	{item.new_values?.notes && (
-																		<div className="text-slate-700 dark:text-slate-300">
-																			<strong>Ghi chú:</strong> {item.new_values.notes}
+															{item.action === "CREATE" && item.new_values && (() => {
+																const newV = item.new_values;
+																const initialCitizens = Array.isArray(newV.citizens)
+																	? newV.citizens
+																	: [];
+																return (
+																	<div className="space-y-2.5">
+																		<div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-xs">
+																			{newV.book_number && (
+																				<div>
+																					<span className="text-slate-400 text-[11px]">Mã định danh hộ:</span>
+																					<p className="font-bold text-slate-800 dark:text-slate-200 font-mono">
+																						{newV.book_number}
+																					</p>
+																				</div>
+																			)}
+																			{newV.head_name && (
+																				<div>
+																					<span className="text-slate-400 text-[11px]">Chủ hộ:</span>
+																					<p className="font-bold text-slate-800 dark:text-slate-200">
+																						{newV.head_name}
+																					</p>
+																				</div>
+																			)}
+																			{newV.full_name && (
+																				<div>
+																					<span className="text-slate-400 text-[11px]">Họ và tên:</span>
+																					<p className="font-bold text-slate-800 dark:text-slate-200">
+																						{newV.full_name}
+																					</p>
+																				</div>
+																			)}
+																			{newV.relationship && (
+																				<div>
+																					<span className="text-slate-400 text-[11px]">Quan hệ với chủ hộ:</span>
+																					<p className="font-bold text-slate-800 dark:text-slate-200">
+																						{newV.relationship}
+																					</p>
+																				</div>
+																			)}
+																			{newV.gender && (
+																				<div>
+																					<span className="text-slate-400 text-[11px]">Giới tính:</span>
+																					<p className="font-bold text-slate-800 dark:text-slate-200">
+																						{newV.gender}
+																					</p>
+																				</div>
+																			)}
+																			{newV.dob && (
+																				<div>
+																					<span className="text-slate-400 text-[11px]">Ngày sinh:</span>
+																					<p className="font-bold text-slate-800 dark:text-slate-200 font-mono">
+																						{newV.dob}
+																					</p>
+																				</div>
+																			)}
+																			{newV.ethnicity && (
+																				<div>
+																					<span className="text-slate-400 text-[11px]">Dân tộc:</span>
+																					<p className="font-bold text-slate-800 dark:text-slate-200">
+																						{newV.ethnicity}
+																					</p>
+																				</div>
+																			)}
+																			{newV.cccd_last4 && (
+																				<div>
+																					<span className="text-slate-400 text-[11px]">Số CCCD:</span>
+																					<p className="font-bold text-slate-800 dark:text-slate-200 font-mono">
+																						•••• {newV.cccd_last4}
+																					</p>
+																				</div>
+																			)}
+																			{newV.status && (
+																				<div>
+																					<span className="text-slate-400 text-[11px]">Trạng thái:</span>
+																					<p className="font-bold text-slate-800 dark:text-slate-200">
+																						{newV.status}
+																					</p>
+																				</div>
+																			)}
+																			{newV.members_count !== undefined && (
+																				<div>
+																					<span className="text-slate-400 text-[11px]">Số nhân khẩu:</span>
+																					<p className="font-bold text-slate-800 dark:text-slate-200">
+																						{newV.members_count}
+																					</p>
+																				</div>
+																			)}
+																			{newV.address && (
+																				<div className="col-span-2 sm:col-span-3">
+																					<span className="text-slate-400 text-[11px]">Địa chỉ thường trú:</span>
+																					<p className="font-bold text-slate-800 dark:text-slate-200">
+																						{newV.address}
+																					</p>
+																				</div>
+																			)}
 																		</div>
-																	)}
-																</div>
-															)}
 
-															{item.action === "IMPORT" && item.new_values && (
-																<div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl text-xs space-y-1.5">
-																	<div className="font-bold text-amber-800 dark:text-amber-200">
-																		Đã nhập khẩu dữ liệu thành công từ tệp Excel
+																		{initialCitizens.length > 0 && (
+																			<div className="space-y-1.5">
+																				<div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+																					Danh sách nhân khẩu ban đầu ({initialCitizens.length}):
+																				</div>
+																				<div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+																					{initialCitizens.map((c: any, idx: number) => (
+																						<div
+																							key={idx}
+																							className="p-2 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between"
+																						>
+																							<div>
+																								<span className="font-bold text-slate-900 dark:text-white">
+																									{c.full_name}
+																								</span>
+																								<span className="text-slate-400 text-[11px] ml-1.5">
+																									({c.relationship || "Thành viên"})
+																								</span>
+																							</div>
+																							<span className="font-mono text-[11px] text-slate-500">
+																								{c.dob ? `${c.dob}` : ""}
+																							</span>
+																						</div>
+																					))}
+																				</div>
+																			</div>
+																		)}
 																	</div>
-																	<div className="flex items-center gap-4 text-slate-700 dark:text-slate-300 font-mono text-[11px]">
-																		<span>Tệp: {item.new_values.file_name || "N/A"}</span>
-																		<span>Số hộ: {item.new_values.imported_households || 0}</span>
-																		<span>Số nhân khẩu: {item.new_values.imported_citizens || 0}</span>
+																);
+															})()}
+
+															{(item.action === "DELETE" ||
+																item.action === "BULK_DELETE" ||
+																item.action === "HARD_DELETE") && (() => {
+																const oldV = item.old_values || {};
+																const newV = item.new_values || {};
+																const isHard = item.action === "HARD_DELETE";
+																const isBulk = item.action === "BULK_DELETE";
+																const reason = newV.reason || oldV.reason;
+
+																return (
+																	<div className="space-y-2.5">
+																		<div
+																			className={`p-3 rounded-xl border text-xs space-y-1 ${
+																				isHard
+																					? "bg-red-500/10 border-red-500/30 text-red-900 dark:text-red-200"
+																					: "bg-rose-500/10 border-rose-500/25 text-rose-900 dark:text-rose-200"
+																			}`}
+																		>
+																			<div className="font-bold flex items-center gap-1.5">
+																				<Trash2 className="w-4 h-4 shrink-0" />
+																				<span>
+																					{isHard
+																						? "Bản ghi đã bị xóa vĩnh viễn khỏi cơ sở dữ liệu (Không thể phục hồi)"
+																						: isBulk
+																							? "Bản ghi đã được xóa vào Thùng rác trong đợt xóa hàng loạt"
+																							: "Bản ghi đã được chuyển vào Thùng rác hệ thống"}
+																				</span>
+																			</div>
+																			{reason && (
+																				<div className="text-slate-700 dark:text-slate-300 pt-0.5">
+																					<strong>Lý do:</strong> {reason}
+																				</div>
+																			)}
+																		</div>
+
+																		{(oldV.head_name ||
+																			oldV.full_name ||
+																			oldV.book_number ||
+																			oldV.address) && (
+																			<div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-xs">
+																				{oldV.book_number && (
+																					<div>
+																						<span className="text-slate-400 text-[11px]">Mã định danh hộ:</span>
+																						<p className="font-bold text-slate-800 dark:text-slate-200 font-mono">
+																							{oldV.book_number}
+																						</p>
+																					</div>
+																				)}
+																				{oldV.head_name && (
+																					<div>
+																						<span className="text-slate-400 text-[11px]">Chủ hộ:</span>
+																						<p className="font-bold text-slate-800 dark:text-slate-200">
+																							{oldV.head_name}
+																						</p>
+																					</div>
+																				)}
+																				{oldV.full_name && (
+																					<div>
+																						<span className="text-slate-400 text-[11px]">Họ và tên:</span>
+																						<p className="font-bold text-slate-800 dark:text-slate-200">
+																							{oldV.full_name}
+																						</p>
+																					</div>
+																				)}
+																				{oldV.relationship && (
+																					<div>
+																						<span className="text-slate-400 text-[11px]">Quan hệ:</span>
+																						<p className="font-bold text-slate-800 dark:text-slate-200">
+																							{oldV.relationship}
+																						</p>
+																					</div>
+																				)}
+																				{oldV.gender && (
+																					<div>
+																						<span className="text-slate-400 text-[11px]">Giới tính:</span>
+																						<p className="font-bold text-slate-800 dark:text-slate-200">
+																							{oldV.gender}
+																						</p>
+																					</div>
+																				)}
+																				{oldV.dob && (
+																					<div>
+																						<span className="text-slate-400 text-[11px]">Ngày sinh:</span>
+																						<p className="font-bold text-slate-800 dark:text-slate-200 font-mono">
+																							{oldV.dob}
+																						</p>
+																					</div>
+																				)}
+																				{oldV.status && (
+																					<div>
+																						<span className="text-slate-400 text-[11px]">Trạng thái:</span>
+																						<p className="font-bold text-slate-800 dark:text-slate-200">
+																							{oldV.status}
+																						</p>
+																					</div>
+																				)}
+																				{oldV.members_count !== undefined && (
+																					<div>
+																						<span className="text-slate-400 text-[11px]">Số nhân khẩu:</span>
+																						<p className="font-bold text-slate-800 dark:text-slate-200">
+																							{oldV.members_count}
+																						</p>
+																					</div>
+																				)}
+																				{oldV.address && (
+																					<div className="col-span-2 sm:col-span-3">
+																						<span className="text-slate-400 text-[11px]">Địa chỉ:</span>
+																						<p className="font-bold text-slate-800 dark:text-slate-200">
+																							{oldV.address}
+																						</p>
+																					</div>
+																				)}
+																			</div>
+																		)}
 																	</div>
+																);
+															})()}
+
+															{item.action === "RESTORE" && (() => {
+																const newV = item.new_values || {};
+																const oldV = item.old_values || {};
+																const data = { ...oldV, ...newV };
+
+																return (
+																	<div className="space-y-2.5">
+																		<div className="p-3 bg-purple-500/10 border border-purple-500/25 rounded-xl text-xs space-y-1">
+																			<div className="font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+																				<RotateCcw className="w-4 h-4 shrink-0" />
+																				<span>Dữ liệu đã được khôi phục thành công từ Thùng rác</span>
+																			</div>
+																			{newV.notes && (
+																				<div className="text-slate-700 dark:text-slate-300 pt-0.5">
+																					<strong>Ghi chú:</strong> {newV.notes}
+																				</div>
+																			)}
+																		</div>
+
+																		{(data.head_name ||
+																			data.full_name ||
+																			data.book_number ||
+																			data.address) && (
+																			<div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-xs">
+																				{data.book_number && (
+																					<div>
+																						<span className="text-slate-400 text-[11px]">Mã định danh hộ:</span>
+																						<p className="font-bold text-slate-800 dark:text-slate-200 font-mono">
+																							{data.book_number}
+																						</p>
+																					</div>
+																				)}
+																				{data.head_name && (
+																					<div>
+																						<span className="text-slate-400 text-[11px]">Chủ hộ:</span>
+																						<p className="font-bold text-slate-800 dark:text-slate-200">
+																							{data.head_name}
+																						</p>
+																					</div>
+																				)}
+																				{data.full_name && (
+																					<div>
+																						<span className="text-slate-400 text-[11px]">Họ và tên:</span>
+																						<p className="font-bold text-slate-800 dark:text-slate-200">
+																							{data.full_name}
+																						</p>
+																					</div>
+																				)}
+																				{data.status && (
+																					<div>
+																						<span className="text-slate-400 text-[11px]">Trạng thái:</span>
+																						<p className="font-bold text-slate-800 dark:text-slate-200">
+																							{data.status}
+																						</p>
+																					</div>
+																				)}
+																				{data.address && (
+																					<div className="col-span-2">
+																						<span className="text-slate-400 text-[11px]">Địa chỉ:</span>
+																						<p className="font-bold text-slate-800 dark:text-slate-200">
+																							{data.address}
+																						</p>
+																					</div>
+																				)}
+																			</div>
+																		)}
+																	</div>
+																);
+															})()}
+
+															{item.action === "IMPORT" && item.new_values && (() => {
+																const newV = item.new_values;
+																return (
+																	<div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl text-xs space-y-2">
+																		<div className="font-bold text-amber-800 dark:text-amber-200 flex items-center gap-1.5">
+																			<FileSpreadsheet className="w-4 h-4 shrink-0" />
+																			<span>Đã nhập khẩu dữ liệu thành công từ tệp Excel</span>
+																		</div>
+																		<div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-white/70 dark:bg-slate-900/60 p-2.5 rounded-lg border border-amber-500/20 text-[11px] font-mono text-slate-700 dark:text-slate-300">
+																			<div>
+																				<span className="text-slate-400 block text-[10px]">Tệp nguồn:</span>
+																				<span className="font-bold truncate block">
+																					{newV.file_name || "N/A"}
+																				</span>
+																			</div>
+																			<div>
+																				<span className="text-slate-400 block text-[10px]">Số hộ nhập:</span>
+																				<span className="font-bold text-emerald-600 dark:text-emerald-400">
+																					{newV.imported_households ?? 0} hộ
+																				</span>
+																			</div>
+																			<div>
+																				<span className="text-slate-400 block text-[10px]">Số nhân khẩu:</span>
+																				<span className="font-bold text-blue-600 dark:text-blue-400">
+																					{newV.imported_citizens ?? 0} nhân khẩu
+																				</span>
+																			</div>
+																		</div>
+																	</div>
+																);
+															})()}
+
+															{!["UPDATE", "CREATE", "DELETE", "BULK_DELETE", "HARD_DELETE", "RESTORE", "IMPORT"].includes(item.action) && (
+																<div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-xs space-y-1">
+																	<div className="font-semibold text-slate-700 dark:text-slate-300">
+																		{item.description || `Thao tác: ${item.action}`}
+																	</div>
+																	{item.new_values && (
+																		<pre className="font-mono text-[11px] text-slate-600 dark:text-slate-400 overflow-x-auto p-2 bg-white dark:bg-slate-900 rounded-lg">
+																			{JSON.stringify(item.new_values, null, 2)}
+																		</pre>
+																	)}
 																</div>
 															)}
 

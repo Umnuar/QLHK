@@ -16,13 +16,13 @@
 
 ## Execution Checklist
 
-- [ ] Step 1: Remove Policy Excel Import from QLCS Frontend
+- [x] Step 1: Remove Policy Excel Import from QLCS Frontend
   - Target Files: `QLHK/QLHK-Client/src/features/qlcs/pages/DashboardPage.tsx`, `QLHK/QLHK-Client/src/hooks/useImportExport.ts`
   - Assigned Role: `.agents/frontend-developer.md`
   - Role Focus: Eliminate dead UI affordance without breaking policy export or profile filtering
-  - Diff Budget: <= 200 gross LOC
-  - Verification: `cd QLHK/QLHK-Client; npx vitest run src/pages/__tests__/HtxhPage.test.tsx src/pages/__tests__/ChucThoPage.test.tsx`
-  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit`
+  - Diff Budget: <= 200 gross LOC (Actual: 82 LOC)
+  - Verification: `cd QLHK/QLHK-Client; npx vitest run src/pages/__tests__/HtxhPage.test.tsx src/pages/__tests__/ChucThoPage.test.tsx` (Passed)
+  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit` (Passed, 0 errors)
 - [ ] Step 2: Clean Policy Excel Import Handlers in Backend Rust
   - Target Files: `QLHK/QLHK-Backend-Rust/src/handlers/policies.rs`
   - Assigned Role: `.agents/rust-pro.md`

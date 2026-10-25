@@ -70,6 +70,49 @@ const MOCK_LOGS: AuditLogItem[] = [
 		created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
 		description: "Chuyển sổ hộ khẩu SHK-0988 vào Thùng rác",
 	},
+	{
+		id: "aud-004",
+		user_id: "usr-admin-01",
+		username: "admin",
+		full_name: "Quản trị viên Xã",
+		action: "UPDATE",
+		entity_type: "household",
+		entity_id: "70c13a0a-65c6-4b2e-bb0c-858ebf4a081a",
+		village_id: "vil-01",
+		village_name: "Thôn 1",
+		old_values: {
+			book_number: "HK-0002",
+			address: "",
+			status: "Thường trú",
+			head_name: "NGUYỄN VĂN B",
+			members_count: 4,
+		},
+		new_values: {
+			book_number: "HK-0002",
+			address: "",
+			status: "Thường trú",
+			head_name: "NGUYỄN VĂN B",
+			members_count: 4,
+			added_members: [],
+			updated_members: [
+				{
+					id: "7f5c4df5-121c-4710-96dc-01d138ebdd5a",
+					full_name: "NGUYỄN VĂN A",
+					relationship: "Thành viên",
+					changes: {
+						dob: {
+							from: "11/01/1976",
+							to: "11/01/1957",
+						},
+					},
+				},
+			],
+			removed_members: [],
+		},
+		ip_address: "127.0.0.1",
+		created_at: new Date().toISOString(),
+		description: "Cập nhật hộ khẩu",
+	},
 ];
 
 vi.mock("../../../AppContext", () => ({
@@ -91,7 +134,7 @@ vi.mock("../../../api/auditApi", () => ({
 			Promise.resolve({
 				data: MOCK_LOGS,
 				pagination: {
-					total: 3,
+					total: MOCK_LOGS.length,
 					page: 1,
 					limit: 50,
 					totalPages: 1,
@@ -196,5 +239,32 @@ describe("AuditLogView Component", () => {
 
 		expect(screen.getByText(/Hộ Nguyễn Văn Bình/i)).toBeInTheDocument();
 		expect(screen.queryByText(/Hôm qua •/i)).toBeNull();
+	});
+
+	it("6. Hiển thị chi tiết biến động updated_members khi cập nhật nhân khẩu trong hộ", async () => {
+		render(<AuditLogView />);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText(/Cập nhật thông tin 1 nhân khẩu \(NGUYỄN VĂN A\)/i),
+			).toBeInTheDocument();
+		});
+
+		const eventRow = screen.getByText(
+			/Cập nhật thông tin 1 nhân khẩu \(NGUYỄN VĂN A\)/i,
+		);
+		fireEvent.click(eventRow);
+
+		expect(
+			screen.getByText(/Thay đổi thông tin nhân khẩu trong hộ \(1\):/i),
+		).toBeInTheDocument();
+		expect(screen.getByText("NGUYỄN VĂN A")).toBeInTheDocument();
+		expect(screen.getByText("11/01/1976")).toBeInTheDocument();
+		expect(screen.getByText("11/01/1957")).toBeInTheDocument();
+		expect(
+			screen.queryByText(
+				/Không có trường dữ liệu văn bản thay đổi trực tiếp/i,
+			),
+		).toBeNull();
 	});
 });

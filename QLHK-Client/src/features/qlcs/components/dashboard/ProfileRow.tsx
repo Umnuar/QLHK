@@ -16,6 +16,7 @@ import { createPortal } from "react-dom";
 import { useApp } from "@/AppContext";
 import { TABLE_STYLES } from "@/components/common/tableStyles";
 import type { HtxhProfile, Profile, TabType } from "@/types";
+import { calculateAge } from "@/utils/date";
 
 export type TableProfile = (Profile | HtxhProfile) & Record<string, unknown>;
 
@@ -97,13 +98,45 @@ export const ProfileRow = React.memo(function ProfileRow({
 	]);
 
 	const milestoneText = useMemo(() => {
+		if (activeTab === "chuctho") {
+			const targetYear =
+				Number(profile.calculation_year || profile.calculationYear) ||
+				new Date().getFullYear();
+			const age = profile.dob ? calculateAge(profile.dob, targetYear) : 0;
+			const m = milestone[0];
+
+			if (age >= 100) {
+				return age > 100 ? `Trên 100 tuổi (${age} tuổi)` : "Tròn 100 tuổi";
+			}
+			if (age > 0) {
+				const isRound = [60, 65, 70, 75, 80, 85, 90, 95].includes(age);
+				if (isRound) {
+					return `Tròn ${age} tuổi`;
+				}
+				if (m) {
+					return `${age} tuổi (Mốc ${m})`;
+				}
+				return `${age} tuổi`;
+			}
+			if (milestone.length > 0) {
+				if (milestone.includes(">100")) return "Trên 100 tuổi";
+				return `Tròn ${milestone.join(", ")} tuổi`;
+			}
+			return "—";
+		}
 		if (milestone.length > 0) {
 			if (milestone.includes(">100") && milestone.length === 1)
 				return "Trên 100 tuổi";
 			return `Tròn ${milestone.join(", ").replace(">100", "Trên 100")} tuổi`;
 		}
 		return "—";
-	}, [milestone]);
+	}, [
+		activeTab,
+		milestone,
+		profile.calculation_year,
+		profile.calculationYear,
+		profile.dob,
+	]);
 
 	const maskCccd = (cccdStr?: string | number | null) => {
 		if (!cccdStr) return "—";
@@ -115,12 +148,7 @@ export const ProfileRow = React.memo(function ProfileRow({
 
 	const classificationLabel = useMemo(() => {
 		if (activeTab === "chuctho") {
-			if (milestone.length > 0) {
-				if (milestone.includes(">100") && milestone.length === 1)
-					return "Trên 100 tuổi";
-				return `Tròn ${milestone.join(", ").replace(">100", ">100")} tuổi`;
-			}
-			return "Chúc thọ";
+			return milestoneText !== "—" ? milestoneText : "Chúc thọ";
 		}
 		if (profile.age75plus) return "Đủ 75 tuổi+";
 		if (profile.age70to74poor) return "70-74 nghèo";
@@ -129,7 +157,7 @@ export const ProfileRow = React.memo(function ProfileRow({
 		if (profile.huuTuatBaoHiem || profile.huu_tuat_bao_hiem) return "Hưu, Tuất";
 		if (profile.nguoiCoCong || profile.nguoi_co_cong) return "Người có công";
 		return "HTXH";
-	}, [activeTab, milestone, profile]);
+	}, [activeTab, milestoneText, profile]);
 
 	const handleGiftToggle = async (e: React.MouseEvent) => {
 		e.stopPropagation();

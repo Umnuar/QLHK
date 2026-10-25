@@ -12,7 +12,9 @@ use uuid::Uuid;
 
 use crate::{
     middlewares::auth::Claims,
-    models::audit::{AuditLogFilter, AuditLogResponse, PaginatedResponse, PaginationMeta},
+    models::audit::{
+        AuditLogFilter, AuditLogRow, AuditLogResponse, PaginatedResponse, PaginationMeta,
+    },
     state::AppState,
 };
 
@@ -219,8 +221,8 @@ pub async fn get_audit_logs(
     select_builder.push(" OFFSET ");
     select_builder.push_bind(offset);
 
-    let logs: Vec<AuditLogResponse> = match select_builder
-        .build_query_as::<AuditLogResponse>()
+    let raw_logs: Vec<AuditLogRow> = match select_builder
+        .build_query_as::<AuditLogRow>()
         .fetch_all(&state.pool)
         .await
     {
@@ -236,6 +238,8 @@ pub async fn get_audit_logs(
                 .into_response();
         }
     };
+
+    let logs: Vec<AuditLogResponse> = raw_logs.into_iter().map(AuditLogResponse::from).collect();
 
     let total_pages = if total == 0 {
         0
@@ -284,13 +288,13 @@ pub async fn get_audit_log_by_id(
     }
 
     match select_builder
-        .build_query_as::<AuditLogResponse>()
+        .build_query_as::<AuditLogRow>()
         .fetch_optional(&state.pool)
         .await
     {
         Ok(Some(log)) => Json(json!({
             "success": true,
-            "data": log
+            "data": AuditLogResponse::from(log)
         }))
         .into_response(),
         Ok(None) => (

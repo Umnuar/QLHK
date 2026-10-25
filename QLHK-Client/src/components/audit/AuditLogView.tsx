@@ -137,10 +137,25 @@ function formatValue(val: any): string {
 	return String(val);
 }
 
+function parseValues(val: any): any {
+	if (!val) return null;
+	if (typeof val === "object") return val;
+	if (typeof val === "string") {
+		try {
+			return JSON.parse(val);
+		} catch {
+			return null;
+		}
+	}
+	return null;
+}
+
 function computeFieldDiffs(oldVals: any, newVals: any): FieldDiff[] {
 	if (!oldVals && !newVals) return [];
-	const oldObj = typeof oldVals === "object" && oldVals !== null ? oldVals : {};
-	const newObj = typeof newVals === "object" && newVals !== null ? newVals : {};
+	const parsedOld = parseValues(oldVals);
+	const parsedNew = parseValues(newVals);
+	const oldObj = typeof parsedOld === "object" && parsedOld !== null ? parsedOld : {};
+	const newObj = typeof parsedNew === "object" && parsedNew !== null ? parsedNew : {};
 
 	const allKeys = Array.from(
 		new Set([...Object.keys(oldObj), ...Object.keys(newObj)]),

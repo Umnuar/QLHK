@@ -544,6 +544,24 @@ pub async fn create_household(
         citizens: created_citizens,
     };
 
+    let audit_pool = state.pool.clone();
+    let audit_new = serde_json::to_string(&response).ok();
+    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    tokio::spawn(async move {
+        let _ = crate::utils::audit::record_audit(
+            &audit_pool,
+            Some(village_id),
+            audit_uid,
+            "CREATE",
+            "household",
+            Some(&household_id.to_string()),
+            None,
+            audit_new.as_deref(),
+            None,
+        )
+        .await;
+    });
+
     (
         StatusCode::CREATED,
         Json(json!({
@@ -864,6 +882,26 @@ pub async fn update_household(
         citizens,
     };
 
+    let audit_pool = state.pool.clone();
+    let audit_old = serde_json::to_string(&current).ok();
+    let audit_new = serde_json::to_string(&response).ok();
+    let audit_vid = updated_hh.village_id;
+    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    tokio::spawn(async move {
+        let _ = crate::utils::audit::record_audit(
+            &audit_pool,
+            Some(audit_vid),
+            audit_uid,
+            "UPDATE",
+            "household",
+            Some(&id.to_string()),
+            audit_old.as_deref(),
+            audit_new.as_deref(),
+            None,
+        )
+        .await;
+    });
+
     Json(json!({
         "message": "Cập nhật hộ khẩu thành công",
         "data": response
@@ -980,6 +1018,25 @@ pub async fn delete_household(
         for cid in citizen_ids {
             let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, cid).await;
         }
+    });
+
+    let audit_pool = state.pool.clone();
+    let audit_old = serde_json::to_string(&current).ok();
+    let audit_vid = current.village_id;
+    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    tokio::spawn(async move {
+        let _ = crate::utils::audit::record_audit(
+            &audit_pool,
+            Some(audit_vid),
+            audit_uid,
+            "DELETE",
+            "household",
+            Some(&id.to_string()),
+            audit_old.as_deref(),
+            None,
+            None,
+        )
+        .await;
     });
 
     Json(json!({ "message": "Xóa mềm hộ khẩu thành công" })).into_response()
@@ -1104,6 +1161,25 @@ pub async fn restore_household(
         }
     });
 
+    let audit_pool = state.pool.clone();
+    let audit_old = serde_json::to_string(&current).ok();
+    let audit_vid = current.village_id;
+    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    tokio::spawn(async move {
+        let _ = crate::utils::audit::record_audit(
+            &audit_pool,
+            Some(audit_vid),
+            audit_uid,
+            "RESTORE",
+            "household",
+            Some(&id.to_string()),
+            audit_old.as_deref(),
+            Some(r#"{"is_deleted":false}"#),
+            None,
+        )
+        .await;
+    });
+
     Json(json!({
         "message": "Khôi phục hộ khẩu thành công",
         "data": { "id": id, "is_deleted": false }
@@ -1173,6 +1249,25 @@ pub async fn hard_delete_household(
             .into_response();
     }
 
+    let audit_pool = state.pool.clone();
+    let audit_vid = _current.village_id;
+    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    let audit_old = serde_json::to_string(&_current).ok();
+    tokio::spawn(async move {
+        let _ = crate::utils::audit::record_audit(
+            &audit_pool,
+            Some(audit_vid),
+            audit_uid,
+            "DELETE",
+            "household",
+            Some(&id.to_string()),
+            audit_old.as_deref(),
+            None,
+            None,
+        )
+        .await;
+    });
+
     Json(json!({
         "message": "Đã xóa vĩnh viễn hộ khẩu",
         "data": { "id": id }
@@ -1190,7 +1285,7 @@ pub async fn batch_delete_households(
     claims_ext: Option<Extension<Claims>>,
     Json(req): Json<BatchDeleteRequest>,
 ) -> Response {
-    let _claims = claims_ext.map(|Extension(c)| c);
+    let claims = claims_ext.map(|Extension(c)| c);
     if req.ids.is_empty() {
         return (
             StatusCode::BAD_REQUEST,
@@ -1231,6 +1326,26 @@ pub async fn batch_delete_households(
         )
             .into_response();
     }
+
+    let audit_pool = state.pool.clone();
+    let audit_ids = req.ids.clone();
+    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    tokio::spawn(async move {
+        for hid in audit_ids {
+            let _ = crate::utils::audit::record_audit(
+                &audit_pool,
+                None,
+                audit_uid,
+                "DELETE",
+                "household",
+                Some(&hid.to_string()),
+                None,
+                None,
+                None,
+            )
+            .await;
+        }
+    });
 
     Json(json!({
         "message": "Đã chuyển vào thùng rác thành công",
@@ -1475,6 +1590,26 @@ pub async fn split_household(
         citizens: new_citizens,
     };
 
+    let audit_pool = state.pool.clone();
+    let audit_new = serde_json::to_string(&response).ok();
+    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    let audit_vid = new_hh.village_id;
+    let audit_nid = new_hh.id;
+    tokio::spawn(async move {
+        let _ = crate::utils::audit::record_audit(
+            &audit_pool,
+            Some(audit_vid),
+            audit_uid,
+            "CREATE",
+            "household",
+            Some(&audit_nid.to_string()),
+            None,
+            audit_new.as_deref(),
+            None,
+        )
+        .await;
+    });
+
     (
         StatusCode::CREATED,
         Json(json!({
@@ -1678,6 +1813,41 @@ pub async fn merge_household(
         citizens: target_citizens,
     };
 
+    let audit_pool = state.pool.clone();
+    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    let audit_src_vid = source.village_id;
+    let audit_old_src = serde_json::to_string(&source).ok();
+    let audit_tgt_id = req.target_household_id;
+    let audit_new_tgt = serde_json::to_string(&response).ok();
+    let audit_tgt_vid = updated_target_hh.village_id;
+    tokio::spawn(async move {
+        let _ = crate::utils::audit::record_audit(
+            &audit_pool,
+            Some(audit_src_vid),
+            audit_uid,
+            "DELETE",
+            "household",
+            Some(&id.to_string()),
+            audit_old_src.as_deref(),
+            None,
+            None,
+        )
+        .await;
+
+        let _ = crate::utils::audit::record_audit(
+            &audit_pool,
+            Some(audit_tgt_vid),
+            audit_uid,
+            "UPDATE",
+            "household",
+            Some(&audit_tgt_id.to_string()),
+            None,
+            audit_new_tgt.as_deref(),
+            None,
+        )
+        .await;
+    });
+
     Json(json!({
         "message": "Nhập hộ khẩu thành công",
         "data": response
@@ -1870,6 +2040,25 @@ pub async fn change_head(
         village,
         citizens,
     };
+
+    let audit_pool = state.pool.clone();
+    let audit_vid = updated_household.village_id;
+    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    let audit_new = serde_json::to_string(&response).ok();
+    tokio::spawn(async move {
+        let _ = crate::utils::audit::record_audit(
+            &audit_pool,
+            Some(audit_vid),
+            audit_uid,
+            "UPDATE",
+            "household",
+            Some(&id.to_string()),
+            None,
+            audit_new.as_deref(),
+            None,
+        )
+        .await;
+    });
 
     Json(json!({
         "message": "Thay đổi chủ hộ thành công",

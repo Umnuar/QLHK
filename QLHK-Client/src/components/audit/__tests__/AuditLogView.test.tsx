@@ -127,10 +127,9 @@ describe("AuditLogView Component", () => {
 			expect(screen.getByText("Lượt cập nhật")).toBeInTheDocument();
 			expect(screen.getAllByText("Thêm mới").length).toBeGreaterThanOrEqual(1);
 			expect(screen.getByText("Xóa / Khôi phục")).toBeInTheDocument();
+			expect(screen.getByText(/Hộ Nguyễn Văn Bình/i)).toBeInTheDocument();
+			expect(screen.getByText(/Nhân khẩu Lê Minh Khôi/i)).toBeInTheDocument();
 		});
-
-		expect(screen.getByText(/Hộ Nguyễn Văn Bình/i)).toBeInTheDocument();
-		expect(screen.getByText(/Nhân khẩu Lê Minh Khôi/i)).toBeInTheDocument();
 	});
 
 	it("2. Nhóm sự kiện theo ngày rõ ràng (Hôm nay, Hôm qua)", async () => {

@@ -51,13 +51,13 @@
   - Diff Budget: <= 200 gross LOC (Actual: 153 LOC)
   - Verification: `cd QLHK/QLHK-Client; npx tsc --noEmit` (Passed, 0 errors)
   - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit` (Passed, 0 errors)
-- [ ] Step 6: Upgrade QLHK ImportPreviewModal to 3-Step Wizard
+- [x] Step 6: Upgrade QLHK ImportPreviewModal to 3-Step Wizard
   - Target Files: `QLHK/QLHK-Client/src/components/excel/ImportPreviewModal.tsx`
   - Assigned Role: `.agents/frontend-developer.md`
   - Role Focus: Integrate multi-step navigation: Upload -> Khớp cột -> Xem trước & Xác nhận
-  - Diff Budget: <= 200 gross LOC
-  - Verification: `cd QLHK/QLHK-Client; npx vitest run src/components/excel/__tests__/ImportPreviewModal.test.tsx`
-  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit`
+  - Diff Budget: <= 200 gross LOC (Actual: 124 LOC)
+  - Verification: `cd QLHK/QLHK-Client; npx vitest run src/components/excel/__tests__/ImportPreviewModal.test.tsx` (Passed)
+  - Static Check: `cd QLHK/QLHK-Client; npx tsc --noEmit` (Passed, 0 errors)
 - [ ] Step 7: Regression Tests & Verification
   - Target Files: `QLHK/QLHK-Client/src/utils/__tests__/householdExcelMapping.test.ts`, `QLHK/QLHK-Client/src/components/excel/__tests__/ImportPreviewModal.test.tsx`
   - Assigned Role: `.agents/test-engineer.md`

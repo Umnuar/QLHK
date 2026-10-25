@@ -15,9 +15,17 @@ import type React from "react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { loadXlsx } from "../../utils/fileExport";
-import { type ParsedExcelRow, parseExcelSheet } from "../../utils/excelParser";
+import {
+	type ParsedExcelRow,
+	parseExcelSheet,
+	suggestHouseholdColumnMapping,
+	parseExcelWithHouseholdMapping,
+} from "../../utils/excelParser";
+import { ColumnMappingStep } from "./ColumnMappingStep";
 import { CustomSelect } from "../common/CustomSelect";
 import { formatVietnameseNumber } from "../common/tableStyles";
+
+export type ImportWizardStep = "upload" | "mapping" | "preview";
 
 export interface ImportPreviewModalProps {
 	isOpen: boolean;
@@ -40,6 +48,11 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 	const [internalParsedRows, setInternalParsedRows] = useState<
 		ParsedExcelRow[]
 	>([]);
+	const [currentStep, setCurrentStep] = useState<ImportWizardStep>("upload");
+	const [extractedHeaders, setExtractedHeaders] = useState<string[]>([]);
+	const [sampleRow, setSampleRow] = useState<Record<string, any>>({});
+	const [rawExcelRecords, setRawExcelRecords] = useState<Record<string, any>[]>([]);
+	const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
 	const [isDragging, setIsDragging] = useState(false);
 	const [dropError, setDropError] = useState<string | null>(null);
 	const [importPage, setImportPage] = useState(1);
@@ -83,9 +96,32 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 				defval: "",
 			});
 
-			const normalizedRows = parseExcelSheet(rawJson);
+			let headerIdx = 0;
+			for (let r = 0; r < Math.min(rawJson.length, 10); r++) {
+				const str = (rawJson[r] || []).join(" ").toLowerCase();
+				if (str.includes("ho ten") || str.includes("stt") || str.includes("ngay sinh")) {
+					headerIdx = r;
+					break;
+				}
+			}
+			const headerArr = (rawJson[headerIdx] || []).map((c) => String(c || "").trim());
+			const headers = headerArr.filter((c, idx, arr) => c !== "" && arr.indexOf(c) === idx);
+			const sampleObj: Record<string, any> = {};
+			const recordsList = rawJson.slice(headerIdx + 1).map((row) => {
+				const obj: Record<string, any> = {};
+				headerArr.forEach((h, cIdx) => { if (h) obj[h] = row[cIdx]; });
+				if (!Object.keys(sampleObj).length && row.some(Boolean)) Object.assign(sampleObj, obj);
+				return obj;
+			});
+			const autoSuggested = suggestHouseholdColumnMapping(headers);
+			setExtractedHeaders(headers);
+			setSampleRow(sampleObj);
+			setRawExcelRecords(recordsList);
+			setColumnMapping(autoSuggested);
 			setInternalFile(selectedFile);
-			setInternalParsedRows(normalizedRows);
+			const defaultParsed = parseExcelWithHouseholdMapping(recordsList, autoSuggested);
+			setInternalParsedRows(defaultParsed.rows.length ? defaultParsed.rows : parseExcelSheet(rawJson));
+			setCurrentStep("mapping");
 			setImportPage(1);
 			setShowOnlyIssues(false);
 		} catch (err) {
@@ -116,6 +152,21 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 
 	const activeFile = file || internalFile;
 
+	const effectiveStep: ImportWizardStep = !activeFile
+		? "upload"
+		: (parsedData && parsedData.length > 0) || currentStep === "preview"
+			? "preview"
+			: "mapping";
+
+	const handleProceedToPreview = () => {
+		const defaultParsed = parseExcelWithHouseholdMapping(
+			rawExcelRecords,
+			columnMapping,
+		);
+		setInternalParsedRows(defaultParsed.rows);
+		setCurrentStep("preview");
+	};
+
 	const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const f = e.target.files?.[0];
 		if (f) {
@@ -131,6 +182,7 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 		setInternalParsedRows([]);
 		setDropError(null);
 		setShowOnlyIssues(false);
+		setCurrentStep("upload");
 		onClose();
 	};
 
@@ -361,9 +413,15 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 				<div className="px-6 py-2.5 bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-center gap-2 sm:gap-6 text-xs shrink-0 select-none">
 					{[
 						{ num: 1, label: "Chọn tệp" },
-						{ num: 2, label: "Xem trước" },
+						{ num: 2, label: "Khớp cột" },
+						{ num: 3, label: "Xem trước & Xác nhận" },
 					].map((st, idx, arr) => {
-						const currentStepNum = activeFile ? 2 : 1;
+						const stepOrder: Record<ImportWizardStep, number> = {
+							upload: 1,
+							mapping: 2,
+							preview: 3,
+						};
+						const currentStepNum = stepOrder[effectiveStep];
 						const isCompleted = currentStepNum > st.num;
 						const isActive = currentStepNum === st.num;
 						return (
@@ -376,9 +434,12 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 											setInternalParsedRows([]);
 											setDropError(null);
 											setShowOnlyIssues(false);
+											setCurrentStep("upload");
+										} else if (st.num === 2 && activeFile) {
+											setCurrentStep("mapping");
 										}
 									}}
-									disabled={st.num === 2 && !activeFile}
+									disabled={st.num > currentStepNum && !isCompleted}
 									className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${
 										isActive
 											? "bg-emerald-600 text-white shadow-xs"
@@ -482,6 +543,21 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 									</button>
 								</div>
 							</div>
+						</div>
+					) : effectiveStep === "mapping" ? (
+						<div className="p-4 sm:p-6 overflow-y-auto">
+							<ColumnMappingStep
+								headers={extractedHeaders}
+								sampleRow={sampleRow}
+								mapping={columnMapping}
+								onMappingChange={(fieldKey, header) =>
+									setColumnMapping((prev) => ({ ...prev, [fieldKey]: header }))
+								}
+								onAutoSuggest={() =>
+									setColumnMapping(suggestHouseholdColumnMapping(extractedHeaders))
+								}
+								onReset={() => setColumnMapping({})}
+							/>
 						</div>
 					) : (
 				<>
@@ -734,7 +810,32 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 			)}
 		</div>
 
-		{activeFile && (
+		{activeFile && effectiveStep === "mapping" && (
+			<div className="p-4 sm:p-5 border-t border-slate-200/90 dark:border-slate-800/90 bg-slate-50/70 dark:bg-slate-950/60 shrink-0 flex items-center justify-between gap-4 w-full whitespace-nowrap">
+				<button
+					type="button"
+					onClick={() => {
+						setInternalFile(null);
+						setInternalParsedRows([]);
+						setCurrentStep("upload");
+					}}
+					className="h-10 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-xs transition-colors cursor-pointer active:scale-95"
+				>
+					Chọn lại tệp
+				</button>
+				<button
+					type="button"
+					onClick={handleProceedToPreview}
+					disabled={!columnMapping.fullName || !columnMapping.dob}
+					className="h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-xs transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer active:scale-95"
+				>
+					<span>Tiếp tục xem trước</span>
+					<ChevronRight className="w-4 h-4" />
+				</button>
+			</div>
+		)}
+
+		{activeFile && effectiveStep !== "mapping" && (
 			<div className="p-4 sm:p-5 border-t border-slate-200/90 dark:border-slate-800/90 bg-slate-50/70 dark:bg-slate-950/60 shrink-0 flex items-center justify-between gap-4 w-full whitespace-nowrap overflow-x-auto">
 				<div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 shrink-0">
 					<span>Hiển thị</span>
@@ -779,6 +880,15 @@ export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 				</div>
 
 				<div className="flex items-center gap-2 shrink-0">
+					{activeFile && !parsedData?.length && (
+						<button
+							type="button"
+							onClick={() => setCurrentStep("mapping")}
+							className="h-10 px-3.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-xs transition-colors cursor-pointer active:scale-95"
+						>
+							Sửa khớp cột
+						</button>
+					)}
 					<button
 						type="button"
 						onClick={handleClose}

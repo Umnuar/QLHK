@@ -1,9 +1,8 @@
-import clsx from "@/utils/clsx";
+import clsx from "../../../../utils/clsx";
 import {
 	Activity,
 	CheckCircle2,
 	Circle,
-	Edit3,
 	Eye,
 	EyeOff,
 	Loader2,
@@ -12,10 +11,9 @@ import {
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { useApp } from "@/AppContext";
-import { TABLE_STYLES } from "@/components/common/tableStyles";
-import type { HtxhProfile, Profile, TabType } from "@/types";
-import { calculateAge } from "@/utils/date";
+import { TABLE_STYLES } from "../../../../components/common/tableStyles";
+import type { HtxhProfile, Profile, TabType } from "../../../../types";
+import { calculateAge } from "../../../../utils/date";
 
 export type TableProfile = (Profile | HtxhProfile) & Record<string, unknown>;
 
@@ -54,15 +52,8 @@ export const ProfileRow = React.memo(function ProfileRow({
 	panelClass,
 	softTextClass,
 }: ProfileRowProps) {
-	const { villages } = useApp();
 	const [showCccd, setShowCccd] = useState(false);
 	const [isTogglingGift, setIsTogglingGift] = useState(false);
-
-	const villageName = useMemo(() => {
-		const vid = profile.village_id || profile.villageId;
-		if (!vid) return null;
-		return villages.find((v) => v.id === vid)?.name || null;
-	}, [profile.village_id, profile.villageId, villages]);
 
 	const milestone = useMemo(() => {
 		const m: string[] = [];
@@ -294,29 +285,22 @@ export const ProfileRow = React.memo(function ProfileRow({
 			</td>
 
 			<td className="py-2.5 px-3 text-left border-b border-slate-100 dark:border-slate-800/80 align-middle">
-				<div className="flex items-start gap-1.5">
-					{villageName ? (
-						<span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-emerald-50/70 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/70 shrink-0 mt-0.5">
-							{villageName}
-						</span>
-					) : null}
-					<span
-						className="text-xs text-slate-700 dark:text-slate-300 font-medium line-clamp-2 leading-relaxed break-words"
-						title={String(
-							profile.residence ||
-								profile.currentAddress ||
-								profile.current_address ||
-								"—",
-						)}
-					>
-						{String(
-							profile.residence ||
-								profile.currentAddress ||
-								profile.current_address ||
-								"—",
-						)}
-					</span>
-				</div>
+				<span
+					className="text-xs text-slate-700 dark:text-slate-300 font-medium line-clamp-2 leading-relaxed break-words"
+					title={String(
+						profile.residence ||
+							profile.currentAddress ||
+							profile.current_address ||
+							"—",
+					)}
+				>
+					{String(
+						profile.residence ||
+							profile.currentAddress ||
+							profile.current_address ||
+							"—",
+					)}
+				</span>
 			</td>
 
 			{activeTab === "chuctho" ? (
@@ -508,18 +492,6 @@ export const ProfileRow = React.memo(function ProfileRow({
 							<span>Chưa nhận</span>
 						</>
 					)}
-				</button>
-			</td>
-
-			<td className="w-20 py-1 px-2 text-center border-b border-slate-100 dark:border-slate-800/60 whitespace-nowrap">
-				<button
-					type="button"
-					onClick={() => onEdit(profile)}
-					title="Chỉnh sửa ghi chú hồ sơ"
-					className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-emerald-700 dark:text-emerald-400 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all cursor-pointer shadow-2xs active:scale-95"
-				>
-					<Edit3 className="w-3.5 h-3.5" strokeWidth={1.75} />
-					<span>Sửa</span>
 				</button>
 			</td>
 		</tr>

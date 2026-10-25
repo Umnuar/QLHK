@@ -7,8 +7,10 @@ import { useModal } from "@/hooks/useModal";
 import type { Household } from "@/types";
 
 export const RecycleBinPage: React.FC = () => {
-	const { setActiveTab, villages } = useApp();
+	const { setActiveTab, villages, user, selectedVillageId } = useApp();
 	const { showModal } = useModal();
+	const isAdmin = user?.role === "admin";
+	const activeVillageId = isAdmin ? (selectedVillageId || undefined) : (user?.village_id || undefined);
 
 	const [deletedHouseholds, setDeletedHouseholds] = useState<Household[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -21,7 +23,11 @@ export const RecycleBinPage: React.FC = () => {
 	const fetchDeleted = useCallback(async () => {
 		setLoading(true);
 		try {
-			const res = await householdApi.getRecycleBin({ page, limit });
+			const res = await householdApi.getRecycleBin({
+				page,
+				limit,
+				village_id: activeVillageId,
+			});
 			setDeletedHouseholds(res.data);
 			setTotal(res.pagination.total);
 			setTotalPages(res.pagination.totalPages);
@@ -30,7 +36,11 @@ export const RecycleBinPage: React.FC = () => {
 		} finally {
 			setLoading(false);
 		}
-	}, [page, limit]);
+	}, [page, limit, activeVillageId]);
+
+	useEffect(() => {
+		setPage(1);
+	}, [activeVillageId]);
 
 	useEffect(() => {
 		fetchDeleted();

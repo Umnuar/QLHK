@@ -9,6 +9,7 @@
     "core:default",
     "core:app:default",
     "core:webview:default",
+    "core:webview:allow-set-webview-zoom",
     "core:window:default",
     "dialog:default",
     "fs:default",

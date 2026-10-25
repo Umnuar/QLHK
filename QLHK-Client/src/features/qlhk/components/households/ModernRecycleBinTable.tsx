@@ -1,5 +1,5 @@
 import type React from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
 	AlertTriangle,
@@ -36,6 +36,7 @@ import { normalizeUnaccented } from "@/utils/vietnamese";
 import { TablePagination } from "@/components/common/TablePagination";
 import { formatVietnameseNumber } from "@/components/common/tableStyles";
 import { CustomSelect } from "@/components/common/CustomSelect";
+import { useApp } from "@/AppContext";
 import { CitizenModal } from "./CitizenModal";
 
 export interface ModernRecycleBinTableProps {
@@ -86,8 +87,12 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 	onRefresh,
 	onBack,
 }) => {
+	const { user, selectedVillageId, setSelectedVillageId } = useApp();
+	const isAdmin = user?.role === "admin";
+	const currentVillageId = isAdmin ? (selectedVillageId || "all") : (user?.village_id || "all");
+
 	const [searchTerm, setSearchTerm] = useState("");
-	const [selectedVillage, setSelectedVillage] = useState("all");
+	const [selectedVillage, setSelectedVillage] = useState(currentVillageId);
 	const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
 	const [sortField, setSortField] = useState<SortField>("deleted_at");
 	const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -96,6 +101,17 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 	const [isExporting, setIsExporting] = useState(false);
 	const [inspectingHousehold, setInspectingHousehold] = useState<Household | null>(null);
 	const [viewingCitizen, setViewingCitizen] = useState<Partial<Person> | null>(null);
+
+	useEffect(() => {
+		const targetVillage = isAdmin ? (selectedVillageId || "all") : (user?.village_id || "all");
+		setSelectedVillage(targetVillage);
+	}, [selectedVillageId, user?.village_id, isAdmin]);
+
+	const handleVillageChange = (val: string) => {
+		if (!isAdmin) return;
+		setSelectedVillage(val);
+		setSelectedVillageId(val === "all" ? "" : val);
+	};
 
 	const enrichedHouseholds = useMemo(() => {
 		const now = Date.now();
@@ -510,18 +526,25 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 					</div>
 
 					<div className="flex items-center gap-2 flex-wrap">
-						<div className="w-56 shrink-0">
-							<CustomSelect
-								variant="filter"
-								size="sm"
-								value={selectedVillage}
-								onChange={(val) => setSelectedVillage(String(val))}
-								options={villageSelectOptions}
-								placeholder="Toàn xã (Tất cả thôn)"
-								className="!h-10 rounded-xl text-xs font-bold"
-								containerClassName="w-full"
-							/>
-						</div>
+						{isAdmin ? (
+							<div className="w-56 shrink-0">
+								<CustomSelect
+									variant="filter"
+									size="sm"
+									value={selectedVillage}
+									onChange={(val) => handleVillageChange(String(val))}
+									options={villageSelectOptions}
+									placeholder="Toàn xã (Tất cả thôn)"
+									className="!h-10 rounded-xl text-xs font-bold"
+									containerClassName="w-full"
+								/>
+							</div>
+						) : (
+							<div className="h-10 px-3.5 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 inline-flex items-center gap-1.5 shrink-0 shadow-xs">
+								<MapPin className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+								<span>Thôn: {villages.find((v) => v.id === user?.village_id)?.name || "Thôn được phân công"}</span>
+							</div>
+						)}
 
 						<div className="flex items-center gap-1.5 flex-wrap">
 							<button
@@ -601,7 +624,8 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 							type="button"
 							onClick={() => {
 								setSearchTerm("");
-								setSelectedVillage("all");
+								const resetVil = isAdmin ? (selectedVillageId || "all") : (user?.village_id || "all");
+								setSelectedVillage(resetVil);
 								setQuickFilter("all");
 							}}
 							className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
@@ -952,10 +976,10 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 
 			{selectedIds.length > 0 &&
 				createPortal(
-					<div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[900] bg-slate-900 dark:bg-slate-800 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-4 animate-in slide-in-from-bottom duration-200 select-none">
-						<div className="flex items-center gap-2 pr-2 border-r border-slate-700">
+					<div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[900] bg-white/95 dark:bg-slate-900/95 text-slate-800 dark:text-white px-5 py-3 rounded-2xl shadow-xl dark:shadow-2xl border border-slate-200/90 dark:border-slate-800 backdrop-blur-md flex items-center gap-4 animate-in slide-in-from-bottom duration-200 select-none">
+						<div className="flex items-center gap-2 pr-2 border-r border-slate-200 dark:border-slate-700">
 							<span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-							<span className="text-xs font-bold">
+							<span className="text-xs font-bold text-slate-800 dark:text-white">
 								Đã chọn {selectedIds.length} hộ
 							</span>
 						</div>
@@ -983,7 +1007,7 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 						<button
 							type="button"
 							onClick={onToggleSelectAll}
-							className="p-1.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
+							className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
 							title="Bỏ chọn"
 						>
 							<X className="w-4 h-4" />

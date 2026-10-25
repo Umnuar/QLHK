@@ -52,14 +52,14 @@ export interface ProfileFilterBarProps {
 
 const CHUCTHO_MILESTONE_OPTIONS = [
 	{ value: "", label: "Tất cả độ tuổi" },
-	{ value: "age60", label: "Tròn 60 tuổi" },
-	{ value: "age65", label: "Tròn 65 tuổi" },
-	{ value: "age70", label: "Tròn 70 tuổi" },
-	{ value: "age75", label: "Tròn 75 tuổi" },
-	{ value: "age80", label: "Tròn 80 tuổi" },
-	{ value: "age85", label: "Tròn 85 tuổi" },
-	{ value: "age90", label: "Tròn 90 tuổi" },
-	{ value: "age95", label: "Tròn 95 tuổi" },
+	{ value: "age60", label: "Mốc 60 (60 - 64 tuổi)" },
+	{ value: "age65", label: "Mốc 65 (65 - 69 tuổi)" },
+	{ value: "age70", label: "Mốc 70 (70 - 74 tuổi)" },
+	{ value: "age75", label: "Mốc 75 (75 - 79 tuổi)" },
+	{ value: "age80", label: "Mốc 80 (80 - 84 tuổi)" },
+	{ value: "age85", label: "Mốc 85 (85 - 89 tuổi)" },
+	{ value: "age90", label: "Mốc 90 (90 - 94 tuổi)" },
+	{ value: "age95", label: "Mốc 95 (95 - 99 tuổi)" },
 	{ value: "age100", label: "Tròn 100 tuổi" },
 	{ value: "age_over_100", label: "Trên 100 tuổi" },
 ];
@@ -102,6 +102,29 @@ const STATUS_GIFT_OPTIONS = [
 	{ value: "received", label: "Đã nhận quà" },
 	{ value: "unreceived", label: "Chưa nhận quà" },
 ];
+
+const formatBirthDateInput = (val: string): string => {
+	const cleaned = val.replace(/[-.]/g, "/").replace(/[^\d/]/g, "");
+	const digitsOnly = cleaned.replace(/\//g, "");
+	if (digitsOnly.length === 8 && !cleaned.includes("/")) {
+		return `${digitsOnly.slice(0, 2)}/${digitsOnly.slice(2, 4)}/${digitsOnly.slice(4, 8)}`;
+	}
+	return cleaned.slice(0, 10);
+};
+
+const normalizeBirthDate = (val: string): string => {
+	const trimmed = val.trim();
+	const parts = trimmed.split("/");
+	if (parts.length === 3) {
+		const day = parts[0].padStart(2, "0");
+		const month = parts[1].padStart(2, "0");
+		const year = parts[2];
+		if (day.length === 2 && month.length === 2 && (year.length === 4 || year.length === 2)) {
+			return `${day}/${month}/${year}`;
+		}
+	}
+	return trimmed;
+};
 
 export const ProfileFilterBar: React.FC<ProfileFilterBarProps> = ({
 	activeTab,
@@ -202,7 +225,6 @@ export const ProfileFilterBar: React.FC<ProfileFilterBarProps> = ({
 
 	return (
 		<div className="relative z-30 flex flex-wrap items-center gap-2 bg-white dark:bg-slate-900 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs transition-colors duration-150">
-
 			<div className="relative w-56 sm:w-80 shrink-0">
 				<Search
 					className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
@@ -265,7 +287,7 @@ export const ProfileFilterBar: React.FC<ProfileFilterBarProps> = ({
 			</div>
 
 			{activeTab === "chuctho" && (
-				<div className="relative w-36 sm:w-44 shrink-0">
+				<div className="relative w-48 sm:w-56 shrink-0">
 					<Calendar
 						className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
 							dateFilter?.trim()
@@ -277,12 +299,22 @@ export const ProfileFilterBar: React.FC<ProfileFilterBarProps> = ({
 					<input
 						type="text"
 						value={dateFilter || ""}
-						onChange={(e) => onDateChange?.(e.target.value)}
-						placeholder="Lọc ngày sinh..."
+						maxLength={10}
+						title="Lọc ngày sinh (VD: 22/11/1966 hoặc 1966)"
+						onChange={(e) => onDateChange?.(formatBirthDateInput(e.target.value))}
+						onBlur={() => {
+							if (dateFilter) {
+								const normalized = normalizeBirthDate(dateFilter);
+								if (normalized !== dateFilter) {
+									onDateChange?.(normalized);
+								}
+							}
+						}}
+						placeholder="VD: 22/11/1966 hoặc 1966"
 						className={`w-full h-8 sm:h-9 pl-8.5 pr-8 rounded-xl text-xs placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden transition-all ${
 							dateFilter?.trim()
 								? "bg-emerald-50/70 dark:bg-emerald-950/50 border border-emerald-500/80 dark:border-emerald-600 text-emerald-900 dark:text-emerald-200 font-bold focus:ring-2 focus:ring-emerald-500/20"
-								: "bg-white dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-medium hover:border-slate-300 dark:hover:border-slate-600 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+							: "bg-white dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-medium hover:border-slate-300 dark:hover:border-slate-600 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
 						}`}
 					/>
 					{dateFilter && (
@@ -417,7 +449,6 @@ export const ProfileFilterBar: React.FC<ProfileFilterBarProps> = ({
 
 			{Boolean(selectedCount && selectedCount > 0) && (
 				<div className="ml-auto flex items-center gap-2 shrink-0 animate-in fade-in flex-wrap relative">
-
 					<div className="relative" ref={bulkMenuRef}>
 						<button
 							type="button"

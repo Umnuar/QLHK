@@ -520,4 +520,100 @@ describe("CitizenModal Component", () => {
 		expect(relInput.value).toBe("Vợ");
 		expect(screen.queryByText("Chủ hộ gia đình")).toBeNull();
 	});
+
+	it("15. Khoa toan bo cac chinh sach huu tri khi nghe nghiep khong phai Huu tri", () => {
+		render(
+			<CitizenModal
+				isOpen={true}
+				initialMember={{
+					id: "mem-farm",
+					full_name: "Y Lan",
+					occupation: "Làm nông",
+					dob: "1980",
+				}}
+				onClose={mockOnClose}
+				onSave={mockOnSave}
+			/>,
+		);
+
+		const pensionTabBtn = screen.getByLabelText(/Hưu trí & Chính sách/i);
+		fireEvent.click(pensionTabBtn);
+
+		expect(screen.getByText(/Mục Hưu trí đang bị khóa/i)).toBeInTheDocument();
+		expect(screen.getByText(/Đặt nghề nghiệp: Hưu trí để mở khóa/i)).toBeInTheDocument();
+
+		const allCheckboxes = screen.getAllByRole("checkbox") as HTMLInputElement[];
+		expect(allCheckboxes.length).toBe(6);
+		allCheckboxes.forEach((cb) => {
+			expect(cb).toBeDisabled();
+		});
+	});
+
+	it("16. Mo khoa toan bo chinh sach khi nghe nghiep la Huu tri va cho phep tick", () => {
+		render(
+			<CitizenModal
+				isOpen={true}
+				initialMember={{
+					id: "mem-retiree",
+					full_name: "A Thao",
+					occupation: "Hưu trí",
+					dob: "1955",
+				}}
+				onClose={mockOnClose}
+				onSave={mockOnSave}
+			/>,
+		);
+
+		const pensionTabBtn = screen.getByLabelText(/Hưu trí & Chính sách/i);
+		fireEvent.click(pensionTabBtn);
+
+		expect(screen.getByText(/Đã xác thực nghề nghiệp: Hưu trí/i)).toBeInTheDocument();
+		const allCheckboxes = screen.getAllByRole("checkbox") as HTMLInputElement[];
+		expect(allCheckboxes.length).toBe(6);
+		allCheckboxes.forEach((cb) => {
+			expect(cb).not.toBeDisabled();
+		});
+
+		const huuTriCard = screen.getByText("Hưu, Tuất Bảo hiểm");
+		fireEvent.click(huuTriCard);
+
+		const submitBtn = screen.getByRole("button", { name: /Lưu nhân khẩu/i });
+		fireEvent.click(submitBtn);
+
+		expect(mockOnSave).toHaveBeenCalledWith(
+			expect.objectContaining({
+				occupation: "Hưu trí",
+				pension_policies: expect.arrayContaining(["huu_tuat_bao_hiem"]),
+				huu_tuat_bao_hiem: true,
+			}),
+		);
+	});
+
+	it("17. Nut dat nghe nghiep Huu tri giup chuyen nghe nghiep va mo khoa tuc thi", () => {
+		render(
+			<CitizenModal
+				isOpen={true}
+				initialMember={{
+					id: "mem-teacher",
+					full_name: "Y Men",
+					occupation: "Giáo viên",
+					dob: "1960",
+				}}
+				onClose={mockOnClose}
+				onSave={mockOnSave}
+			/>,
+		);
+
+		const pensionTabBtn = screen.getByLabelText(/Hưu trí & Chính sách/i);
+		fireEvent.click(pensionTabBtn);
+
+		const unlockBtn = screen.getByText(/Đặt nghề nghiệp: Hưu trí để mở khóa/i);
+		fireEvent.click(unlockBtn);
+
+		expect(screen.getByText(/Đã xác thực nghề nghiệp: Hưu trí/i)).toBeInTheDocument();
+		const allCheckboxes = screen.getAllByRole("checkbox") as HTMLInputElement[];
+		allCheckboxes.forEach((cb) => {
+			expect(cb).not.toBeDisabled();
+		});
+	});
 });

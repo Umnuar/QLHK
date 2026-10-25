@@ -1,5 +1,6 @@
 import type React from "react";
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
 	ArrowDown,
 	ArrowRight,
@@ -700,9 +701,6 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 															<div className="font-bold text-slate-800 dark:text-slate-200 truncate">
 																{officer.full_name || officer.username}
 															</div>
-															<div className="text-[10px] text-slate-400 font-mono">
-																@{officer.username}
-															</div>
 														</div>
 													</div>
 												) : (
@@ -938,110 +936,113 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 				</div>
 			)}
 
-			{(isCreateModalOpen || editingVillage) && (
-				<div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 animate-in fade-in">
-					<div
-						className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs transition-opacity cursor-pointer"
-						onClick={() => {
-							setIsCreateModalOpen(false);
-							setEditingVillage(null);
-						}}
-					/>
+			{(isCreateModalOpen || editingVillage) &&
+				typeof document !== "undefined" &&
+				createPortal(
+					<div className="fixed inset-0 !m-0 z-[1000] overflow-y-auto flex items-center justify-center p-4 bg-slate-950/50 dark:bg-black/70 backdrop-blur-sm select-none animate-in fade-in duration-150">
+						<div
+							className="fixed inset-0 bg-transparent cursor-pointer"
+							onClick={() => {
+								setIsCreateModalOpen(false);
+								setEditingVillage(null);
+							}}
+						/>
 
-					<div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 z-10 space-y-5 animate-in zoom-in-95 duration-150">
-						<div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-							<h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-								<MapPin className="w-5 h-5 text-emerald-600" />
-								<span>{editingVillage ? "Cập Nhật Thông Tin Thôn" : "Thêm Thôn Mới"}</span>
-							</h3>
-							<button
-								type="button"
-								onClick={() => {
-									setIsCreateModalOpen(false);
-									setEditingVillage(null);
-								}}
-								className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-							>
-								<X className="w-5 h-5" />
-							</button>
-						</div>
-
-						{formError && (
-							<div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold">
-								{formError}
-							</div>
-						)}
-
-						<div className="space-y-4 text-xs">
-							<div>
-								<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-									Tên Thôn / Làng *
-								</label>
-								<input
-									type="text"
-									value={formName}
-									onChange={(e) => setFormName(e.target.value)}
-									placeholder="Ví dụ: Thôn Kon Xôm Lũy, Thôn 1..."
-									className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-								/>
-							</div>
-
-							<div>
-								<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-									Mã Thôn / Ký Hiệu Viết Tắt (Tùy chọn)
-								</label>
-								<input
-									type="text"
-									value={formCode}
-									onChange={(e) => setFormCode(e.target.value)}
-									placeholder="Ví dụ: KXL, T01..."
-									className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-mono font-bold focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-								/>
-							</div>
-
-							<div>
-								<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-									Cán Bộ Phụ Trách Thôn
-								</label>
-								<select
-									value={formOfficerId}
-									onChange={(e) => setFormOfficerId(e.target.value)}
-									className="w-full h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+						<div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 z-10 space-y-5 animate-in zoom-in-95 duration-150">
+							<div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+								<h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+									<MapPin className="w-5 h-5 text-emerald-600" />
+									<span>{editingVillage ? "Cập Nhật Thông Tin Thôn" : "Thêm Thôn Mới"}</span>
+								</h3>
+								<button
+									type="button"
+									onClick={() => {
+										setIsCreateModalOpen(false);
+										setEditingVillage(null);
+									}}
+									className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
 								>
-									<option value="">-- Chưa phân công cán bộ --</option>
-									{userList.map((u) => (
-										<option key={u.id} value={u.id}>
-											{u.full_name ? `${u.full_name} (@${u.username})` : `@${u.username}`} {u.role === "admin" ? "[Admin]" : ""}
-										</option>
-									))}
-								</select>
+									<X className="w-5 h-5" />
+								</button>
+							</div>
+
+							{formError && (
+								<div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold">
+									{formError}
+								</div>
+							)}
+
+							<div className="space-y-4 text-xs">
+								<div>
+									<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+										Tên Thôn / Làng *
+									</label>
+									<input
+										type="text"
+										value={formName}
+										onChange={(e) => setFormName(e.target.value)}
+										placeholder="Ví dụ: Thôn Kon Xôm Lũy, Thôn 1..."
+										className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+									/>
+								</div>
+
+								<div>
+									<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+										Mã Thôn / Ký Hiệu Viết Tắt (Tùy chọn)
+									</label>
+									<input
+										type="text"
+										value={formCode}
+										onChange={(e) => setFormCode(e.target.value)}
+										placeholder="Ví dụ: KXL, T01..."
+										className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-mono font-bold focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+									/>
+								</div>
+
+								<div>
+									<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+										Cán Bộ Phụ Trách Thôn
+									</label>
+									<select
+										value={formOfficerId}
+										onChange={(e) => setFormOfficerId(e.target.value)}
+										className="w-full h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+									>
+										<option value="">-- Chưa phân công cán bộ --</option>
+										{userList.map((u) => (
+											<option key={u.id} value={u.id}>
+												{u.full_name || u.username} {u.role === "admin" ? "[Admin]" : ""}
+											</option>
+										))}
+									</select>
+								</div>
+							</div>
+
+							<div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+								<button
+									type="button"
+									onClick={() => {
+										setIsCreateModalOpen(false);
+										setEditingVillage(null);
+									}}
+									className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer"
+								>
+									Hủy
+								</button>
+								<button
+									type="button"
+									onClick={handleSaveForm}
+									disabled={formSubmitting}
+									className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
+								>
+									{formSubmitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+									<span>Lưu Thay Đổi</span>
+								</button>
 							</div>
 						</div>
-
-						<div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
-							<button
-								type="button"
-								onClick={() => {
-									setIsCreateModalOpen(false);
-									setEditingVillage(null);
-								}}
-								className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer"
-							>
-								Hủy
-							</button>
-							<button
-								type="button"
-								onClick={handleSaveForm}
-								disabled={formSubmitting}
-								className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
-							>
-								{formSubmitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-								<span>Lưu Thay Đổi</span>
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
+					</div>,
+					document.body,
+				)}
 		</div>
 	);
 };

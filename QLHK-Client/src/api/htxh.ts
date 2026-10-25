@@ -8,6 +8,7 @@ export const htxhApi = {
 			page: params.page ?? 1,
 			limit: params.limit ?? 20,
 			search: params.search?.trim() || undefined,
+			dob: params.dob?.trim() || undefined,
 			status: params.status !== "all" ? params.status : undefined,
 			ageGroup: params.ageGroup || undefined,
 			category: params.ageGroup || undefined,

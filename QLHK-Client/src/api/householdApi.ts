@@ -220,6 +220,8 @@ export const householdApi = {
 	async getRecycleBin(params?: {
 		page?: number;
 		limit?: number;
+		village_id?: string | null;
+		search?: string;
 	}): Promise<HouseholdsResponse> {
 		try {
 			const res = await apiClient.get("/households/recycle-bin", { params });
@@ -235,7 +237,7 @@ export const householdApi = {
 			};
 		} catch {
 			const res = await apiClient.get("/households", {
-				params: { ...params, includeDeleted: "true" },
+				params: { ...params, includeDeleted: "true", villageId: params?.village_id },
 			});
 			const allHouseholds = (res.data?.data || []).map(normalizeHousehold);
 			const deletedOnly = allHouseholds.filter((h: Household) => h.is_deleted);

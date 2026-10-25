@@ -55,20 +55,46 @@ export function parseDobValue(raw: unknown): { dob: string; year: number } | nul
   return null;
 }
 
+export function calculateExactAge(
+  dobRaw: unknown,
+  referenceDate: Date = new Date(),
+): number | null {
+  const parsed = parseDobValue(dobRaw);
+  if (!parsed) return null;
+
+  const [dStr, mStr, yStr] = parsed.dob.split("/");
+  const birthDay = parseInt(dStr, 10);
+  const birthMonth = parseInt(mStr, 10);
+  const birthYear = parseInt(yStr, 10);
+
+  const refYear = referenceDate.getFullYear();
+  const refMonth = referenceDate.getMonth() + 1;
+  const refDay = referenceDate.getDate();
+
+  let age = refYear - birthYear;
+  if (refMonth < birthMonth || (refMonth === birthMonth && refDay < birthDay)) {
+    age--;
+  }
+  return age;
+}
+
 export function computeChucthoMilestones(
-  birthYear: number,
-  calculationYear: number,
+  birthYearOrAge: number,
+  calculationYear?: number,
 ): ChucthoMilestones {
-  const age = calculationYear - birthYear;
+  const age =
+    calculationYear !== undefined
+      ? calculationYear - birthYearOrAge
+      : birthYearOrAge;
   return {
-    age60: age === 60 ? "x" : "",
-    age65: age === 65 ? "x" : "",
-    age70: age === 70 ? "x" : "",
-    age75: age === 75 ? "x" : "",
-    age80: age === 80 ? "x" : "",
-    age85: age === 85 ? "x" : "",
-    age90: age === 90 ? "x" : "",
-    age95: age === 95 ? "x" : "",
+    age60: age >= 60 && age < 65 ? "x" : "",
+    age65: age >= 65 && age < 70 ? "x" : "",
+    age70: age >= 70 && age < 75 ? "x" : "",
+    age75: age >= 75 && age < 80 ? "x" : "",
+    age80: age >= 80 && age < 85 ? "x" : "",
+    age85: age >= 85 && age < 90 ? "x" : "",
+    age90: age >= 90 && age < 95 ? "x" : "",
+    age95: age >= 95 && age < 100 ? "x" : "",
     age100: age === 100 ? "x" : "",
     age_over_100: age > 100 ? "x" : "",
   };

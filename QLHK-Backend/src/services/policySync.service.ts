@@ -1,5 +1,5 @@
 import { prisma } from "../config/prisma";
-import { parseDobValue } from "../utils/age";
+import { calculateExactAge } from "../utils/age";
 import { ChucthoMilestones } from "../types/policy.types";
 
 export const calculateChucthoMilestonesForSync = (age: number): ChucthoMilestones => ({
@@ -19,7 +19,9 @@ export const syncCitizensToPolicy = async (
   calcYear?: number,
   villageId?: string | null,
 ): Promise<{ chucthoCount: number; htxhCount: number }> => {
-  const targetYear = calcYear || new Date().getFullYear();
+  const now = new Date();
+  const targetYear = calcYear || now.getFullYear();
+  const refDate = targetYear === now.getFullYear() ? now : new Date(targetYear, 11, 31);
   const citizenWhere: Record<string, unknown> = {
     is_deleted: false,
     household: {
@@ -46,10 +48,8 @@ export const syncCitizensToPolicy = async (
   let chucthoCount = 0;
   let chucthoStt = 1;
   for (const citizen of citizensList) {
-    const parsed = parseDobValue(citizen.dob);
-    if (!parsed) continue;
-    const age = targetYear - parsed.year;
-    if (age < 60) continue;
+    const age = calculateExactAge(citizen.dob, refDate);
+    if (age === null || age < 60) continue;
 
     const milestones = calculateChucthoMilestonesForSync(age);
 
@@ -214,4 +214,147 @@ export const syncCitizensToPolicy = async (
   });
 
   return { chucthoCount, htxhCount };
+};
+
+export const syncSingleCitizenToPolicy = async (citizenId: string): Promise<void> => {
+  const citizen = await prisma.citizens.findUnique({
+    where: { id: citizenId },
+    include: { household: true },
+  });
+
+  if (!citizen || citizen.is_deleted || citizen.household?.is_deleted) {
+    await prisma.chuctho_profiles.updateMany({
+      where: { notes: citizenId, is_deleted: false },
+      data: { is_deleted: true, deleted_at: new Date() },
+    });
+    await prisma.htxh_profiles.updateMany({
+      where: { notes: citizenId, is_deleted: false },
+      data: { is_deleted: true, deleted_at: new Date() },
+    });
+    return;
+  }
+
+  const now = new Date();
+  const targetYear = now.getFullYear();
+  const exactAge = calculateExactAge(citizen.dob, now);
+
+  if (exactAge !== null && exactAge >= 60) {
+    const milestones = calculateChucthoMilestonesForSync(exactAge);
+    let existing = await prisma.chuctho_profiles.findFirst({
+      where: { notes: citizen.id, is_deleted: false },
+    });
+    if (!existing && citizen.cccd_hash) {
+      existing = await prisma.chuctho_profiles.findFirst({
+        where: { cccd_hash: citizen.cccd_hash, is_deleted: false },
+      });
+    }
+
+    const payload = {
+      name: citizen.full_name,
+      name_unaccented: citizen.name_unaccented,
+      dob: citizen.dob,
+      gender: citizen.gender,
+      cccd: citizen.cccd,
+      cccd_hash: citizen.cccd_hash,
+      cccd_last4: citizen.cccd_last4,
+      ethnicity: citizen.ethnicity,
+      residence: citizen.household?.address || "",
+      current_address: citizen.household?.address || "",
+      village_id: citizen.household?.village_id,
+      calculation_year: targetYear,
+      notes: citizen.id,
+      ...milestones,
+    };
+
+    if (existing) {
+      await prisma.chuctho_profiles.update({
+        where: { id: existing.id },
+        data: {
+          ...payload,
+          received: existing.received ?? false,
+          updated_at: new Date(),
+        },
+      });
+    } else {
+      const maxStt = await prisma.chuctho_profiles.aggregate({
+        _max: { stt: true },
+        where: { calculation_year: targetYear },
+      });
+      const nextStt = (maxStt._max.stt || 0) + 1;
+      await prisma.chuctho_profiles.create({
+        data: {
+          ...payload,
+          stt: nextStt,
+          received: false,
+          is_deleted: false,
+          version: 1,
+        },
+      });
+    }
+  } else {
+    await prisma.chuctho_profiles.updateMany({
+      where: { notes: citizen.id, is_deleted: false },
+      data: { is_deleted: true, deleted_at: new Date() },
+    });
+  }
+
+  const occupation = citizen.occupation?.toLowerCase() || "";
+  if (occupation.includes("hưu")) {
+    let existing = await prisma.htxh_profiles.findFirst({
+      where: { notes: citizen.id, is_deleted: false },
+    });
+    if (!existing && citizen.cccd_hash) {
+      existing = await prisma.htxh_profiles.findFirst({
+        where: { cccd_hash: citizen.cccd_hash, is_deleted: false },
+      });
+    }
+
+    const payload = {
+      name: citizen.full_name,
+      name_unaccented: citizen.name_unaccented,
+      dob: citizen.dob,
+      gender: citizen.gender,
+      cccd: citizen.cccd,
+      cccd_hash: citizen.cccd_hash,
+      cccd_last4: citizen.cccd_last4,
+      ethnicity: citizen.ethnicity,
+      residence: citizen.household?.address || "",
+      current_address: citizen.household?.address || "",
+      village_id: citizen.household?.village_id || "",
+      calculation_year: targetYear,
+      huu_tri: "x",
+      notes: citizen.id,
+    };
+
+    if (existing) {
+      await prisma.htxh_profiles.update({
+        where: { id: existing.id },
+        data: {
+          ...payload,
+          received: existing.received ?? false,
+          updated_at: new Date(),
+        },
+      });
+    } else {
+      const maxStt = await prisma.htxh_profiles.aggregate({
+        _max: { stt: true },
+        where: { calculation_year: targetYear },
+      });
+      const nextStt = (maxStt._max.stt || 0) + 1;
+      await prisma.htxh_profiles.create({
+        data: {
+          ...payload,
+          stt: nextStt,
+          received: false,
+          is_deleted: false,
+          version: 1,
+        },
+      });
+    }
+  } else {
+    await prisma.htxh_profiles.updateMany({
+      where: { notes: citizen.id, is_deleted: false, huu_tri: "x" },
+      data: { is_deleted: true, deleted_at: new Date() },
+    });
+  }
 };

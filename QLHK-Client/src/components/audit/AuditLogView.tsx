@@ -184,7 +184,7 @@ function computeFieldDiffs(oldVals: any, newVals: any): FieldDiff[] {
 	return diffs;
 }
 
-function getActionMeta(action: AuditAction) {
+function getActionMeta(action: AuditAction | string) {
 	switch (action) {
 		case "CREATE":
 			return {
@@ -208,6 +208,22 @@ function getActionMeta(action: AuditAction) {
 				badgeClass:
 					"bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30",
 				dotClass: "bg-rose-500 ring-rose-500/20",
+				icon: Trash2,
+			};
+		case "BULK_DELETE":
+			return {
+				label: "Xóa theo lô",
+				badgeClass:
+					"bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30",
+				dotClass: "bg-rose-500 ring-rose-500/20",
+				icon: Trash2,
+			};
+		case "HARD_DELETE":
+			return {
+				label: "Xóa vĩnh viễn",
+				badgeClass:
+					"bg-red-600/15 text-red-700 dark:text-red-300 border-red-600/30",
+				dotClass: "bg-red-600 ring-red-600/20",
 				icon: Trash2,
 			};
 		case "RESTORE":
@@ -284,24 +300,51 @@ function getEntitySummary(item: AuditLogItem): {
 }
 
 function getQuickInlineSummary(item: AuditLogItem, diffs: FieldDiff[]): string {
+	const newV = item.new_values || {};
+	const oldV = item.old_values || {};
+
 	if (item.action === "UPDATE") {
+		const updatedMembers = Array.isArray(newV.updated_members) ? newV.updated_members : [];
+		const addedMembers = Array.isArray(newV.added_members) ? newV.added_members : [];
+		const removedMembers = Array.isArray(newV.removed_members) ? newV.removed_members : [];
+
 		if (diffs.length > 0) {
 			const names = diffs.slice(0, 3).map((d) => d.label);
 			const moreCount = diffs.length - 3;
-			return `Đổi ${diffs.length} trường: ${names.join(", ")}${moreCount > 0 ? ` +${moreCount}` : ""}`;
+			const diffText = `Đổi ${diffs.length} trường: ${names.join(", ")}${moreCount > 0 ? ` +${moreCount}` : ""}`;
+			if (updatedMembers.length > 0) {
+				return `${diffText} • Cập nhật ${updatedMembers.length} nhân khẩu`;
+			}
+			return diffText;
 		}
-		const newV = item.new_values || {};
-		if (Array.isArray(newV.added_members) && newV.added_members.length > 0) {
-			return `Thêm ${newV.added_members.length} nhân khẩu vào hộ`;
+
+		if (updatedMembers.length > 0) {
+			const memberNames = updatedMembers
+				.map((m: any) => m.full_name)
+				.filter(Boolean);
+			const namesStr =
+				memberNames.length > 0
+					? ` (${memberNames.slice(0, 2).join(", ")}${memberNames.length > 2 ? ` +${memberNames.length - 2}` : ""})`
+					: "";
+			return `Cập nhật thông tin ${updatedMembers.length} nhân khẩu${namesStr}`;
 		}
-		if (Array.isArray(newV.removed_members) && newV.removed_members.length > 0) {
-			return `Tách/gỡ ${newV.removed_members.length} nhân khẩu khỏi hộ`;
+
+		if (addedMembers.length > 0) {
+			return `Thêm ${addedMembers.length} nhân khẩu vào hộ`;
 		}
+
+		if (removedMembers.length > 0) {
+			return `Tách/gỡ ${removedMembers.length} nhân khẩu khỏi hộ`;
+		}
+
+		if (newV.action === "REVEAL_CCCD") {
+			return "Tra cứu hiển thị số CCCD";
+		}
+
 		return "Cập nhật thông tin bản ghi";
 	}
 
 	if (item.action === "CREATE") {
-		const newV = item.new_values || {};
 		if (item.entity_type === "household") {
 			return `Tạo mới sổ hộ khẩu${newV.members_count ? ` (${newV.members_count} nhân khẩu)` : ""}`;
 		}
@@ -309,17 +352,28 @@ function getQuickInlineSummary(item: AuditLogItem, diffs: FieldDiff[]): string {
 	}
 
 	if (item.action === "DELETE") {
-		const newV = item.new_values || {};
-		return newV.reason ? `Xóa: ${newV.reason}` : "Chuyển bản ghi vào Thùng rác";
+		const targetName = oldV.head_name || oldV.full_name;
+		const targetInfo = targetName ? ` (${targetName})` : "";
+		return newV.reason ? `Xóa: ${newV.reason}` : `Chuyển bản ghi${targetInfo} vào Thùng rác`;
+	}
+
+	if (item.action === "BULK_DELETE") {
+		const targetName = oldV.book_number || oldV.head_name;
+		return `Xóa theo lô${targetName ? `: ${targetName}` : ""}`;
+	}
+
+	if (item.action === "HARD_DELETE") {
+		const targetName = oldV.head_name || oldV.book_number;
+		return `Xóa vĩnh viễn${targetName ? `: ${targetName}` : ""}`;
 	}
 
 	if (item.action === "RESTORE") {
-		const newV = item.new_values || {};
-		return newV.notes ? `Khôi phục: ${newV.notes}` : "Khôi phục dữ liệu từ Thùng rác";
+		const targetName = newV.head_name || newV.full_name || oldV.head_name;
+		const targetInfo = targetName ? ` (${targetName})` : "";
+		return newV.notes ? `Khôi phục: ${newV.notes}` : `Khôi phục dữ liệu${targetInfo} từ Thùng rác`;
 	}
 
 	if (item.action === "IMPORT") {
-		const newV = item.new_values || {};
 		return `Nhập ${newV.imported_households || 0} hộ, ${newV.imported_citizens || 0} nhân khẩu`;
 	}
 
@@ -558,7 +612,10 @@ export const AuditLogView: React.FC = () => {
 		[filteredLogs],
 	);
 	const deleteCount = useMemo(
-		() => filteredLogs.filter((l) => l.action === "DELETE" || l.action === "RESTORE").length,
+		() =>
+			filteredLogs.filter((l) =>
+				["DELETE", "BULK_DELETE", "HARD_DELETE", "RESTORE"].includes(l.action),
+			).length,
 		[filteredLogs],
 	);
 

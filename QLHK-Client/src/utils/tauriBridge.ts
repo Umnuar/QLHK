@@ -1,6 +1,6 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { Store } from "@tauri-apps/plugin-store";
@@ -27,6 +27,37 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
 
 export function initTauriBridge(): void {
 	if (!isTauri()) {
+		const webFallback: ElectronAPI = {
+			secureStore: {
+				get: async (key: string) => localStorage.getItem(`tauri_fallback_${key}`),
+				set: async (key: string, value: any) => {
+					localStorage.setItem(`tauri_fallback_${key}`, typeof value === "string" ? value : JSON.stringify(value));
+					return true;
+				},
+				delete: async (key: string) => {
+					localStorage.removeItem(`tauri_fallback_${key}`);
+					return true;
+				},
+				clear: async () => true,
+			},
+			openFileDialog: async () => null,
+			setZoom: async (level: number) => {
+				const factor = Math.min(1.5, Math.max(0.5, level / 100));
+				document.documentElement.style.setProperty("--app-zoom", String(factor));
+			},
+			getAppVersion: async () => "1.5.0",
+		};
+		window.electronAPI = webFallback;
+		window.api = {
+			store: webFallback.secureStore,
+			dialog: {
+				openFile: webFallback.openFileDialog,
+			},
+			app: {
+				getVersion: webFallback.getAppVersion,
+				setZoom: webFallback.setZoom,
+			},
+		};
 		return;
 	}
 
@@ -106,15 +137,8 @@ export function initTauriBridge(): void {
 			}
 		},
 		setZoom: async (level: number) => {
-			try {
-				document.documentElement.style.zoom = `${level}%`;
-				const win = getCurrentWebviewWindow();
-				if (win && typeof win.setZoom === "function") {
-					await win.setZoom(level / 100);
-				}
-			} catch (err) {
-				console.warn("[TauriZoom] setZoom error:", err);
-			}
+			const factor = Math.min(1.5, Math.max(0.5, level / 100));
+			document.documentElement.style.setProperty("--app-zoom", String(factor));
 		},
 		getAppVersion: async () => {
 			try {

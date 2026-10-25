@@ -15,6 +15,9 @@ export interface ProfileQueryParams {
 	page?: number;
 	limit?: number;
 	calculationYear?: number;
+	dob?: string;
+	exact_date?: string;
+	exactDate?: string;
 }
 
 export interface ProfilesPaginationResponse<T = any> {
@@ -33,6 +36,8 @@ export const profilesApi = {
 			page: params.page ?? 1,
 			limit: params.limit ?? 20,
 			search: params.search?.trim() || undefined,
+			dob: params.dob?.trim() || undefined,
+			exact_date: params.dob?.trim() || undefined,
 			status: params.status !== "all" ? params.status : undefined,
 			ageGroup: params.ageGroup || undefined,
 			milestone: params.ageGroup || undefined,

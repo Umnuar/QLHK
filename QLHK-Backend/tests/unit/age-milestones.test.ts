@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeChucthoMilestones, computeHtxhMilestones, parseDobValue } from "../../src/utils/age";
+import { calculateExactAge, computeChucthoMilestones, computeHtxhMilestones, parseDobValue } from "../../src/utils/age";
 
 describe("Age Calculation & Milestones Utility", () => {
   it("parses valid dates from string, date, and numbers", () => {
@@ -12,9 +12,19 @@ describe("Age Calculation & Milestones Utility", () => {
     expect(parseDobValue("invalid")).toBeNull();
   });
 
-  it("assigns milestones strictly according to age difference", () => {
+  it("calculates exact age by day and month", () => {
+    const ref = new Date(2026, 9, 25);
+    expect(calculateExactAge("24/10/1966", ref)).toBe(60);
+    expect(calculateExactAge("25/10/1966", ref)).toBe(60);
+    expect(calculateExactAge("26/10/1966", ref)).toBe(59);
+    expect(calculateExactAge("1966", ref)).toBe(60);
+  });
+
+  it("assigns milestones according to 5-year brackets", () => {
     const year = 2024;
     expect(computeChucthoMilestones(1964, year).age60).toBe("x");
+    expect(computeChucthoMilestones(1963, year).age60).toBe("x");
+    expect(computeChucthoMilestones(1965, year).age60).toBe("");
     expect(computeChucthoMilestones(1959, year).age65).toBe("x");
     expect(computeChucthoMilestones(1954, year).age70).toBe("x");
     expect(computeChucthoMilestones(1949, year).age75).toBe("x");
@@ -24,7 +34,6 @@ describe("Age Calculation & Milestones Utility", () => {
     expect(computeChucthoMilestones(1929, year).age95).toBe("x");
     expect(computeChucthoMilestones(1924, year).age100).toBe("x");
     expect(computeChucthoMilestones(1920, year).age_over_100).toBe("x");
-    expect(computeChucthoMilestones(1963, year).age60).toBe("");
   });
 
   it("correctly computes social assistance categories", () => {

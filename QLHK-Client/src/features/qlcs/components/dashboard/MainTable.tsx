@@ -3,7 +3,6 @@ import {
 	ChevronDown,
 	ChevronsUpDown,
 	ChevronUp,
-	Lightbulb,
 	SearchX,
 } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -137,47 +136,14 @@ export function MainTable({
 					</span>
 				</div>
 				<div className={TABLE_STYLES.headerTip}>
-					<Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" strokeWidth={1.75} />
 					<span className="hidden sm:inline">
-						Mẹo: Dùng nút Sửa để cập nhật ghi chú hồ sơ
+						Dữ liệu đồng bộ trực tiếp từ phân hệ Hộ khẩu
 					</span>
 				</div>
 			</div>
 
 			<div className={TABLE_STYLES.scrollContainer}>
 				<table className={TABLE_STYLES.table}>
-					<colgroup>
-
-						<col style={{ width: 48 }} />
-
-						<col style={{ width: 56 }} />
-
-						<col style={{ minWidth: 220, width: "22%" }} />
-
-						<col style={{ width: 120 }} />
-
-						<col style={{ width: 90 }} />
-
-						<col style={{ width: 120 }} />
-
-						<col style={{ width: 160 }} />
-
-						<col style={{ minWidth: 240, maxWidth: 420, width: "26.4%" }} />
-
-						{activeTab === "chuctho" ? (
-							<col style={{ width: 140 }} />
-						) : (
-							<>
-								<col style={{ width: 90 }} />
-								<col style={{ width: 110 }} />
-								<col style={{ width: 140 }} />
-							</>
-						)}
-
-						<col style={{ width: 120 }} />
-
-						<col style={{ width: 80 }} />
-					</colgroup>
 					<thead className={TABLE_STYLES.thead}>
 						<tr className={TABLE_STYLES.headerRow}>
 
@@ -277,16 +243,13 @@ export function MainTable({
 							<th className={clsx(TABLE_STYLES.thCenter, "w-28")}>
 								QUÀ TẶNG
 							</th>
-							<th className={clsx(TABLE_STYLES.thCenter, "w-20")}>
-								THAO TÁC
-							</th>
 						</tr>
 					</thead>
 					<tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
 						{paginatedProfiles.length === 0 ? (
 							<tr>
 								<td
-									colSpan={activeTab === "chuctho" ? 11 : 13}
+									colSpan={activeTab === "chuctho" ? 10 : 12}
 									className="py-16 text-center"
 								>
 									<div className="flex flex-col items-center justify-center space-y-3">

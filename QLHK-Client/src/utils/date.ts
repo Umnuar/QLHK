@@ -162,6 +162,7 @@ export function parseAndValidateDob(
 export function calculateAge(
 	dobInput: string | number | null | undefined,
 	currentYear = CURRENT_YEAR,
+	referenceDate = new Date(),
 ): number {
 	if (
 		typeof dobInput === "number" &&
@@ -171,10 +172,41 @@ export function calculateAge(
 		return currentYear - dobInput;
 	}
 	const res = parseAndValidateDob(dobInput);
-	if (res.isValid && res.birthYear) {
-		return currentYear - res.birthYear;
+	if (!res.isValid || !res.birthYear) {
+		return 0;
 	}
-	return 0;
+
+	if (currentYear === referenceDate.getFullYear() && res.formatted) {
+		const parts = res.formatted.split("/");
+		if (parts.length === 3) {
+			const birthDay = parseInt(parts[0], 10);
+			const birthMonth = parseInt(parts[1], 10);
+			const birthYear = parseInt(parts[2], 10);
+			const refMonth = referenceDate.getMonth() + 1;
+			const refDay = referenceDate.getDate();
+
+			let age = currentYear - birthYear;
+			if (
+				refMonth < birthMonth ||
+				(refMonth === birthMonth && refDay < birthDay)
+			) {
+				age--;
+			}
+			return Math.max(0, age);
+		}
+		if (parts.length === 2) {
+			const birthMonth = parseInt(parts[0], 10);
+			const birthYear = parseInt(parts[1], 10);
+			const refMonth = referenceDate.getMonth() + 1;
+			let age = currentYear - birthYear;
+			if (refMonth < birthMonth) {
+				age--;
+			}
+			return Math.max(0, age);
+		}
+	}
+
+	return Math.max(0, currentYear - res.birthYear);
 }
 
 export function formatDobDisplay(

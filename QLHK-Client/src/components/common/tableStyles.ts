@@ -195,7 +195,7 @@ export const TABLE_STYLES = {
 		"overflow-x-auto overflow-y-auto flex-1 max-h-[620px] relative custom-scrollbar",
 	scrollContainer:
 		"overflow-x-auto overflow-y-auto flex-1 max-h-[620px] relative custom-scrollbar",
-	table: "w-full text-left border-collapse text-xs table-fixed min-w-[1200px]",
+	table: "w-full text-left border-collapse text-xs min-w-full",
 	thead:
 		"sticky top-0 z-20 select-none shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_3px_0_rgba(0,0,0,0.3)]",
 	headerRow:
@@ -216,26 +216,26 @@ export const TABLE_STYLES = {
 	thSortable:
 		"cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors group",
 	rowBase:
-		"min-h-[52px] bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-100 dark:border-slate-800/80 text-[13px] outline-hidden",
+		"min-h-[52px] bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-100 dark:border-slate-800/60 text-[13px] outline-hidden",
 	rowSelected:
-		"min-h-[52px] bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100/80 dark:hover:bg-emerald-900 transition-colors border-b border-slate-100 dark:border-slate-800/80 text-[13px] outline-hidden",
+		"min-h-[52px] bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100/80 dark:hover:bg-emerald-900 transition-colors border-b border-slate-100 dark:border-slate-800/60 text-[13px] outline-hidden",
 	rowMissingCccd:
-		"min-h-[52px] bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-100 dark:border-slate-800/80 text-[13px] outline-hidden",
-	td: "py-3 px-3 border-b border-slate-100 dark:border-slate-800/80 text-slate-700 dark:text-slate-300 align-middle",
+		"min-h-[52px] bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-100 dark:border-slate-800/60 text-[13px] outline-hidden",
+	td: "py-3 px-3 border-b border-slate-100 dark:border-slate-800/60 text-slate-700 dark:text-slate-300 align-middle",
 	tdCenter:
-		"py-3 px-2 text-center border-b border-slate-100 dark:border-slate-800/80 text-slate-700 dark:text-slate-300 align-middle whitespace-nowrap",
+		"py-3 px-2 text-center border-b border-slate-100 dark:border-slate-800/60 text-slate-700 dark:text-slate-300 align-middle whitespace-nowrap",
 	tdRight:
-		"py-3 px-3 text-right tabular-nums text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800/80 align-middle whitespace-nowrap",
+		"py-3 px-3 text-right tabular-nums text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800/60 align-middle whitespace-nowrap",
 	numberCell:
 		"tabular-nums text-xs text-slate-700 dark:text-slate-300",
 	stickyLeftCheckbox:
-		"sticky left-0 z-10 w-12 min-w-[48px] max-w-[48px] py-3 px-2 text-center border-b border-slate-100 dark:border-slate-800/80 transition-colors",
+		"sticky left-0 z-10 w-12 min-w-[48px] max-w-[48px] py-3 px-2 text-center border-b border-slate-100 dark:border-slate-800/60 transition-colors",
 	stickyLeftStt:
-		"sticky left-12 z-10 w-14 min-w-[56px] max-w-[56px] py-3 px-2 text-center border-b border-slate-100 dark:border-slate-800/80 tabular-nums text-xs font-semibold text-slate-500 dark:text-slate-400 transition-colors whitespace-nowrap",
+		"sticky left-12 z-10 w-14 min-w-[56px] max-w-[56px] py-3 px-2 text-center border-b border-slate-100 dark:border-slate-800/60 tabular-nums text-xs font-semibold text-slate-500 dark:text-slate-400 transition-colors whitespace-nowrap",
 	stickyLeftName:
-		"sticky left-[104px] z-10 py-3 px-3 text-left border-b border-slate-100 dark:border-slate-800/80 transition-colors shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.25)]",
+		"sticky left-[104px] z-10 py-3 px-3 text-left border-b border-slate-100 dark:border-slate-800/60 transition-colors shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.25)]",
 	stickyRightAction:
-		"py-2.5 px-3 text-center w-24 min-w-[96px] max-w-[96px] sticky right-0 z-10 whitespace-nowrap border-b border-slate-100 dark:border-slate-800/80 transition-colors shadow-[-6px_0_12px_-2px_rgba(0,0,0,0.08)] dark:shadow-[-6px_0_12px_-2px_rgba(0,0,0,0.3)]",
+		"py-2.5 px-3 text-center w-24 min-w-[96px] max-w-[96px] sticky right-0 z-10 whitespace-nowrap border-b border-slate-100 dark:border-slate-800/60 transition-colors shadow-[-6px_0_12px_-2px_rgba(0,0,0,0.08)] dark:shadow-[-6px_0_12px_-2px_rgba(0,0,0,0.3)]",
 	stickyBgBase:
 		"bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800",
 	stickyBgSelected:

@@ -495,6 +495,27 @@ pub fn extract_birth_year(dob: &str) -> Option<i32> {
     None
 }
 
+pub fn calculate_exact_age(dob: &str, reference_date: chrono::NaiveDate) -> Option<i32> {
+    use chrono::Datelike;
+    let (formatted, birth_year) = parse_dob_value(dob)?;
+    let parts: Vec<&str> = formatted.split('/').collect();
+    if parts.len() != 3 {
+        return None;
+    }
+    let birth_day = parts[0].parse::<u32>().ok()?;
+    let birth_month = parts[1].parse::<u32>().ok()?;
+
+    let ref_year = reference_date.year();
+    let ref_month = reference_date.month();
+    let ref_day = reference_date.day();
+
+    let mut age = ref_year - birth_year;
+    if ref_month < birth_month || (ref_month == birth_month && ref_day < birth_day) {
+        age -= 1;
+    }
+    Some(age)
+}
+
 #[derive(Debug, Deserialize)]
 pub struct PolicyQueryParams {
     pub page: Option<i64>,

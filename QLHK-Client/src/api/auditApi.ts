@@ -1,7 +1,15 @@
 import { getCache, setCache } from "../db/indexedDB";
 import { apiClient } from "./client";
 
-export type AuditAction = "CREATE" | "UPDATE" | "DELETE" | "RESTORE" | "IMPORT";
+export type AuditAction =
+	| "CREATE"
+	| "UPDATE"
+	| "DELETE"
+	| "BULK_DELETE"
+	| "HARD_DELETE"
+	| "RESTORE"
+	| "IMPORT"
+	| (string & {});
 export type AuditEntityType = "household" | "citizen" | "excel_import";
 
 export interface AuditLogItem {

@@ -261,6 +261,13 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 			occupation: memberData.occupation || "",
 			native_place: memberData.native_place || "",
 			notes: memberData.notes || "",
+			pension_policies: memberData.pension_policies || [],
+			age75plus: memberData.age75plus,
+			age70to74poor: memberData.age70to74poor,
+			bao_tro: memberData.bao_tro,
+			huu_tri: memberData.huu_tri,
+			huu_tuat_bao_hiem: memberData.huu_tuat_bao_hiem,
+			nguoi_co_cong: memberData.nguoi_co_cong,
 		};
 
 		if (editingMemberIndex !== null) {
@@ -627,6 +634,16 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 															}`}
 														>
 																{m.gender}
+															</span>
+														)}
+														{m.occupation && (
+															<span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
+																{m.occupation}
+															</span>
+														)}
+														{(m.huu_tri || (m.pension_policies && m.pension_policies.includes("huu_tri"))) && (
+															<span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-800 shrink-0">
+																Hưu trí
 															</span>
 														)}
 													</div>

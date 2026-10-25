@@ -33,7 +33,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
 	};
 
 	return (
-		<div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-100 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-150">
+		<div className="flex flex-col h-screen h-[100dvh] w-full min-h-screen overflow-hidden bg-slate-100 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-150">
 			<Header />
 			<ConnectionBanner
 				isOffline={isDisconnected}

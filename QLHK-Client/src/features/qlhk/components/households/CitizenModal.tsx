@@ -1,10 +1,13 @@
 import {
 	AlertCircle,
 	ArrowRight,
+	Award,
 	Briefcase,
 	Check,
+	CheckCircle2,
 	Eye,
 	EyeOff,
+	Lock,
 	Sparkles,
 	User,
 	X,
@@ -35,7 +38,60 @@ export interface CitizenModalProps {
 	zIndex?: number;
 }
 
-export type CitizenModalTab = "basic" | "career";
+export type CitizenModalTab = "basic" | "career" | "pension";
+
+export const RETIREMENT_POLICIES = [
+	{
+		key: "age75plus",
+		label: "Đối tượng đủ 75 tuổi trở lên",
+		badge: "Tuổi tác",
+		desc: "Người cao tuổi từ đủ 75 tuổi trở lên",
+	},
+	{
+		key: "age70to74poor",
+		label: "Đối tượng từ 70-74 tuổi thuộc hộ nghèo, cận nghèo",
+		badge: "Hộ nghèo",
+		desc: "Người cao tuổi 70-74 tuổi thuộc hộ nghèo hoặc cận nghèo",
+	},
+	{
+		key: "bao_tro",
+		label: "Bảo trợ",
+		badge: "Bảo trợ",
+		desc: "Đang hưởng trợ cấp bảo trợ xã hội",
+	},
+	{
+		key: "huu_tri",
+		label: "Hưu trí",
+		badge: "Hưu trí",
+		desc: "Đang hưởng chế độ hưu trí / Lương hưu hàng tháng",
+	},
+	{
+		key: "huu_tuat_bao_hiem",
+		label: "Hưu, Tuất Bảo hiểm",
+		badge: "Hưu tuất",
+		desc: "Đang hưởng chế độ hưu tuất hoặc bảo hiểm",
+	},
+	{
+		key: "nguoi_co_cong",
+		label: "Người có công",
+		badge: "Ưu đãi",
+		desc: "Đang hưởng chế độ chính sách người có công",
+	},
+] as const;
+
+export function isRetireeOccupation(occ?: string | null): boolean {
+	if (!occ) return false;
+	const lower = occ.toLowerCase().trim();
+	const unacc = normalizeUnaccented(lower);
+	return (
+		lower.includes("hưu") ||
+		unacc.includes("huu") ||
+		lower.includes("mất sức") ||
+		unacc.includes("mat suc") ||
+		lower.includes("bhxh") ||
+		lower.includes("nghỉ hưu")
+	);
+}
 
 const CITIZEN_RELATIONSHIPS = [
 	"Chủ hộ",
@@ -93,8 +149,18 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 	const [occupation, setOccupation] = useState("");
 	const [nativePlace, setNativePlace] = useState("");
 	const [notes, setNotes] = useState("");
+	const [pensionPolicies, setPensionPolicies] = useState<string[]>([]);
 	const [error, setError] = useState<string | null>(null);
 	const [isRevealingCccd, setIsRevealingCccd] = useState(false);
+
+	const isRetiree = useMemo(() => isRetireeOccupation(occupation), [occupation]);
+
+	const handleTogglePolicy = (key: string) => {
+		if (readOnly || !isRetiree) return;
+		setPensionPolicies((prev) =>
+			prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+		);
+	};
 
 	const handleToggleRevealCccd = async () => {
 		if (!initialMember?.id || initialMember.id.startsWith("mem-")) return;
@@ -142,6 +208,29 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				setOccupation(initialMember.occupation || (initialMember as any).nghe_nghiep || "");
 				setNativePlace(initialMember.native_place || (initialMember as any).que_quan || "");
 				setNotes(initialMember.notes || (initialMember as any).ghi_chu || "");
+				const loadedPolicies: string[] = [];
+				if (Array.isArray(initialMember.pension_policies)) {
+					loadedPolicies.push(...initialMember.pension_policies);
+				}
+				if (initialMember.age75plus && !loadedPolicies.includes("age75plus")) {
+					loadedPolicies.push("age75plus");
+				}
+				if (initialMember.age70to74poor && !loadedPolicies.includes("age70to74poor")) {
+					loadedPolicies.push("age70to74poor");
+				}
+				if (initialMember.bao_tro && !loadedPolicies.includes("bao_tro")) {
+					loadedPolicies.push("bao_tro");
+				}
+				if (initialMember.huu_tri && !loadedPolicies.includes("huu_tri")) {
+					loadedPolicies.push("huu_tri");
+				}
+				if (initialMember.huu_tuat_bao_hiem && !loadedPolicies.includes("huu_tuat_bao_hiem")) {
+					loadedPolicies.push("huu_tuat_bao_hiem");
+				}
+				if (initialMember.nguoi_co_cong && !loadedPolicies.includes("nguoi_co_cong")) {
+					loadedPolicies.push("nguoi_co_cong");
+				}
+				setPensionPolicies(loadedPolicies);
 			} else {
 				setFullName("");
 				setRelationship("Con đẻ");
@@ -156,6 +245,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				setOccupation("");
 				setNativePlace("");
 				setNotes("");
+				setPensionPolicies([]);
 			}
 			setError(null);
 			setActiveTab("basic");
@@ -310,6 +400,9 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				? trimmedCccd
 				: "";
 
+		const finalPolicies = isRetiree ? pensionPolicies : [];
+		const hasPolicy = (key: string) => finalPolicies.includes(key);
+
 		const memberData: Partial<Person> = {
 			...(initialMember || {}),
 			id: initialMember?.id || `mem-${Date.now()}`,
@@ -336,6 +429,13 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 			occupation: occupation.trim() || undefined,
 			native_place: nativePlace.trim() || undefined,
 			notes: notes.trim(),
+			pension_policies: finalPolicies,
+			age75plus: hasPolicy("age75plus"),
+			age70to74poor: hasPolicy("age70to74poor"),
+			bao_tro: hasPolicy("bao_tro"),
+			huu_tri: hasPolicy("huu_tri"),
+			huu_tuat_bao_hiem: hasPolicy("huu_tuat_bao_hiem"),
+			nguoi_co_cong: hasPolicy("nguoi_co_cong"),
 		};
 
 		if (onSave) {
@@ -455,6 +555,25 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 									</span>
 								)}
 							</button>
+
+							<button
+								type="button"
+								onClick={() => setActiveTab("pension")}
+								aria-label="Hưu trí & Chính sách"
+								title="Hưu trí & Chính sách xã hội"
+								className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer relative ${
+									activeTab === "pension"
+										? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
+										: "text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100"
+								}`}
+							>
+								<Award className="w-5 h-5" strokeWidth={activeTab === "pension" ? 2.2 : 1.8} />
+								{isRetiree && pensionPolicies.length > 0 && (
+									<span className="absolute -top-1 -right-1 px-1 min-w-4 h-4 rounded-full bg-emerald-700 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
+										{pensionPolicies.length}
+									</span>
+								)}
+							</button>
 						</nav>
 					</div>
 
@@ -487,8 +606,10 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 								) : (
 									<span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
 										{activeTab === "basic"
-											? "Mục 1/2: Thông tin cơ bản"
-											: "Mục 2/2: Nghề nghiệp & Nghĩa vụ"}
+											? "Mục 1/3: Thông tin cơ bản"
+											: activeTab === "career"
+												? "Mục 2/3: Nghề nghiệp & Nghĩa vụ"
+												: "Mục 3/3: Hưu trí & Chính sách"}
 									</span>
 								)}
 							</div>
@@ -497,7 +618,9 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 									? "Dữ liệu nhân khẩu lưu trữ trong thùng rác (chế độ bảo vệ dữ liệu)"
 									: activeTab === "basic"
 										? "Quản lý nhân thân, số định danh, ngày sinh và quan hệ gia đình"
-										: "Cập nhật thông tin trình độ văn hóa, nghề nghiệp và thực hiện NVQS"}
+										: activeTab === "career"
+											? "Cập nhật thông tin trình độ văn hóa, nghề nghiệp và thực hiện NVQS"
+											: "Quản lý các chế độ chính sách hưu trí và trợ cấp xã hội theo biểu mẫu"}
 							</p>
 						</div>
 						<button
@@ -870,36 +993,149 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 									</div>
 								</div>
 							)}
+
+							{activeTab === "pension" && (
+								<div className="space-y-3.5 animate-in fade-in duration-100">
+									{!isRetiree ? (
+										<div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 space-y-3">
+											<div className="flex items-start gap-3">
+												<div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+													<Lock className="w-5 h-5" />
+												</div>
+												<div className="space-y-1 flex-1">
+													<h4 className="text-xs font-bold text-amber-900 dark:text-amber-200">
+														Mục Hưu trí đang bị khóa
+													</h4>
+													<p className="text-xs text-amber-700 dark:text-amber-300/90 leading-relaxed">
+														Tất cả chính sách tại mục này chỉ áp dụng cho nhân khẩu có nghề nghiệp là <strong>Hưu trí</strong>. Nghề nghiệp hiện tại: <strong>{occupation.trim() || "Chưa khai báo"}</strong>.
+													</p>
+												</div>
+											</div>
+											{!readOnly && (
+												<div className="pl-12">
+													<button
+														type="button"
+														onClick={() => setOccupation("Hưu trí")}
+														className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+													>
+														<Sparkles className="w-3.5 h-3.5" />
+														<span>Đặt nghề nghiệp: Hưu trí để mở khóa</span>
+													</button>
+												</div>
+											)}
+										</div>
+									) : (
+										<div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-3">
+											<div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+												<CheckCircle2 className="w-4 h-4" />
+											</div>
+											<div>
+												<h4 className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
+													Đã xác thực nghề nghiệp: Hưu trí
+												</h4>
+												<p className="text-[11px] text-emerald-700 dark:text-emerald-300/90">
+													Cán bộ có thể tích chọn các chính sách xã hội và hưu trí mà nhân khẩu đang thụ hưởng theo biểu mẫu.
+												</p>
+											</div>
+										</div>
+									)}
+
+									<div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+										{RETIREMENT_POLICIES.map((p) => {
+											const isChecked = isRetiree && pensionPolicies.includes(p.key);
+											return (
+												<div
+													key={p.key}
+													onClick={() => handleTogglePolicy(p.key)}
+													className={`p-3.5 rounded-2xl border transition-all flex items-start gap-3 select-none ${
+														!isRetiree
+															? "opacity-50 bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 cursor-not-allowed"
+															: isChecked
+																? "bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-400 dark:border-emerald-700 shadow-xs cursor-pointer ring-1 ring-emerald-400/30"
+																: "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer"
+													}`}
+												>
+													<input
+														type="checkbox"
+														id={`policy-${p.key}`}
+														disabled={readOnly || !isRetiree}
+														checked={isChecked}
+														onChange={() => handleTogglePolicy(p.key)}
+														className="mt-0.5 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-700 cursor-pointer disabled:cursor-not-allowed shrink-0"
+													/>
+													<div className="space-y-0.5 flex-1 min-w-0">
+														<div className="flex items-center justify-between gap-1.5 flex-wrap">
+															<span
+																className={`text-xs font-bold truncate ${
+																	isChecked
+																		? "text-emerald-900 dark:text-emerald-100"
+																		: "text-slate-800 dark:text-slate-200"
+																}`}
+															>
+																{p.label}
+															</span>
+															<span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shrink-0">
+																{p.badge}
+															</span>
+														</div>
+														<p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug line-clamp-2">
+															{p.desc}
+														</p>
+													</div>
+												</div>
+											);
+										})}
+									</div>
+								</div>
+							)}
 						</div>
 
 						<footer className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
-							<div>
+							<div className="shrink-0">
 								{activeTab === "basic" ? (
 									<button
 										type="button"
 										onClick={() => setActiveTab("career")}
-										className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl transition-colors cursor-pointer border border-emerald-200 dark:border-emerald-800"
+										className="h-9 inline-flex items-center gap-1.5 px-3 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl transition-colors cursor-pointer border border-emerald-200 dark:border-emerald-800 whitespace-nowrap shrink-0"
 									>
-										<span>Mục tiếp theo: Nghề nghiệp</span>
-										<ArrowRight className="w-3.5 h-3.5" />
+										<span>Nghề nghiệp</span>
+										<ArrowRight className="w-3.5 h-3.5 shrink-0" />
 									</button>
+								) : activeTab === "career" ? (
+									<div className="flex items-center gap-1.5 shrink-0">
+										<button
+											type="button"
+											onClick={() => setActiveTab("basic")}
+											className="h-9 inline-flex items-center gap-1 px-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 whitespace-nowrap shrink-0"
+										>
+											<span>← Cơ bản</span>
+										</button>
+										<button
+											type="button"
+											onClick={() => setActiveTab("pension")}
+											className="h-9 inline-flex items-center gap-1.5 px-3 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl transition-colors cursor-pointer border border-emerald-200 dark:border-emerald-800 whitespace-nowrap shrink-0"
+										>
+											<span>Hưu trí</span>
+											<ArrowRight className="w-3.5 h-3.5 shrink-0" />
+										</button>
+									</div>
 								) : (
 									<button
 										type="button"
-										onClick={() => setActiveTab("basic")}
-										className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+										onClick={() => setActiveTab("career")}
+										className="h-9 inline-flex items-center gap-1 px-3 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 whitespace-nowrap shrink-0"
 									>
-										<span>← Quay lại: Thông tin cơ bản</span>
+										<span>← Nghề nghiệp</span>
 									</button>
 								)}
 							</div>
 
-							<div className="flex items-center gap-2">
+							<div className="flex items-center gap-2 shrink-0">
 								{readOnly ? (
 									<button
 										type="button"
 										onClick={onClose}
-										className="px-5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl transition-colors cursor-pointer"
+										className="h-9 inline-flex items-center justify-center px-4 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl transition-colors cursor-pointer whitespace-nowrap shrink-0"
 									>
 										Đóng cửa sổ
 									</button>
@@ -908,15 +1144,15 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 										<button
 											type="button"
 											onClick={onClose}
-											className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+											className="h-9 inline-flex items-center justify-center px-3.5 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer whitespace-nowrap shrink-0"
 										>
 											Hủy
 										</button>
 										<button
 											type="submit"
-											className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-[0.99] cursor-pointer focus:ring-2 focus:ring-emerald-500"
+											className="h-9 inline-flex items-center justify-center gap-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-[0.99] cursor-pointer focus:ring-2 focus:ring-emerald-500 whitespace-nowrap shrink-0"
 										>
-											<Check className="w-4 h-4 mr-0.5" strokeWidth={2} />
+											<Check className="w-4 h-4 mr-0.5 shrink-0" strokeWidth={2} />
 											<span>Lưu nhân khẩu</span>
 											<span className="text-[10px] opacity-75 font-normal">(Ctrl+Enter)</span>
 										</button>

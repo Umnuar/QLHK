@@ -616,29 +616,133 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 		visitedRoutes.push("Quản Lý Thôn");
 
 		const banner = page
-			.locator('div:has-text("Tổng Quan Dân Cư & Hộ Gia Đình Toàn Xã")')
+			.locator(
+				'h2:has-text("Trung Tâm Quản Lý Địa Bàn Thôn & Làng"), h2:has-text("Tổng Quan Dân Cư & Hộ Gia Đình Toàn Xã"), div:has-text("Trung Tâm Quản Lý Địa Bàn Thôn & Làng"), div:has-text("Tổng Quan Dân Cư & Hộ Gia Đình Toàn Xã")'
+			)
 			.first();
 		await expect(banner).toBeVisible({ timeout: 15_000 });
-		console.log("   ✓ Xác nhận Banner Tổng quan và các thẻ KPI hiển thị đầy đủ.");
+		console.log("   ✓ Xác nhận Banner Quản lý Thôn và các thẻ KPI hiển thị đầy đủ.");
 
-		const villageCards = page.locator('div[role="button"][aria-label*="Thôn"]');
-		const villageCardCount = await villageCards.count();
-		console.log(`   ✓ Phát hiện ${villageCardCount} thẻ thôn trên địa bàn.`);
+		const villageSearch = page
+			.locator('input[placeholder*="Tìm theo tên thôn, mã thôn"]')
+			.first();
+		if (await villageSearch.isVisible().catch(() => false)) {
+			await villageSearch.fill("Thôn 1");
+			await page.waitForTimeout(200);
+			tracker.recordClick("Quản Lý Thôn", "button", "Tìm kiếm thôn");
+			await villageSearch.fill("");
+			await page.waitForTimeout(150);
+		}
 
-		const thon1Card = page
+		const modernFilterPills = [
+			"Tất cả",
+			"Đã gán cán bộ",
+			"Chưa phân công",
+			"DTTS ≥ 50%",
+		];
+		for (const pill of modernFilterPills) {
+			const pillBtn = page
+				.locator(`div.flex.items-center button:has-text("${pill}")`)
+				.first();
+			if (await pillBtn.isVisible().catch(() => false)) {
+				tracker.discover("Quản Lý Thôn", "pill", pill);
+				await pillBtn.click().catch(() => {});
+				tracker.recordClick("Quản Lý Thôn", "pill", pill);
+				interactionCount++;
+				await page.waitForTimeout(100);
+			}
+		}
+
+		const gridViewBtn = page.locator('button[title="Chế độ xem lưới thẻ"]').first();
+		const tableViewBtn = page.locator('button[title="Chế độ xem bảng"]').first();
+		if (await gridViewBtn.isVisible().catch(() => false)) {
+			tracker.discover("Quản Lý Thôn", "button", "Chế độ xem lưới thẻ");
+			await gridViewBtn.click().catch(() => {});
+			tracker.recordClick("Quản Lý Thôn", "button", "Chế độ xem lưới thẻ");
+			interactionCount++;
+			await page.waitForTimeout(150);
+		}
+		if (await tableViewBtn.isVisible().catch(() => false)) {
+			tracker.discover("Quản Lý Thôn", "button", "Chế độ xem bảng");
+			await tableViewBtn.click().catch(() => {});
+			tracker.recordClick("Quản Lý Thôn", "button", "Chế độ xem bảng");
+			interactionCount++;
+			await page.waitForTimeout(150);
+		}
+
+		const sortColumns = [
+			"Tên Thôn / Làng",
+			"Số Hộ Dân",
+			"Nhân Khẩu",
+			"Dân Tộc & Giới Tính",
+		];
+		for (const col of sortColumns) {
+			const colHeader = page.locator(`th:has-text("${col}")`).first();
+			if (await colHeader.isVisible().catch(() => false)) {
+				tracker.discover("Quản Lý Thôn", "button", `Sắp xếp ${col}`);
+				await colHeader.click().catch(() => {});
+				tracker.recordClick("Quản Lý Thôn", "button", `Sắp xếp ${col}`);
+				interactionCount++;
+				await page.waitForTimeout(100);
+			}
+		}
+
+		const refreshVillageBtn = page
+			.locator('button[title="Làm mới dữ liệu thống kê"]')
+			.first();
+		if (await refreshVillageBtn.isVisible().catch(() => false)) {
+			tracker.discover("Quản Lý Thôn", "button", "Làm mới dữ liệu thôn");
+			await refreshVillageBtn.click().catch(() => {});
+			tracker.recordClick("Quản Lý Thôn", "button", "Làm mới dữ liệu thôn");
+			interactionCount++;
+			await page.waitForTimeout(200);
+		}
+
+		const addVillageBtn = page.locator('button:has-text("Thêm Thôn Mới")').first();
+		if (await addVillageBtn.isVisible().catch(() => false)) {
+			tracker.discover("Quản Lý Thôn", "button", "Thêm Thôn Mới");
+			await addVillageBtn.click().catch(() => {});
+			tracker.recordClick("Quản Lý Thôn", "button", "Thêm Thôn Mới");
+			interactionCount++;
+			await page.waitForTimeout(200);
+
+			const cancelAddBtn = page
+				.locator(
+					'div[role="dialog"] button:has-text("Hủy"), button[aria-label="Đóng cửa sổ"]'
+				)
+				.first();
+			if (await cancelAddBtn.isVisible().catch(() => false)) {
+				await cancelAddBtn.click().catch(() => {});
+				interactionCount++;
+				await page.waitForTimeout(150);
+			} else {
+				await page.keyboard.press("Escape").catch(() => {});
+			}
+		}
+
+		const targetRow = page.locator('table tbody tr:has-text("Thôn 1")').first();
+		const legacyCard = page
 			.locator('div[role="button"][aria-label*="Thôn 1"]')
 			.first();
-		if (await thon1Card.isVisible().catch(() => false)) {
-			console.log("   ✓ Click chọn Thôn 1 để kích hoạt toàn bộ phạm vi quản lý...");
+		if (await targetRow.isVisible().catch(() => false)) {
 			tracker.discover("Quản Lý Thôn", "card", "Thôn 1");
-			await thon1Card.click();
+			await targetRow.click().catch(() => {});
 			tracker.recordClick("Quản Lý Thôn", "card", "Thôn 1");
 			interactionCount++;
 			await page.waitForTimeout(250);
-		} else if (villageCardCount > 0) {
-			await villageCards.first().click();
+		} else if (await legacyCard.isVisible().catch(() => false)) {
+			tracker.discover("Quản Lý Thôn", "card", "Thôn 1");
+			await legacyCard.click().catch(() => {});
+			tracker.recordClick("Quản Lý Thôn", "card", "Thôn 1");
 			interactionCount++;
 			await page.waitForTimeout(250);
+		} else {
+			const anyRow = page.locator("table tbody tr").first();
+			if (await anyRow.isVisible().catch(() => false)) {
+				await anyRow.click().catch(() => {});
+				interactionCount++;
+				await page.waitForTimeout(250);
+			}
 		}
 
 		await closeSuccessAlertIfPresent(page);
@@ -1008,6 +1112,28 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			await page.waitForTimeout(300);
 			visitedRoutes.push("Hỗ Trợ Xã Hội");
 			console.log("   ✓ Màn hình Hỗ Trợ Xã Hội nạp dữ liệu thành công.");
+
+			const policyBtn = page.locator('table tbody tr button:has-text("CHÍNH SÁCH")').first();
+			if (await policyBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
+				tracker.discover("Hỗ Trợ Xã Hội", "button", "Xem chi tiết chính sách");
+				await policyBtn.click().catch(() => {});
+				tracker.recordClick("Hỗ Trợ Xã Hội", "button", "Xem chi tiết chính sách");
+				interactionCount++;
+				await page.waitForTimeout(200);
+
+				const closePolicyBtn = page
+					.locator(
+						'button[aria-label="Đóng popover chính sách"], div[role="dialog"] button:has(svg.lucide-x)'
+					)
+					.first();
+				if (await closePolicyBtn.isVisible().catch(() => false)) {
+					await closePolicyBtn.click().catch(() => {});
+					interactionCount++;
+					await page.waitForTimeout(150);
+				} else {
+					await page.keyboard.press("Escape").catch(() => {});
+				}
+			}
 		}
 
 		const policyAnalyticsNav = sidebar.locator('button:has-text("TK Chính Sách")').first();
@@ -1032,12 +1158,145 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			await page.waitForTimeout(300);
 			visitedRoutes.push("Thùng Rác");
 
-			await expect(page.locator('h2:has-text("Thùng Rác")')).toBeVisible({
+			await expect(
+				page
+					.locator(
+						'h2:has-text("Thùng Rác"), h3:has-text("Bảng Lưu Trữ Thùng Rác Hộ Dân"), div:has-text("Hộ Trong Thùng Rác")'
+					)
+					.first()
+			).toBeVisible({
 				timeout: 15_000,
 			});
 
+			const trashSearch = page
+				.locator('input[placeholder*="Tìm theo tên chủ hộ, địa chỉ"]')
+				.first();
+			if (await trashSearch.isVisible().catch(() => false)) {
+				await trashSearch.fill("Nguyễn");
+				await page.waitForTimeout(200);
+				await trashSearch.fill("");
+				await page.waitForTimeout(150);
+			}
+
+			const trashFilterPills = [
+				"Tất cả",
+				"Hộ đông người (≥ 4)",
+				"Mới xóa (7 ngày)",
+				"Sắp hết hạn lưu trữ",
+			];
+			for (const pill of trashFilterPills) {
+				const pillBtn = page
+					.locator(`button:has-text("${pill}")`)
+					.first();
+				if (await pillBtn.isVisible().catch(() => false)) {
+					tracker.discover("Thùng Rác", "pill", pill);
+					await pillBtn.click().catch(() => {});
+					tracker.recordClick("Thùng Rác", "pill", pill);
+					interactionCount++;
+					await page.waitForTimeout(100);
+				}
+			}
+
+			const trashGridBtn = page.locator('button[title="Chế độ xem lưới thẻ"]').first();
+			const trashTableBtn = page.locator('button[title="Chế độ xem bảng"]').first();
+			if (await trashGridBtn.isVisible().catch(() => false)) {
+				tracker.discover("Thùng Rác", "button", "Chế độ xem lưới thẻ");
+				await trashGridBtn.click().catch(() => {});
+				tracker.recordClick("Thùng Rác", "button", "Chế độ xem lưới thẻ");
+				interactionCount++;
+				await page.waitForTimeout(150);
+			}
+			if (await trashTableBtn.isVisible().catch(() => false)) {
+				tracker.discover("Thùng Rác", "button", "Chế độ xem bảng");
+				await trashTableBtn.click().catch(() => {});
+				tracker.recordClick("Thùng Rác", "button", "Chế độ xem bảng");
+				interactionCount++;
+				await page.waitForTimeout(150);
+			}
+
+			const inspectBtn = page
+				.locator(
+					'table tbody tr button[title="Xem chi tiết hồ sơ hộ"], table tbody tr button:has(svg.lucide-eye)'
+				)
+				.first();
+			if (await inspectBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
+				tracker.discover("Thùng Rác", "button", "Xem chi tiết hồ sơ hộ");
+				await inspectBtn.click().catch(() => {});
+				tracker.recordClick("Thùng Rác", "button", "Xem chi tiết hồ sơ hộ");
+				interactionCount++;
+				await page.waitForTimeout(300);
+
+				const inspectModal = page.locator('#recycle-bin-modal-title').first();
+				if (await inspectModal.isVisible({ timeout: 4000 }).catch(() => false)) {
+					const memberRow = page
+						.locator('div[role="dialog"] table tbody tr')
+						.first();
+					if (await memberRow.isVisible().catch(() => false)) {
+						tracker.discover(
+							"Thùng Rác",
+							"button",
+							"Xem chi tiết nhân khẩu đã xóa"
+						);
+						await memberRow.click().catch(() => {});
+						tracker.recordClick(
+							"Thùng Rác",
+							"button",
+							"Xem chi tiết nhân khẩu đã xóa"
+						);
+						interactionCount++;
+						await page.waitForTimeout(200);
+
+						const closeCitizenModal = page
+							.locator(
+								'div[role="dialog"]:has(#citizen-modal-title) button[aria-label="Đóng"], div[role="dialog"]:has(#citizen-modal-title) button:has(svg.lucide-x)'
+							)
+							.first();
+						if (await closeCitizenModal.isVisible().catch(() => false)) {
+							await closeCitizenModal.click().catch(() => {});
+							interactionCount++;
+							await page.waitForTimeout(150);
+						} else {
+							await page.keyboard.press("Escape").catch(() => {});
+						}
+					}
+
+					const closeInspectBtn = page
+						.locator(
+							'button[aria-label="Đóng cửa sổ"], button:has(svg.lucide-x)'
+						)
+						.first();
+					if (await closeInspectBtn.isVisible().catch(() => false)) {
+						await closeInspectBtn.click().catch(() => {});
+						interactionCount++;
+						await page.waitForTimeout(150);
+					} else {
+						await page.keyboard.press("Escape").catch(() => {});
+					}
+				}
+			}
+
+			const firstCheckbox = page
+				.locator('table tbody tr input[type="checkbox"]')
+				.first();
+			if (await firstCheckbox.isVisible().catch(() => false)) {
+				await firstCheckbox.click().catch(() => {});
+				interactionCount++;
+				await page.waitForTimeout(200);
+
+				const deselectBtn = page.locator('button:has-text("Bỏ chọn")').first();
+				if (await deselectBtn.isVisible().catch(() => false)) {
+					tracker.discover("Thùng Rác", "button", "Bỏ chọn hàng loạt");
+					await deselectBtn.click().catch(() => {});
+					tracker.recordClick("Thùng Rác", "button", "Bỏ chọn hàng loạt");
+					interactionCount++;
+					await page.waitForTimeout(150);
+				}
+			}
+
 			const restoreBtn = page
-				.locator('table tbody tr button[title*="Khôi phục"], table tbody tr button:has(svg.lucide-rotate-ccw)')
+				.locator(
+					'table tbody tr button:has-text("Khôi phục"), table tbody tr button[title*="Khôi phục"], table tbody tr button:has(svg.lucide-rotate-ccw)'
+				)
 				.first();
 			if (await restoreBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
 				tracker.discover("Thùng Rác", "button", "Khôi phục hộ khẩu");
@@ -1047,7 +1306,9 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 				await page.waitForTimeout(200);
 
 				const confirmRestoreBtn = page
-					.locator('div[role="dialog"] button:has-text("Khôi Phục"), button:has-text("Khôi Phục")')
+					.locator(
+						'div[role="dialog"] button:has-text("Khôi Phục"), button:has-text("Khôi Phục")'
+					)
 					.first();
 				if (await confirmRestoreBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
 					const [restoreResponse] = await Promise.all([
@@ -1067,12 +1328,19 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 				}
 			}
 
+			if (await trashSearch.isVisible().catch(() => false)) {
+				await trashSearch.fill("[TEST-CRAWLER]");
+				await page.waitForTimeout(300);
+			}
+
 			const testRowInTrash = page
 				.locator('table tbody tr:has-text("[TEST-CRAWLER]")')
 				.first();
 			if (await testRowInTrash.isVisible({ timeout: 3000 }).catch(() => false)) {
 				const hardDeleteBtn = testRowInTrash
-					.locator('button:has-text("Xóa vĩnh viễn"), button[title*="Xóa vĩnh viễn"], button:has(svg.lucide-trash-2)')
+					.locator(
+						'button:has-text("Xóa vĩnh viễn"), button[title*="Xóa vĩnh viễn"], button:has(svg.lucide-trash-2)'
+					)
 					.first();
 				if (await hardDeleteBtn.isVisible().catch(() => false)) {
 					await hardDeleteBtn.click();
@@ -1080,7 +1348,9 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 					await page.waitForTimeout(200);
 
 					const confirmHardDeleteBtn = page
-						.locator('div[role="dialog"] button:has-text("Xóa Vĩnh Viễn"), div[role="dialog"] button:has-text("Xóa vĩnh viễn")')
+						.locator(
+							'div[role="dialog"] button:has-text("Xóa Vĩnh Viễn"), div[role="dialog"] button:has-text("Xóa vĩnh viễn")'
+						)
 						.first();
 					if (await confirmHardDeleteBtn.isVisible().catch(() => false)) {
 						await Promise.all([
@@ -1099,6 +1369,11 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 					}
 				}
 			}
+
+			if (await trashSearch.isVisible().catch(() => false)) {
+				await trashSearch.fill("");
+				await page.waitForTimeout(200);
+			}
 		}
 
 		currentAction = "Giai đoạn 7: Nhật Ký Hoạt Động & Cài Đặt Hệ Thống";
@@ -1112,20 +1387,96 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			await page.waitForTimeout(300);
 			visitedRoutes.push("Nhật Ký Hoạt Động");
 
-			await expect(page.locator('h2:has-text("Nhật Ký Hoạt Động")')).toBeVisible({
+			await expect(
+				page
+					.locator(
+						'h1:has-text("Nhật Ký Hoạt Động"), h2:has-text("Nhật Ký Hoạt Động")'
+					)
+					.first()
+			).toBeVisible({
 				timeout: 15_000,
 			});
 
-			const auditPills = ["Tất Cả", "Thêm Mới", "Cập Nhật", "Xóa", "Khôi Phục"];
-			for (const pill of auditPills) {
-				const pillBtn = page.locator(`button:has-text("${pill}")`).first();
-				if (await pillBtn.isVisible()) {
+			const auditActionPills = [
+				"Tất cả",
+				"Cập nhật",
+				"Thêm mới",
+				"Xóa",
+				"Khôi phục",
+				"Nhập Excel",
+			];
+			for (const pill of auditActionPills) {
+				const pillBtn = page
+					.locator(`div.flex button:has-text("${pill}")`)
+					.first();
+				if (await pillBtn.isVisible().catch(() => false)) {
 					tracker.discover("Nhật Ký Hoạt Động", "pill", pill);
-					await pillBtn.click();
+					await pillBtn.click().catch(() => {});
 					tracker.recordClick("Nhật Ký Hoạt Động", "pill", pill);
 					interactionCount++;
 					await page.waitForTimeout(100);
 				}
+			}
+
+			const auditTimePresets = [
+				"Hôm nay",
+				"Hôm qua",
+				"7 ngày qua",
+				"30 ngày qua",
+				"Tháng này",
+				"Tất cả",
+			];
+			for (const timePreset of auditTimePresets) {
+				const timeBtn = page
+					.locator(`div.flex button:has-text("${timePreset}")`)
+					.first();
+				if (await timeBtn.isVisible().catch(() => false)) {
+					tracker.discover("Nhật Ký Hoạt Động", "button", `Thời gian: ${timePreset}`);
+					await timeBtn.click().catch(() => {});
+					tracker.recordClick("Nhật Ký Hoạt Động", "button", `Thời gian: ${timePreset}`);
+					interactionCount++;
+					await page.waitForTimeout(100);
+				}
+			}
+
+			const expandAllBtn = page.locator('button:has-text("Bung mở tất cả")').first();
+			if (await expandAllBtn.isVisible().catch(() => false)) {
+				tracker.discover("Nhật Ký Hoạt Động", "button", "Bung mở tất cả");
+				await expandAllBtn.click().catch(() => {});
+				tracker.recordClick("Nhật Ký Hoạt Động", "button", "Bung mở tất cả");
+				interactionCount++;
+				await page.waitForTimeout(150);
+			}
+
+			const collapseAllBtn = page.locator('button:has-text("Thu gọn tất cả")').first();
+			if (await collapseAllBtn.isVisible().catch(() => false)) {
+				tracker.discover("Nhật Ký Hoạt Động", "button", "Thu gọn tất cả");
+				await collapseAllBtn.click().catch(() => {});
+				tracker.recordClick("Nhật Ký Hoạt Động", "button", "Thu gọn tất cả");
+				interactionCount++;
+				await page.waitForTimeout(150);
+			}
+
+			const firstAuditItem = page
+				.locator('div.space-y-4 div[role="button"], div.space-y-4 div.cursor-pointer')
+				.first();
+			if (await firstAuditItem.isVisible().catch(() => false)) {
+				tracker.discover("Nhật Ký Hoạt Động", "button", "Mở rộng chi tiết biến động");
+				await firstAuditItem.click().catch(() => {});
+				tracker.recordClick("Nhật Ký Hoạt Động", "button", "Mở rộng chi tiết biến động");
+				interactionCount++;
+				await page.waitForTimeout(150);
+			}
+
+			const refreshAuditBtn = page
+				.locator('div.flex button:has-text("Làm mới")')
+				.first();
+			if (await refreshAuditBtn.isVisible().catch(() => false)) {
+				tracker.discover("Nhật Ký Hoạt Động", "button", "Làm mới nhật ký");
+				await refreshAuditBtn.click().catch(() => {});
+				tracker.recordClick("Nhật Ký Hoạt Động", "button", "Làm mới nhật ký");
+				interactionCount++;
+				await page.waitForTimeout(200);
 			}
 		}
 
@@ -1138,16 +1489,61 @@ test.describe("QLHK Smart Crawler - Coverage Sweep & Deep Filter Testing", () =>
 			await page.waitForTimeout(300);
 			visitedRoutes.push("Cài Đặt Hệ Thống");
 
-			const usersTab = page.locator('button:has-text("Quản Lý Cán Bộ Thôn")').first();
-			if (await usersTab.isVisible({ timeout: 5000 }).catch(() => false)) {
-				await usersTab.click();
-				interactionCount++;
-				await page.waitForTimeout(200);
+			const settingsTabs = [
+				"Tài Khoản Của Tôi",
+				"Quản Lý Cán Bộ Thôn",
+				"Sao Lưu CSDL",
+				"Thông Tin Đơn Vị & Hệ Thống",
+			];
 
-				await expect(page.locator('h3:has-text("Danh Sách Tài Khoản Cán Bộ")')).toBeVisible({
-					timeout: 15_000,
-				});
-				console.log("   ✓ Danh sách người dùng trong Cài đặt hiển thị đầy đủ.");
+			for (const sTab of settingsTabs) {
+				const tabBtn = page.locator(`button:has-text("${sTab}")`).first();
+				if (await tabBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+					tracker.discover("Cài Đặt Hệ Thống", "tab", sTab);
+					await tabBtn.click().catch(() => {});
+					tracker.recordClick("Cài Đặt Hệ Thống", "tab", sTab);
+					interactionCount++;
+					await page.waitForTimeout(200);
+
+					if (sTab === "Quản Lý Cán Bộ Thôn") {
+						await expect(
+							page.locator('h3:has-text("Danh Sách Tài Khoản Cán Bộ")')
+						).toBeVisible({ timeout: 10_000 });
+
+						const refreshUsersBtn = page
+							.locator('button[aria-label="Làm mới danh sách"]')
+							.first();
+						if (await refreshUsersBtn.isVisible().catch(() => false)) {
+							tracker.discover("Cài Đặt Hệ Thống", "button", "Làm mới danh sách cán bộ");
+							await refreshUsersBtn.click().catch(() => {});
+							tracker.recordClick("Cài Đặt Hệ Thống", "button", "Làm mới danh sách cán bộ");
+							interactionCount++;
+							await page.waitForTimeout(150);
+						}
+
+						const addOfficerBtn = page
+							.locator('button:has-text("Thêm Cán Bộ")')
+							.first();
+						if (await addOfficerBtn.isVisible().catch(() => false)) {
+							tracker.discover("Cài Đặt Hệ Thống", "button", "Thêm Cán Bộ");
+							await addOfficerBtn.click().catch(() => {});
+							tracker.recordClick("Cài Đặt Hệ Thống", "button", "Thêm Cán Bộ");
+							interactionCount++;
+							await page.waitForTimeout(200);
+
+							const cancelAddOfficerBtn = page
+								.locator('div[role="dialog"] button:has-text("Hủy"), button[aria-label="Đóng"]')
+								.first();
+							if (await cancelAddOfficerBtn.isVisible().catch(() => false)) {
+								await cancelAddOfficerBtn.click().catch(() => {});
+								interactionCount++;
+								await page.waitForTimeout(150);
+							} else {
+								await page.keyboard.press("Escape").catch(() => {});
+							}
+						}
+					}
+				}
 			}
 		}
 

@@ -61,7 +61,7 @@ export const Header: React.FC = () => {
 						<button
 							type="button"
 							onClick={zoomOut}
-							disabled={zoomLevel <= 80}
+							disabled={zoomLevel <= 50}
 							aria-label="Thu nhỏ giao diện (Ctrl -)"
 							title="Thu nhỏ giao diện (Ctrl -)"
 							className="p-1.5 hover:bg-slate-700 hover:text-emerald-400 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
@@ -82,7 +82,7 @@ export const Header: React.FC = () => {
 						<button
 							type="button"
 							onClick={zoomIn}
-							disabled={zoomLevel >= 140}
+							disabled={zoomLevel >= 150}
 							aria-label="Phóng to giao diện (Ctrl +)"
 							title="Phóng to giao diện (Ctrl +)"
 							className="p-1.5 hover:bg-slate-700 hover:text-emerald-400 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"

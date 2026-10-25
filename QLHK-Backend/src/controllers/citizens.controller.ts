@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import { prisma } from "../config/prisma";
 import type { AuthRequest } from "../middlewares/auth.middleware";
+import { syncSingleCitizenToPolicy } from "../services/policySync.service";
 import { logAudit } from "../utils/audit";
 import {
 	decryptCCCD,
@@ -370,6 +371,8 @@ export const createCitizen = async (
 			ipAddress: req.ip ? String(req.ip) : null,
 		});
 
+		syncSingleCitizenToPolicy(newCitizen.id).catch(() => {});
+
 		res.status(201).json({
 			message: "Thêm nhân khẩu thành công",
 			data: {
@@ -540,6 +543,8 @@ export const updateCitizen = async (
 			ipAddress: req.ip ? String(req.ip) : null,
 		});
 
+		syncSingleCitizenToPolicy(updated.id).catch(() => {});
+
 		res.json({
 			message: "Cập nhật nhân khẩu thành công",
 			data: {
@@ -609,6 +614,8 @@ export const deleteCitizen = async (
 			oldValues: { ...current, cccd: "***" },
 			ipAddress: req.ip ? String(req.ip) : null,
 		});
+
+		syncSingleCitizenToPolicy(id).catch(() => {});
 
 		res.json({ message: "Xóa mềm nhân khẩu thành công" });
 	} catch (error) {

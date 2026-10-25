@@ -1,5 +1,4 @@
 import {
-	ArrowLeft,
 	BarChart3,
 	Building2,
 	Download,
@@ -41,7 +40,6 @@ export const AnalyticsDashboard: React.FC = () => {
 		user,
 		selectedVillageId,
 		selectedVillageName,
-		setActiveTab,
 		villages,
 		isBackendHealthy,
 	} = useApp();
@@ -823,17 +821,6 @@ export const AnalyticsDashboard: React.FC = () => {
 				</div>
 
 				<div className="flex items-center gap-3">
-					{user?.role === "admin" && selectedVillageId && (
-						<button
-							type="button"
-							onClick={() => setActiveTab("villages")}
-							className="h-10 flex items-center justify-center gap-1.5 px-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-bold transition-all active:scale-[0.99] cursor-pointer border border-slate-200 dark:border-slate-700"
-						>
-							<ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
-							<span>Quay lại danh sách thôn</span>
-						</button>
-					)}
-
 					<button
 						type="button"
 						onClick={handleExportStatsExcel}

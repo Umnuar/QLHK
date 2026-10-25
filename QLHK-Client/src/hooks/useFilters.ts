@@ -6,6 +6,7 @@ export function useFilters(activeTab: TabType) {
 	const [ctSearch, setCtSearch] = useState("");
 	const ctDebouncedSearch = useDebounce(ctSearch, 250);
 	const [ctDateFilter, setCtDateFilter] = useState("");
+	const ctDebouncedDateFilter = useDebounce(ctDateFilter, 300);
 	const [ctAgeFilters, setCtAgeFilters] = useState<string[]>([]);
 	const [ctVillageFilters, setCtVillageFilters] = useState<number[]>([]);
 	const [ctStatusFilter, setCtStatusFilter] = useState("all");
@@ -22,6 +23,7 @@ export function useFilters(activeTab: TabType) {
 	const [hxSearch, setHxSearch] = useState("");
 	const hxDebouncedSearch = useDebounce(hxSearch, 250);
 	const [hxDateFilter, setHxDateFilter] = useState("");
+	const hxDebouncedDateFilter = useDebounce(hxDateFilter, 300);
 	const [hxAgeFilters, setHxAgeFilters] = useState<string[]>([]);
 	const [hxVillageFilters, setHxVillageFilters] = useState<number[]>([]);
 	const [hxStatusFilter, setHxStatusFilter] = useState("all");
@@ -46,7 +48,7 @@ export function useFilters(activeTab: TabType) {
 	useEffect(() => {
 		if (
 			ctDebouncedSearch !== undefined ||
-			ctDateFilter !== undefined ||
+			ctDebouncedDateFilter !== undefined ||
 			ctStatusFilter !== undefined ||
 			ctAgeFilters.length >= 0 ||
 			ctVillageFilters.length >= 0 ||
@@ -56,12 +58,12 @@ export function useFilters(activeTab: TabType) {
 		) {
 			setCtCurrentPage(1);
 		}
-	}, [ctDebouncedSearch, ctDateFilter, ctStatusFilter, ctAgeFilters, ctVillageFilters, ctGenderFilter, ctEthnicityFilter, ctResidenceFilter]);
+	}, [ctDebouncedSearch, ctDebouncedDateFilter, ctStatusFilter, ctAgeFilters, ctVillageFilters, ctGenderFilter, ctEthnicityFilter, ctResidenceFilter]);
 
 	useEffect(() => {
 		if (
 			hxDebouncedSearch !== undefined ||
-			hxDateFilter !== undefined ||
+			hxDebouncedDateFilter !== undefined ||
 			hxStatusFilter !== undefined ||
 			hxAgeFilters.length >= 0 ||
 			hxVillageFilters.length >= 0 ||
@@ -71,7 +73,7 @@ export function useFilters(activeTab: TabType) {
 		) {
 			setHxCurrentPage(1);
 		}
-	}, [hxDebouncedSearch, hxDateFilter, hxStatusFilter, hxAgeFilters, hxVillageFilters, hxGenderFilter, hxEthnicityFilter, hxResidenceFilter]);
+	}, [hxDebouncedSearch, hxDebouncedDateFilter, hxStatusFilter, hxAgeFilters, hxVillageFilters, hxGenderFilter, hxEthnicityFilter, hxResidenceFilter]);
 
 	const isCt = activeTab === "chuctho";
 
@@ -81,6 +83,7 @@ export function useFilters(activeTab: TabType) {
 	const debouncedSearch = isCt ? ctDebouncedSearch : hxDebouncedSearch;
 
 	const dateFilter = isCt ? ctDateFilter : hxDateFilter;
+	const debouncedDateFilter = isCt ? ctDebouncedDateFilter : hxDebouncedDateFilter;
 	const setDateFilter = (val: string) => (isCt ? setCtDateFilter(val) : setHxDateFilter(val));
 
 	const ageFilters = isCt ? ctAgeFilters : hxAgeFilters;
@@ -163,6 +166,7 @@ export function useFilters(activeTab: TabType) {
 		setSearch,
 		debouncedSearch,
 		dateFilter,
+		debouncedDateFilter,
 		setDateFilter,
 		ageFilters,
 		setAgeFilters,

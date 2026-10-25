@@ -163,27 +163,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 		try {
 			const saved = localStorage.getItem("qlhk_zoom");
 			const parsed = saved ? parseInt(saved, 10) : 100;
-			return parsed >= 80 && parsed <= 140 ? parsed : 100;
+			return parsed >= 50 && parsed <= 150 ? parsed : 100;
 		} catch {
 			return 100;
 		}
 	});
 
 	useEffect(() => {
+		const factor = Math.min(1.5, Math.max(0.5, zoomLevel / 100));
+		document.documentElement.style.setProperty("--app-zoom", String(factor));
 		if (window.electronAPI?.setZoom) {
 			window.electronAPI.setZoom(zoomLevel);
 		} else if (window.api?.app?.setZoom) {
 			window.api.app.setZoom(zoomLevel);
+		} else {
+			document.documentElement.style.setProperty("--app-zoom", String(factor));
 		}
-		localStorage.setItem("qlhk_zoom", String(zoomLevel));
+		try {
+			localStorage.setItem("qlhk_zoom", String(zoomLevel));
+		} catch (err) {
+			console.warn("Cannot save zoom to localStorage", err);
+		}
 	}, [zoomLevel]);
 
 	const zoomIn = () => {
-		setZoomLevel((prev) => Math.min(140, prev + 10));
+		setZoomLevel((prev) => Math.min(150, prev + 10));
 	};
 
 	const zoomOut = () => {
-		setZoomLevel((prev) => Math.max(80, prev - 10));
+		setZoomLevel((prev) => Math.max(50, prev - 10));
 	};
 
 	const resetZoom = () => {
@@ -193,13 +201,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.ctrlKey || e.metaKey) {
-				if (e.key === "=" || e.key === "+") {
+				if (e.key === "=" || e.key === "+" || e.code === "NumpadAdd") {
 					e.preventDefault();
 					zoomIn();
-				} else if (e.key === "-" || e.key === "_") {
+				} else if (e.key === "-" || e.key === "_" || e.code === "NumpadSubtract") {
 					e.preventDefault();
 					zoomOut();
-				} else if (e.key === "0") {
+				} else if (e.key === "0" || e.code === "Numpad0") {
 					e.preventDefault();
 					resetZoom();
 				}

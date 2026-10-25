@@ -16,9 +16,9 @@ use crate::{
             PolicyAnalyticsData, PolicyCategoryStats, VillagePolicySummary,
         },
         policy::{
-            compute_chuctho_milestones, extract_birth_year, parse_dob_value,
-            ChucthoMilestones, ChucthoProfileDb, ChucthoProfileResponse,
-            ChucthoProfileRow, CreateChucthoDto, CreateHtxhDto, HtxhProfileDb,
+            calculate_exact_age, compute_chuctho_milestones,
+            extract_birth_year, parse_dob_value, ChucthoMilestones,
+            ChucthoProfileDb, ChucthoProfileResponse, ChucthoProfileRow, CreateChucthoDto, CreateHtxhDto, HtxhProfileDb,
             HtxhProfileResponse, HtxhProfileRow, MarkReceivedDto,
             MessageResponse, PaginatedResponse, PaginationMeta,
             PolicyQueryParams, PolicySyncRequest, PolicySyncResponse,
@@ -158,8 +158,41 @@ pub async fn get_chuctho_profiles(
 
         if let Some(td) = target_dob {
             if !td.is_empty() {
-                builder.push(" AND p.dob LIKE ");
-                builder.push_bind(format!("%{}%", td));
+                let parts: Vec<&str> = td.split(['/', '-', '.']).collect();
+                if parts.len() == 3 {
+                    if let (Ok(d), Ok(m), Ok(y)) = (
+                        parts[0].parse::<u32>(),
+                        parts[1].parse::<u32>(),
+                        parts[2].parse::<i32>(),
+                    ) {
+                        let padded = format!("{:02}/{:02}/{}", d, m, y);
+                        let unpadded = format!("{}/{}/{}", d, m, y);
+                        builder.push(" AND (p.dob LIKE ");
+                        builder.push_bind(format!("%{}%", padded));
+                        builder.push(" OR p.dob LIKE ");
+                        builder.push_bind(format!("%{}%", unpadded));
+                        builder.push(")");
+                    } else {
+                        builder.push(" AND p.dob LIKE ");
+                        builder.push_bind(format!("%{}%", td));
+                    }
+                } else if parts.len() == 2 {
+                    if let (Ok(d), Ok(m)) = (parts[0].parse::<u32>(), parts[1].parse::<u32>()) {
+                        let padded = format!("{:02}/{:02}", d, m);
+                        let unpadded = format!("{}/{}", d, m);
+                        builder.push(" AND (p.dob LIKE ");
+                        builder.push_bind(format!("%{}%", padded));
+                        builder.push(" OR p.dob LIKE ");
+                        builder.push_bind(format!("%{}%", unpadded));
+                        builder.push(")");
+                    } else {
+                        builder.push(" AND p.dob LIKE ");
+                        builder.push_bind(format!("%{}%", td));
+                    }
+                } else {
+                    builder.push(" AND p.dob LIKE ");
+                    builder.push_bind(format!("%{}%", td));
+                }
             }
         } else {
             let df = params
@@ -1323,9 +1356,9 @@ pub async fn sync_single_citizen_to_policies(
         return Ok(());
     }
 
-    let target_year = chrono::Utc::now().year();
-    let birth_year = citizen.dob.as_deref().and_then(extract_birth_year);
-    let age = birth_year.map(|by| target_year - by);
+    let today = chrono::Utc::now().date_naive();
+    let target_year = today.year();
+    let age = citizen.dob.as_deref().and_then(|d| calculate_exact_age(d, today));
 
     if let Some(age_val) = age {
         if age_val >= 60 {
@@ -1658,7 +1691,14 @@ pub async fn sync_all_citizens_to_policies(
     village_id: Option<Uuid>,
     calculation_year: Option<i32>,
 ) -> Result<(usize, usize), sqlx::Error> {
-    let target_year = calculation_year.unwrap_or_else(|| chrono::Utc::now().year());
+    let current_year = chrono::Utc::now().year();
+    let target_year = calculation_year.unwrap_or(current_year);
+    let ref_date = if target_year == current_year {
+        chrono::Utc::now().date_naive()
+    } else {
+        chrono::NaiveDate::from_ymd_opt(target_year, 12, 31)
+            .unwrap_or_else(|| chrono::Utc::now().date_naive())
+    };
 
     let query_citizens = r#"
         SELECT c.id, c.full_name, c.name_unaccented, c.dob, c.gender,
@@ -1682,8 +1722,7 @@ pub async fn sync_all_citizens_to_policies(
 
     for citizen in &citizens {
         let note_id = citizen.id.to_string();
-        let birth_year = citizen.dob.as_deref().and_then(extract_birth_year);
-        let age = birth_year.map(|by| target_year - by);
+        let age = citizen.dob.as_deref().and_then(|d| calculate_exact_age(d, ref_date));
 
         if let Some(age_val) = age {
             if age_val >= 60 {

@@ -31,6 +31,13 @@ export interface Person {
 	address?: string;
 	phone?: string;
 	notes?: string;
+	pension_policies?: string[];
+	huu_tri?: boolean;
+	huu_tuat_bao_hiem?: boolean;
+	age75plus?: boolean;
+	age70to74poor?: boolean;
+	bao_tro?: boolean;
+	nguoi_co_cong?: boolean;
 }
 
 export interface Household {
@@ -204,4 +211,3 @@ export type SortKey =
 	| null;
 
 export type SortDirection = "asc" | "desc" | null;
-

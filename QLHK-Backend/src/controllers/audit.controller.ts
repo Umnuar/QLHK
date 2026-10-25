@@ -23,7 +23,12 @@ export const getAuditLogs = async (
 		const where: any = {};
 
 		if (action && typeof action === "string" && action.trim()) {
-			where.action = action.trim();
+			const actionNormalized = action.trim();
+			if (actionNormalized === "DELETE") {
+				where.action = { in: ["DELETE", "BULK_DELETE", "HARD_DELETE"] };
+			} else {
+				where.action = actionNormalized;
+			}
 		}
 
 		if (entity_type && typeof entity_type === "string" && entity_type.trim()) {

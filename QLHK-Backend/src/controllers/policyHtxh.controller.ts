@@ -74,6 +74,49 @@ export const getHtxhProfiles = async (req: AuthRequest, res: Response): Promise<
       where.OR = [{ name_unaccented: { contains: removeAccents(search) } }, { cccd_last4: search.slice(-4) }];
     }
 
+    const rawDob = ((req.query.dob as string) || "").trim();
+    const exactDate = (((req.query.exact_date || req.query.exactDate) as string) || "").trim();
+    const targetDob = exactDate || rawDob;
+    if (targetDob) {
+      const parts = targetDob.split(/[/.-]/);
+      if (parts.length === 3) {
+        const d = parts[0];
+        const m = parts[1];
+        const y = parts[2];
+        const padded = `${d.padStart(2, "0")}/${m.padStart(2, "0")}/${y}`;
+        const unpadded = `${parseInt(d, 10)}/${parseInt(m, 10)}/${y}`;
+        if (!where.AND) where.AND = [];
+        (where.AND as any[]).push({
+          OR: [
+            { dob: { contains: padded } },
+            { dob: { contains: unpadded } },
+            { dob: { contains: targetDob } },
+          ],
+        });
+      } else if (parts.length === 2) {
+        const d = parts[0];
+        const m = parts[1];
+        const padded = `${d.padStart(2, "0")}/${m.padStart(2, "0")}`;
+        const unpadded = `${parseInt(d, 10)}/${parseInt(m, 10)}`;
+        if (!where.AND) where.AND = [];
+        (where.AND as any[]).push({
+          OR: [
+            { dob: { contains: padded } },
+            { dob: { contains: unpadded } },
+            { dob: { contains: targetDob } },
+          ],
+        });
+      } else {
+        if (!where.AND) where.AND = [];
+        (where.AND as any[]).push({
+          OR: [
+            { dob: { contains: targetDob } },
+            { dob: { endsWith: targetDob } },
+          ],
+        });
+      }
+    }
+
     const rawSortKey = (req.query.sortKey as string) || "stt";
     const sortField = SORT_KEY_MAP[rawSortKey] || "stt";
     const sortDirection = ((req.query.sortDirection as string) || "asc").toLowerCase() === "desc" ? "desc" : "asc";

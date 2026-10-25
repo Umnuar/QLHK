@@ -612,6 +612,11 @@ pub async fn create_citizen(
         .await;
     });
 
+    let sync_pool = state.pool.clone();
+    tokio::spawn(async move {
+        let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, citizen_id).await;
+    });
+
     let resp = format_citizen(created_db);
     (
         StatusCode::CREATED,
@@ -818,6 +823,11 @@ pub async fn update_citizen(
             None,
         )
         .await;
+    });
+
+    let sync_pool = state.pool.clone();
+    tokio::spawn(async move {
+        let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, id).await;
     });
 
     let resp = format_citizen(updated_db);

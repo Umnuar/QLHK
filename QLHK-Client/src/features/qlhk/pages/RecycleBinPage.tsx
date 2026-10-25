@@ -1,9 +1,7 @@
-import { ArrowLeft, RotateCcw, ShieldAlert, Trash2 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/AppContext";
 import { householdApi } from "@/api/householdApi";
-import { RecycleBinTable } from "../components/households/RecycleBinTable";
 import { ModernRecycleBinTable } from "../components/households/ModernRecycleBinTable";
 import { useModal } from "@/hooks/useModal";
 import type { Household } from "@/types";
@@ -11,7 +9,6 @@ import type { Household } from "@/types";
 export const RecycleBinPage: React.FC = () => {
 	const { setActiveTab, villages } = useApp();
 	const { showModal } = useModal();
-	const [uiMode, setUiMode] = useState<"modern" | "legacy">("modern");
 
 	const [deletedHouseholds, setDeletedHouseholds] = useState<Household[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -173,111 +170,9 @@ export const RecycleBinPage: React.FC = () => {
 
 	return (
 		<div className="space-y-6 animate-in fade-in pb-10">
-			<div className="flex items-center justify-between pb-1 flex-wrap gap-3">
-				<div className="flex items-center p-1 rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border border-slate-300/60 dark:border-slate-700/60 shadow-xs">
-					<button
-						type="button"
-						onClick={() => setUiMode("modern")}
-						className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-							uiMode === "modern"
-								? "bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm"
-								: "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-						}`}
-					>
-						Bảng Thùng Rác Mới (UI Test)
-					</button>
-					<button
-						type="button"
-						onClick={() => setUiMode("legacy")}
-						className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-							uiMode === "legacy"
-								? "bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm"
-								: "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-						}`}
-					>
-						Giao Diện Thùng Rác Cũ
-					</button>
-				</div>
-			</div>
-
-			{uiMode === "modern" ? (
-				<ModernRecycleBinTable
-					households={deletedHouseholds}
-					villages={villages}
-					loading={loading}
-					total={total}
-					page={page}
-					limit={limit}
-					totalPages={totalPages}
-					selectedIds={selectedIds}
-					onToggleSelect={handleToggleSelect}
-					onToggleSelectAll={handleToggleSelectAll}
-					onPageChange={setPage}
-					onLimitChange={setLimit}
-					onRestore={handleRestore}
-					onHardDelete={handleHardDelete}
-					onBatchRestore={handleBatchRestore}
-					onBatchHardDelete={handleBatchHardDelete}
-					onRefresh={fetchDeleted}
-				/>
-			) : (
-				<>
-					<div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors duration-150">
-				<div>
-					<div className="flex items-center gap-2.5">
-						<span className="px-3 py-1 rounded-xl text-xs font-black bg-rose-50 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 uppercase tracking-wider">
-							Thùng Rác ({total})
-						</span>
-						<h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-							<Trash2
-								className="w-6 h-6 text-rose-600 dark:text-rose-400"
-								strokeWidth={1.5}
-							/>
-							<span>Thùng Rác Hộ Gia Đình</span>
-						</h2>
-					</div>
-					<p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-						Quản lý các hộ dân đã xóa tạm, hỗ trợ khôi phục nguyên trạng hoặc
-						xóa vĩnh viễn
-					</p>
-				</div>
-
-				<div className="flex items-center gap-2.5 flex-wrap">
-					<button
-						type="button"
-						onClick={() => setActiveTab("households")}
-						className="h-10 flex items-center justify-center gap-1.5 px-3.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 cursor-pointer"
-					>
-						<ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
-						<span>Về danh sách Hộ Gia Đình</span>
-					</button>
-
-					{selectedIds.length > 0 && (
-						<>
-							<button
-								type="button"
-								onClick={handleBatchRestore}
-								className="h-10 flex items-center gap-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold transition-all shadow-xs cursor-pointer animate-in fade-in"
-							>
-								<RotateCcw className="w-4 h-4" strokeWidth={1.5} />
-								<span>Khôi Phục ({selectedIds.length})</span>
-							</button>
-
-							<button
-								type="button"
-								onClick={handleBatchHardDelete}
-								className="h-10 flex items-center gap-1.5 px-4 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl text-xs font-bold transition-all shadow-xs cursor-pointer animate-in fade-in"
-							>
-								<ShieldAlert className="w-4 h-4" strokeWidth={1.5} />
-								<span>Xóa Vĩnh Viễn ({selectedIds.length})</span>
-							</button>
-						</>
-					)}
-				</div>
-			</div>
-
-			<RecycleBinTable
+			<ModernRecycleBinTable
 				households={deletedHouseholds}
+				villages={villages}
 				loading={loading}
 				total={total}
 				page={page}
@@ -290,9 +185,11 @@ export const RecycleBinPage: React.FC = () => {
 				onLimitChange={setLimit}
 				onRestore={handleRestore}
 				onHardDelete={handleHardDelete}
+				onBatchRestore={handleBatchRestore}
+				onBatchHardDelete={handleBatchHardDelete}
+				onRefresh={fetchDeleted}
+				onBack={() => setActiveTab("households")}
 			/>
-				</>
-			)}
 		</div>
 	);
 };

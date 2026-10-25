@@ -56,6 +56,7 @@ export interface ModernRecycleBinTableProps {
 	onBatchRestore: () => void;
 	onBatchHardDelete: () => void;
 	onRefresh: () => Promise<void>;
+	onBack?: () => void;
 }
 
 type QuickFilter = "all" | "large_household" | "recent_7_days" | "expiring_soon";
@@ -83,6 +84,7 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 	onBatchRestore,
 	onBatchHardDelete,
 	onRefresh,
+	onBack,
 }) => {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedVillage, setSelectedVillage] = useState("all");
@@ -415,9 +417,6 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 						<div>
 							<h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
 								<span>Bảng Lưu Trữ Thùng Rác Hộ Dân</span>
-								<span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-									UI Mới
-								</span>
 							</h3>
 							<p className="text-xs text-slate-500 dark:text-slate-400">
 								Tổng {total} hộ trong thùng rác • Trang {page} / {totalPages || 1} • Tự động giữ nguyên trạng thành viên nhân khẩu
@@ -426,6 +425,18 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 					</div>
 
 					<div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap justify-end">
+						{onBack && (
+							<button
+								type="button"
+								onClick={onBack}
+								title="Về danh sách Hộ Gia Đình"
+								className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
+							>
+								<ArrowLeft className="w-4 h-4" />
+								<span className="hidden sm:inline">Về danh sách Hộ Gia Đình</span>
+							</button>
+						)}
+
 						<button
 							type="button"
 							onClick={handleRefreshClick}

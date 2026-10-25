@@ -867,10 +867,12 @@ export const AuditLogView: React.FC = () => {
 							<section key={group.dateKey} className="relative space-y-3">
 								<div
 									style={{ top: "var(--header-height, 0px)" }}
-									className="sticky z-20 -mx-5 sm:-mx-6 px-5 sm:px-6 py-2.5 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800/90 shadow-sm dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.5)] flex items-center"
+									className="sticky z-20 -mx-5 sm:-mx-6 px-5 sm:px-6 py-3.5 pb-4 sm:py-4 sm:pb-4.5 bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 shadow-sm dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.5)] flex items-center"
 								>
 									<div className="relative w-full flex items-center">
-										<div className="absolute left-4 sm:left-5 -translate-x-1/2 w-6 h-6 rounded-full bg-emerald-600 dark:bg-emerald-500 text-white ring-4 ring-white dark:ring-slate-900 shadow-xs flex items-center justify-center z-20">
+										<div className="absolute left-4 sm:left-5 -translate-x-1/2 -top-5 -bottom-5 w-0.5 bg-slate-200 dark:bg-slate-800 z-10 pointer-events-none" />
+
+										<div className="absolute left-4 sm:left-5 -translate-x-1/2 w-6 h-6 rounded-full bg-slate-500 dark:bg-slate-600 text-white ring-4 ring-white dark:ring-slate-900 shadow-xs flex items-center justify-center z-20">
 											<Calendar className="w-3 h-3 stroke-[2.5]" />
 										</div>
 
@@ -891,7 +893,7 @@ export const AuditLogView: React.FC = () => {
 									</div>
 								</div>
 
-								<div className="space-y-2.5">
+								<div className="space-y-2.5 pt-3 sm:pt-4">
 									{group.items.map((item) => {
 										const isExpanded = expandedIds.has(item.id);
 										const actionMeta = getActionMeta(item.action);

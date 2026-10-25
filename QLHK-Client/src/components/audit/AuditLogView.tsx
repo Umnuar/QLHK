@@ -5,12 +5,14 @@ import {
 	FileSpreadsheet,
 	Filter,
 	History,
+	LayoutList,
 	MapPin,
 	Plus,
 	RefreshCw,
 	RotateCcw,
 	Search,
 	Shield,
+	Sparkles,
 	Trash2,
 	UserCheck,
 	User as UserIcon,
@@ -26,6 +28,7 @@ import {
 import { authApi } from "../../api/authApi";
 import type { User } from "../../types";
 import { CustomSelect } from "../common/CustomSelect";
+import { AuditTimelineView } from "./AuditTimelineView";
 
 const FIELD_LABELS: Record<string, string> = {
 	book_number: "Mã định danh hộ",
@@ -118,6 +121,7 @@ export const AuditLogView: React.FC = () => {
 	const { user, villages, selectedVillageId, setSelectedVillageId } = useApp();
 	const isAdmin = user?.role === "admin";
 
+	const [viewMode, setViewMode] = useState<"timeline" | "classic">("timeline");
 	const [actionFilter, setActionFilter] = useState<string>("ALL");
 	const [villageFilter, setVillageFilter] = useState<string>(
 		selectedVillageId || "",
@@ -687,7 +691,34 @@ export const AuditLogView: React.FC = () => {
 					</p>
 				</div>
 
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-2.5 flex-wrap">
+					<div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
+						<button
+							type="button"
+							onClick={() => setViewMode("timeline")}
+							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+								viewMode === "timeline"
+									? "bg-emerald-600 text-white shadow-xs"
+									: "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+							}`}
+						>
+							<Sparkles className="w-3.5 h-3.5 text-amber-300" />
+							<span>Timeline Mới (Test UI)</span>
+						</button>
+						<button
+							type="button"
+							onClick={() => setViewMode("classic")}
+							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+								viewMode === "classic"
+									? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs"
+									: "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+							}`}
+						>
+							<LayoutList className="w-3.5 h-3.5" />
+							<span>Dạng Thẻ Cũ</span>
+						</button>
+					</div>
+
 					<button
 						type="button"
 						onClick={() => fetchLogs(1, false)}
@@ -702,7 +733,29 @@ export const AuditLogView: React.FC = () => {
 				</div>
 			</div>
 
-			<div className="flex flex-wrap items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
+			{viewMode === "timeline" ? (
+				<AuditTimelineView
+					logs={logs}
+					loading={loading}
+					total={total}
+					page={page}
+					totalPages={totalPages}
+					onPageChange={(p) => fetchLogs(p, false)}
+					onRefresh={() => fetchLogs(page, false)}
+					actionFilter={actionFilter}
+					onActionFilterChange={(act) => setActionFilter(act)}
+					villageFilter={villageFilter}
+					onVillageFilterChange={(v) => setVillageFilter(v)}
+					villages={villages}
+					userFilter={userFilter}
+					onUserFilterChange={(u) => setUserFilter(u)}
+					userList={userList}
+					isAdmin={isAdmin}
+					userVillageId={user?.village_id}
+				/>
+			) : (
+				<>
+					<div className="flex flex-wrap items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
 				<span className="text-xs font-bold text-slate-500 dark:text-slate-400 px-3 flex items-center gap-1.5">
 					<Filter className="w-3.5 h-3.5" strokeWidth={1.5} />
 					<span>Sự kiện:</span>
@@ -977,6 +1030,8 @@ export const AuditLogView: React.FC = () => {
 					</div>
 				)}
 			</div>
-		</div>
-	);
+		</>
+	)}
+</div>
+);
 };

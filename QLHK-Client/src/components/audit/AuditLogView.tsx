@@ -1,24 +1,29 @@
 import {
 	Activity,
 	ArrowDownCircle,
+	ArrowRight,
+	Calendar,
+	ChevronDown,
+	ChevronRight,
 	Clock,
 	FileSpreadsheet,
 	Filter,
-	History,
-	LayoutList,
+	Home,
+	Layers,
 	MapPin,
 	Plus,
 	RefreshCw,
 	RotateCcw,
 	Search,
 	Shield,
-	Sparkles,
+	ShieldCheck,
 	Trash2,
 	UserCheck,
 	User as UserIcon,
+	X,
 } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApp } from "../../AppContext";
 import {
 	type AuditAction,
@@ -28,7 +33,15 @@ import {
 import { authApi } from "../../api/authApi";
 import type { User } from "../../types";
 import { CustomSelect } from "../common/CustomSelect";
-import { AuditTimelineView } from "./AuditTimelineView";
+
+export type TimeFilterPreset =
+	| "all"
+	| "today"
+	| "yesterday"
+	| "7days"
+	| "30days"
+	| "this_month"
+	| "custom";
 
 const FIELD_LABELS: Record<string, string> = {
 	book_number: "Mã định danh hộ",
@@ -43,7 +56,7 @@ const FIELD_LABELS: Record<string, string> = {
 	village_id: "Mã thôn",
 	full_name: "Họ và tên",
 	name: "Họ và tên",
-	relationship: "Quan hệ với chủ hộ",
+	relationship: "Quan hệ",
 	dob: "Ngày sinh",
 	dob_formatted: "Ngày sinh",
 	gender: "Giới tính",
@@ -107,6 +120,13 @@ const IGNORED_FIELDS = new Set([
 	"removed_members",
 ]);
 
+interface FieldDiff {
+	key: string;
+	label: string;
+	from: any;
+	to: any;
+}
+
 function formatValue(val: any): string {
 	if (val === null || val === undefined || val === "") return "(Trống)";
 	if (typeof val === "boolean") return val ? "Có" : "Không";
@@ -117,29 +137,248 @@ function formatValue(val: any): string {
 	return String(val);
 }
 
+function computeFieldDiffs(oldVals: any, newVals: any): FieldDiff[] {
+	if (!oldVals && !newVals) return [];
+	const oldObj = typeof oldVals === "object" && oldVals !== null ? oldVals : {};
+	const newObj = typeof newVals === "object" && newVals !== null ? newVals : {};
+
+	const allKeys = Array.from(
+		new Set([...Object.keys(oldObj), ...Object.keys(newObj)]),
+	);
+	const diffs: FieldDiff[] = [];
+
+	for (const key of allKeys) {
+		if (IGNORED_FIELDS.has(key)) continue;
+
+		const fromVal = oldObj[key];
+		const toVal = newObj[key];
+
+		const fromStr = JSON.stringify(fromVal ?? null);
+		const toStr = JSON.stringify(toVal ?? null);
+
+		if (fromStr !== toStr) {
+			diffs.push({
+				key,
+				label: FIELD_LABELS[key] || key,
+				from: fromVal,
+				to: toVal,
+			});
+		}
+	}
+
+	return diffs;
+}
+
+function getActionMeta(action: AuditAction) {
+	switch (action) {
+		case "CREATE":
+			return {
+				label: "Thêm mới",
+				badgeClass:
+					"bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+				dotClass: "bg-emerald-500 ring-emerald-500/20",
+				icon: Plus,
+			};
+		case "UPDATE":
+			return {
+				label: "Cập nhật",
+				badgeClass:
+					"bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30",
+				dotClass: "bg-blue-500 ring-blue-500/20",
+				icon: RefreshCw,
+			};
+		case "DELETE":
+			return {
+				label: "Xóa",
+				badgeClass:
+					"bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30",
+				dotClass: "bg-rose-500 ring-rose-500/20",
+				icon: Trash2,
+			};
+		case "RESTORE":
+			return {
+				label: "Khôi phục",
+				badgeClass:
+					"bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30",
+				dotClass: "bg-purple-500 ring-purple-500/20",
+				icon: RotateCcw,
+			};
+		case "IMPORT":
+			return {
+				label: "Nhập Excel",
+				badgeClass:
+					"bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
+				dotClass: "bg-amber-500 ring-amber-500/20",
+				icon: FileSpreadsheet,
+			};
+		default:
+			return {
+				label: String(action),
+				badgeClass:
+					"bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30",
+				dotClass: "bg-slate-500 ring-slate-500/20",
+				icon: Activity,
+			};
+	}
+}
+
+function getEntitySummary(item: AuditLogItem): {
+	name: string;
+	sub: string;
+	icon: React.ComponentType<{ className?: string }>;
+} {
+	if (item.entity_type === "household") {
+		const oldV = item.old_values || {};
+		const newV = item.new_values || {};
+		const headName = newV.head_name || oldV.head_name;
+		const bookNum = newV.book_number || oldV.book_number;
+		return {
+			name: headName ? `Hộ ${headName}` : `Hộ gia đình #${item.entity_id || ""}`,
+			sub: bookNum ? `Mã: ${bookNum}` : item.entity_id ? `ID: ${item.entity_id}` : "",
+			icon: Home,
+		};
+	}
+
+	if (item.entity_type === "citizen") {
+		const oldV = item.old_values || {};
+		const newV = item.new_values || {};
+		const name = newV.full_name || oldV.full_name;
+		const rel = newV.relationship || oldV.relationship;
+		const cccdLast4 = newV.cccd_last4 || oldV.cccd_last4;
+		return {
+			name: name ? `Nhân khẩu ${name}` : `Nhân khẩu #${item.entity_id || ""}`,
+			sub: rel ? `${rel}${cccdLast4 ? ` • •••• ${cccdLast4}` : ""}` : "",
+			icon: UserIcon,
+		};
+	}
+
+	if (item.entity_type === "excel_import") {
+		const newV = item.new_values || {};
+		return {
+			name: newV.file_name ? `Tệp: ${newV.file_name}` : "Tệp Excel Dân số",
+			sub: `${newV.imported_households || 0} hộ • ${newV.imported_citizens || 0} nhân khẩu`,
+			icon: FileSpreadsheet,
+		};
+	}
+
+	return {
+		name: item.description || `Đối tượng ${item.entity_type}`,
+		sub: item.entity_id ? `ID: ${item.entity_id}` : "",
+		icon: Layers,
+	};
+}
+
+function getQuickInlineSummary(item: AuditLogItem, diffs: FieldDiff[]): string {
+	if (item.action === "UPDATE") {
+		if (diffs.length > 0) {
+			const names = diffs.slice(0, 3).map((d) => d.label);
+			const moreCount = diffs.length - 3;
+			return `Đổi ${diffs.length} trường: ${names.join(", ")}${moreCount > 0 ? ` +${moreCount}` : ""}`;
+		}
+		const newV = item.new_values || {};
+		if (Array.isArray(newV.added_members) && newV.added_members.length > 0) {
+			return `Thêm ${newV.added_members.length} nhân khẩu vào hộ`;
+		}
+		if (Array.isArray(newV.removed_members) && newV.removed_members.length > 0) {
+			return `Tách/gỡ ${newV.removed_members.length} nhân khẩu khỏi hộ`;
+		}
+		return "Cập nhật thông tin bản ghi";
+	}
+
+	if (item.action === "CREATE") {
+		const newV = item.new_values || {};
+		if (item.entity_type === "household") {
+			return `Tạo mới sổ hộ khẩu${newV.members_count ? ` (${newV.members_count} nhân khẩu)` : ""}`;
+		}
+		return `Đăng ký nhân khẩu mới${newV.relationship ? ` (${newV.relationship})` : ""}`;
+	}
+
+	if (item.action === "DELETE") {
+		const newV = item.new_values || {};
+		return newV.reason ? `Xóa: ${newV.reason}` : "Chuyển bản ghi vào Thùng rác";
+	}
+
+	if (item.action === "RESTORE") {
+		const newV = item.new_values || {};
+		return newV.notes ? `Khôi phục: ${newV.notes}` : "Khôi phục dữ liệu từ Thùng rác";
+	}
+
+	if (item.action === "IMPORT") {
+		const newV = item.new_values || {};
+		return `Nhập ${newV.imported_households || 0} hộ, ${newV.imported_citizens || 0} nhân khẩu`;
+	}
+
+	return item.description || "Thao tác nghiệp vụ";
+}
+
+function formatDayGroupTitle(dateStr: string): { title: string; isToday: boolean; isYesterday: boolean } {
+	const itemDate = new Date(dateStr);
+	if (isNaN(itemDate.getTime())) {
+		return { title: dateStr, isToday: false, isYesterday: false };
+	}
+
+	const today = new Date();
+	const itemDayKey = `${itemDate.getFullYear()}-${itemDate.getMonth()}-${itemDate.getDate()}`;
+	const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+
+	const yesterday = new Date();
+	yesterday.setDate(today.getDate() - 1);
+	const yesterdayKey = `${yesterday.getFullYear()}-${yesterday.getMonth()}-${yesterday.getDate()}`;
+
+	const formattedDate = itemDate.toLocaleDateString("vi-VN", {
+		weekday: "long",
+		day: "2-digit",
+		month: "2-digit",
+		year: "numeric",
+	});
+
+	if (itemDayKey === todayKey) {
+		return {
+			title: `Hôm nay • ${itemDate.toLocaleDateString("vi-VN")}`,
+			isToday: true,
+			isYesterday: false,
+		};
+	}
+
+	if (itemDayKey === yesterdayKey) {
+		return {
+			title: `Hôm qua • ${itemDate.toLocaleDateString("vi-VN")}`,
+			isToday: false,
+			isYesterday: true,
+		};
+	}
+
+	return {
+		title: formattedDate,
+		isToday: false,
+		isYesterday: false,
+	};
+}
+
 export const AuditLogView: React.FC = () => {
 	const { user, villages, selectedVillageId, setSelectedVillageId } = useApp();
 	const isAdmin = user?.role === "admin";
 
-	const [viewMode, setViewMode] = useState<"timeline" | "classic">("timeline");
 	const [actionFilter, setActionFilter] = useState<string>("ALL");
-	const [villageFilter, setVillageFilter] = useState<string>(
-		selectedVillageId || "",
-	);
+	const [villageFilter, setVillageFilter] = useState<string>(selectedVillageId || "");
 	const [userFilter, setUserFilter] = useState<string>("");
-	const [search, setSearch] = useState<string>("");
-
-	useEffect(() => {
-		setVillageFilter(selectedVillageId || "");
-	}, [selectedVillageId]);
+	const [searchQuery, setSearchQuery] = useState<string>("");
+	const [timePreset, setTimePreset] = useState<TimeFilterPreset>("all");
+	const [customStartDate, setCustomStartDate] = useState<string>("");
+	const [customEndDate, setCustomEndDate] = useState<string>("");
 
 	const [logs, setLogs] = useState<AuditLogItem[]>([]);
 	const [total, setTotal] = useState<number>(0);
 	const [page, setPage] = useState<number>(1);
-	const [limit] = useState<number>(10);
+	const [limit] = useState<number>(50);
 	const [totalPages, setTotalPages] = useState<number>(1);
 	const [loading, setLoading] = useState<boolean>(false);
 	const [userList, setUserList] = useState<User[]>([]);
+	const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+	useEffect(() => {
+		setVillageFilter(selectedVillageId || "");
+	}, [selectedVillageId]);
 
 	useEffect(() => {
 		const loadUsers = async () => {
@@ -163,7 +402,7 @@ export const AuditLogView: React.FC = () => {
 					villageId: villageFilter || undefined,
 					action: actionFilter !== "ALL" ? actionFilter : undefined,
 					userId: userFilter || undefined,
-					search: search.trim() || undefined,
+					search: searchQuery.trim() || undefined,
 				});
 
 				if (append) {
@@ -179,7 +418,7 @@ export const AuditLogView: React.FC = () => {
 				setLoading(false);
 			}
 		},
-		[actionFilter, villageFilter, userFilter, search, limit],
+		[actionFilter, villageFilter, userFilter, searchQuery, limit],
 	);
 
 	useEffect(() => {
@@ -195,843 +434,759 @@ export const AuditLogView: React.FC = () => {
 		}
 	};
 
-	const getActionConfig = (action: AuditAction) => {
-		switch (action) {
-			case "CREATE":
-				return {
-					label: "Thêm Mới",
-					colorBadge:
-						"bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
-					dotBg: "bg-emerald-500 ring-emerald-100 dark:ring-emerald-950",
-					icon: Plus,
-				};
-			case "UPDATE":
-				return {
-					label: "Cập Nhật",
-					colorBadge:
-						"bg-blue-50 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300 border-blue-200 dark:border-blue-800",
-					dotBg: "bg-blue-500 ring-blue-100 dark:ring-blue-950",
-					icon: RefreshCw,
-				};
-			case "DELETE":
-				return {
-					label: "Xóa Dữ Liệu",
-					colorBadge:
-						"bg-rose-50 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border-rose-200 dark:border-rose-800",
-					dotBg: "bg-rose-500 ring-rose-100 dark:ring-rose-950",
-					icon: Trash2,
-				};
-			case "RESTORE":
-				return {
-					label: "Khôi Phục",
-					colorBadge:
-						"bg-purple-50 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 border-purple-200 dark:border-purple-800",
-					dotBg: "bg-purple-500 ring-purple-100 dark:ring-purple-950",
-					icon: RotateCcw,
-				};
-			case "IMPORT":
-				return {
-					label: "Nhập Excel",
-					colorBadge:
-						"bg-amber-50 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border-amber-200 dark:border-amber-800",
-					dotBg: "bg-amber-500 ring-amber-100 dark:ring-amber-950",
-					icon: FileSpreadsheet,
-				};
-			default:
-				return {
-					label: action,
-					colorBadge:
-						"bg-slate-50 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700",
-					dotBg: "bg-slate-500 ring-slate-100 dark:ring-slate-900",
-					icon: History,
-				};
-		}
+	const toggleExpand = (id: string) => {
+		setExpandedIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(id)) {
+				next.delete(id);
+			} else {
+				next.add(id);
+			}
+			return next;
+		});
 	};
 
-	const renderFriendlyDiff = (item: AuditLogItem) => {
-		if (item.action === "UPDATE") {
-			const oldVals =
-				typeof item.old_values === "object" && item.old_values
-					? item.old_values
-					: {};
-			const newVals =
-				typeof item.new_values === "object" && item.new_values
-					? item.new_values
-					: {};
-
-			if (newVals.action === "REVEAL_CCCD") {
-				return (
-					<div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
-						<Shield
-							className="w-4 h-4 text-amber-600 shrink-0"
-							strokeWidth={1.5}
-						/>
-						<span>
-							Tra cứu & hiển thị số Căn cước công dân (Yêu cầu quyền hạn & đã
-							ghi vết kiểm soát)
-						</span>
-					</div>
-				);
-			}
-
-			const basicKeys = Array.from(
-				new Set([...Object.keys(oldVals), ...Object.keys(newVals)]),
-			).filter(
-				(k) =>
-					!IGNORED_FIELDS.has(k) &&
-					typeof oldVals[k] !== "object" &&
-					typeof newVals[k] !== "object",
-			);
-
-			const basicChanges = basicKeys
-				.filter((k) => {
-					const v1 =
-						oldVals[k] !== undefined && oldVals[k] !== null
-							? String(oldVals[k]).trim()
-							: "";
-					const v2 =
-						newVals[k] !== undefined && newVals[k] !== null
-							? String(newVals[k]).trim()
-							: "";
-					return v1 !== v2;
-				})
-				.map((k) => ({
-					field: k,
-					label: FIELD_LABELS[k] || k,
-					oldVal: formatValue(oldVals[k]),
-					newVal: formatValue(newVals[k]),
-				}));
-
-			const addedMembers: any[] = Array.isArray(newVals.added_members)
-				? newVals.added_members
-				: [];
-			const updatedMembers: any[] = Array.isArray(newVals.updated_members)
-				? newVals.updated_members
-				: [];
-			const removedMembers: any[] = Array.isArray(newVals.removed_members)
-				? newVals.removed_members
-				: [];
-
-			const hasMemberChanges =
-				addedMembers.length > 0 ||
-				updatedMembers.length > 0 ||
-				removedMembers.length > 0;
-
-			if (basicChanges.length === 0 && !hasMemberChanges) {
-				return (
-					<div className="text-xs text-slate-500 dark:text-slate-400 italic">
-						Thông tin đã được đồng bộ lại.
-					</div>
-				);
-			}
-
-			return (
-				<div className="space-y-3 mt-2">
-					{basicChanges.length > 0 && (
-						<div className="space-y-1.5">
-							<div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-								Thay đổi thông tin:
-							</div>
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-								{basicChanges.map((c) => (
-									<div
-										key={c.field}
-										className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 text-xs flex flex-col justify-between"
-									>
-										<span className="font-bold text-slate-700 dark:text-slate-300">
-											{c.label}
-										</span>
-										<div className="flex items-center gap-2 mt-1 flex-wrap">
-											<span className="line-through text-rose-500/90 dark:text-rose-400 font-medium">
-												{c.oldVal}
-											</span>
-											<span className="text-slate-400 font-bold font-mono">
-												→
-											</span>
-											<span className="font-black text-emerald-600 dark:text-emerald-400">
-												{c.newVal}
-											</span>
-										</div>
-									</div>
-								))}
-							</div>
-						</div>
-					)}
-
-					{hasMemberChanges && (
-						<div className="space-y-2">
-							<div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-								Biến động thành viên hộ:
-							</div>
-
-							{addedMembers.map((m: any, idx: number) => (
-								<div
-									key={`add-${idx}`}
-									className="p-2.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 text-xs flex items-center justify-between gap-2 flex-wrap"
-								>
-									<div className="flex items-center gap-2">
-										<span className="px-2 py-0.5 rounded-md font-bold text-[11px] bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
-											+ Thêm nhân khẩu
-										</span>
-										<strong className="text-slate-900 dark:text-white">
-											{m.full_name}
-										</strong>
-										<span className="text-slate-500 dark:text-slate-400">
-											({m.relationship || "Thành viên"})
-										</span>
-									</div>
-									<div className="text-slate-600 dark:text-slate-300 text-[11px] font-mono">
-										{m.dob && <span>NS: {m.dob} • </span>}
-										{m.gender && <span>{m.gender} • </span>}
-										<span>
-											CCCD: {m.cccd_last4 ? `•••• ${m.cccd_last4}` : "Chưa có"}
-										</span>
-									</div>
-								</div>
-							))}
-
-							{updatedMembers.map((m: any, idx: number) => (
-								<div
-									key={`upd-${idx}`}
-									className="p-2.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/50 text-xs space-y-1.5"
-								>
-									<div className="flex items-center gap-2">
-										<span className="px-2 py-0.5 rounded-md font-bold text-[11px] bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
-											Cập nhật nhân khẩu
-										</span>
-										<strong className="text-slate-900 dark:text-white">
-											{m.full_name}
-										</strong>
-										<span className="text-slate-500 dark:text-slate-400">
-											({m.relationship || "Thành viên"})
-										</span>
-									</div>
-									{m.changes && Object.keys(m.changes).length > 0 && (
-										<div className="pl-4 space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
-											{Object.entries(m.changes).map(
-												([k, diff]: [string, any]) => (
-													<div
-														key={k}
-														className="flex items-center gap-1.5 flex-wrap"
-													>
-														<span className="font-semibold text-slate-700 dark:text-slate-200">
-															{FIELD_LABELS[k] || k}:
-														</span>
-														<span className="line-through text-rose-500 font-mono">
-															{formatValue(diff.from)}
-														</span>
-														<span className="text-slate-400 font-bold font-mono">
-															→
-														</span>
-														<span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">
-															{formatValue(diff.to)}
-														</span>
-													</div>
-												),
-											)}
-										</div>
-									)}
-								</div>
-							))}
-
-							{removedMembers.map((m: any, idx: number) => (
-								<div
-									key={`rem-${idx}`}
-									className="p-2.5 rounded-xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 text-xs flex items-center justify-between gap-2 flex-wrap"
-								>
-									<div className="flex items-center gap-2">
-										<span className="px-2 py-0.5 rounded-md font-bold text-[11px] bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300">
-											Gỡ khỏi hộ
-										</span>
-										<strong className="text-slate-900 dark:text-white line-through">
-											{m.full_name}
-										</strong>
-										<span className="text-slate-500 dark:text-slate-400">
-											({m.relationship || "Thành viên"})
-										</span>
-									</div>
-									<div className="text-slate-500 dark:text-slate-400 text-[11px] font-mono">
-										{m.dob && <span>NS: {m.dob} • </span>}
-										<span>
-											CCCD: {m.cccd_last4 ? `•••• ${m.cccd_last4}` : "Chưa có"}
-										</span>
-									</div>
-								</div>
-							))}
-						</div>
-					)}
-				</div>
-			);
-		}
-
-		if (item.action === "CREATE" && item.new_values) {
-			const vals = typeof item.new_values === "object" ? item.new_values : {};
-			const citizensList: any[] = Array.isArray(vals.citizens)
-				? vals.citizens
-				: [];
-
-			return (
-				<div className="space-y-2 mt-2">
-					<div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-						Dữ liệu khởi tạo:
-					</div>
-					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-						{vals.book_number && (
-							<div className="p-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-800/40 text-xs flex flex-col">
-								<span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">
-									Mã định danh hộ
-								</span>
-								<span className="font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-									{vals.book_number}
-								</span>
-							</div>
-						)}
-						{vals.head_name && (
-							<div className="p-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-800/40 text-xs flex flex-col">
-								<span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">
-									Chủ hộ
-								</span>
-								<span className="font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-									{vals.head_name}
-								</span>
-							</div>
-						)}
-						{vals.address && (
-							<div className="p-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-800/40 text-xs flex flex-col">
-								<span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">
-									Địa chỉ
-								</span>
-								<span className="font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-									{vals.address}
-								</span>
-							</div>
-						)}
-						{vals.village_name && (
-							<div className="p-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-800/40 text-xs flex flex-col">
-								<span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">
-									Thôn
-								</span>
-								<span className="font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-									{vals.village_name}
-								</span>
-							</div>
-						)}
-						{vals.status && (
-							<div className="p-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-800/40 text-xs flex flex-col">
-								<span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">
-									Trạng thái cư trú
-								</span>
-								<span className="font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-									{vals.status}
-								</span>
-							</div>
-						)}
-						{vals.members_count !== undefined && (
-							<div className="p-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-800/40 text-xs flex flex-col">
-								<span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">
-									Số nhân khẩu
-								</span>
-								<span className="font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-									{vals.members_count} người
-								</span>
-							</div>
-						)}
-						{item.entity_type === "citizen" && vals.full_name && (
-							<div className="p-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-800/40 text-xs flex flex-col">
-								<span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">
-									Họ và tên
-								</span>
-								<span className="font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-									{vals.full_name} ({vals.relationship || "Thành viên"})
-								</span>
-							</div>
-						)}
-					</div>
-
-					{citizensList.length > 0 && (
-						<div className="mt-2 space-y-1.5">
-							<div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-								Thành viên khởi tạo ({citizensList.length}):
-							</div>
-							<div className="space-y-1">
-								{citizensList.map((c: any, idx: number) => (
-									<div
-										key={idx}
-										className="p-2 rounded-lg bg-emerald-50/30 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 text-xs flex items-center justify-between flex-wrap gap-1"
-									>
-										<div>
-											<strong className="text-slate-800 dark:text-slate-200">
-												{c.full_name}
-											</strong>
-											<span className="text-slate-500 ml-1">
-												(
-												{c.relationship ||
-													(c.is_head ? "Chủ hộ" : "Thành viên")}
-												)
-											</span>
-										</div>
-										<div className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-											{c.gender && <span>{c.gender} • </span>}
-											{c.dob && <span>NS: {c.dob} • </span>}
-											<span>
-												CCCD:{" "}
-												{c.cccd_last4 ? `•••• ${c.cccd_last4}` : "Chưa có"}
-											</span>
-										</div>
-									</div>
-								))}
-							</div>
-						</div>
-					)}
-				</div>
-			);
-		}
-
-		if (item.action === "IMPORT" && item.new_values) {
-			return (
-				<div className="mt-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-1 text-slate-800 dark:text-slate-200">
-					<div className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-						<FileSpreadsheet className="w-4 h-4" strokeWidth={1.5} />
-						<span>
-							Tệp Excel: {item.new_values.file_name || "NhanHoKhau.xlsx"}
-						</span>
-					</div>
-					<div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
-						<div>
-							Số hộ nhập:{" "}
-							<strong className="text-slate-900 dark:text-white">
-								{item.new_values.imported_households || 0}
-							</strong>
-						</div>
-						<div>
-							Số nhân khẩu:{" "}
-							<strong className="text-slate-900 dark:text-white">
-								{item.new_values.imported_citizens || 0}
-							</strong>
-						</div>
-					</div>
-				</div>
-			);
-		}
-
-		if (item.action === "DELETE" && item.old_values) {
-			const vals = typeof item.old_values === "object" ? item.old_values : {};
-			return (
-				<div className="mt-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-800 dark:text-rose-200 space-y-1">
-					<div className="font-bold">Đã chuyển vào Thùng rác:</div>
-					<div>
-						{item.entity_type === "household" ? (
-							<>
-								Hộ ông/bà: <strong>{vals.head_name || "Chưa rõ"}</strong>
-								{vals.address && <span> ({vals.address})</span>}
-								{vals.members_count !== undefined && (
-									<span> — {vals.members_count} nhân khẩu</span>
-								)}
-							</>
-						) : (
-							<>
-								Nhân khẩu: <strong>{vals.full_name || item.entity_id}</strong>
-								{vals.relationship && <span> ({vals.relationship})</span>}
-								{vals.cccd_last4 && (
-									<span> — CCCD: •••• {vals.cccd_last4}</span>
-								)}
-							</>
-						)}
-					</div>
-					{item.new_values?.reason && (
-						<div className="text-[11px] text-rose-600 dark:text-rose-400 italic">
-							Lý do: {item.new_values.reason}
-						</div>
-					)}
-				</div>
-			);
-		}
-
-		if (item.action === "RESTORE") {
-			const vals = typeof item.new_values === "object" ? item.new_values : {};
-			return (
-				<div className="mt-2 p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs text-purple-800 dark:text-purple-200">
-					<span>
-						Khôi phục bản ghi:{" "}
-						<strong>
-							{vals.book_number || vals.full_name || item.entity_id}
-						</strong>
-					</span>
-					{vals.notes && (
-						<div className="text-[11px] mt-1 text-purple-600 dark:text-purple-400">
-							{vals.notes}
-						</div>
-					)}
-				</div>
-			);
-		}
-
-		return null;
+	const expandAll = () => {
+		setExpandedIds(new Set(logs.map((l) => l.id)));
 	};
+
+	const collapseAll = () => {
+		setExpandedIds(new Set());
+	};
+
+	const filteredLogs = useMemo(() => {
+		return logs.filter((item) => {
+			if (timePreset === "all") return true;
+
+			const itemDate = new Date(item.created_at);
+			if (isNaN(itemDate.getTime())) return true;
+
+			const now = new Date();
+			const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+			if (timePreset === "today") {
+				return itemDate >= todayMidnight;
+			}
+
+			if (timePreset === "yesterday") {
+				const yesterdayMidnight = new Date(todayMidnight.getTime() - 86400000);
+				return itemDate >= yesterdayMidnight && itemDate < todayMidnight;
+			}
+
+			if (timePreset === "7days") {
+				const sevenDaysAgo = new Date(todayMidnight.getTime() - 7 * 86400000);
+				return itemDate >= sevenDaysAgo;
+			}
+
+			if (timePreset === "30days") {
+				const thirtyDaysAgo = new Date(todayMidnight.getTime() - 30 * 86400000);
+				return itemDate >= thirtyDaysAgo;
+			}
+
+			if (timePreset === "this_month") {
+				const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+				return itemDate >= firstDayOfMonth;
+			}
+
+			if (timePreset === "custom") {
+				if (customStartDate) {
+					const start = new Date(customStartDate);
+					if (itemDate < start) return false;
+				}
+				if (customEndDate) {
+					const end = new Date(`${customEndDate}T23:59:59.999Z`);
+					if (itemDate > end) return false;
+				}
+			}
+
+			return true;
+		});
+	}, [logs, timePreset, customStartDate, customEndDate]);
+
+	const groupedByDate = useMemo(() => {
+		const groups: Array<{
+			dateKey: string;
+			groupMeta: ReturnType<typeof formatDayGroupTitle>;
+			items: AuditLogItem[];
+		}> = [];
+
+		const map = new Map<string, AuditLogItem[]>();
+
+		for (const item of filteredLogs) {
+			const d = new Date(item.created_at);
+			const dateKey = !isNaN(d.getTime())
+				? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+				: "unknown";
+
+			const list = map.get(dateKey) || [];
+			list.push(item);
+			map.set(dateKey, list);
+		}
+
+		for (const [dateKey, items] of map.entries()) {
+			groups.push({
+				dateKey,
+				groupMeta: formatDayGroupTitle(items[0]?.created_at || dateKey),
+				items,
+			});
+		}
+
+		return groups;
+	}, [filteredLogs]);
+
+	const updateCount = useMemo(
+		() => filteredLogs.filter((l) => l.action === "UPDATE").length,
+		[filteredLogs],
+	);
+	const createCount = useMemo(
+		() => filteredLogs.filter((l) => l.action === "CREATE").length,
+		[filteredLogs],
+	);
+	const deleteCount = useMemo(
+		() => filteredLogs.filter((l) => l.action === "DELETE" || l.action === "RESTORE").length,
+		[filteredLogs],
+	);
 
 	return (
-		<div className="space-y-6 animate-in fade-in pb-12">
-			<div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors duration-150">
-				<div>
-					<div className="flex items-center gap-2.5 flex-wrap">
-						<span className="px-3 py-1 rounded-xl text-xs font-black bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 uppercase tracking-wider">
-							Hệ Thống Kiểm Soát
-						</span>
-						<h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-							<History
-								className="w-6 h-6 text-emerald-600 dark:text-emerald-400"
-								strokeWidth={1.5}
-							/>
-							<span>Nhật Ký Hoạt Động & Biến Động Dữ Liệu</span>
-						</h2>
+		<div className="space-y-6">
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-slate-800">
+				<div className="flex items-center gap-3">
+					<div className="w-11 h-11 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+						<ShieldCheck className="w-6 h-6" strokeWidth={1.75} />
 					</div>
-					<p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-						Ghi vết tự động toàn bộ biến động nhân hộ khẩu, nhập xuất dữ liệu và
-						thao tác nghiệp vụ tại Xã Đăk Hà
-					</p>
+					<div>
+						<h1 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+							<span>Nhật Ký Hoạt Động & Kiểm Soát</span>
+						</h1>
+						<p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+							Lịch sử biến động dữ liệu hộ khẩu, nhân khẩu và phân tích giám sát hệ thống
+						</p>
+					</div>
 				</div>
 
-				<div className="flex items-center gap-2.5 flex-wrap">
-					<div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
-						<button
-							type="button"
-							onClick={() => setViewMode("timeline")}
-							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-								viewMode === "timeline"
-									? "bg-emerald-600 text-white shadow-xs"
-									: "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-							}`}
-						>
-							<Sparkles className="w-3.5 h-3.5 text-amber-300" />
-							<span>Timeline Mới (Test UI)</span>
-						</button>
-						<button
-							type="button"
-							onClick={() => setViewMode("classic")}
-							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-								viewMode === "classic"
-									? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs"
-									: "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-							}`}
-						>
-							<LayoutList className="w-3.5 h-3.5" />
-							<span>Dạng Thẻ Cũ</span>
-						</button>
-					</div>
-
+				<div className="flex items-center gap-2">
 					<button
 						type="button"
 						onClick={() => fetchLogs(1, false)}
-						className="h-10 flex items-center gap-1.5 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 cursor-pointer"
+						disabled={loading}
+						className="px-3.5 py-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 shadow-xs flex items-center gap-1.5 cursor-pointer transition-all disabled:opacity-50"
 					>
-						<RefreshCw
-							strokeWidth={1.5}
-							className={`w-4 h-4 ${loading ? "animate-spin text-emerald-600" : ""}`}
-						/>
-						<span>Làm Mới</span>
+						<RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-600" : ""}`} />
+						<span>{loading ? "Đang tải..." : "Làm mới"}</span>
 					</button>
 				</div>
 			</div>
 
-			{viewMode === "timeline" ? (
-				<AuditTimelineView
-					logs={logs}
-					loading={loading}
-					total={total}
-					page={page}
-					totalPages={totalPages}
-					onPageChange={(p) => fetchLogs(p, false)}
-					onRefresh={() => fetchLogs(page, false)}
-					actionFilter={actionFilter}
-					onActionFilterChange={(act) => setActionFilter(act)}
-					villageFilter={villageFilter}
-					onVillageFilterChange={(v) => setVillageFilter(v)}
-					villages={villages}
-					userFilter={userFilter}
-					onUserFilterChange={(u) => setUserFilter(u)}
-					userList={userList}
-					isAdmin={isAdmin}
-					userVillageId={user?.village_id}
-				/>
-			) : (
-				<>
-					<div className="flex flex-wrap items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
-				<span className="text-xs font-bold text-slate-500 dark:text-slate-400 px-3 flex items-center gap-1.5">
-					<Filter className="w-3.5 h-3.5" strokeWidth={1.5} />
-					<span>Sự kiện:</span>
-				</span>
-
-				{[
-					{
-						id: "ALL",
-						label: "Tất Cả",
-						icon: Activity,
-						color: "bg-slate-900 text-white dark:bg-white dark:text-slate-900",
-					},
-					{
-						id: "CREATE",
-						label: "Thêm Mới",
-						icon: Plus,
-						color: "bg-emerald-600 text-white",
-					},
-					{
-						id: "UPDATE",
-						label: "Cập Nhật",
-						icon: RefreshCw,
-						color: "bg-blue-600 text-white",
-					},
-					{
-						id: "DELETE",
-						label: "Xóa",
-						icon: Trash2,
-						color: "bg-rose-600 text-white",
-					},
-					{
-						id: "RESTORE",
-						label: "Khôi Phục",
-						icon: RotateCcw,
-						color: "bg-purple-600 text-white",
-					},
-					{
-						id: "IMPORT",
-						label: "Nhập Excel",
-						icon: FileSpreadsheet,
-						color: "bg-amber-600 text-white",
-					},
-				].map((item) => {
-					const isActive = actionFilter === item.id;
-					const Icon = item.icon;
-					return (
-						<button
-							key={item.id}
-							type="button"
-							onClick={() => setActionFilter(item.id)}
-							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-								isActive
-									? `${item.color} shadow-xs`
-									: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-							}`}
-						>
-							<Icon className="w-3.5 h-3.5 shrink-0" strokeWidth={1.5} />
-							<span>{item.label}</span>
-						</button>
-					);
-				})}
-			</div>
-
-			<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-				<div className="relative">
-					<Search
-						className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
-						strokeWidth={1.5}
-					/>
-					<input
-						type="text"
-						value={search}
-						onChange={(e) => setSearch(e.target.value)}
-						placeholder="Tìm theo nội dung, tên chủ hộ, tên cán bộ..."
-						className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:bg-slate-800/80 dark:border-slate-700/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:bg-slate-800 rounded-2xl text-xs font-medium focus:outline-hidden"
-					/>
-				</div>
-
-				{selectedVillageId ? (
-					<div className="flex items-center justify-between px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 rounded-2xl text-xs">
-						<div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-200 truncate">
-							<MapPin
-								className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0"
-								strokeWidth={1.5}
-							/>
-							<span className="truncate">
-								Đang xem biến động dữ liệu:{" "}
-								<strong>
-									{villages.find((v) => v.id === selectedVillageId)?.name ||
-										"Thôn đã chọn"}
-								</strong>
-							</span>
+			<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+				<div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
+					<div>
+						<div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+							Tổng sự kiện
 						</div>
-						<button
-							type="button"
-							onClick={() => {
-								setSelectedVillageId("");
-								setVillageFilter("");
-							}}
-							className="ml-2 px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-emerald-100 dark:hover:bg-slate-700 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 rounded-xl text-[11px] font-bold shadow-xs cursor-pointer transition-all shrink-0"
-							title="Chuyển về xem toàn xã"
-						>
-							Xem Toàn Xã
-						</button>
+						<div className="text-xl font-black text-slate-900 dark:text-white tabular-nums mt-0.5">
+							{filteredLogs.length}
+						</div>
 					</div>
-				) : isAdmin ? (
-					<CustomSelect
-						value={villageFilter}
-						onChange={(val) => setVillageFilter(String(val))}
-						options={[
-							{ value: "", label: "Toàn xã (Tất cả thôn)" },
-							...villages.map((v) => ({ value: v.id, label: v.name })),
-						]}
-						placeholder="Địa bàn thôn"
-						icon={
-							<MapPin
-								className="w-3.5 h-3.5 text-slate-400 shrink-0"
-								strokeWidth={1.5}
-							/>
-						}
-						clearable={Boolean(villageFilter)}
-						onClear={() => setVillageFilter("")}
-						className="rounded-2xl text-xs font-bold"
-					/>
-				) : (
-					<div className="flex items-center px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-2xl text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-						<span>
-							Đơn vị:{" "}
-							{villages.find((v) => v.id === user?.village_id)?.name ||
-								"Thôn phụ trách"}
-						</span>
+					<div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+						<Activity className="w-4 h-4" />
 					</div>
-				)}
-
-				<CustomSelect
-					value={userFilter}
-					onChange={(val) => setUserFilter(String(val))}
-					options={[
-						{ value: "", label: "Tất cả cán bộ thực hiện" },
-						...userList.map((u) => ({
-							value: u.username,
-							label: u.full_name
-								? `${u.full_name} (${u.username})`
-								: u.username,
-						})),
-					]}
-					searchable
-					placeholder="Cán bộ thực hiện"
-					icon={
-						<UserCheck
-							className="w-3.5 h-3.5 text-slate-400 shrink-0"
-							strokeWidth={1.5}
-						/>
-					}
-					clearable={Boolean(userFilter)}
-					onClear={() => setUserFilter("")}
-					className="rounded-2xl text-xs font-bold"
-				/>
-			</div>
-
-			<div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 shadow-sm">
-				<div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
-					<div className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-2">
-						<Clock className="w-4 h-4 text-emerald-500" strokeWidth={1.5} />
-						<span>Dòng thời gian biến động ({total} sự kiện)</span>
-					</div>
-					<span className="text-xs font-mono text-slate-400">
-						Trang {page} / {totalPages}
-					</span>
 				</div>
 
-				{loading && logs.length === 0 ? (
-					<div className="py-12 flex flex-col items-center justify-center text-slate-400 text-xs">
-						<RefreshCw
-							className="w-6 h-6 animate-spin text-emerald-600 mb-2"
-							strokeWidth={1.5}
-						/>
-						<span>Đang tải nhật ký kiểm soát...</span>
+				<div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
+					<div>
+						<div className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+							Lượt cập nhật
+						</div>
+						<div className="text-xl font-black text-blue-700 dark:text-blue-300 tabular-nums mt-0.5">
+							{updateCount}
+						</div>
 					</div>
-				) : logs.length === 0 ? (
-					<div className="py-12 text-center text-slate-400 text-xs italic">
-						Không tìm thấy sự kiện biến động nào phù hợp với bộ lọc.
+					<div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+						<RefreshCw className="w-4 h-4" />
 					</div>
-				) : (
-					<div className="relative border-l-2 border-slate-200 dark:border-slate-800 ml-4 space-y-6 pb-2">
-						{logs.map((item) => {
-							const cfg = getActionConfig(item.action);
-							const ActionIcon = cfg.icon;
-							const dateObj = new Date(item.created_at);
-							const timeStr = !isNaN(dateObj.getTime())
-								? `${dateObj.toLocaleTimeString("vi-VN")} • ${dateObj.toLocaleDateString("vi-VN")}`
-								: item.created_at;
+				</div>
 
+				<div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
+					<div>
+						<div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+							Thêm mới
+						</div>
+						<div className="text-xl font-black text-emerald-700 dark:text-emerald-300 tabular-nums mt-0.5">
+							{createCount}
+						</div>
+					</div>
+					<div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+						<Plus className="w-4 h-4" />
+					</div>
+				</div>
+
+				<div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
+					<div>
+						<div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+							Xóa / Khôi phục
+						</div>
+						<div className="text-xl font-black text-rose-700 dark:text-rose-300 tabular-nums mt-0.5">
+							{deleteCount}
+						</div>
+					</div>
+					<div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+						<Trash2 className="w-4 h-4" />
+					</div>
+				</div>
+			</div>
+
+			<div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3.5">
+				<div className="flex flex-wrap items-center justify-between gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800">
+					<div className="flex items-center gap-1.5 flex-wrap">
+						<span className="text-xs font-bold text-slate-500 dark:text-slate-400 mr-1 flex items-center gap-1">
+							<Filter className="w-3.5 h-3.5" />
+							<span>Hành động:</span>
+						</span>
+						{[
+							{ id: "ALL", label: "Tất cả" },
+							{ id: "UPDATE", label: "Cập nhật" },
+							{ id: "CREATE", label: "Thêm mới" },
+							{ id: "DELETE", label: "Xóa" },
+							{ id: "RESTORE", label: "Khôi phục" },
+							{ id: "IMPORT", label: "Nhập Excel" },
+						].map((act) => {
+							const isAct = actionFilter === act.id;
 							return (
-								<div key={item.id} className="relative pl-6 group">
-									<div
-										className={`absolute -left-2.25 top-1.5 w-4.5 h-4.5 rounded-full ${cfg.dotBg} ring-4 flex items-center justify-center text-white shadow-xs transition-transform group-hover:scale-110`}
-									>
-										<ActionIcon className="w-2.5 h-2.5 stroke-[3]" />
-									</div>
-
-									<div className="bg-slate-50/60 dark:bg-slate-950/60 p-4.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs hover:border-emerald-500/40 transition-all space-y-2">
-										<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-											<div className="flex items-center gap-2 flex-wrap">
-												<span
-													className={`px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider border ${cfg.colorBadge}`}
-												>
-													{cfg.label}
-												</span>
-
-												<span className="text-xs font-black text-slate-800 dark:text-slate-100">
-													{item.description ||
-														`${cfg.label} đối tượng ${item.entity_type}`}
-												</span>
-											</div>
-
-											<div className="flex items-center gap-1.5 text-xs font-mono text-slate-500 dark:text-slate-400 shrink-0">
-												<Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
-												<span>{timeStr}</span>
-											</div>
-										</div>
-
-										{renderFriendlyDiff(item)}
-
-										<div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 flex-wrap gap-2">
-											<div className="flex items-center gap-3">
-												<span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
-													<UserIcon
-														className="w-3.5 h-3.5 text-emerald-500"
-														strokeWidth={1.5}
-													/>
-													<span>
-														{item.full_name || item.username || "Hệ thống"}
-													</span>
-												</span>
-
-												{item.village_name && (
-													<span className="flex items-center gap-1">
-														<MapPin
-															className="w-3.5 h-3.5 text-blue-500"
-															strokeWidth={1.5}
-														/>
-														<span>{item.village_name}</span>
-													</span>
-												)}
-											</div>
-
-											{item.ip_address && (
-												<span className="font-mono text-slate-400">
-													IP: {item.ip_address}
-												</span>
-											)}
-										</div>
-									</div>
-								</div>
+								<button
+									key={act.id}
+									type="button"
+									onClick={() => setActionFilter(act.id)}
+									className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+										isAct
+											? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs"
+											: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+									}`}
+								>
+									{act.label}
+								</button>
 							);
 						})}
+					</div>
+
+					<div className="flex items-center gap-2">
+						<button
+							type="button"
+							onClick={expandAll}
+							className="px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer"
+						>
+							Bung mở tất cả
+						</button>
+						<span className="text-slate-300 dark:text-slate-700">|</span>
+						<button
+							type="button"
+							onClick={collapseAll}
+							className="px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer"
+						>
+							Thu gọn tất cả
+						</button>
+					</div>
+				</div>
+
+				<div className="flex flex-wrap items-center gap-2.5">
+					<div className="flex items-center gap-1.5 flex-wrap">
+						<span className="text-xs font-bold text-slate-500 dark:text-slate-400 mr-1 flex items-center gap-1">
+							<Calendar className="w-3.5 h-3.5" />
+							<span>Thời gian:</span>
+						</span>
+						{[
+							{ id: "all", label: "Tất cả" },
+							{ id: "today", label: "Hôm nay" },
+							{ id: "yesterday", label: "Hôm qua" },
+							{ id: "7days", label: "7 ngày qua" },
+							{ id: "30days", label: "30 ngày qua" },
+							{ id: "this_month", label: "Tháng này" },
+							{ id: "custom", label: "Tùy chọn..." },
+						].map((tp) => {
+							const isPres = timePreset === tp.id;
+							return (
+								<button
+									key={tp.id}
+									type="button"
+									onClick={() => setTimePreset(tp.id as TimeFilterPreset)}
+									className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+										isPres
+											? "bg-emerald-600 text-white shadow-xs"
+											: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+									}`}
+								>
+									{tp.label}
+								</button>
+							);
+						})}
+					</div>
+
+					{timePreset === "custom" && (
+						<div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/60 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs animate-in zoom-in-95">
+							<input
+								type="date"
+								value={customStartDate}
+								onChange={(e) => setCustomStartDate(e.target.value)}
+								aria-label="Từ ngày"
+								className="px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono text-xs"
+							/>
+							<span className="text-slate-400 font-bold">→</span>
+							<input
+								type="date"
+								value={customEndDate}
+								onChange={(e) => setCustomEndDate(e.target.value)}
+								aria-label="Đến ngày"
+								className="px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono text-xs"
+							/>
+							{(customStartDate || customEndDate) && (
+								<button
+									type="button"
+									onClick={() => {
+										setCustomStartDate("");
+										setCustomEndDate("");
+									}}
+									className="p-1 text-slate-400 hover:text-rose-500 rounded-lg cursor-pointer"
+									title="Xóa khoảng ngày"
+								>
+									<X className="w-3.5 h-3.5" />
+								</button>
+							)}
+						</div>
+					)}
+				</div>
+
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1">
+					<div className="relative">
+						<Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+						<input
+							type="text"
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							placeholder="Tìm nhanh họ tên, CCCD, mã sổ..."
+							className="w-full pl-9 pr-8 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium outline-hidden focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+						/>
+						{searchQuery && (
+							<button
+								type="button"
+								onClick={() => setSearchQuery("")}
+								className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+							>
+								<X className="w-3.5 h-3.5" />
+							</button>
+						)}
+					</div>
+
+					{selectedVillageId ? (
+						<div className="flex items-center justify-between px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 rounded-xl text-xs">
+							<div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-200 truncate">
+								<MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+								<span className="truncate">
+									Thôn: <strong>{villages.find((v) => v.id === selectedVillageId)?.name || "Thôn đã chọn"}</strong>
+								</span>
+							</div>
+							<button
+								type="button"
+								onClick={() => {
+									setSelectedVillageId("");
+									setVillageFilter("");
+								}}
+								className="px-2 py-0.5 bg-white dark:bg-slate-800 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 rounded-lg text-[10px] font-bold cursor-pointer transition-all"
+							>
+								Toàn Xã
+							</button>
+						</div>
+					) : isAdmin ? (
+						<CustomSelect
+							value={villageFilter}
+							onChange={(val) => setVillageFilter(String(val))}
+							options={[
+								{ value: "", label: "Toàn xã (Tất cả thôn)" },
+								...villages.map((v) => ({ value: v.id, label: v.name })),
+							]}
+							placeholder="Địa bàn thôn"
+							icon={<MapPin className="w-3.5 h-3.5 text-slate-400" />}
+							clearable={Boolean(villageFilter)}
+							onClear={() => setVillageFilter("")}
+							className="rounded-xl text-xs font-bold"
+						/>
+					) : (
+						<div className="flex items-center px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+							<MapPin className="w-3.5 h-3.5 text-emerald-500 mr-1.5 shrink-0" />
+							<span className="truncate">
+								Đơn vị: {villages.find((v) => v.id === user?.village_id)?.name || "Thôn phụ trách"}
+							</span>
+						</div>
+					)}
+
+					<CustomSelect
+						value={userFilter}
+						onChange={(val) => setUserFilter(String(val))}
+						options={[
+							{ value: "", label: "Tất cả cán bộ thực hiện" },
+							...userList.map((u) => ({
+								value: u.username,
+								label: u.full_name ? `${u.full_name} (${u.username})` : u.username,
+							})),
+						]}
+						searchable
+						placeholder="Cán bộ thực hiện"
+						icon={<UserCheck className="w-3.5 h-3.5 text-slate-400" />}
+						clearable={Boolean(userFilter)}
+						onClear={() => setUserFilter("")}
+						className="rounded-xl text-xs font-bold"
+					/>
+				</div>
+			</div>
+
+			<div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 shadow-sm space-y-6">
+				<div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+					<div className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+						<Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+						<span>Dòng Thời Gian Biến Động ({filteredLogs.length} sự kiện)</span>
+					</div>
+					<div className="flex items-center gap-3">
+						<span className="text-xs font-mono text-slate-400">
+							Tổng {total} bản ghi • Trang {page} / {totalPages || 1}
+						</span>
+					</div>
+				</div>
+
+				{loading && filteredLogs.length === 0 ? (
+					<div className="py-16 flex flex-col items-center justify-center text-slate-400 text-xs">
+						<RefreshCw className="w-6 h-6 animate-spin text-emerald-600 mb-2" />
+						<span>Đang tải dòng thời gian kiểm soát...</span>
+					</div>
+				) : filteredLogs.length === 0 ? (
+					<div className="py-16 text-center text-slate-400 text-xs italic">
+						Không có sự kiện biến động nào phù hợp với bộ lọc đã chọn.
+					</div>
+				) : (
+					<div className="space-y-8">
+						{groupedByDate.map((group) => (
+							<section key={group.dateKey} className="space-y-3">
+								<div className="sticky top-16 z-20 flex items-center justify-between bg-slate-50/95 dark:bg-slate-950/90 backdrop-blur-sm px-3.5 py-1.5 rounded-xl border border-slate-200/70 dark:border-slate-800/80">
+									<div className="flex items-center gap-2">
+										<Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+										<span className="text-xs font-black text-slate-800 dark:text-slate-200">
+											{group.groupMeta.title}
+										</span>
+										{group.groupMeta.isToday && (
+											<span className="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+												Mới nhất
+											</span>
+										)}
+									</div>
+									<span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-mono">
+										{group.items.length} sự kiện
+									</span>
+								</div>
+
+								<div className="relative border-l-2 border-slate-200 dark:border-slate-800 ml-3.5 sm:ml-5 space-y-2.5">
+									{group.items.map((item) => {
+										const isExpanded = expandedIds.has(item.id);
+										const actionMeta = getActionMeta(item.action);
+										const entityMeta = getEntitySummary(item);
+										const EntityIcon = entityMeta.icon;
+										const diffs = computeFieldDiffs(item.old_values, item.new_values);
+										const quickSummary = getQuickInlineSummary(item, diffs);
+
+										const dateObj = new Date(item.created_at);
+										const timeStr = !isNaN(dateObj.getTime())
+											? dateObj.toLocaleTimeString("vi-VN", {
+													hour: "2-digit",
+													minute: "2-digit",
+													second: "2-digit",
+												})
+											: item.created_at;
+
+										return (
+											<div key={item.id} className="relative pl-5 sm:pl-6 group">
+												<div
+													className={`absolute -left-1.5 top-3.5 w-3 h-3 rounded-full ${actionMeta.dotClass} ring-4 transition-transform group-hover:scale-125`}
+												/>
+
+												<div
+													onClick={() => toggleExpand(item.id)}
+													className={`p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer ${
+														isExpanded
+															? "bg-slate-50 dark:bg-slate-800/80 border-emerald-500/50 shadow-sm"
+															: "bg-white dark:bg-slate-900/90 border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs"
+													}`}
+												>
+													<div className="flex items-center justify-between gap-3 text-xs flex-wrap md:flex-nowrap">
+														<div className="flex items-center gap-2.5 min-w-0 flex-1">
+															<span className="font-mono text-slate-500 dark:text-slate-400 font-semibold shrink-0 text-[11px]">
+																{timeStr}
+															</span>
+
+															<span
+																className={`px-2 py-0.5 rounded-lg text-[11px] font-black uppercase tracking-wider border shrink-0 ${actionMeta.badgeClass}`}
+															>
+																{actionMeta.label}
+															</span>
+
+															<div className="flex items-center gap-1.5 shrink-0 max-w-[200px] truncate">
+																<EntityIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+																<span className="font-bold text-slate-900 dark:text-white truncate">
+																	{entityMeta.name}
+																</span>
+															</div>
+
+															<span className="text-slate-300 dark:text-slate-700 hidden lg:inline">
+																•
+															</span>
+
+															<span className="text-slate-600 dark:text-slate-300 truncate hidden sm:inline flex-1 text-xs">
+																{quickSummary}
+															</span>
+														</div>
+
+														<div className="flex items-center gap-2.5 shrink-0 text-[11px] text-slate-500 dark:text-slate-400">
+															<span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+																<UserIcon className="w-3 h-3 text-emerald-500" />
+																<span>{item.full_name || item.username || "Hệ thống"}</span>
+															</span>
+
+															{item.village_name && (
+																<span className="flex items-center gap-1 hidden md:flex">
+																	<MapPin className="w-3 h-3 text-blue-500" />
+																	<span className="max-w-[120px] truncate">{item.village_name}</span>
+																</span>
+															)}
+
+															<div className="w-5 h-5 rounded-lg flex items-center justify-center text-slate-400 group-hover:text-emerald-600 transition-colors">
+																{isExpanded ? (
+																	<ChevronDown className="w-4 h-4 text-emerald-600" />
+																) : (
+																	<ChevronRight className="w-4 h-4" />
+																)}
+															</div>
+														</div>
+													</div>
+
+													{isExpanded && (
+														<div
+															onClick={(e) => e.stopPropagation()}
+															className="mt-3.5 pt-3.5 border-t border-slate-200/80 dark:border-slate-700/80 space-y-3 cursor-default animate-in fade-in slide-in-from-top-1 duration-150"
+														>
+															<div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+																<span className="font-semibold text-slate-700 dark:text-slate-200">
+																	Chi tiết thay đổi & biến động dữ liệu:
+																</span>
+																<span className="font-mono text-[11px]">
+																	Mã sự kiện: {item.id}
+																</span>
+															</div>
+
+															{item.action === "UPDATE" && (
+																<div className="space-y-3">
+																	{diffs.length > 0 ? (
+																		<div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden text-xs">
+																			<div className="grid grid-cols-12 bg-slate-100 dark:bg-slate-800/90 font-bold text-slate-700 dark:text-slate-300 p-2.5 border-b border-slate-200 dark:border-slate-700">
+																				<div className="col-span-4 sm:col-span-3">Trường thông tin</div>
+																				<div className="col-span-4 sm:col-span-4 text-rose-600 dark:text-rose-400">
+																					Trước khi sửa (Cũ)
+																				</div>
+																				<div className="col-span-4 sm:col-span-5 text-emerald-600 dark:text-emerald-400">
+																					Sau khi sửa (Mới)
+																				</div>
+																			</div>
+																			<div className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+																				{diffs.map((diff) => (
+																					<div
+																						key={diff.key}
+																						className="grid grid-cols-12 p-2.5 items-center hover:bg-slate-50/50 dark:hover:bg-slate-800/40"
+																					>
+																						<div className="col-span-4 sm:col-span-3 font-semibold text-slate-800 dark:text-slate-200">
+																							{diff.label}
+																						</div>
+																						<div className="col-span-4 sm:col-span-4 pr-2 font-mono text-[11px] text-rose-700 dark:text-rose-300 line-through">
+																							{formatValue(diff.from)}
+																						</div>
+																						<div className="col-span-4 sm:col-span-5 flex items-center gap-1.5 font-mono text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+																							<ArrowRight className="w-3 h-3 text-slate-400 shrink-0 hidden sm:inline" />
+																							<span>{formatValue(diff.to)}</span>
+																						</div>
+																					</div>
+																				))}
+																			</div>
+																		</div>
+																	) : (
+																		<div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-xs text-slate-500 dark:text-slate-400 italic">
+																			Không có trường dữ liệu văn bản thay đổi trực tiếp (thay đổi cấu trúc hoặc danh sách thành viên).
+																		</div>
+																	)}
+
+																	{item.new_values && (
+																		<>
+																			{Array.isArray(item.new_values.added_members) &&
+																				item.new_values.added_members.length > 0 && (
+																					<div className="space-y-1.5">
+																						<div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+																							Thêm nhân khẩu mới vào hộ ({item.new_values.added_members.length}):
+																						</div>
+																						{item.new_values.added_members.map((m: any, idx: number) => (
+																							<div
+																								key={`add-${idx}`}
+																								className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs flex items-center justify-between"
+																							>
+																								<span className="font-bold text-emerald-950 dark:text-emerald-100">
+																									+ {m.full_name} ({m.relationship || "Thành viên"})
+																								</span>
+																								<span className="font-mono text-[11px] text-slate-500">
+																									{m.dob ? `NS: ${m.dob} • ` : ""}
+																									CCCD: {m.cccd_last4 ? `•••• ${m.cccd_last4}` : "Chưa có"}
+																								</span>
+																							</div>
+																						))}
+																					</div>
+																				)}
+
+																			{Array.isArray(item.new_values.removed_members) &&
+																				item.new_values.removed_members.length > 0 && (
+																					<div className="space-y-1.5">
+																						<div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+																							Tách / gỡ nhân khẩu khỏi hộ ({item.new_values.removed_members.length}):
+																						</div>
+																						{item.new_values.removed_members.map((m: any, idx: number) => (
+																							<div
+																								key={`rem-${idx}`}
+																								className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-xs flex items-center justify-between"
+																							>
+																								<span className="font-bold text-rose-950 dark:text-rose-100 line-through">
+																									- {m.full_name} ({m.relationship || "Thành viên"})
+																								</span>
+																								<span className="font-mono text-[11px] text-slate-500">
+																									{m.dob ? `NS: ${m.dob}` : ""}
+																								</span>
+																							</div>
+																						))}
+																					</div>
+																				)}
+
+																			{item.new_values.action === "REVEAL_CCCD" && (
+																				<div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+																					<Shield className="w-4 h-4 text-amber-600 shrink-0" />
+																					<span>
+																						Tra cứu & hiển thị số Căn cước công dân (Yêu cầu quyền hạn & đã ghi vết kiểm soát).
+																					</span>
+																				</div>
+																			)}
+																		</>
+																	)}
+																</div>
+															)}
+
+															{item.action === "CREATE" && item.new_values && (
+																<div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-xs">
+																	{item.new_values.head_name && (
+																		<div>
+																			<span className="text-slate-400 text-[11px]">Chủ hộ:</span>
+																			<p className="font-bold text-slate-800 dark:text-slate-200">{item.new_values.head_name}</p>
+																		</div>
+																	)}
+																	{item.new_values.full_name && (
+																		<div>
+																			<span className="text-slate-400 text-[11px]">Họ và tên:</span>
+																			<p className="font-bold text-slate-800 dark:text-slate-200">{item.new_values.full_name}</p>
+																		</div>
+																	)}
+																	{item.new_values.relationship && (
+																		<div>
+																			<span className="text-slate-400 text-[11px]">Quan hệ:</span>
+																			<p className="font-bold text-slate-800 dark:text-slate-200">{item.new_values.relationship}</p>
+																		</div>
+																	)}
+																	{item.new_values.address && (
+																		<div className="col-span-2">
+																			<span className="text-slate-400 text-[11px]">Địa chỉ:</span>
+																			<p className="font-bold text-slate-800 dark:text-slate-200">{item.new_values.address}</p>
+																		</div>
+																	)}
+																	{item.new_values.status && (
+																		<div>
+																			<span className="text-slate-400 text-[11px]">Trạng thái:</span>
+																			<p className="font-bold text-slate-800 dark:text-slate-200">{item.new_values.status}</p>
+																		</div>
+																	)}
+																	{item.new_values.members_count !== undefined && (
+																		<div>
+																			<span className="text-slate-400 text-[11px]">Số nhân khẩu:</span>
+																			<p className="font-bold text-slate-800 dark:text-slate-200">{item.new_values.members_count}</p>
+																		</div>
+																	)}
+																</div>
+															)}
+
+															{item.action === "DELETE" && (
+																<div className="p-3 bg-rose-500/10 border border-rose-500/25 rounded-xl text-xs space-y-1">
+																	<div className="font-bold text-rose-700 dark:text-rose-300">
+																		Bản ghi đã được chuyển vào Thùng rác hệ thống
+																	</div>
+																	{item.new_values?.reason && (
+																		<div className="text-slate-700 dark:text-slate-300">
+																			<strong>Lý do:</strong> {item.new_values.reason}
+																		</div>
+																	)}
+																</div>
+															)}
+
+															{item.action === "RESTORE" && (
+																<div className="p-3 bg-purple-500/10 border border-purple-500/25 rounded-xl text-xs space-y-1">
+																	<div className="font-bold text-purple-700 dark:text-purple-300">
+																		Dữ liệu đã được khôi phục thành công từ Thùng rác
+																	</div>
+																	{item.new_values?.notes && (
+																		<div className="text-slate-700 dark:text-slate-300">
+																			<strong>Ghi chú:</strong> {item.new_values.notes}
+																		</div>
+																	)}
+																</div>
+															)}
+
+															{item.action === "IMPORT" && item.new_values && (
+																<div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl text-xs space-y-1.5">
+																	<div className="font-bold text-amber-800 dark:text-amber-200">
+																		Đã nhập khẩu dữ liệu thành công từ tệp Excel
+																	</div>
+																	<div className="flex items-center gap-4 text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+																		<span>Tệp: {item.new_values.file_name || "N/A"}</span>
+																		<span>Số hộ: {item.new_values.imported_households || 0}</span>
+																		<span>Số nhân khẩu: {item.new_values.imported_citizens || 0}</span>
+																	</div>
+																</div>
+															)}
+
+															<div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 font-mono flex-wrap gap-2">
+																<span>IP: {item.ip_address || "127.0.0.1"}</span>
+																<span>Thời điểm: {item.created_at}</span>
+																{item.entity_id && <span>Entity ID: {item.entity_id}</span>}
+															</div>
+														</div>
+													)}
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							</section>
+						))}
 					</div>
 				)}
 
 				{page < totalPages && (
-					<div className="pt-6 flex justify-center border-t border-slate-100 dark:border-slate-800 mt-4">
+					<div className="pt-4 flex justify-center border-t border-slate-100 dark:border-slate-800">
 						<button
 							type="button"
 							onClick={handleLoadMore}
 							disabled={loading}
 							className="h-10 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
 						>
-							<ArrowDownCircle className="w-4 h-4" strokeWidth={1.5} />
-							<span>{loading ? "Đang tải thêm..." : "Tải Thêm Dữ Liệu"}</span>
+							<ArrowDownCircle className="w-4 h-4" />
+							<span>{loading ? "Đang tải thêm..." : "Tải thêm sự kiện tiếp theo"}</span>
 						</button>
 					</div>
 				)}
 			</div>
-		</>
-	)}
-</div>
-);
+		</div>
+	);
 };

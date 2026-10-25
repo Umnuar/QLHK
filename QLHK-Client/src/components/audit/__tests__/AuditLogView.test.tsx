@@ -1,7 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuditLogItem } from "../../../api/auditApi";
-import { AuditTimelineView } from "../AuditTimelineView";
+import { AuditLogView } from "../AuditLogView";
 
 const MOCK_LOGS: AuditLogItem[] = [
 	{
@@ -72,54 +72,82 @@ const MOCK_LOGS: AuditLogItem[] = [
 	},
 ];
 
-describe("AuditTimelineView Component", () => {
-	const defaultProps = {
-		logs: MOCK_LOGS,
-		loading: false,
-		total: 3,
-		page: 1,
-		totalPages: 1,
-		onPageChange: vi.fn(),
-		onRefresh: vi.fn(),
-		actionFilter: "ALL",
-		onActionFilterChange: vi.fn(),
-		villageFilter: "",
-		onVillageFilterChange: vi.fn(),
+vi.mock("../../../AppContext", () => ({
+	useApp: () => ({
+		user: { username: "admin", role: "admin", full_name: "Quản trị viên Xã" },
 		villages: [
 			{ id: "vil-01", name: "Thôn 1" },
 			{ id: "vil-02", name: "Thôn 2" },
 			{ id: "vil-03", name: "Thôn 3" },
 		],
-		userFilter: "",
-		onUserFilterChange: vi.fn(),
-		userList: [
+		selectedVillageId: "",
+		setSelectedVillageId: vi.fn(),
+	}),
+}));
+
+vi.mock("../../../api/auditApi", () => ({
+	auditApi: {
+		getLogs: vi.fn().mockImplementation(() =>
+			Promise.resolve({
+				data: MOCK_LOGS,
+				pagination: {
+					total: 3,
+					page: 1,
+					limit: 50,
+					totalPages: 1,
+				},
+			}),
+		),
+	},
+}));
+
+vi.mock("../../../api/authApi", () => ({
+	authApi: {
+		getUsers: vi.fn().mockResolvedValue([
 			{ username: "admin", full_name: "Quản trị viên Xã" },
 			{ username: "canboxa", full_name: "Cán bộ Xã" },
-		],
-		isAdmin: true,
-	};
+		]),
+	},
+}));
 
-	it("1. Render đúng số lượng sự kiện và thống kê tổng quan", () => {
-		render(<AuditTimelineView {...defaultProps} />);
+describe("AuditLogView Component", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
 
-		expect(screen.getByText("Tổng sự kiện")).toBeInTheDocument();
-		expect(screen.getByText("Lượt cập nhật")).toBeInTheDocument();
-		expect(screen.getAllByText("Thêm mới").length).toBeGreaterThanOrEqual(1);
-		expect(screen.getByText("Xóa / Khôi phục")).toBeInTheDocument();
+	it("1. Render đúng tiêu đề và thống kê KPI", async () => {
+		render(<AuditLogView />);
+
+		expect(
+			screen.getByText("Nhật Ký Hoạt Động & Kiểm Soát"),
+		).toBeInTheDocument();
+
+		await waitFor(() => {
+			expect(screen.getByText("Tổng sự kiện")).toBeInTheDocument();
+			expect(screen.getByText("Lượt cập nhật")).toBeInTheDocument();
+			expect(screen.getAllByText("Thêm mới").length).toBeGreaterThanOrEqual(1);
+			expect(screen.getByText("Xóa / Khôi phục")).toBeInTheDocument();
+		});
 
 		expect(screen.getByText(/Hộ Nguyễn Văn Bình/i)).toBeInTheDocument();
 		expect(screen.getByText(/Nhân khẩu Lê Minh Khôi/i)).toBeInTheDocument();
 	});
 
-	it("2. Nhóm sự kiện theo ngày rõ ràng (Hôm nay, Hôm qua, Ngày khác)", () => {
-		render(<AuditTimelineView {...defaultProps} />);
+	it("2. Nhóm sự kiện theo ngày rõ ràng (Hôm nay, Hôm qua)", async () => {
+		render(<AuditLogView />);
 
-		expect(screen.getByText(/Hôm nay •/i)).toBeInTheDocument();
-		expect(screen.getByText(/Hôm qua •/i)).toBeInTheDocument();
+		await waitFor(() => {
+			expect(screen.getByText(/Hôm nay •/i)).toBeInTheDocument();
+			expect(screen.getByText(/Hôm qua •/i)).toBeInTheDocument();
+		});
 	});
 
-	it("3. Bấm vào dòng sự kiện Cập nhật để mở chi tiết diff thay đổi từ gì sang gì", () => {
-		render(<AuditTimelineView {...defaultProps} />);
+	it("3. Bấm vào dòng sự kiện Cập nhật để mở chi tiết diff thay đổi", async () => {
+		render(<AuditLogView />);
+
+		await waitFor(() => {
+			expect(screen.getByText(/Hộ Nguyễn Văn Bình/i)).toBeInTheDocument();
+		});
 
 		expect(screen.queryByText("Trước khi sửa (Cũ)")).toBeNull();
 
@@ -138,41 +166,36 @@ describe("AuditTimelineView Component", () => {
 		expect(screen.getByText("Thường trú")).toBeInTheDocument();
 	});
 
-	it("4. Hoạt động của nút Bung mở tất cả và Thu gọn tất cả", () => {
-		render(<AuditTimelineView {...defaultProps} />);
+	it("4. Hoạt động của nút Bung mở tất cả và Thu gọn tất cả", async () => {
+		render(<AuditLogView />);
 
-		const expandAllBtn = screen.getByRole("button", { name: "Bung mở tất cả" });
+		await waitFor(() => {
+			expect(screen.getByText(/Hộ Nguyễn Văn Bình/i)).toBeInTheDocument();
+		});
+
+		const expandAllBtn = screen.getByText("Bung mở tất cả");
 		fireEvent.click(expandAllBtn);
 
 		expect(screen.getByText("Trước khi sửa (Cũ)")).toBeInTheDocument();
-		expect(screen.getByText("Dữ liệu tạo mới ban đầu:")).toBeInTheDocument();
-		expect(screen.getByText("Đã chuyển vào Thùng rác:")).toBeInTheDocument();
+		expect(screen.getByText("Sau khi sửa (Mới)")).toBeInTheDocument();
 
-		const collapseAllBtn = screen.getByRole("button", { name: "Thu gọn tất cả" });
+		const collapseAllBtn = screen.getByText("Thu gọn tất cả");
 		fireEvent.click(collapseAllBtn);
 
 		expect(screen.queryByText("Trước khi sửa (Cũ)")).toBeNull();
-		expect(screen.queryByText("Dữ liệu tạo mới ban đầu:")).toBeNull();
 	});
 
-	it("5. Lọc nhanh theo từ khóa tìm kiếm", () => {
-		render(<AuditTimelineView {...defaultProps} />);
+	it("5. Lọc thời gian theo preset Hôm nay", async () => {
+		render(<AuditLogView />);
 
-		const searchInput = screen.getByPlaceholderText(/Tìm nhanh họ tên, CCCD, mã sổ/i);
-		fireEvent.change(searchInput, { target: { value: "Lê Minh Khôi" } });
-
-		expect(screen.getByText(/Nhân khẩu Lê Minh Khôi/i)).toBeInTheDocument();
-		expect(screen.queryByText(/Hộ Nguyễn Văn Bình/i)).toBeNull();
-	});
-
-	it("6. Lọc thời gian theo preset Hôm nay", () => {
-		render(<AuditTimelineView {...defaultProps} />);
+		await waitFor(() => {
+			expect(screen.getByText(/Hôm nay •/i)).toBeInTheDocument();
+		});
 
 		const todayBtn = screen.getByRole("button", { name: "Hôm nay" });
 		fireEvent.click(todayBtn);
 
 		expect(screen.getByText(/Hộ Nguyễn Văn Bình/i)).toBeInTheDocument();
-		expect(screen.queryByText(/Nhân khẩu Lê Minh Khôi/i)).toBeNull();
-		expect(screen.queryByText(/Hộ Trần Văn Quang/i)).toBeNull();
+		expect(screen.queryByText(/Hôm qua •/i)).toBeNull();
 	});
 });

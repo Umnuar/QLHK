@@ -134,3 +134,72 @@ fn test_all_ages_over_60_have_milestone() {
         assert!(!has_milestone, "Age {} under 60 must not have any milestone", age);
     }
 }
+
+#[test]
+fn test_policy_handler_retiree_occupation() {
+    use qlhk_backend_rust::handlers::policies::is_retiree_occupation;
+
+    assert!(is_retiree_occupation("Hưu trí"));
+    assert!(is_retiree_occupation("hưu trí"));
+    assert!(is_retiree_occupation("Cán bộ hưu"));
+    assert!(is_retiree_occupation("Nghỉ hưu"));
+    assert!(is_retiree_occupation("huu tri"));
+    assert!(is_retiree_occupation("nghi huu"));
+    assert!(is_retiree_occupation("Lương hưu BHXH"));
+    assert!(is_retiree_occupation("Nghỉ mất sức"));
+
+    assert!(!is_retiree_occupation("Nông nghiệp"));
+    assert!(!is_retiree_occupation("Học sinh"));
+    assert!(!is_retiree_occupation("Buôn bán"));
+}
+
+#[test]
+fn test_extract_occupation_from_json() {
+    use qlhk_backend_rust::handlers::policies::extract_occupation_from_json;
+
+    let json1 = r#"{"occupation":"Hưu trí","full_name":"Nguyen Van A"}"#;
+    assert_eq!(extract_occupation_from_json(json1).as_deref(), Some("Hưu trí"));
+
+    let json2 = r#"{"nghe_nghiep":"Nghỉ hưu","full_name":"Nguyen Van B"}"#;
+    assert_eq!(extract_occupation_from_json(json2).as_deref(), Some("Nghỉ hưu"));
+
+    let json3 = r#"{"ngheNghiep":"huu tri","full_name":"Nguyen Van C"}"#;
+    assert_eq!(extract_occupation_from_json(json3).as_deref(), Some("huu tri"));
+
+    let json4 = r#"{"citizen":{"occupation":"Cán bộ hưu"}}"#;
+    assert_eq!(extract_occupation_from_json(json4).as_deref(), Some("Cán bộ hưu"));
+
+    let json5 = r#"{"full_name":"Nguyen Van D"}"#;
+    assert_eq!(extract_occupation_from_json(json5), None);
+
+    let json_invalid = "invalid json";
+    assert_eq!(extract_occupation_from_json(json_invalid), None);
+}
+
+#[test]
+fn test_retiree_audit_transition_detection() {
+    use qlhk_backend_rust::handlers::policies::{extract_occupation_from_json, is_retiree_occupation};
+
+    let check_transition = |old_json: Option<&str>, new_json: Option<&str>| -> bool {
+        let old_occ = old_json.and_then(extract_occupation_from_json);
+        let new_occ = new_json.and_then(extract_occupation_from_json);
+
+        let old_is_retiree = old_occ.as_deref().map(is_retiree_occupation).unwrap_or(false);
+        let new_is_retiree = new_occ.as_deref().map(is_retiree_occupation).unwrap_or(false);
+
+        new_is_retiree != old_is_retiree
+    };
+
+    let farmer = r#"{"occupation":"Làm nông"}"#;
+    let retiree = r#"{"occupation":"Hưu trí"}"#;
+    let teacher = r#"{"occupation":"Giáo viên"}"#;
+
+    assert!(check_transition(Some(farmer), Some(retiree)));
+    assert!(check_transition(None, Some(retiree)));
+    assert!(check_transition(Some(retiree), Some(teacher)));
+    assert!(check_transition(Some(retiree), None));
+
+    assert!(!check_transition(Some(farmer), Some(teacher)));
+    assert!(!check_transition(Some(retiree), Some(r#"{"occupation":"Nghỉ hưu"}"#)));
+    assert!(!check_transition(None, Some(farmer)));
+}

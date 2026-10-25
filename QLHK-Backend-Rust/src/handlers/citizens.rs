@@ -5,6 +5,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
+use serde::Serialize;
 use serde_json::json;
 use sqlx::{FromRow, QueryBuilder};
 use uuid::Uuid;
@@ -22,7 +23,7 @@ use crate::{
     state::AppState,
 };
 
-#[derive(FromRow)]
+#[derive(Serialize, FromRow)]
 struct CitizenWithHouseholdRow {
     pub id: Uuid,
     pub household_id: Uuid,
@@ -592,6 +593,25 @@ pub async fn create_citizen(
         let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, citizen_id).await;
     });
 
+    let audit_pool = state.pool.clone();
+    let audit_new = serde_json::to_string(&created_db).ok();
+    let audit_vid = household.village_id;
+    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    tokio::spawn(async move {
+        let _ = crate::utils::audit::record_audit(
+            &audit_pool,
+            Some(audit_vid),
+            audit_uid,
+            "CREATE",
+            "citizen",
+            Some(&citizen_id.to_string()),
+            None,
+            audit_new.as_deref(),
+            None,
+        )
+        .await;
+    });
+
     let resp = format_citizen(created_db);
     (
         StatusCode::CREATED,
@@ -780,6 +800,26 @@ pub async fn update_citizen(
         let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, id).await;
     });
 
+    let audit_pool = state.pool.clone();
+    let audit_old = serde_json::to_string(&current).ok();
+    let audit_new = serde_json::to_string(&updated_db).ok();
+    let audit_vid = current.village_id;
+    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    tokio::spawn(async move {
+        let _ = crate::utils::audit::record_audit(
+            &audit_pool,
+            Some(audit_vid),
+            audit_uid,
+            "UPDATE",
+            "citizen",
+            Some(&id.to_string()),
+            audit_old.as_deref(),
+            audit_new.as_deref(),
+            None,
+        )
+        .await;
+    });
+
     let resp = format_citizen(updated_db);
     Json(json!({
         "message": "Cập nhật nhân khẩu thành công",
@@ -851,6 +891,25 @@ pub async fn delete_citizen(
     let sync_pool = state.pool.clone();
     tokio::spawn(async move {
         let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, id).await;
+    });
+
+    let audit_pool = state.pool.clone();
+    let audit_old = serde_json::to_string(&current).ok();
+    let audit_vid = current.village_id;
+    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    tokio::spawn(async move {
+        let _ = crate::utils::audit::record_audit(
+            &audit_pool,
+            Some(audit_vid),
+            audit_uid,
+            "DELETE",
+            "citizen",
+            Some(&id.to_string()),
+            audit_old.as_deref(),
+            None,
+            None,
+        )
+        .await;
     });
 
     Json(json!({ "message": "Xóa mềm nhân khẩu thành công" })).into_response()

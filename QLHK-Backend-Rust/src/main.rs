@@ -65,6 +65,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await;
     });
 
+    let watcher_pool = pool.clone();
+    tokio::spawn(async move {
+        qlhk_backend_rust::handlers::policies::start_audit_retiree_watcher(watcher_pool).await;
+    });
+
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)

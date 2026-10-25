@@ -1483,9 +1483,7 @@ pub async fn sync_single_citizen_to_policies(
     }
 
     let occ_raw = citizen.occupation.as_deref().unwrap_or("");
-    let occ_lower = occ_raw.to_lowercase();
-    let occ_unacc = crate::crypto::remove_accents(occ_raw).to_lowercase();
-    let is_retiree = occ_lower.contains("hưu") || occ_unacc.contains("huu");
+    let is_retiree = is_retiree_occupation(occ_raw);
     let is_75plus = age.map(|a| a >= 75).unwrap_or(false);
 
     if is_retiree || is_75plus {
@@ -1788,9 +1786,7 @@ pub async fn sync_all_citizens_to_policies(
         }
 
         let occ_raw = citizen.occupation.as_deref().unwrap_or("");
-        let occ_lower = occ_raw.to_lowercase();
-        let occ_unacc = crate::crypto::remove_accents(occ_raw).to_lowercase();
-        let is_retiree = occ_lower.contains("hưu") || occ_unacc.contains("huu");
+        let is_retiree = is_retiree_occupation(occ_raw);
         let is_75plus = age.map(|a| a >= 75).unwrap_or(false);
 
         if is_retiree || is_75plus {
@@ -1922,6 +1918,134 @@ pub async fn sync_policy_data(
             Json(json!({ "error": "Lỗi hệ thống khi đồng bộ dữ liệu chính sách" })),
         )
             .into_response(),
+    }
+}
+
+pub fn is_retiree_occupation(occ: &str) -> bool {
+    let lower = occ.to_lowercase();
+    let unacc = crate::crypto::remove_accents(occ).to_lowercase();
+    lower.contains("hưu")
+        || unacc.contains("huu")
+        || lower.contains("mất sức")
+        || unacc.contains("mat suc")
+        || lower.contains("bhxh")
+}
+
+pub fn extract_occupation_from_json(json_str: &str) -> Option<String> {
+    let val: serde_json::Value = serde_json::from_str(json_str).ok()?;
+    if let Some(occ) = val.get("occupation").and_then(|v| v.as_str()) {
+        return Some(occ.trim().to_string());
+    }
+    if let Some(occ) = val.get("nghe_nghiep").and_then(|v| v.as_str()) {
+        return Some(occ.trim().to_string());
+    }
+    if let Some(occ) = val.get("ngheNghiep").and_then(|v| v.as_str()) {
+        return Some(occ.trim().to_string());
+    }
+    if let Some(c) = val.get("citizen") {
+        if let Some(occ) = c.get("occupation").and_then(|v| v.as_str()) {
+            return Some(occ.trim().to_string());
+        }
+        if let Some(occ) = c.get("nghe_nghiep").and_then(|v| v.as_str()) {
+            return Some(occ.trim().to_string());
+        }
+        if let Some(occ) = c.get("ngheNghiep").and_then(|v| v.as_str()) {
+            return Some(occ.trim().to_string());
+        }
+    }
+    None
+}
+
+#[derive(FromRow)]
+pub struct AuditSyncCandidate {
+    pub id: Uuid,
+    pub entity_id: Option<String>,
+    pub action: String,
+    pub old_values: Option<String>,
+    pub new_values: Option<String>,
+    pub created_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+pub async fn check_and_sync_recent_audit_retirees(
+    pool: &sqlx::PgPool,
+    last_checked_at: chrono::DateTime<chrono::Utc>,
+) -> Result<chrono::DateTime<chrono::Utc>, sqlx::Error> {
+    let logs = sqlx::query_as::<_, AuditSyncCandidate>(
+        r#"
+        SELECT id, entity_id, action, old_values, new_values, created_at
+        FROM qlhk.audit_logs
+        WHERE entity_type = 'citizen'
+          AND created_at > $1
+          AND action IN ('CREATE', 'UPDATE', 'DELETE')
+        ORDER BY created_at ASC
+        LIMIT 100
+        "#,
+    )
+    .bind(last_checked_at)
+    .fetch_all(pool)
+    .await?;
+
+    let mut newest_time = last_checked_at;
+
+    for log in logs {
+        if let Some(created) = log.created_at {
+            if created > newest_time {
+                newest_time = created;
+            }
+        }
+
+        let cid = log
+            .entity_id
+            .as_deref()
+            .and_then(|s| Uuid::parse_str(s).ok())
+            .or_else(|| {
+                log.new_values.as_deref().and_then(|s| {
+                    let val: serde_json::Value = serde_json::from_str(s).ok()?;
+                    val.get("id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok())
+                })
+            })
+            .or_else(|| {
+                log.old_values.as_deref().and_then(|s| {
+                    let val: serde_json::Value = serde_json::from_str(s).ok()?;
+                    val.get("id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok())
+                })
+            });
+
+        let citizen_id = match cid {
+            Some(id) => id,
+            None => continue,
+        };
+
+        let old_occ = log.old_values.as_deref().and_then(extract_occupation_from_json);
+        let new_occ = log.new_values.as_deref().and_then(extract_occupation_from_json);
+
+        let old_is_retiree = old_occ.as_deref().map(is_retiree_occupation).unwrap_or(false);
+        let new_is_retiree = new_occ.as_deref().map(is_retiree_occupation).unwrap_or(false);
+
+        if new_is_retiree != old_is_retiree || log.action == "DELETE" {
+            let _ = sync_single_citizen_to_policies(pool, citizen_id).await;
+        }
+    }
+
+    Ok(newest_time)
+}
+
+pub async fn start_audit_retiree_watcher(pool: sqlx::PgPool) {
+    let _ = sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_audit_logs_citizen_watcher ON qlhk.audit_logs (created_at ASC) WHERE entity_type = 'citizen'",
+    )
+    .execute(&pool)
+    .await;
+
+    let mut last_checked = chrono::Utc::now() - chrono::Duration::minutes(1);
+    loop {
+        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+        match check_and_sync_recent_audit_retirees(&pool, last_checked).await {
+            Ok(new_time) => {
+                last_checked = new_time;
+            }
+            Err(_) => {}
+        }
     }
 }
 

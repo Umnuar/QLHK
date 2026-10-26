@@ -330,8 +330,16 @@ export const ProfileRow = React.memo(function ProfileRow({
 			</td>
 
 			{activeTab === "chuctho" ? (
-				<td className="w-28 py-3 px-2 text-center text-xs text-slate-700 dark:text-slate-300 font-medium border-b border-slate-100 dark:border-slate-800/80 whitespace-nowrap">
-					{milestoneText}
+				<td className="w-28 py-3 px-2 text-center text-xs border-b border-slate-100 dark:border-slate-800/80 whitespace-nowrap">
+					{milestoneText.startsWith("Tròn ") ? (
+						<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+							{milestoneText}
+						</span>
+					) : (
+						<span className="text-slate-600 dark:text-slate-300 font-medium">
+							{milestoneText}
+						</span>
+					)}
 				</td>
 			) : (
 				<>

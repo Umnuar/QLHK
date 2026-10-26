@@ -366,6 +366,11 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 								<span className="tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
 									{globalCalculationYear}
 								</span>
+								{globalCalculationYear !== new Date().getFullYear() && (
+									<span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+										Đang xem dự phóng Chúc thọ năm {globalCalculationYear}
+									</span>
+								)}
 							</>
 						) : (
 							<>Theo dõi, rà soát và thực hiện chế độ chính sách cho đối tượng hưu trí, an sinh xã hội xã Đăk Hà</>

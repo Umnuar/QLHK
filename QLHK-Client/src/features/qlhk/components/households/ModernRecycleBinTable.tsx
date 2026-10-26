@@ -8,24 +8,15 @@ import {
 	ArrowUp,
 	ArrowUpDown,
 	Calendar,
-	Check,
-	ChevronRight,
-	Clock,
 	Download,
-	ExternalLink,
 	Eye,
-	Filter,
-	Home,
-	Info,
 	LayoutGrid,
 	LayoutList,
 	MapPin,
 	RefreshCw,
 	RotateCcw,
 	Search,
-	ShieldAlert,
 	Trash2,
-	UserCheck,
 	Users,
 	X,
 } from "lucide-react";
@@ -34,7 +25,6 @@ import { calculateAge } from "@/utils/date";
 import { exportExcelWithDialog, loadXlsx } from "@/utils/fileExport";
 import { normalizeUnaccented } from "@/utils/vietnamese";
 import { TablePagination } from "@/components/common/TablePagination";
-import { formatVietnameseNumber } from "@/components/common/tableStyles";
 import { CustomSelect } from "@/components/common/CustomSelect";
 import { useApp } from "@/AppContext";
 import { CitizenModal } from "./CitizenModal";
@@ -89,7 +79,7 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 }) => {
 	const { user, selectedVillageId, setSelectedVillageId } = useApp();
 	const isAdmin = user?.role === "admin";
-	const currentVillageId = isAdmin ? (selectedVillageId || "all") : (user?.village_id || "all");
+	const currentVillageId = isAdmin ? (selectedVillageId || "all") : (user?.village_id || "");
 
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedVillage, setSelectedVillage] = useState(currentVillageId);
@@ -103,7 +93,7 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 	const [viewingCitizen, setViewingCitizen] = useState<Partial<Person> | null>(null);
 
 	useEffect(() => {
-		const targetVillage = isAdmin ? (selectedVillageId || "all") : (user?.village_id || "all");
+		const targetVillage = isAdmin ? (selectedVillageId || "all") : (user?.village_id || "");
 		setSelectedVillage(targetVillage);
 	}, [selectedVillageId, user?.village_id, isAdmin]);
 
@@ -218,7 +208,18 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 			});
 		}
 
-		if (selectedVillage !== "all") {
+		if (!isAdmin) {
+			if (user?.village_id) {
+				list = list.filter(
+					(hh) =>
+						hh.village_id === user.village_id ||
+						hh.village_name?.toLowerCase().trim() ===
+							villages.find((v) => v.id === user.village_id)?.name.toLowerCase().trim(),
+				);
+			} else {
+				list = [];
+			}
+		} else if (selectedVillage !== "all") {
 			list = list.filter(
 				(hh) =>
 					hh.village_id === selectedVillage ||
@@ -265,6 +266,8 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 		sortField,
 		sortDirection,
 		villages,
+		isAdmin,
+		user?.village_id,
 	]);
 
 	const handleSortClick = (field: SortField) => {
@@ -367,13 +370,13 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 				<div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
 					<div className="space-y-1">
 						<span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-							Địa Bàn Thôn Ảnh Hưởng
+							{isAdmin ? "Địa Bàn Thôn Ảnh Hưởng" : "Thôn Quản Lý"}
 						</span>
 						<div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
-							{affectedVillagesCount} Thôn
+							{isAdmin ? `${affectedVillagesCount} Thôn` : (villages.find((v) => v.id === user?.village_id)?.name || "Thôn phụ trách")}
 						</div>
 						<div className="text-[11px] text-slate-400 font-medium">
-							Có dữ liệu hộ dân bị xóa tạm
+							{isAdmin ? "Có dữ liệu hộ dân bị xóa tạm" : "Địa bàn được phân công"}
 						</div>
 					</div>
 					<div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/40 flex items-center justify-center shrink-0">
@@ -624,7 +627,7 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 							type="button"
 							onClick={() => {
 								setSearchTerm("");
-								const resetVil = isAdmin ? (selectedVillageId || "all") : (user?.village_id || "all");
+								const resetVil = isAdmin ? (selectedVillageId || "all") : (user?.village_id || "");
 								setSelectedVillage(resetVil);
 								setQuickFilter("all");
 							}}
@@ -847,17 +850,15 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 						</table>
 					</div>
 
-					<div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-						<TablePagination
-							page={page}
-							totalPages={totalPages}
-							limit={limit}
-							total={total}
-							itemCount={filteredAndSortedHouseholds.length}
-							onPageChange={onPageChange}
-							onLimitChange={onLimitChange}
-						/>
-					</div>
+					<TablePagination
+						page={page}
+						totalPages={totalPages}
+						limit={limit}
+						total={total}
+						itemCount={filteredAndSortedHouseholds.length}
+						onPageChange={onPageChange}
+						onLimitChange={onLimitChange}
+					/>
 				</div>
 			) : (
 				<div className="space-y-6">
@@ -960,7 +961,7 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 						})}
 					</div>
 
-					<div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200/90 dark:border-slate-800 shadow-sm">
+					<div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden">
 						<TablePagination
 							page={page}
 							totalPages={totalPages}

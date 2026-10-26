@@ -540,7 +540,7 @@ describe("CitizenModal Component", () => {
 		fireEvent.click(pensionTabBtn);
 
 		expect(screen.getByText(/Mục Hưu trí đang bị khóa/i)).toBeInTheDocument();
-		expect(screen.getByText(/Đặt nghề nghiệp: Hưu trí để mở khóa/i)).toBeInTheDocument();
+		expect(screen.queryByText(/Đặt nghề nghiệp: Hưu trí để mở khóa/i)).not.toBeInTheDocument();
 
 		const allCheckboxes = screen.getAllByRole("checkbox") as HTMLInputElement[];
 		expect(allCheckboxes.length).toBe(6);
@@ -589,7 +589,7 @@ describe("CitizenModal Component", () => {
 		);
 	});
 
-	it("17. Nut dat nghe nghiep Huu tri giup chuyen nghe nghiep va mo khoa tuc thi", () => {
+	it("17. Khong co nut dat nghe nghiep tat de tranh bo qua xac minh nghe nghiep", () => {
 		render(
 			<CitizenModal
 				isOpen={true}
@@ -607,13 +607,9 @@ describe("CitizenModal Component", () => {
 		const pensionTabBtn = screen.getByLabelText(/Hưu trí & Chính sách/i);
 		fireEvent.click(pensionTabBtn);
 
-		const unlockBtn = screen.getByText(/Đặt nghề nghiệp: Hưu trí để mở khóa/i);
-		fireEvent.click(unlockBtn);
-
-		expect(screen.getByText(/Đã xác thực nghề nghiệp: Hưu trí/i)).toBeInTheDocument();
-		const allCheckboxes = screen.getAllByRole("checkbox") as HTMLInputElement[];
-		allCheckboxes.forEach((cb) => {
-			expect(cb).not.toBeDisabled();
-		});
+		expect(
+			screen.queryByText(/Đặt nghề nghiệp: Hưu trí để mở khóa/i),
+		).not.toBeInTheDocument();
+		expect(screen.getByText(/Mục Hưu trí đang bị khóa/i)).toBeInTheDocument();
 	});
 });

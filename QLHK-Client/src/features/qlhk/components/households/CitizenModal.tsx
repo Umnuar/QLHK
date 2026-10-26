@@ -251,6 +251,9 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				if (initialMember.nguoi_co_cong && !loadedPolicies.includes("nguoi_co_cong")) {
 					loadedPolicies.push("nguoi_co_cong");
 				}
+				if (isRetireeOccupation(initialMember.occupation || (initialMember as any).nghe_nghiep) && loadedPolicies.length === 0) {
+					loadedPolicies.push("huu_tri");
+				}
 				setPensionPolicies(loadedPolicies);
 			} else {
 				setFullName("");
@@ -311,6 +314,8 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 		setOccupation(val);
 		if (!isRetireeOccupation(val) && pensionPolicies.length > 0) {
 			setPensionPolicies([]);
+		} else if (isRetireeOccupation(val) && pensionPolicies.length === 0) {
+			setPensionPolicies(["huu_tri"]);
 		}
 	};
 
@@ -1117,18 +1122,6 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 													</p>
 												</div>
 											</div>
-											{!readOnly && (
-												<div className="pl-12">
-													<button
-														type="button"
-														onClick={() => handleOccupationChange("Hưu trí")}
-														className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
-													>
-														<Sparkles className="w-3.5 h-3.5" />
-														<span>Đặt nghề nghiệp: Hưu trí để mở khóa</span>
-													</button>
-												</div>
-											)}
 										</div>
 									) : (
 										<div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-3">
@@ -1166,6 +1159,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 														id={`policy-${p.key}`}
 														disabled={readOnly || !isRetiree}
 														checked={isChecked}
+														onClick={(e) => e.stopPropagation()}
 														onChange={() => handleTogglePolicy(p.key)}
 														className="mt-0.5 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-700 cursor-pointer disabled:cursor-not-allowed shrink-0"
 													/>

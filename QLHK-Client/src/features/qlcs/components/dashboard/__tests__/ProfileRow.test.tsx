@@ -173,4 +173,169 @@ describe("ProfileRow residence display", () => {
 
 		expect(screen.getAllByText("71 tuổi (Mốc 70)").length).toBeGreaterThanOrEqual(1);
 	});
+
+	it("preserves profile data and correctly toggles back and forth across multiple calculation years", () => {
+		const sampleProfile: TableProfile = {
+			id: "ct-4",
+			village_id: "v-1",
+			name: "Hoàng Văn E",
+			dob: "1957-06-15",
+			gender: "Nam",
+			cccd: "064057001234",
+			ethnicity: "Xơ Đăng",
+			residence: "Thường trú",
+			currentAddress: "Thường trú",
+			received: false,
+		};
+
+		const { rerender } = render(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={sampleProfile}
+						activeTab="chuctho"
+						calculationYear={2026}
+					/>
+				</tbody>
+			</table>,
+		);
+
+		expect(screen.getAllByText("69 tuổi (Mốc 65)").length).toBeGreaterThanOrEqual(1);
+
+		rerender(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={sampleProfile}
+						activeTab="chuctho"
+						calculationYear={2027}
+					/>
+				</tbody>
+			</table>,
+		);
+		expect(screen.getAllByText("Tròn 70 tuổi").length).toBeGreaterThanOrEqual(1);
+
+		rerender(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={sampleProfile}
+						activeTab="chuctho"
+						calculationYear={2026}
+					/>
+				</tbody>
+			</table>,
+		);
+		expect(screen.getAllByText("69 tuổi (Mốc 65)").length).toBeGreaterThanOrEqual(1);
+
+		rerender(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={sampleProfile}
+						activeTab="chuctho"
+						calculationYear={2028}
+					/>
+				</tbody>
+			</table>,
+		);
+		expect(screen.getAllByText("71 tuổi (Mốc 70)").length).toBeGreaterThanOrEqual(1);
+	});
+
+	it("correctly handles ISO YYYY-MM-DD birth dates across projected years", () => {
+		const sampleProfile: TableProfile = {
+			id: "ct-iso-1",
+			village_id: "v-1",
+			name: "Nguyễn Thị Mai",
+			dob: "1950-05-15",
+			gender: "Nữ",
+			cccd: "064150001234",
+			ethnicity: "Kinh",
+			residence: "Thường trú",
+			currentAddress: "Thôn 1",
+			received: false,
+		};
+
+		const { rerender } = render(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={sampleProfile}
+						activeTab="chuctho"
+						calculationYear={2026}
+					/>
+				</tbody>
+			</table>,
+		);
+
+		expect(screen.getAllByText("76 tuổi (Mốc 75)").length).toBeGreaterThanOrEqual(1);
+
+		rerender(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={sampleProfile}
+						activeTab="chuctho"
+						calculationYear={2030}
+					/>
+				</tbody>
+			</table>,
+		);
+
+		expect(screen.getAllByText("Tròn 80 tuổi").length).toBeGreaterThanOrEqual(1);
+	});
+
+	it("renders emerald pill badge for exact round milestone ages and centenarians", () => {
+		const roundProfile: TableProfile = {
+			id: "ct-round-1",
+			village_id: "v-1",
+			name: "Võ Thị H",
+			dob: "1927-01-01",
+			gender: "Nữ",
+			cccd: "064127001234",
+			ethnicity: "Kinh",
+			residence: "Thường trú",
+			currentAddress: "Thôn 1",
+			received: false,
+		};
+
+		const { rerender } = render(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={roundProfile}
+						activeTab="chuctho"
+						calculationYear={2027}
+					/>
+				</tbody>
+			</table>,
+		);
+
+		const roundBadges = screen.getAllByText("Tròn 100 tuổi");
+		expect(roundBadges.length).toBeGreaterThanOrEqual(1);
+		const emeraldBadge = roundBadges.find((b) => b.className.includes("bg-emerald-50"));
+		expect(emeraldBadge).toBeTruthy();
+
+		rerender(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={roundProfile}
+						activeTab="chuctho"
+						calculationYear={2028}
+					/>
+				</tbody>
+			</table>,
+		);
+
+		expect(screen.getAllByText("Trên 100 tuổi (101 tuổi)").length).toBeGreaterThanOrEqual(1);
+	});
 });

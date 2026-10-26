@@ -17,7 +17,7 @@
 - [x] **Step 4**: Backend Excel Export Dynamic Projection (`QLHK-Backend-Rust/src/handlers/excel.rs`)
 - [x] **Step 5**: Frontend Client Cache & Year Navigation (`useProfiles.ts`, `ProfileRow.tsx`, `ProfileFilterBar.tsx`, `DashboardPage.tsx`)
 - [x] **Step 6**: Unit & Regression Tests (`ProfileRow.test.tsx`, multi-year dynamic projection test)
-- [ ] **Step 7**: Final Quality Gate (Full test suite 223+ tests, tsc, cargo check)
+- [x] **Step 7**: Final Quality Gate (Full test suite 224 passed, tsc 0 errors, cargo check 0 errors)
 
 ## Gotchas & Notes
 - PostgreSQL schema `qlhk.villages.code` column must NOT be dropped (retained for DB foreign key `household_code` `HK-...`).

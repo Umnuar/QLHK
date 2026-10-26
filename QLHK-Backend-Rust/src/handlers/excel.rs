@@ -6,6 +6,7 @@ use axum::{
     Json, Router,
 };
 use calamine::{open_workbook_from_rs, Data, Reader, Xlsx};
+use chrono::Datelike;
 use rust_xlsxwriter::{Color, Format, FormatAlign, FormatBorder, Workbook};
 use serde_json::json;
 use sqlx::QueryBuilder;
@@ -22,6 +23,9 @@ use crate::{
     },
     state::AppState,
 };
+
+const MAX_EXCEL_FILE_SIZE: usize = 25 * 1024 * 1024;
+const MAX_EXCEL_ROWS: usize = 20_000;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -52,6 +56,106 @@ fn cell_to_string(cell: &Data) -> String {
     }
 }
 
+fn parse_excel_dob(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    if let Some((formatted, _)) = crate::models::policy::parse_dob_value(trimmed) {
+        return Some(formatted);
+    }
+    if let Ok(serial) = trimmed.parse::<f64>() {
+        let days = serial.floor() as i64;
+        if (1000..=75000).contains(&days) {
+            if let Some(base) = chrono::NaiveDate::from_ymd_opt(1899, 12, 30) {
+                if let Some(date) = base.checked_add_signed(chrono::Duration::days(days)) {
+                    let y = date.year();
+                    if (1900..=2100).contains(&y) {
+                        return Some(format!("{:02}/{:02}/{}", date.day(), date.month(), y));
+                    }
+                }
+            }
+        }
+    }
+    Some(trimmed.to_string())
+}
+
+fn parse_excel_cccd(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let lower = trimmed.to_lowercase();
+    if lower.contains("chua co")
+        || lower.contains("chưa có")
+        || lower.contains("khong")
+        || lower.contains("không")
+        || lower.contains("—")
+        || lower == "-"
+    {
+        return None;
+    }
+    let digits: String = trimmed.chars().filter(|c| c.is_ascii_digit()).collect();
+    if digits.is_empty() {
+        return None;
+    }
+    let normalized = if digits.len() == 11 {
+        format!("{:0>12}", digits)
+    } else if digits.len() == 8 {
+        format!("{:0>9}", digits)
+    } else {
+        digits
+    };
+    if normalized.len() == 9 || normalized.len() == 12 {
+        Some(normalized)
+    } else if !normalized.is_empty() {
+        Some(normalized)
+    } else {
+        None
+    }
+}
+
+fn is_authorized_for_full_cccd(claims: Option<&Claims>) -> bool {
+    claims
+        .map(|c| c.role == "admin" || c.role == "manager")
+        .unwrap_or(false)
+}
+
+fn format_cccd_for_export(
+    raw_cccd: Option<&str>,
+    cccd_last4: Option<&str>,
+    is_authorized: bool,
+) -> String {
+    if is_authorized {
+        raw_cccd
+            .map(|enc| {
+                if enc.contains(':') {
+                    decrypt_cccd(enc).unwrap_or_else(|_| enc.to_string())
+                } else {
+                    enc.to_string()
+                }
+            })
+            .unwrap_or_default()
+    } else if let Some(last4) = cccd_last4.filter(|s| !s.is_empty()) {
+        format!("••••••••{}", last4)
+    } else if let Some(raw) = raw_cccd.filter(|s| !s.is_empty()) {
+        let plain = if raw.contains(':') {
+            decrypt_cccd(raw).unwrap_or_default()
+        } else {
+            raw.to_string()
+        };
+        if plain.len() >= 4 {
+            format!("••••••••{}", &plain[plain.len() - 4..])
+        } else if !plain.is_empty() {
+            format!("••••••••{}", plain)
+        } else {
+            String::new()
+        }
+    } else {
+        String::new()
+    }
+}
+
 pub async fn import_excel(
     State(state): State<AppState>,
     claims_ext: Option<Extension<Claims>>,
@@ -66,6 +170,17 @@ pub async fn import_excel(
         let name = field.name().unwrap_or_default().to_string();
         if name == "file" || name == "excel" || name == "document" || field.file_name().is_some() {
             if let Ok(bytes) = field.bytes().await {
+                if bytes.len() > MAX_EXCEL_FILE_SIZE {
+                    return (
+                        StatusCode::PAYLOAD_TOO_LARGE,
+                        Json(json!({
+                            "success": false,
+                            "imported_count": 0,
+                            "errors": ["Tệp Excel vượt quá dung lượng tối đa cho phép (25MB)"]
+                        })),
+                    )
+                        .into_response();
+                }
                 file_bytes = Some(bytes.to_vec());
             }
         } else if name == "village_id" || name == "villageId" {
@@ -155,6 +270,18 @@ pub async fn import_excel(
         }
     };
 
+    if range.height() > MAX_EXCEL_ROWS {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "success": false,
+                "imported_count": 0,
+                "errors": ["Tệp Excel vượt quá số lượng dòng cho phép (tối đa 20.000 dòng)"]
+            })),
+        )
+            .into_response();
+    }
+
     let mut header_row_idx = 0;
     let mut col_map: HashMap<String, usize> = HashMap::new();
     let rows_vec: Vec<_> = range.rows().collect();
@@ -179,15 +306,17 @@ pub async fn import_excel(
                 } else if unacc.contains("so so")
                     || unacc.contains("so ho khau")
                     || unacc.contains("ma ho")
+                    || unacc.contains("so ho")
+                    || unacc.contains("shk")
                 {
                     col_map.insert("book_number".to_string(), col_idx);
                 } else if unacc.contains("ho va ten") || unacc.contains("ho ten") {
                     col_map.insert("full_name".to_string(), col_idx);
                 } else if unacc.contains("quan he") {
                     col_map.insert("relationship".to_string(), col_idx);
-                } else if unacc.contains("ngay sinh") || unacc.contains("nam sinh") {
+                } else if unacc.contains("ngay sinh") || unacc.contains("nam sinh") || unacc == "sinh" {
                     col_map.insert("dob".to_string(), col_idx);
-                } else if unacc.contains("gioi tinh") {
+                } else if unacc.contains("gioi tinh") || unacc == "gioi" {
                     col_map.insert("gender".to_string(), col_idx);
                 } else if unacc.contains("dan toc") {
                     col_map.insert("ethnicity".to_string(), col_idx);
@@ -209,6 +338,7 @@ pub async fn import_excel(
                 } else if unacc.contains("dia chi")
                     || unacc.contains("thuong tru")
                     || unacc.contains("noi o")
+                    || unacc.contains("thon")
                 {
                     col_map.insert("address".to_string(), col_idx);
                 } else if unacc.contains("ghi chu") {
@@ -226,15 +356,11 @@ pub async fn import_excel(
         col_map.insert("relationship".to_string(), 3);
         col_map.insert("dob".to_string(), 4);
         col_map.insert("gender".to_string(), 5);
-        col_map.insert("cccd".to_string(), 6);
-        col_map.insert("ethnicity".to_string(), 7);
-        col_map.insert("religion".to_string(), 8);
-        col_map.insert("education".to_string(), 9);
-        col_map.insert("occupation".to_string(), 10);
-        col_map.insert("workplace".to_string(), 11);
-        col_map.insert("native_place".to_string(), 12);
-        col_map.insert("address".to_string(), 13);
-        col_map.insert("notes".to_string(), 14);
+        col_map.insert("ethnicity".to_string(), 6);
+        col_map.insert("religion".to_string(), 7);
+        col_map.insert("cccd".to_string(), 8);
+        col_map.insert("address".to_string(), 9);
+        col_map.insert("notes".to_string(), 10);
     }
 
     let mut parsed_rows: Vec<ExcelCitizenRow> = Vec::new();
@@ -277,11 +403,13 @@ pub async fn import_excel(
         }
 
         let relationship = get_val("relationship");
-        let dob = get_val("dob");
+        let raw_dob = get_val("dob");
+        let dob = parse_excel_dob(&raw_dob);
         let gender = get_val("gender");
         let ethnicity = get_val("ethnicity");
         let religion = get_val("religion");
-        let cccd = get_val("cccd");
+        let raw_cccd = get_val("cccd");
+        let cccd = parse_excel_cccd(&raw_cccd);
         let education = get_val("education");
         let occupation = get_val("occupation");
         let workplace = get_val("workplace");
@@ -297,7 +425,7 @@ pub async fn import_excel(
             } else {
                 Some(relationship)
             },
-            dob: if dob.is_empty() { None } else { Some(dob) },
+            dob,
             gender: if gender.is_empty() {
                 None
             } else {
@@ -313,7 +441,7 @@ pub async fn import_excel(
             } else {
                 Some(religion)
             },
-            cccd: if cccd.is_empty() { None } else { Some(cccd) },
+            cccd,
             education: if education.is_empty() {
                 None
             } else {
@@ -431,24 +559,20 @@ pub async fn import_excel(
             .unwrap_or_default();
         let is_head = rel_unaccented == "chu ho"
             || rel_unaccented == "chu_ho"
+            || rel_unaccented == "ch"
             || rel_unaccented.contains("chu ho");
 
-        let (cccd_encrypted, cccd_hash, cccd_last4) = if let Some(ref c_raw) = row.cccd {
-            let cleaned = c_raw.trim();
-            if cleaned.is_empty() {
-                (None, None, None)
-            } else {
-                match encrypt_cccd(cleaned) {
-                    Ok(enc) => (Some(enc.encrypted), Some(enc.hash), Some(enc.last4)),
-                    Err(_) => {
-                        let h = hash_cccd(cleaned);
-                        let l4 = if cleaned.len() >= 4 {
-                            cleaned[cleaned.len() - 4..].to_string()
-                        } else {
-                            cleaned.to_string()
-                        };
-                        (Some(cleaned.to_string()), Some(h), Some(l4))
-                    }
+        let (cccd_encrypted, cccd_hash, cccd_last4) = if let Some(ref cleaned) = row.cccd {
+            match encrypt_cccd(cleaned) {
+                Ok(enc) => (Some(enc.encrypted), Some(enc.hash), Some(enc.last4)),
+                Err(_) => {
+                    let h = hash_cccd(cleaned);
+                    let l4 = if cleaned.len() >= 4 {
+                        cleaned[cleaned.len() - 4..].to_string()
+                    } else {
+                        cleaned.to_string()
+                    };
+                    (Some(cleaned.to_string()), Some(h), Some(l4))
                 }
             }
         } else {
@@ -569,9 +693,34 @@ pub async fn import_excel(
     }
 
     if imported_count > 0 {
+        let audit_pool = state.pool.clone();
+        let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+        let new_vals = serde_json::json!({
+            "village_id": resolved_village_id,
+            "imported_citizens": imported_count,
+            "error_count": errors.len(),
+        })
+        .to_string();
+
+        tokio::spawn(async move {
+            let _ = crate::utils::audit::record_audit(
+                &audit_pool,
+                Some(resolved_village_id),
+                audit_uid,
+                "IMPORT",
+                "excel_import",
+                None,
+                None,
+                Some(&new_vals),
+                None,
+            )
+            .await;
+        });
+
         let sync_pool = state.pool.clone();
         tokio::spawn(async move {
-            let _ = crate::handlers::policies::sync_all_citizens_to_policies(&sync_pool, None, None).await;
+            let _ = crate::handlers::policies::sync_all_citizens_to_policies(&sync_pool, None, None)
+                .await;
         });
     }
 
@@ -608,6 +757,7 @@ pub async fn export_excel_post(
             year: b.year.or(query.year),
             gender: b.gender.or(query.gender),
             ethnicity: b.ethnicity.or(query.ethnicity),
+            columns: b.columns.or(query.columns),
         }
     } else {
         query
@@ -630,6 +780,9 @@ pub async fn export_excel_internal(
     } else {
         query.village_id.or(query.village_id_camel)
     };
+
+    let is_auth = is_authorized_for_full_cccd(claims.as_ref());
+    let use_15_columns = query.columns == Some(15);
 
     let mut query_builder = QueryBuilder::new(
         "SELECT c.stt, h.book_number, c.full_name, c.relationship, c.is_head, c.dob, c.gender, c.cccd, c.cccd_last4, c.ethnicity, c.religion, c.education, c.occupation, c.native_place, h.address, c.notes FROM qlhk.citizens c JOIN qlhk.households h ON c.household_id = h.id WHERE c.is_deleted = false AND h.is_deleted = false",
@@ -721,117 +874,145 @@ pub async fn export_excel_internal(
         .set_font_name("Times New Roman")
         .set_font_size(11);
 
-    let headers = [
-        "STT",
-        "Số sổ hộ khẩu",
-        "Họ và tên",
-        "Quan hệ với chủ hộ",
-        "Ngày sinh",
-        "Giới tính",
-        "Số CCCD",
-        "Dân tộc",
-        "Tôn giáo",
-        "Trình độ học vấn",
-        "Nghề nghiệp",
-        "Nơi làm việc",
-        "Quê quán",
-        "Địa chỉ thường trú",
-        "Ghi chú",
-    ];
+    if use_15_columns {
+        let headers_15 = [
+            "STT",
+            "Số sổ hộ khẩu",
+            "Họ và tên",
+            "Quan hệ với chủ hộ",
+            "Ngày sinh",
+            "Giới tính",
+            "Số CCCD",
+            "Dân tộc",
+            "Tôn giáo",
+            "Trình độ học vấn",
+            "Nghề nghiệp",
+            "Nơi làm việc",
+            "Quê quán",
+            "Địa chỉ thường trú",
+            "Ghi chú",
+        ];
 
-    for (col_idx, header_title) in headers.iter().enumerate() {
-        if worksheet
-            .write_with_format(0, col_idx as u16, *header_title, &header_format)
-            .is_err()
-        {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Lỗi định dạng tiêu đề Excel" })),
-            )
-                .into_response();
+        for (col_idx, header_title) in headers_15.iter().enumerate() {
+            if worksheet
+                .write_with_format(0, col_idx as u16, *header_title, &header_format)
+                .is_err()
+            {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Lỗi định dạng tiêu đề Excel" })),
+                )
+                    .into_response();
+            }
         }
+
+        for (idx, row) in rows.iter().enumerate() {
+            let r = (idx + 1) as u32;
+            let stt_val = row.stt.unwrap_or((idx + 1) as i32);
+            let rel_str = if row.is_head {
+                "Chủ hộ".to_string()
+            } else {
+                row.relationship.clone().unwrap_or_default()
+            };
+
+            let cccd_str = format_cccd_for_export(row.cccd.as_deref(), row.cccd_last4.as_deref(), is_auth);
+
+            let _ = worksheet.write_with_format(r, 0, stt_val, &center_format);
+            let _ = worksheet.write_with_format(r, 1, &row.book_number, &center_format);
+            let _ = worksheet.write_with_format(r, 2, &row.full_name, &data_format);
+            let _ = worksheet.write_with_format(r, 3, &rel_str, &data_format);
+            let _ = worksheet.write_with_format(r, 4, row.dob.as_deref().unwrap_or(""), &center_format);
+            let _ = worksheet.write_with_format(r, 5, row.gender.as_deref().unwrap_or(""), &center_format);
+            let _ = worksheet.write_with_format(r, 6, &cccd_str, &center_format);
+            let _ = worksheet.write_with_format(r, 7, row.ethnicity.as_deref().unwrap_or(""), &center_format);
+            let _ = worksheet.write_with_format(r, 8, row.religion.as_deref().unwrap_or(""), &center_format);
+            let _ = worksheet.write_with_format(r, 9, row.education.as_deref().unwrap_or(""), &data_format);
+            let _ = worksheet.write_with_format(r, 10, row.occupation.as_deref().unwrap_or(""), &data_format);
+            let _ = worksheet.write_with_format(r, 11, "", &data_format);
+            let _ = worksheet.write_with_format(r, 12, row.native_place.as_deref().unwrap_or(""), &data_format);
+            let _ = worksheet.write_with_format(r, 13, row.address.as_deref().unwrap_or(""), &data_format);
+            let _ = worksheet.write_with_format(r, 14, row.notes.as_deref().unwrap_or(""), &data_format);
+        }
+
+        let _ = worksheet.set_column_width(0, 6);
+        let _ = worksheet.set_column_width(1, 16);
+        let _ = worksheet.set_column_width(2, 24);
+        let _ = worksheet.set_column_width(3, 18);
+        let _ = worksheet.set_column_width(4, 14);
+        let _ = worksheet.set_column_width(5, 10);
+        let _ = worksheet.set_column_width(6, 18);
+        let _ = worksheet.set_column_width(7, 12);
+        let _ = worksheet.set_column_width(8, 12);
+        let _ = worksheet.set_column_width(9, 16);
+        let _ = worksheet.set_column_width(10, 18);
+        let _ = worksheet.set_column_width(11, 20);
+        let _ = worksheet.set_column_width(12, 24);
+        let _ = worksheet.set_column_width(13, 30);
+        let _ = worksheet.set_column_width(14, 20);
+    } else {
+        let headers_11 = [
+            "STT",
+            "Mã Hộ / Số Sổ",
+            "Họ và Tên",
+            "Quan Hệ",
+            "Ngày Sinh",
+            "Giới Tính",
+            "Dân Tộc",
+            "Tôn Giáo",
+            "Số CCCD",
+            "Địa Chỉ",
+            "Ghi Chú",
+        ];
+
+        for (col_idx, header_title) in headers_11.iter().enumerate() {
+            if worksheet
+                .write_with_format(0, col_idx as u16, *header_title, &header_format)
+                .is_err()
+            {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Lỗi định dạng tiêu đề Excel" })),
+                )
+                    .into_response();
+            }
+        }
+
+        for (idx, row) in rows.iter().enumerate() {
+            let r = (idx + 1) as u32;
+            let stt_val = row.stt.unwrap_or((idx + 1) as i32);
+            let rel_str = if row.is_head {
+                "Chủ hộ".to_string()
+            } else {
+                row.relationship.clone().unwrap_or_default()
+            };
+
+            let cccd_str = format_cccd_for_export(row.cccd.as_deref(), row.cccd_last4.as_deref(), is_auth);
+
+            let _ = worksheet.write_with_format(r, 0, stt_val, &center_format);
+            let _ = worksheet.write_with_format(r, 1, &row.book_number, &center_format);
+            let _ = worksheet.write_with_format(r, 2, &row.full_name, &data_format);
+            let _ = worksheet.write_with_format(r, 3, &rel_str, &data_format);
+            let _ = worksheet.write_with_format(r, 4, row.dob.as_deref().unwrap_or(""), &center_format);
+            let _ = worksheet.write_with_format(r, 5, row.gender.as_deref().unwrap_or(""), &center_format);
+            let _ = worksheet.write_with_format(r, 6, row.ethnicity.as_deref().unwrap_or(""), &center_format);
+            let _ = worksheet.write_with_format(r, 7, row.religion.as_deref().unwrap_or(""), &center_format);
+            let _ = worksheet.write_with_format(r, 8, &cccd_str, &center_format);
+            let _ = worksheet.write_with_format(r, 9, row.address.as_deref().unwrap_or(""), &data_format);
+            let _ = worksheet.write_with_format(r, 10, row.notes.as_deref().unwrap_or(""), &data_format);
+        }
+
+        let _ = worksheet.set_column_width(0, 6);
+        let _ = worksheet.set_column_width(1, 16);
+        let _ = worksheet.set_column_width(2, 24);
+        let _ = worksheet.set_column_width(3, 16);
+        let _ = worksheet.set_column_width(4, 14);
+        let _ = worksheet.set_column_width(5, 10);
+        let _ = worksheet.set_column_width(6, 12);
+        let _ = worksheet.set_column_width(7, 12);
+        let _ = worksheet.set_column_width(8, 18);
+        let _ = worksheet.set_column_width(9, 30);
+        let _ = worksheet.set_column_width(10, 20);
     }
-
-    for (idx, row) in rows.iter().enumerate() {
-        let r = (idx + 1) as u32;
-        let stt_val = row.stt.unwrap_or((idx + 1) as i32);
-        let rel_str = if row.is_head {
-            "Chủ hộ".to_string()
-        } else {
-            row.relationship.clone().unwrap_or_default()
-        };
-
-        let plain_cccd = row
-            .cccd
-            .as_deref()
-            .map(|enc| {
-                if enc.contains(':') {
-                    decrypt_cccd(enc).unwrap_or_else(|_| enc.to_string())
-                } else {
-                    enc.to_string()
-                }
-            })
-            .unwrap_or_default();
-
-        let _ = worksheet.write_with_format(r, 0, stt_val, &center_format);
-        let _ = worksheet.write_with_format(r, 1, &row.book_number, &center_format);
-        let _ = worksheet.write_with_format(r, 2, &row.full_name, &data_format);
-        let _ = worksheet.write_with_format(r, 3, &rel_str, &data_format);
-        let _ = worksheet.write_with_format(r, 4, row.dob.as_deref().unwrap_or(""), &center_format);
-        let _ =
-            worksheet.write_with_format(r, 5, row.gender.as_deref().unwrap_or(""), &center_format);
-        let _ = worksheet.write_with_format(r, 6, &plain_cccd, &center_format);
-        let _ = worksheet.write_with_format(
-            r,
-            7,
-            row.ethnicity.as_deref().unwrap_or(""),
-            &center_format,
-        );
-        let _ = worksheet.write_with_format(
-            r,
-            8,
-            row.religion.as_deref().unwrap_or(""),
-            &center_format,
-        );
-        let _ = worksheet.write_with_format(
-            r,
-            9,
-            row.education.as_deref().unwrap_or(""),
-            &data_format,
-        );
-        let _ = worksheet.write_with_format(
-            r,
-            10,
-            row.occupation.as_deref().unwrap_or(""),
-            &data_format,
-        );
-        let _ = worksheet.write_with_format(r, 11, "", &data_format);
-        let _ = worksheet.write_with_format(
-            r,
-            12,
-            row.native_place.as_deref().unwrap_or(""),
-            &data_format,
-        );
-        let _ =
-            worksheet.write_with_format(r, 13, row.address.as_deref().unwrap_or(""), &data_format);
-        let _ = worksheet.write_with_format(r, 14, row.notes.as_deref().unwrap_or(""), &data_format);
-    }
-
-    let _ = worksheet.set_column_width(0, 6);
-    let _ = worksheet.set_column_width(1, 16);
-    let _ = worksheet.set_column_width(2, 24);
-    let _ = worksheet.set_column_width(3, 18);
-    let _ = worksheet.set_column_width(4, 14);
-    let _ = worksheet.set_column_width(5, 10);
-    let _ = worksheet.set_column_width(6, 18);
-    let _ = worksheet.set_column_width(7, 12);
-    let _ = worksheet.set_column_width(8, 12);
-    let _ = worksheet.set_column_width(9, 16);
-    let _ = worksheet.set_column_width(10, 18);
-    let _ = worksheet.set_column_width(11, 20);
-    let _ = worksheet.set_column_width(12, 24);
-    let _ = worksheet.set_column_width(13, 30);
-    let _ = worksheet.set_column_width(14, 20);
 
     let buf = match workbook.save_to_buffer() {
         Ok(b) => b,
@@ -844,6 +1025,7 @@ pub async fn export_excel_internal(
         }
     };
 
+    let buf_len = buf.len();
     let mut headers_map = HeaderMap::new();
     headers_map.insert(
         header::CONTENT_TYPE,
@@ -853,7 +1035,12 @@ pub async fn export_excel_internal(
     );
     headers_map.insert(
         header::CONTENT_DISPOSITION,
-        HeaderValue::from_static("attachment; filename=\"Danh_sach_nhan_ho_khau.xlsx\""),
+        HeaderValue::from_static("attachment; filename=\"Danh_sach_nhan_ho_khau_DakHa.xlsx\""),
+    );
+    headers_map.insert(header::CONTENT_LENGTH, HeaderValue::from(buf_len));
+    headers_map.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("no-cache, no-store, must-revalidate"),
     );
 
     (StatusCode::OK, headers_map, buf).into_response()
@@ -885,20 +1072,16 @@ pub async fn download_template() -> Response {
 
     let headers = [
         "STT",
-        "Số sổ hộ khẩu",
-        "Họ và tên",
-        "Quan hệ với chủ hộ",
-        "Ngày sinh",
-        "Giới tính",
+        "Mã Hộ / Số Sổ",
+        "Họ và Tên",
+        "Quan Hệ",
+        "Ngày Sinh",
+        "Giới Tính",
+        "Dân Tộc",
+        "Tôn Giáo",
         "Số CCCD",
-        "Dân tộc",
-        "Tôn giáo",
-        "Trình độ học vấn",
-        "Nghề nghiệp",
-        "Nơi làm việc",
-        "Quê quán",
-        "Địa chỉ thường trú",
-        "Ghi chú",
+        "Địa Chỉ",
+        "Ghi Chú",
     ];
 
     for (col_idx, header_title) in headers.iter().enumerate() {
@@ -906,36 +1089,52 @@ pub async fn download_template() -> Response {
     }
 
     let _ = worksheet.write_with_format(1, 0, 1, &center_format);
-    let _ = worksheet.write_with_format(1, 1, "HK-0001", &center_format);
-    let _ = worksheet.write_with_format(1, 2, "Nguyễn Văn An", &data_format);
+    let _ = worksheet.write_with_format(1, 1, "SHK-01001", &center_format);
+    let _ = worksheet.write_with_format(1, 2, "A Đôi", &data_format);
     let _ = worksheet.write_with_format(1, 3, "Chủ hộ", &data_format);
-    let _ = worksheet.write_with_format(1, 4, "15/05/1975", &center_format);
+    let _ = worksheet.write_with_format(1, 4, "15/04/1975", &center_format);
     let _ = worksheet.write_with_format(1, 5, "Nam", &center_format);
-    let _ = worksheet.write_with_format(1, 6, "064075000123", &center_format);
-    let _ = worksheet.write_with_format(1, 7, "Kinh", &center_format);
-    let _ = worksheet.write_with_format(1, 8, "Không", &center_format);
-    let _ = worksheet.write_with_format(1, 9, "12/12", &data_format);
-    let _ = worksheet.write_with_format(1, 10, "Làm nông", &data_format);
-    let _ = worksheet.write_with_format(1, 11, "Tại nhà", &data_format);
-    let _ = worksheet.write_with_format(1, 12, "Xã Đắk Hring", &data_format);
-    let _ = worksheet.write_with_format(1, 13, "Thôn Kon Hring", &data_format);
-    let _ = worksheet.write_with_format(1, 14, "Mẫu nhập liệu", &data_format);
+    let _ = worksheet.write_with_format(1, 6, "Xơ Đăng", &center_format);
+    let _ = worksheet.write_with_format(1, 7, "Công giáo", &center_format);
+    let _ = worksheet.write_with_format(1, 8, "060075001234", &center_format);
+    let _ = worksheet.write_with_format(1, 9, "Thôn Kon Đao Yôp, Xã Đăk Hà", &data_format);
+    let _ = worksheet.write_with_format(1, 10, "Chủ hộ thường trú", &data_format);
+
+    let _ = worksheet.write_with_format(2, 0, 2, &center_format);
+    let _ = worksheet.write_with_format(2, 1, "SHK-01001", &center_format);
+    let _ = worksheet.write_with_format(2, 2, "Y Ble", &data_format);
+    let _ = worksheet.write_with_format(2, 3, "Vợ", &data_format);
+    let _ = worksheet.write_with_format(2, 4, "20/11/1978", &center_format);
+    let _ = worksheet.write_with_format(2, 5, "Nữ", &center_format);
+    let _ = worksheet.write_with_format(2, 6, "Xơ Đăng", &center_format);
+    let _ = worksheet.write_with_format(2, 7, "Công giáo", &center_format);
+    let _ = worksheet.write_with_format(2, 8, "060178005678", &center_format);
+    let _ = worksheet.write_with_format(2, 9, "Thôn Kon Đao Yôp, Xã Đăk Hà", &data_format);
+    let _ = worksheet.write_with_format(2, 10, "", &data_format);
+
+    let _ = worksheet.write_with_format(3, 0, 3, &center_format);
+    let _ = worksheet.write_with_format(3, 1, "SHK-01002", &center_format);
+    let _ = worksheet.write_with_format(3, 2, "Nguyễn Văn Minh", &data_format);
+    let _ = worksheet.write_with_format(3, 3, "Chủ hộ", &data_format);
+    let _ = worksheet.write_with_format(3, 4, "02/09/1982", &center_format);
+    let _ = worksheet.write_with_format(3, 5, "Nam", &center_format);
+    let _ = worksheet.write_with_format(3, 6, "Kinh", &center_format);
+    let _ = worksheet.write_with_format(3, 7, "Không", &center_format);
+    let _ = worksheet.write_with_format(3, 8, "060082009876", &center_format);
+    let _ = worksheet.write_with_format(3, 9, "Thôn 1, Xã Đăk Hà", &data_format);
+    let _ = worksheet.write_with_format(3, 10, "", &data_format);
 
     let _ = worksheet.set_column_width(0, 6);
     let _ = worksheet.set_column_width(1, 16);
     let _ = worksheet.set_column_width(2, 24);
-    let _ = worksheet.set_column_width(3, 18);
+    let _ = worksheet.set_column_width(3, 16);
     let _ = worksheet.set_column_width(4, 14);
     let _ = worksheet.set_column_width(5, 10);
-    let _ = worksheet.set_column_width(6, 18);
+    let _ = worksheet.set_column_width(6, 12);
     let _ = worksheet.set_column_width(7, 12);
-    let _ = worksheet.set_column_width(8, 12);
-    let _ = worksheet.set_column_width(9, 16);
-    let _ = worksheet.set_column_width(10, 18);
-    let _ = worksheet.set_column_width(11, 20);
-    let _ = worksheet.set_column_width(12, 24);
-    let _ = worksheet.set_column_width(13, 30);
-    let _ = worksheet.set_column_width(14, 20);
+    let _ = worksheet.set_column_width(8, 18);
+    let _ = worksheet.set_column_width(9, 30);
+    let _ = worksheet.set_column_width(10, 20);
 
     let buf = match workbook.save_to_buffer() {
         Ok(b) => b,
@@ -948,6 +1147,7 @@ pub async fn download_template() -> Response {
         }
     };
 
+    let buf_len = buf.len();
     let mut headers_map = HeaderMap::new();
     headers_map.insert(
         header::CONTENT_TYPE,
@@ -957,7 +1157,12 @@ pub async fn download_template() -> Response {
     );
     headers_map.insert(
         header::CONTENT_DISPOSITION,
-        HeaderValue::from_static("attachment; filename=\"Mau_nhap_lieu_nhan_ho_khau.xlsx\""),
+        HeaderValue::from_static("attachment; filename=\"BieuMau_NhanHoKhau_11Cot_DakHa.xlsx\""),
+    );
+    headers_map.insert(header::CONTENT_LENGTH, HeaderValue::from(buf_len));
+    headers_map.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("no-cache, no-store, must-revalidate"),
     );
 
     (StatusCode::OK, headers_map, buf).into_response()
@@ -979,20 +1184,22 @@ pub async fn export_chuctho(
         query.village_id.or(query.village_id_camel)
     };
 
-    let target_year = query.year.or(query.calculation_year);
+    let is_auth = is_authorized_for_full_cccd(claims.as_ref());
+
+    let target_year = query
+        .year
+        .or(query.calculation_year)
+        .unwrap_or_else(|| chrono::Utc::now().year());
+    let ref_date = chrono::NaiveDate::from_ymd_opt(target_year, 12, 31)
+        .unwrap_or_else(|| chrono::Utc::now().date_naive());
 
     let mut query_builder = QueryBuilder::new(
-        "SELECT p.stt, p.name, p.dob, p.gender, p.cccd, p.ethnicity, p.residence, p.current_address, v.name as village_name, p.age60, p.age65, p.age70, p.age75, p.age80, p.age85, p.age90, p.age95, p.age100, p.age_over_100, p.received, p.calculation_year, p.notes FROM qlhk.chuctho_profiles p LEFT JOIN qlhk.villages v ON p.village_id = v.id WHERE p.is_deleted = false",
+        "SELECT p.stt, p.name, p.dob, p.gender, p.cccd, p.cccd_last4, p.ethnicity, p.residence, p.current_address, v.name as village_name, p.age60, p.age65, p.age70, p.age75, p.age80, p.age85, p.age90, p.age95, p.age100, p.age_over_100, p.received, p.calculation_year, p.notes FROM qlhk.chuctho_profiles p LEFT JOIN qlhk.villages v ON p.village_id = v.id WHERE p.is_deleted = false",
     );
 
     if let Some(vid) = target_village_id {
         query_builder.push(" AND p.village_id = ");
         query_builder.push_bind(vid);
-    }
-
-    if let Some(y) = target_year {
-        query_builder.push(" AND p.calculation_year = ");
-        query_builder.push_bind(y);
     }
 
     query_builder.push(" ORDER BY p.stt ASC NULLS LAST, p.created_at ASC");
@@ -1064,21 +1271,34 @@ pub async fn export_chuctho(
         let _ = worksheet.write_with_format(0, col_idx as u16, *header_title, &header_format);
     }
 
-    for (idx, row) in rows.iter().enumerate() {
-        let r = (idx + 1) as u32;
-        let stt_val = row.stt.unwrap_or((idx + 1) as i32);
-
-        let plain_cccd = row
-            .cccd
-            .as_deref()
-            .map(|enc| {
-                if enc.contains(':') {
-                    decrypt_cccd(enc).unwrap_or_else(|_| enc.to_string())
-                } else {
-                    enc.to_string()
+    let eligible_rows: Vec<(&ExportChucthoRow, crate::models::policy::ChucthoMilestones)> = rows
+        .iter()
+        .filter_map(|row| {
+            let age = row
+                .dob
+                .as_deref()
+                .and_then(|d| crate::models::policy::calculate_exact_age(d, ref_date))
+                .or_else(|| {
+                    row.dob
+                        .as_deref()
+                        .and_then(crate::models::policy::extract_birth_year)
+                        .map(|by| target_year - by)
+                });
+            if let Some(a) = age {
+                if a >= 60 {
+                    let ms = crate::models::policy::compute_chuctho_milestones(a);
+                    return Some((row, ms));
                 }
-            })
-            .unwrap_or_default();
+            }
+            None
+        })
+        .collect();
+
+    for (idx, (row, ms)) in eligible_rows.iter().enumerate() {
+        let r = (idx + 1) as u32;
+        let stt_val = (idx + 1) as i32;
+
+        let cccd_str = format_cccd_for_export(row.cccd.as_deref(), row.cccd_last4.as_deref(), is_auth);
 
         let received_str = match row.received {
             Some(true) => "Đã nhận",
@@ -1086,17 +1306,13 @@ pub async fn export_chuctho(
             None => "",
         };
 
-        let calc_year_str = row
-            .calculation_year
-            .map(|y| y.to_string())
-            .unwrap_or_default();
+        let calc_year_str = target_year.to_string();
 
         let _ = worksheet.write_with_format(r, 0, stt_val, &center_format);
         let _ = worksheet.write_with_format(r, 1, &row.name, &data_format);
         let _ = worksheet.write_with_format(r, 2, row.dob.as_deref().unwrap_or(""), &center_format);
-        let _ =
-            worksheet.write_with_format(r, 3, row.gender.as_deref().unwrap_or(""), &center_format);
-        let _ = worksheet.write_with_format(r, 4, &plain_cccd, &center_format);
+        let _ = worksheet.write_with_format(r, 3, row.gender.as_deref().unwrap_or(""), &center_format);
+        let _ = worksheet.write_with_format(r, 4, &cccd_str, &center_format);
         let _ = worksheet.write_with_format(
             r,
             5,
@@ -1121,33 +1337,16 @@ pub async fn export_chuctho(
             row.village_name.as_deref().unwrap_or(""),
             &data_format,
         );
-        let _ = worksheet.write_with_format(r, 9, row.age60.as_deref().unwrap_or(""), &center_format);
-        let _ =
-            worksheet.write_with_format(r, 10, row.age65.as_deref().unwrap_or(""), &center_format);
-        let _ =
-            worksheet.write_with_format(r, 11, row.age70.as_deref().unwrap_or(""), &center_format);
-        let _ =
-            worksheet.write_with_format(r, 12, row.age75.as_deref().unwrap_or(""), &center_format);
-        let _ =
-            worksheet.write_with_format(r, 13, row.age80.as_deref().unwrap_or(""), &center_format);
-        let _ =
-            worksheet.write_with_format(r, 14, row.age85.as_deref().unwrap_or(""), &center_format);
-        let _ =
-            worksheet.write_with_format(r, 15, row.age90.as_deref().unwrap_or(""), &center_format);
-        let _ =
-            worksheet.write_with_format(r, 16, row.age95.as_deref().unwrap_or(""), &center_format);
-        let _ = worksheet.write_with_format(
-            r,
-            17,
-            row.age100.as_deref().unwrap_or(""),
-            &center_format,
-        );
-        let _ = worksheet.write_with_format(
-            r,
-            18,
-            row.age_over_100.as_deref().unwrap_or(""),
-            &center_format,
-        );
+        let _ = worksheet.write_with_format(r, 9, &ms.age60, &center_format);
+        let _ = worksheet.write_with_format(r, 10, &ms.age65, &center_format);
+        let _ = worksheet.write_with_format(r, 11, &ms.age70, &center_format);
+        let _ = worksheet.write_with_format(r, 12, &ms.age75, &center_format);
+        let _ = worksheet.write_with_format(r, 13, &ms.age80, &center_format);
+        let _ = worksheet.write_with_format(r, 14, &ms.age85, &center_format);
+        let _ = worksheet.write_with_format(r, 15, &ms.age90, &center_format);
+        let _ = worksheet.write_with_format(r, 16, &ms.age95, &center_format);
+        let _ = worksheet.write_with_format(r, 17, &ms.age100, &center_format);
+        let _ = worksheet.write_with_format(r, 18, &ms.age_over_100, &center_format);
         let _ = worksheet.write_with_format(r, 19, received_str, &center_format);
         let _ = worksheet.write_with_format(r, 20, &calc_year_str, &center_format);
         let _ = worksheet.write_with_format(r, 21, row.notes.as_deref().unwrap_or(""), &data_format);
@@ -1180,6 +1379,7 @@ pub async fn export_chuctho(
         }
     };
 
+    let buf_len = buf.len();
     let mut headers_map = HeaderMap::new();
     headers_map.insert(
         header::CONTENT_TYPE,
@@ -1187,9 +1387,19 @@ pub async fn export_chuctho(
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         ),
     );
+    let filename_header = format!("attachment; filename=\"Danh_sach_chuc_tho_{}.xlsx\"", target_year);
+    if let Ok(hv) = HeaderValue::try_from(filename_header) {
+        headers_map.insert(header::CONTENT_DISPOSITION, hv);
+    } else {
+        headers_map.insert(
+            header::CONTENT_DISPOSITION,
+            HeaderValue::from_static("attachment; filename=\"Danh_sach_chuc_tho.xlsx\""),
+        );
+    }
+    headers_map.insert(header::CONTENT_LENGTH, HeaderValue::from(buf_len));
     headers_map.insert(
-        header::CONTENT_DISPOSITION,
-        HeaderValue::from_static("attachment; filename=\"Danh_sach_mung_tho.xlsx\""),
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("no-cache, no-store, must-revalidate"),
     );
 
     (StatusCode::OK, headers_map, buf).into_response()
@@ -1211,20 +1421,22 @@ pub async fn export_htxh(
         query.village_id.or(query.village_id_camel)
     };
 
-    let target_year = query.year.or(query.calculation_year);
+    let is_auth = is_authorized_for_full_cccd(claims.as_ref());
+
+    let target_year = query
+        .year
+        .or(query.calculation_year)
+        .unwrap_or_else(|| chrono::Utc::now().year());
+    let ref_date = chrono::NaiveDate::from_ymd_opt(target_year, 12, 31)
+        .unwrap_or_else(|| chrono::Utc::now().date_naive());
 
     let mut query_builder = QueryBuilder::new(
-        "SELECT p.stt, p.name, p.dob, p.gender, p.cccd, p.ethnicity, p.residence, p.current_address, v.name as village_name, p.age75plus, p.age70to74poor, p.bao_tro, p.huu_tri, p.huu_tuat_bao_hiem, p.nguoi_co_cong, p.received, p.calculation_year, p.notes FROM qlhk.htxh_profiles p LEFT JOIN qlhk.villages v ON p.village_id = v.id WHERE p.is_deleted = false",
+        "SELECT p.stt, p.name, p.dob, p.gender, p.cccd, p.cccd_last4, p.ethnicity, p.residence, p.current_address, v.name as village_name, p.age75plus, p.age70to74poor, p.bao_tro, p.huu_tri, p.huu_tuat_bao_hiem, p.nguoi_co_cong, p.received, p.calculation_year, p.notes FROM qlhk.htxh_profiles p LEFT JOIN qlhk.villages v ON p.village_id = v.id WHERE p.is_deleted = false",
     );
 
     if let Some(vid) = target_village_id {
         query_builder.push(" AND p.village_id = ");
         query_builder.push_bind(vid);
-    }
-
-    if let Some(y) = target_year {
-        query_builder.push(" AND p.calculation_year = ");
-        query_builder.push_bind(y);
     }
 
     query_builder.push(" ORDER BY p.stt ASC NULLS LAST, p.created_at ASC");
@@ -1305,29 +1517,48 @@ pub async fn export_htxh(
         let r = (idx + 1) as u32;
         let stt_val = row.stt.unwrap_or((idx + 1) as i32);
 
-        let plain_cccd = row
-            .cccd
+        let cccd_str = format_cccd_for_export(row.cccd.as_deref(), row.cccd_last4.as_deref(), is_auth);
+
+        let age = row
+            .dob
             .as_deref()
-            .map(|enc| {
-                if enc.contains(':') {
-                    decrypt_cccd(enc).unwrap_or_else(|_| enc.to_string())
+            .and_then(|d| crate::models::policy::calculate_exact_age(d, ref_date))
+            .or_else(|| {
+                row.dob
+                    .as_deref()
+                    .and_then(crate::models::policy::extract_birth_year)
+                    .map(|by| target_year - by)
+            });
+        let (age75plus_str, age70to74poor_str) = if let Some(a) = age {
+            if a >= 75 {
+                ("x", "")
+            } else if (70..=74).contains(&a) {
+                if row.age70to74poor.as_deref() == Some("x") || row.age75plus.as_deref() == Some("x") {
+                    ("", "x")
                 } else {
-                    enc.to_string()
+                    ("", "")
                 }
-            })
-            .unwrap_or_default();
+            } else {
+                ("", "")
+            }
+        } else {
+            (
+                row.age75plus.as_deref().unwrap_or_default(),
+                row.age70to74poor.as_deref().unwrap_or_default(),
+            )
+        };
 
         let _ = worksheet.write_with_format(r, 0, stt_val, &center_format);
         let _ = worksheet.write_with_format(r, 1, &row.name, &data_format);
         let _ = worksheet.write_with_format(r, 2, row.dob.as_deref().unwrap_or_default(), &center_format);
         let _ = worksheet.write_with_format(r, 3, row.gender.as_deref().unwrap_or_default(), &center_format);
-        let _ = worksheet.write_with_format(r, 4, &plain_cccd, &center_format);
+        let _ = worksheet.write_with_format(r, 4, &cccd_str, &center_format);
         let _ = worksheet.write_with_format(r, 5, row.ethnicity.as_deref().unwrap_or_default(), &center_format);
         let _ = worksheet.write_with_format(r, 6, row.residence.as_deref().unwrap_or_default(), &data_format);
         let _ = worksheet.write_with_format(r, 7, row.current_address.as_deref().unwrap_or_default(), &data_format);
         let _ = worksheet.write_with_format(r, 8, row.village_name.as_deref().unwrap_or_default(), &data_format);
-        let _ = worksheet.write_with_format(r, 9, row.age75plus.as_deref().unwrap_or_default(), &center_format);
-        let _ = worksheet.write_with_format(r, 10, row.age70to74poor.as_deref().unwrap_or_default(), &center_format);
+        let _ = worksheet.write_with_format(r, 9, age75plus_str, &center_format);
+        let _ = worksheet.write_with_format(r, 10, age70to74poor_str, &center_format);
         let _ = worksheet.write_with_format(r, 11, row.bao_tro.as_deref().unwrap_or_default(), &center_format);
         let _ = worksheet.write_with_format(r, 12, row.huu_tri.as_deref().unwrap_or_default(), &center_format);
         let _ = worksheet.write_with_format(r, 13, row.huu_tuat_bao_hiem.as_deref().unwrap_or_default(), &center_format);
@@ -1337,7 +1568,7 @@ pub async fn export_htxh(
             _ => "Chưa nhận",
         };
         let _ = worksheet.write_with_format(r, 15, received_text, &center_format);
-        let _ = worksheet.write_with_format(r, 16, row.calculation_year.unwrap_or(2026), &center_format);
+        let _ = worksheet.write_with_format(r, 16, target_year, &center_format);
         let _ = worksheet.write_with_format(r, 17, row.notes.as_deref().unwrap_or_default(), &data_format);
     }
 
@@ -1371,6 +1602,7 @@ pub async fn export_htxh(
         }
     };
 
+    let buf_len = buf.len();
     let mut headers_map = HeaderMap::new();
     headers_map.insert(
         header::CONTENT_TYPE,
@@ -1381,6 +1613,11 @@ pub async fn export_htxh(
     headers_map.insert(
         header::CONTENT_DISPOSITION,
         HeaderValue::from_static("attachment; filename=\"Danh_sach_HTXH.xlsx\""),
+    );
+    headers_map.insert(header::CONTENT_LENGTH, HeaderValue::from(buf_len));
+    headers_map.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("no-cache, no-store, must-revalidate"),
     );
 
     (StatusCode::OK, headers_map, buf).into_response()

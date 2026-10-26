@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Extension, Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, put},
@@ -10,6 +10,7 @@ use serde_json::json;
 use uuid::Uuid;
 
 use crate::{
+    middlewares::auth::Claims,
     models::village::{
         CreateVillageRequest, UpdateVillageRequest, VillageDb, VillageWithHouseholdCount,
     },
@@ -65,8 +66,17 @@ pub async fn get_villages(
 
 pub async fn create_village(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateVillageRequest>,
 ) -> Response {
+    if claims.role != "admin" {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Chỉ Quản trị viên mới có quyền thêm thôn mới" })),
+        )
+            .into_response();
+    }
+
     let trimmed_name = payload.name.trim();
     if trimmed_name.is_empty() {
         return (
@@ -146,9 +156,18 @@ pub async fn create_village(
 
 pub async fn update_village(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateVillageRequest>,
 ) -> Response {
+    if claims.role != "admin" {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Chỉ Quản trị viên mới có quyền sửa thông tin thôn" })),
+        )
+            .into_response();
+    }
+
     let current_res: Result<Option<VillageDb>, _> = sqlx::query_as(
         "SELECT id, name, code, created_at, updated_at FROM qlhk.villages WHERE id = $1",
     )
@@ -208,15 +227,8 @@ pub async fn update_village(
     };
 
     let trimmed_code = match payload.code {
-        Some(ref c) => {
+        Some(ref c) if !c.trim().is_empty() => {
             let t = c.trim();
-            if t.is_empty() {
-                return (
-                    StatusCode::BAD_REQUEST,
-                    Json(json!({ "error": "Mã thôn không được để trống" })),
-                )
-                    .into_response();
-            }
             if current.code.as_deref() != Some(t) {
                 let dup_code: Result<Option<(Uuid,)>, _> = sqlx::query_as(
                     "SELECT id FROM qlhk.villages WHERE code = $1 AND id != $2 LIMIT 1",
@@ -236,7 +248,7 @@ pub async fn update_village(
             }
             Some(t.to_string())
         }
-        None => None,
+        _ => None,
     };
 
     let update_res = sqlx::query_as::<_, VillageDb>(
@@ -278,8 +290,17 @@ pub async fn update_village(
 
 pub async fn delete_village(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> Response {
+    if claims.role != "admin" {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Chỉ Quản trị viên mới có quyền xóa thôn" })),
+        )
+            .into_response();
+    }
+
     let current_res: Result<Option<VillageDb>, _> = sqlx::query_as(
         "SELECT id, name, code, created_at, updated_at FROM qlhk.villages WHERE id = $1",
     )
@@ -306,23 +327,23 @@ pub async fn delete_village(
         }
     };
 
-    let active_households: Result<i64, _> = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM qlhk.households WHERE village_id = $1 AND is_deleted = false",
+    let household_count: Result<i64, _> = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM qlhk.households WHERE village_id = $1",
     )
     .bind(current.id)
     .fetch_one(&state.pool)
     .await;
 
-    match active_households {
+    match household_count {
         Ok(count) if count > 0 => {
             return (
                 StatusCode::BAD_REQUEST,
-                Json(json!({ "error": "Không thể xóa thôn đang có hộ khẩu hoạt động" })),
+                Json(json!({ "error": "Không thể xóa thôn đang có dữ liệu hộ khẩu" })),
             )
                 .into_response();
         }
         Err(e) => {
-            eprintln!("check active households error: {:?}", e);
+            eprintln!("check households error: {:?}", e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({ "error": "Lỗi máy chủ khi kiểm tra hộ khẩu thôn" })),
@@ -350,16 +371,6 @@ pub async fn delete_village(
         .await;
 
     let _ = sqlx::query("UPDATE qlhk.audit_logs SET village_id = NULL WHERE village_id = $1")
-        .bind(current.id)
-        .execute(&mut *tx)
-        .await;
-
-    let _ = sqlx::query("DELETE FROM qlhk.citizens WHERE household_id IN (SELECT id FROM qlhk.households WHERE village_id = $1)")
-        .bind(current.id)
-        .execute(&mut *tx)
-        .await;
-
-    let _ = sqlx::query("DELETE FROM qlhk.households WHERE village_id = $1")
         .bind(current.id)
         .execute(&mut *tx)
         .await;

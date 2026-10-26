@@ -12,7 +12,7 @@
 ## Steps Checklist
 
 - [x] **Step 1**: Clean UI Mã Thôn (`ModernVillageTable.tsx`, `VillagesPage.tsx`, `AuditLogView.tsx`)
-- [ ] **Step 2**: Backend Village Code Safeguard (`QLHK-Backend-Rust/src/handlers/villages.rs`)
+- [x] **Step 2**: Backend Village Code Safeguard (`QLHK-Backend-Rust/src/handlers/villages.rs`)
 - [ ] **Step 3**: Backend Dynamic Chúc Thọ Projection (`QLHK-Backend-Rust/src/handlers/policies.rs`)
 - [ ] **Step 4**: Backend Excel Export Dynamic Projection (`QLHK-Backend-Rust/src/handlers/excel.rs`)
 - [ ] **Step 5**: Frontend Client Cache & Year Navigation (`useProfiles.ts`, `ProfileRow.tsx`, `ProfileFilterBar.tsx`, `DashboardPage.tsx`)

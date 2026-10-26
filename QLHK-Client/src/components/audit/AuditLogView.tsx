@@ -6,10 +6,13 @@ import {
 	ChevronDown,
 	ChevronRight,
 	Clock,
+	Download,
 	FileSpreadsheet,
 	Filter,
 	Home,
 	Layers,
+	LogIn,
+	LogOut,
 	MapPin,
 	Plus,
 	RefreshCw,
@@ -43,6 +46,8 @@ export type TimeFilterPreset =
 	| "this_month"
 	| "custom";
 
+const LIMIT = 50;
+
 const FIELD_LABELS: Record<string, string> = {
 	book_number: "Mã định danh hộ",
 	code: "Mã định danh",
@@ -53,7 +58,7 @@ const FIELD_LABELS: Record<string, string> = {
 	status: "Trạng thái cư trú",
 	notes: "Ghi chú",
 	village_name: "Thôn",
-	village_id: "Mã thôn",
+	village_id: "Thôn / Làng",
 	full_name: "Họ và tên",
 	name: "Họ và tên",
 	relationship: "Quan hệ",
@@ -95,6 +100,12 @@ const FIELD_LABELS: Record<string, string> = {
 	file_name: "Tên tệp Excel",
 	imported_households: "Số hộ đã nhập",
 	imported_citizens: "Số nhân khẩu đã nhập",
+	total_records: "Tổng số bản ghi",
+	format: "Định dạng",
+	role: "Vai trò",
+	username: "Tên đăng nhập",
+	email: "Email",
+	phone: "Số điện thoại",
 };
 
 const IGNORED_FIELDS = new Set([
@@ -242,6 +253,54 @@ function getActionMeta(action: AuditAction | string) {
 				dotClass: "bg-amber-500 ring-amber-500/20",
 				icon: FileSpreadsheet,
 			};
+		case "EXPORT":
+			return {
+				label: "Xuất dữ liệu",
+				badgeClass:
+					"bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30",
+				dotClass: "bg-teal-500 ring-teal-500/20",
+				icon: Download,
+			};
+		case "LOGIN":
+			return {
+				label: "Đăng nhập",
+				badgeClass:
+					"bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30",
+				dotClass: "bg-indigo-500 ring-indigo-500/20",
+				icon: LogIn,
+			};
+		case "LOGOUT":
+			return {
+				label: "Đăng xuất",
+				badgeClass:
+					"bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30",
+				dotClass: "bg-slate-500 ring-slate-500/20",
+				icon: LogOut,
+			};
+		case "REVEAL_CCCD":
+			return {
+				label: "Tra cứu CCCD",
+				badgeClass:
+					"bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
+				dotClass: "bg-amber-500 ring-amber-500/20",
+				icon: Shield,
+			};
+		case "PASSWORD_CHANGE":
+			return {
+				label: "Đổi mật khẩu",
+				badgeClass:
+					"bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30",
+				dotClass: "bg-violet-500 ring-violet-500/20",
+				icon: ShieldCheck,
+			};
+		case "BACKUP":
+			return {
+				label: "Sao lưu",
+				badgeClass:
+					"bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30",
+				dotClass: "bg-cyan-500 ring-cyan-500/20",
+				icon: Download,
+			};
 		default:
 			return {
 				label: String(action),
@@ -258,6 +317,23 @@ function getEntitySummary(item: AuditLogItem): {
 	sub: string;
 	icon: React.ComponentType<{ className?: string }>;
 } {
+	if (item.action === "LOGIN" || item.action === "LOGOUT") {
+		return {
+			name: item.full_name ? `Cán bộ ${item.full_name}` : `Tài khoản ${item.username || "Hệ thống"}`,
+			sub: item.username ? `Tài khoản: ${item.username}` : "Phiên đăng nhập",
+			icon: UserIcon,
+		};
+	}
+
+	if (item.action === "EXPORT") {
+		const newV = item.new_values || {};
+		return {
+			name: newV.file_name ? `Tệp: ${newV.file_name}` : "Xuất báo cáo dữ liệu",
+			sub: newV.total_records ? `${newV.total_records} bản ghi` : "Tệp dữ liệu",
+			icon: Download,
+		};
+	}
+
 	if (item.entity_type === "household") {
 		const oldV = item.old_values || {};
 		const newV = item.new_values || {};
@@ -302,6 +378,31 @@ function getEntitySummary(item: AuditLogItem): {
 function getQuickInlineSummary(item: AuditLogItem, diffs: FieldDiff[]): string {
 	const newV = item.new_values || {};
 	const oldV = item.old_values || {};
+
+	if (item.action === "LOGIN") {
+		return `Đăng nhập hệ thống${item.ip_address ? ` (${item.ip_address})` : ""}`;
+	}
+
+	if (item.action === "LOGOUT") {
+		return "Đăng xuất khỏi hệ thống";
+	}
+
+	if (item.action === "EXPORT") {
+		const fileName = newV.file_name || (typeof newV === "string" ? newV : "");
+		return `Xuất dữ liệu báo cáo${fileName ? `: ${fileName}` : ""}`;
+	}
+
+	if (item.action === "REVEAL_CCCD") {
+		return "Tra cứu hiển thị số CCCD";
+	}
+
+	if (item.action === "PASSWORD_CHANGE") {
+		return "Thay đổi mật khẩu tài khoản";
+	}
+
+	if (item.action === "BACKUP") {
+		return "Sao lưu dữ liệu hệ thống";
+	}
 
 	if (item.action === "UPDATE") {
 		const updatedMembers = Array.isArray(newV.updated_members) ? newV.updated_members : [];
@@ -380,10 +481,10 @@ function getQuickInlineSummary(item: AuditLogItem, diffs: FieldDiff[]): string {
 	return item.description || "Thao tác nghiệp vụ";
 }
 
-function formatDayGroupTitle(dateStr: string): { title: string; isToday: boolean; isYesterday: boolean } {
+function formatDayGroupTitle(dateStr: string): { title: string; isToday: boolean } {
 	const itemDate = new Date(dateStr);
 	if (isNaN(itemDate.getTime())) {
-		return { title: dateStr, isToday: false, isYesterday: false };
+		return { title: dateStr, isToday: false };
 	}
 
 	const today = new Date();
@@ -405,7 +506,6 @@ function formatDayGroupTitle(dateStr: string): { title: string; isToday: boolean
 		return {
 			title: `Hôm nay • ${itemDate.toLocaleDateString("vi-VN")}`,
 			isToday: true,
-			isYesterday: false,
 		};
 	}
 
@@ -413,14 +513,12 @@ function formatDayGroupTitle(dateStr: string): { title: string; isToday: boolean
 		return {
 			title: `Hôm qua • ${itemDate.toLocaleDateString("vi-VN")}`,
 			isToday: false,
-			isYesterday: true,
 		};
 	}
 
 	return {
 		title: formattedDate,
 		isToday: false,
-		isYesterday: false,
 	};
 }
 
@@ -439,7 +537,6 @@ export const AuditLogView: React.FC = () => {
 	const [logs, setLogs] = useState<AuditLogItem[]>([]);
 	const [total, setTotal] = useState<number>(0);
 	const [page, setPage] = useState<number>(1);
-	const [limit] = useState<number>(50);
 	const [totalPages, setTotalPages] = useState<number>(1);
 	const [loading, setLoading] = useState<boolean>(false);
 	const [userList, setUserList] = useState<User[]>([]);
@@ -467,7 +564,7 @@ export const AuditLogView: React.FC = () => {
 			try {
 				const res = await auditApi.getLogs({
 					page: currentPage,
-					limit,
+					limit: LIMIT,
 					villageId: villageFilter || undefined,
 					action: actionFilter !== "ALL" ? actionFilter : undefined,
 					userId: userFilter || undefined,
@@ -487,7 +584,7 @@ export const AuditLogView: React.FC = () => {
 				setLoading(false);
 			}
 		},
-		[actionFilter, villageFilter, userFilter, searchQuery, limit],
+		[actionFilter, villageFilter, userFilter, searchQuery],
 	);
 
 	useEffect(() => {
@@ -649,60 +746,60 @@ export const AuditLogView: React.FC = () => {
 				</div>
 			</div>
 
-			<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 				<div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
-					<div>
-						<div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+					<div className="min-w-0">
+						<div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
 							Tổng sự kiện
 						</div>
 						<div className="text-xl font-black text-slate-900 dark:text-white tabular-nums mt-0.5">
 							{filteredLogs.length}
 						</div>
 					</div>
-					<div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
-						<Activity className="w-4 h-4" />
+					<div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+						<Activity className="w-5 h-5" />
 					</div>
 				</div>
 
 				<div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
-					<div>
-						<div className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+					<div className="min-w-0">
+						<div className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider truncate">
 							Lượt cập nhật
 						</div>
 						<div className="text-xl font-black text-blue-700 dark:text-blue-300 tabular-nums mt-0.5">
 							{updateCount}
 						</div>
 					</div>
-					<div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-						<RefreshCw className="w-4 h-4" />
+					<div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+						<RefreshCw className="w-5 h-5" />
 					</div>
 				</div>
 
 				<div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
-					<div>
-						<div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+					<div className="min-w-0">
+						<div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider truncate">
 							Thêm mới
 						</div>
 						<div className="text-xl font-black text-emerald-700 dark:text-emerald-300 tabular-nums mt-0.5">
 							{createCount}
 						</div>
 					</div>
-					<div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-						<Plus className="w-4 h-4" />
+					<div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+						<Plus className="w-5 h-5" />
 					</div>
 				</div>
 
 				<div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
-					<div>
-						<div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+					<div className="min-w-0">
+						<div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider truncate">
 							Xóa / Khôi phục
 						</div>
 						<div className="text-xl font-black text-rose-700 dark:text-rose-300 tabular-nums mt-0.5">
 							{deleteCount}
 						</div>
 					</div>
-					<div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-						<Trash2 className="w-4 h-4" />
+					<div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+						<Trash2 className="w-5 h-5" />
 					</div>
 				</div>
 			</div>
@@ -721,6 +818,8 @@ export const AuditLogView: React.FC = () => {
 							{ id: "DELETE", label: "Xóa" },
 							{ id: "RESTORE", label: "Khôi phục" },
 							{ id: "IMPORT", label: "Nhập Excel" },
+							{ id: "EXPORT", label: "Xuất dữ liệu" },
+							{ id: "LOGIN", label: "Đăng nhập" },
 						].map((act) => {
 							const isAct = actionFilter === act.id;
 							return (
@@ -933,7 +1032,7 @@ export const AuditLogView: React.FC = () => {
 					</div>
 				) : (
 					<div className="relative space-y-8">
-						<div className="absolute left-4 sm:left-5 top-2 bottom-2 w-0.5 bg-slate-200 dark:bg-slate-800 pointer-events-none" />
+						<div className="absolute left-4 sm:left-5 -translate-x-1/2 top-3 bottom-3 w-0.5 bg-slate-200 dark:bg-slate-800 pointer-events-none" />
 
 						{groupedByDate.map((group) => (
 							<section key={group.dateKey} className="relative space-y-3">
@@ -942,9 +1041,9 @@ export const AuditLogView: React.FC = () => {
 									className="sticky z-20 -mx-5 sm:-mx-6 px-5 sm:px-6 py-3.5 pb-4 sm:py-4 sm:pb-4.5 bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 shadow-sm dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.5)] flex items-center"
 								>
 									<div className="relative w-full flex items-center">
-										<div className="absolute left-4 sm:left-5 -translate-x-1/2 -top-5 -bottom-5 w-0.5 bg-slate-200 dark:bg-slate-800 z-10 pointer-events-none" />
+										<div className="absolute left-4 sm:left-5 -translate-x-1/2 -top-4 sm:-top-4.5 -bottom-4 sm:-bottom-4.5 w-0.5 bg-slate-200 dark:bg-slate-800 z-10 pointer-events-none" />
 
-										<div className="absolute left-4 sm:left-5 -translate-x-1/2 w-6 h-6 rounded-full bg-slate-500 dark:bg-slate-600 text-white ring-4 ring-white dark:ring-slate-900 shadow-xs flex items-center justify-center z-20">
+										<div className="absolute left-4 sm:left-5 -translate-x-1/2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-500 dark:bg-slate-600 text-white ring-4 ring-white dark:ring-slate-900 shadow-xs flex items-center justify-center z-20">
 											<Calendar className="w-3 h-3 stroke-[2.5]" />
 										</div>
 
@@ -986,7 +1085,7 @@ export const AuditLogView: React.FC = () => {
 										return (
 											<div key={item.id} className="relative pl-10 sm:pl-12 group">
 												<div
-													className={`absolute left-4 sm:left-5 -translate-x-1/2 top-4 w-3 h-3 rounded-full ${actionMeta.dotClass} ring-4 ring-white dark:ring-slate-900 transition-transform group-hover:scale-125 z-10`}
+													className={`absolute left-4 sm:left-5 -translate-x-1/2 top-4 sm:top-4.5 w-3 h-3 rounded-full ${actionMeta.dotClass} ring-4 ring-white dark:ring-slate-900 transition-transform group-hover:scale-125 z-10`}
 												/>
 
 												<div
@@ -1608,7 +1707,67 @@ export const AuditLogView: React.FC = () => {
 																);
 															})()}
 
-															{!["UPDATE", "CREATE", "DELETE", "BULK_DELETE", "HARD_DELETE", "RESTORE", "IMPORT"].includes(item.action) && (
+															{item.action === "EXPORT" && item.new_values && (() => {
+																const newV = item.new_values;
+																return (
+																	<div className="p-3 bg-teal-500/10 border border-teal-500/25 rounded-xl text-xs space-y-2">
+																		<div className="font-bold text-teal-800 dark:text-teal-200 flex items-center gap-1.5">
+																			<Download className="w-4 h-4 shrink-0" />
+																			<span>Xuất dữ liệu báo cáo / thống kê thành công</span>
+																		</div>
+																		<div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-white/70 dark:bg-slate-900/60 p-2.5 rounded-lg border border-teal-500/20 text-[11px] font-mono text-slate-700 dark:text-slate-300">
+																			<div>
+																				<span className="text-slate-400 block text-[10px]">Tệp xuất:</span>
+																				<span className="font-bold truncate block">
+																					{newV.file_name || "BaoCao_DuLieu.xlsx"}
+																				</span>
+																			</div>
+																			<div>
+																				<span className="text-slate-400 block text-[10px]">Tổng bản ghi:</span>
+																				<span className="font-bold text-emerald-600 dark:text-emerald-400">
+																					{newV.total_records ?? "Toàn bộ"}
+																				</span>
+																			</div>
+																			<div>
+																				<span className="text-slate-400 block text-[10px]">Định dạng:</span>
+																				<span className="font-bold uppercase">
+																					{newV.format || "EXCEL"}
+																				</span>
+																			</div>
+																		</div>
+																	</div>
+																);
+															})()}
+
+															{(item.action === "LOGIN" || item.action === "LOGOUT") && (
+																<div className="p-3 bg-indigo-500/10 border border-indigo-500/25 rounded-xl text-xs space-y-1">
+																	<div className="font-bold text-indigo-800 dark:text-indigo-200 flex items-center gap-1.5">
+																		{item.action === "LOGIN" ? (
+																			<LogIn className="w-4 h-4 shrink-0" />
+																		) : (
+																			<LogOut className="w-4 h-4 shrink-0" />
+																		)}
+																		<span>
+																			{item.action === "LOGIN"
+																				? "Phiên đăng nhập hệ thống thành công"
+																				: "Phiên đăng xuất khỏi hệ thống"}
+																		</span>
+																	</div>
+																	<div className="text-slate-600 dark:text-slate-300 text-[11px] pt-1 flex items-center gap-3 flex-wrap">
+																		<span>
+																			Cán bộ: <strong>{item.full_name || item.username || "N/A"}</strong>
+																		</span>
+																		<span>
+																			Tài khoản: <strong className="font-mono">{item.username || "N/A"}</strong>
+																		</span>
+																		<span>
+																			Địa chỉ IP: <span className="font-mono text-indigo-700 dark:text-indigo-300 font-bold">{item.ip_address || "127.0.0.1"}</span>
+																		</span>
+																	</div>
+																</div>
+															)}
+
+															{!["UPDATE", "CREATE", "DELETE", "BULK_DELETE", "HARD_DELETE", "RESTORE", "IMPORT", "EXPORT", "LOGIN", "LOGOUT"].includes(item.action) && (
 																<div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-xs space-y-1">
 																	<div className="font-semibold text-slate-700 dark:text-slate-300">
 																		{item.description || `Thao tác: ${item.action}`}

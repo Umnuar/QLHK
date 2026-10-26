@@ -6,12 +6,9 @@ import {
 	ArrowRight,
 	ArrowUp,
 	ArrowUpDown,
-	Check,
-	ChevronRight,
 	Download,
 	Edit3,
 	ExternalLink,
-	Eye,
 	Globe,
 	Home,
 	LayoutGrid,
@@ -22,8 +19,6 @@ import {
 	Search,
 	Shield,
 	Trash2,
-	UserCheck,
-	UserPlus,
 	Users,
 	UserX,
 	X,
@@ -83,24 +78,9 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 	const [formSubmitting, setFormSubmitting] = useState(false);
 	const [formError, setFormError] = useState("");
 
-	const totalHouseholds = overview?.totalHouseholds ?? 0;
-	const totalCitizens = overview?.totalCitizens ?? 0;
-	const avgSize = overview?.averageHouseholdSize ?? 0;
-	const maleCount = overview?.gender?.male?.count ?? 0;
-	const malePct = overview?.gender?.male?.percentage ?? 0;
-	const femaleCount = overview?.gender?.female?.count ?? 0;
-	const femalePct = overview?.gender?.female?.percentage ?? 0;
-
-	const dttsCount = overview?.ethnicities
-		? overview.ethnicities
-				.filter((e) => e.name.toLowerCase().trim() !== "kinh")
-				.reduce((sum, e) => sum + e.count, 0)
-		: 0;
-	const dttsPercentage =
-		totalCitizens > 0 ? ((dttsCount / totalCitizens) * 100).toFixed(1) : "0.0";
-
 	const enrichedVillages = useMemo(() => {
-		return villages.map((v, index) => {
+		const totalCommuneHouseholds = overview?.totalHouseholds ?? 0;
+		return villages.map((v) => {
 			const vStat =
 				villageStats[v.id] ||
 				villageStats[v.short_code || ""] ||
@@ -117,8 +97,8 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 			const female = vStat?.female_count ?? 0;
 
 			const householdShare =
-				totalHouseholds > 0
-					? Math.round((householdCount / totalHouseholds) * 1000) / 10
+				totalCommuneHouseholds > 0
+					? Math.round((householdCount / totalCommuneHouseholds) * 1000) / 10
 					: 0;
 
 			const avgHousehold =
@@ -130,8 +110,6 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 
 			return {
 				...v,
-				index: index + 1,
-				stat: vStat,
 				householdCount,
 				citizenCount,
 				male,
@@ -143,7 +121,58 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 				assignedOfficer,
 			};
 		});
-	}, [villages, villageStats, totalHouseholds, totalCitizens, userList]);
+	}, [villages, villageStats, overview?.totalHouseholds, userList]);
+
+	const displayStats = useMemo(() => {
+		if (isAdmin) {
+			const totalHouseholds = overview?.totalHouseholds ?? 0;
+			const totalCitizens = overview?.totalCitizens ?? 0;
+			const avgSize = overview?.averageHouseholdSize ?? 0;
+			const maleCount = overview?.gender?.male?.count ?? 0;
+			const malePct = overview?.gender?.male?.percentage ?? 0;
+			const femaleCount = overview?.gender?.female?.count ?? 0;
+			const femalePct = overview?.gender?.female?.percentage ?? 0;
+			const dttsCount = overview?.ethnicities
+				? overview.ethnicities
+						.filter((e) => e.name.toLowerCase().trim() !== "kinh")
+						.reduce((sum, e) => sum + e.count, 0)
+				: 0;
+			const dttsPercentage =
+				totalCitizens > 0 ? ((dttsCount / totalCitizens) * 100).toFixed(1) : "0.0";
+			return {
+				totalHouseholds,
+				totalCitizens,
+				avgSize,
+				maleCount,
+				malePct,
+				femaleCount,
+				femalePct,
+				dttsCount,
+				dttsPercentage,
+			};
+		}
+
+		const totalHouseholds = enrichedVillages.reduce((sum, v) => sum + v.householdCount, 0);
+		const totalCitizens = enrichedVillages.reduce((sum, v) => sum + v.citizenCount, 0);
+		const avgSize = totalHouseholds > 0 ? (totalCitizens / totalHouseholds).toFixed(1) : "0.0";
+		const maleCount = enrichedVillages.reduce((sum, v) => sum + v.male, 0);
+		const malePct = totalCitizens > 0 ? Math.round((maleCount / totalCitizens) * 1000) / 10 : 0;
+		const femaleCount = enrichedVillages.reduce((sum, v) => sum + v.female, 0);
+		const femalePct = totalCitizens > 0 ? Math.round((femaleCount / totalCitizens) * 1000) / 10 : 0;
+		const dttsCount = enrichedVillages.reduce((sum, v) => sum + v.dtts, 0);
+		const dttsPercentage = totalCitizens > 0 ? ((dttsCount / totalCitizens) * 100).toFixed(1) : "0.0";
+		return {
+			totalHouseholds,
+			totalCitizens,
+			avgSize,
+			maleCount,
+			malePct,
+			femaleCount,
+			femalePct,
+			dttsCount,
+			dttsPercentage,
+		};
+	}, [isAdmin, overview, enrichedVillages]);
 
 	const assignedVillagesCount = useMemo(() => {
 		return enrichedVillages.filter((v) => Boolean(v.assignedOfficer)).length;
@@ -265,7 +294,6 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 			const rows = filteredAndSortedVillages.map((v, idx) => ({
 				"STT": idx + 1,
 				"Tên Thôn": v.name,
-				"Mã Thôn": v.short_code || `TH-${idx + 1}`,
 				"Cán Bộ Phụ Trách": v.assignedOfficer
 					? v.assignedOfficer.full_name || v.assignedOfficer.username
 					: "Chưa phân công",
@@ -306,19 +334,24 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 					<div>
 						<div className="flex items-center gap-2 flex-wrap">
 							<span className="px-2.5 py-0.5 rounded-full bg-white/20 text-emerald-100 text-[11px] font-bold uppercase tracking-wider">
-								UBND Xã Đăk Hà
+								{isAdmin ? "UBND Xã Đăk Hà" : "Cán Bộ Địa Bàn"}
 							</span>
 							<span className="text-xs text-emerald-200 font-medium">
-								Hệ thống quản lý {villages.length} Thôn Dân Cư
+								{isAdmin
+									? `Hệ thống quản lý ${villages.length} Thôn Dân Cư`
+									: `Thôn phụ trách: ${enrichedVillages[0]?.name || "Địa bàn phân công"}`}
 							</span>
 						</div>
 						<h2 className="text-2xl font-black tracking-tight text-white mt-1">
-							Trung Tâm Quản Lý Địa Bàn Thôn & Làng
+							{isAdmin
+								? "Trung Tâm Quản Lý Địa Bàn Thôn & Làng"
+								: `Thông Tin Thôn ${enrichedVillages[0]?.name || ""}`}
 						</h2>
 						<p className="text-xs text-emerald-100/90 mt-1 max-w-2xl font-medium">
-							Toàn xã hiện có <strong className="font-bold text-white">{totalHouseholds.toLocaleString()}</strong> hộ gia đình,{" "}
-							<strong className="font-bold text-white">{totalCitizens.toLocaleString()}</strong> nhân khẩu (Bình quân:{" "}
-							<strong className="font-bold text-white">{avgSize}</strong> người/hộ)
+							{isAdmin ? "Toàn xã" : "Địa bàn"} hiện có{" "}
+							<strong className="font-bold text-white">{displayStats.totalHouseholds.toLocaleString()}</strong> hộ gia đình,{" "}
+							<strong className="font-bold text-white">{displayStats.totalCitizens.toLocaleString()}</strong> nhân khẩu (Bình quân:{" "}
+							<strong className="font-bold text-white">{displayStats.avgSize}</strong> người/hộ)
 						</p>
 					</div>
 				</div>
@@ -326,10 +359,10 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 				<div className="flex items-center gap-2.5 relative z-10 w-full md:w-auto justify-end flex-wrap sm:flex-nowrap">
 					<button
 						type="button"
-						onClick={() => onSelectVillage("", "analytics")}
+						onClick={() => onSelectVillage(isAdmin ? "" : (enrichedVillages[0]?.id || ""), "analytics")}
 						className="h-10 px-4 rounded-xl bg-white text-emerald-900 hover:bg-emerald-50 text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
 					>
-						<span>Báo Cáo Thống Kê Toàn Xã</span>
+						<span>{isAdmin ? "Báo Cáo Thống Kê Toàn Xã" : "Báo Cáo Thống Kê Thôn"}</span>
 						<ArrowRight className="w-4 h-4 stroke-[2]" />
 					</button>
 				</div>
@@ -342,10 +375,12 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 							Địa Bàn Quản Lý
 						</span>
 						<div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
-							{villages.length} Thôn
+							{isAdmin ? `${villages.length} Thôn` : (enrichedVillages[0]?.name || "1 Thôn")}
 						</div>
 						<div className="text-[11px] text-slate-400 font-medium">
-							{assignedVillagesCount}/{villages.length} thôn đã gán cán bộ
+							{isAdmin
+								? `${assignedVillagesCount}/${villages.length} thôn đã gán cán bộ`
+								: "Địa bàn được phân công quản lý"}
 						</div>
 					</div>
 					<div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/40 flex items-center justify-center shrink-0">
@@ -359,10 +394,10 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 							Tổng Hộ Gia Đình
 						</span>
 						<div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
-							{totalHouseholds.toLocaleString()} Hộ
+							{displayStats.totalHouseholds.toLocaleString()} Hộ
 						</div>
 						<div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-							Bình quân: {avgSize} người/hộ
+							Bình quân: {displayStats.avgSize} người/hộ
 						</div>
 					</div>
 					<div className="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-800/40 flex items-center justify-center shrink-0">
@@ -376,10 +411,10 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 							Tổng Nhân Khẩu
 						</span>
 						<div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
-							{totalCitizens.toLocaleString()} Người
+							{displayStats.totalCitizens.toLocaleString()} Người
 						</div>
 						<div className="text-[11px] text-slate-400 font-mono">
-							Nam: {maleCount} ({malePct}%) • Nữ: {femaleCount} ({femalePct}%)
+							Nam: {displayStats.maleCount} ({displayStats.malePct}%) • Nữ: {displayStats.femaleCount} ({displayStats.femalePct}%)
 						</div>
 					</div>
 					<div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/40 flex items-center justify-center shrink-0">
@@ -393,10 +428,10 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 							Đồng Bào DTTS
 						</span>
 						<div className="text-2xl font-black font-mono text-purple-600 dark:text-purple-400">
-							{dttsPercentage}%
+							{displayStats.dttsPercentage}%
 						</div>
 						<div className="text-[11px] text-slate-400 font-medium">
-							{dttsCount.toLocaleString()} / {totalCitizens.toLocaleString()} nhân khẩu
+							{displayStats.dttsCount.toLocaleString()} / {displayStats.totalCitizens.toLocaleString()} nhân khẩu
 						</div>
 					</div>
 					<div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-800/40 flex items-center justify-center shrink-0">
@@ -494,7 +529,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 							type="text"
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
-							placeholder="Tìm tên thôn, mã thôn, tên cán bộ phụ trách..."
+							placeholder="Tìm tên thôn, tên cán bộ phụ trách..."
 							className="w-full h-10 min-h-[40px] pl-10 pr-9 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
 						/>
 						{searchTerm && (
@@ -520,28 +555,32 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 						>
 							Tất cả ({villages.length})
 						</button>
-						<button
-							type="button"
-							onClick={() => setFilterType("assigned")}
-							className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center ${
-								filterType === "assigned"
-									? "bg-emerald-600 text-white shadow-xs"
-									: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
-							}`}
-						>
-							Đã có cán bộ ({assignedVillagesCount})
-						</button>
-						<button
-							type="button"
-							onClick={() => setFilterType("unassigned")}
-							className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center ${
-								filterType === "unassigned"
-									? "bg-amber-600 text-white shadow-xs"
-									: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
-							}`}
-						>
-							Chưa phân công ({villages.length - assignedVillagesCount})
-						</button>
+						{isAdmin && (
+							<>
+								<button
+									type="button"
+									onClick={() => setFilterType("assigned")}
+									className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center ${
+										filterType === "assigned"
+											? "bg-emerald-600 text-white shadow-xs"
+											: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+									}`}
+								>
+									Đã có cán bộ ({assignedVillagesCount})
+								</button>
+								<button
+									type="button"
+									onClick={() => setFilterType("unassigned")}
+									className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center ${
+										filterType === "unassigned"
+											? "bg-amber-600 text-white shadow-xs"
+											: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+									}`}
+								>
+									Chưa phân công ({villages.length - assignedVillagesCount})
+								</button>
+							</>
+						)}
 						<button
 							type="button"
 							onClick={() => setFilterType("high_dtts")}
@@ -679,11 +718,6 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 													<div className="min-w-0">
 														<div className="font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors text-sm flex items-center gap-2">
 															<span className="truncate">{v.name}</span>
-															{v.short_code && (
-																<span className="px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-																	{v.short_code}
-																</span>
-															)}
 														</div>
 														<div className="text-[11px] text-slate-400 font-medium">
 															Địa bàn Xã Đăk Hà • Bấm để xem thống kê
@@ -832,7 +866,7 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 													{v.name}
 												</h4>
 												<span className="text-[11px] text-slate-400 font-medium">
-													{v.short_code ? `Mã: ${v.short_code}` : "Địa bàn Xã Đăk Hà"} • Bấm để xem thống kê
+													Địa bàn Xã Đăk Hà • Bấm để xem thống kê
 												</span>
 											</div>
 										</div>
@@ -983,19 +1017,6 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 										onChange={(e) => setFormName(e.target.value)}
 										placeholder="Ví dụ: Thôn Kon Xôm Lũy, Thôn 1..."
 										className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-									/>
-								</div>
-
-								<div>
-									<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-										Mã Thôn / Ký Hiệu Viết Tắt (Tùy chọn)
-									</label>
-									<input
-										type="text"
-										value={formCode}
-										onChange={(e) => setFormCode(e.target.value)}
-										placeholder="Ví dụ: KXL, T01..."
-										className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-mono font-bold focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
 									/>
 								</div>
 

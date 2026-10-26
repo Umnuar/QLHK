@@ -69,6 +69,7 @@ export const PolicyAnalyticsPage: React.FC = () => {
 	}, [selectedVillageId, isAdmin, user?.village_id, setSelectedVillageId]);
 
 	const [loading, setLoading] = useState(false);
+	const [isExporting, setIsExporting] = useState(false);
 
 	const [overview, setOverview] = useState<AnalyticsOverviewData | null>(null);
 	const [breakdown, setBreakdown] = useState<AnalyticsByVillageResponse | null>(
@@ -140,8 +141,6 @@ export const PolicyAnalyticsPage: React.FC = () => {
 			gender_female: demographics.gender.female,
 			ethnicity_kinh: demographics.ethnicity.kinh,
 			ethnicity_other: demographics.ethnicity.other,
-			ct_age60: overview.chuctho?.ageStructure?.age60 ?? 0,
-			ct_age65: overview.chuctho?.ageStructure?.age65 ?? 0,
 			ct_age70: overview.chuctho?.ageStructure?.age70 ?? 0,
 			ct_age75: overview.chuctho?.ageStructure?.age75 ?? 0,
 			ct_age80: overview.chuctho?.ageStructure?.age80 ?? 0,
@@ -221,7 +220,7 @@ export const PolicyAnalyticsPage: React.FC = () => {
 			const unreceived =
 				breakdown.summary.chucthoUnreceived + breakdown.summary.htxhUnreceived;
 			const rate =
-				total > 0 ? Number(((received / total) * 100).toFixed(1)) : 94.8;
+				total > 0 ? Number(((received / total) * 100).toFixed(1)) : 0;
 			return {
 				total,
 				chucTho: breakdown.summary.chucthoTotal,
@@ -259,17 +258,23 @@ export const PolicyAnalyticsPage: React.FC = () => {
 			: "Toàn xã Đăk Hà";
 
 	const handleExportExcel = async () => {
+		setIsExporting(true);
 		try {
 			const mod = await import("xlsx");
 			const XLSX = (mod as any).default || mod;
 
+			const wb = XLSX.utils.book_new();
+
 			const titleRow = [
 				`UBND XÃ ĐĂK HÀ - BẢNG THỐNG KÊ BÁO CÁO ĐỐI SOÁT CHÍNH SÁCH NĂM ${selectedYear}`,
+			];
+			const subTitleRow = [
+				`Địa bàn: ${currentVillageLabel} • Thời điểm lập báo cáo: ${new Date().toLocaleDateString("vi-VN")}`,
 			];
 			const emptyRow: any[] = [];
 			const headers = [
 				"STT",
-				"Tên Thôn",
+				"Địa Bàn Thôn",
 				"Tổng Đối Tượng",
 				"Số Cụ Chúc Thọ",
 				"Hồ Sơ HTXH",
@@ -302,30 +307,126 @@ export const PolicyAnalyticsPage: React.FC = () => {
 
 			const aoaData = [
 				titleRow,
+				subTitleRow,
 				emptyRow,
 				headers,
 				...dataRows,
 				totalRow,
 			];
-			const ws = XLSX.utils.aoa_to_sheet(aoaData);
-			ws["!cols"] = [
+			const ws1 = XLSX.utils.aoa_to_sheet(aoaData);
+			ws1["!cols"] = [
 				{ wch: 6 },
-				{ wch: 22 },
+				{ wch: 24 },
 				{ wch: 18 },
 				{ wch: 18 },
 				{ wch: 16 },
 				{ wch: 22 },
 				{ wch: 14 },
-				{ wch: 18 },
+				{ wch: 20 },
 			];
-			ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }];
+			ws1["!merges"] = [
+				{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
+				{ s: { r: 1, c: 0 }, e: { r: 1, c: 7 } },
+			];
+			XLSX.utils.book_append_sheet(wb, ws1, "ThongKeDoiSoat");
 
-			const wb = XLSX.utils.book_new();
-			XLSX.utils.book_append_sheet(wb, ws, "ThongKeDoiSoat");
-			const filename = `BaoCao_ThongKe_DoiSoat_DakHa_${selectedYear}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+			const ctTitle = [
+				`CƠ CẤU ĐỘ TUỔI CHÚC THỌ (CÁC MỐC 60, 65, 70, 75, 80, 85, 90, 95, 100, TRÊN 100 TUỔI) - NĂM ${selectedYear}`,
+			];
+			const ctHeaders = [
+				"STT",
+				"Mốc Chúc Thọ",
+				"Số Cụ",
+				"Tỷ Lệ (%)",
+			];
+			const ctRows = policyData.chucThoSegments.map((seg, idx) => [
+				idx + 1,
+				seg.label,
+				seg.count,
+				`${formatPct(seg.pct)}%`,
+			]);
+			const ctTotalRow = [
+				"",
+				"TỔNG CỘNG CỤ CHÚC THỌ",
+				policyData.chucThoTotal,
+				"100.0%",
+			];
+
+			const htxhTitle = [
+				`PHÂN NHÓM ĐỐI TƯỢNG HƯỞNG HỖ TRỢ XÃ HỘI & BẢO TRỢ - NĂM ${selectedYear}`,
+			];
+			const htxhHeaders = [
+				"STT",
+				"Diện Chính Sách / Trợ Cấp",
+				"Số Lượng Đối Tượng",
+				"Tỷ Lệ (%)",
+			];
+			const htxhRows = policyData.htxhSegments.map((seg, idx) => [
+				idx + 1,
+				seg.label,
+				seg.count,
+				`${formatPct(seg.pct)}%`,
+			]);
+			const htxhTotalRow = [
+				"",
+				"TỔNG HỒ SƠ HƯỞNG TRỢ CẤP",
+				policyData.htxhTotal,
+				"100.0%",
+			];
+
+			const demoTitle = [
+				`CƠ CẤU DÂN TỘC & GIỚI TÍNH - NĂM ${selectedYear}`,
+			];
+			const demoHeaders = [
+				"Chỉ Tiêu Thống Kê",
+				"Số Lượng",
+				"Tỷ Lệ (%)",
+			];
+			const demoRows = [
+				["Nam", policyData.genderRatio.maleCount, `${formatPct(policyData.genderRatio.malePct)}%`],
+				["Nữ", policyData.genderRatio.femaleCount, `${formatPct(policyData.genderRatio.femalePct)}%`],
+				["Dân tộc Kinh", Math.round(policyData.village.totalBeneficiaries * ((100 - policyData.village.dttsPct) / 100)), `${formatPct(100 - policyData.village.dttsPct)}%`],
+				["Dân tộc thiểu số (DTTS)", Math.round(policyData.village.totalBeneficiaries * (policyData.village.dttsPct / 100)), `${formatPct(policyData.village.dttsPct)}%`],
+			];
+
+			const aoaDetail = [
+				ctTitle,
+				emptyRow,
+				ctHeaders,
+				...ctRows,
+				ctTotalRow,
+				emptyRow,
+				htxhTitle,
+				emptyRow,
+				htxhHeaders,
+				...htxhRows,
+				htxhTotalRow,
+				emptyRow,
+				demoTitle,
+				emptyRow,
+				demoHeaders,
+				...demoRows,
+			];
+			const ws2 = XLSX.utils.aoa_to_sheet(aoaDetail);
+			ws2["!cols"] = [
+				{ wch: 6 },
+				{ wch: 38 },
+				{ wch: 22 },
+				{ wch: 16 },
+			];
+			ws2["!merges"] = [
+				{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+				{ s: { r: ctRows.length + 5, c: 0 }, e: { r: ctRows.length + 5, c: 3 } },
+				{ s: { r: ctRows.length + htxhRows.length + 10, c: 0 }, e: { r: ctRows.length + htxhRows.length + 10, c: 2 } },
+			];
+			XLSX.utils.book_append_sheet(wb, ws2, "CoCauChucTho_HTXH");
+
+			const filename = `BaoCao_ThongKe_DoiSoat_ChinhSach_DakHa_${selectedYear}_${new Date().toISOString().slice(0, 10)}.xlsx`;
 			XLSX.writeFile(wb, filename);
 		} catch (err) {
 			console.error("Export error:", err);
+		} finally {
+			setIsExporting(false);
 		}
 	};
 
@@ -334,7 +435,6 @@ export const PolicyAnalyticsPage: React.FC = () => {
 			className="space-y-6 animate-in fade-in pb-12 select-none"
 			style={{ ["--stat-accent" as any]: STAT_ACCENTS.cs }}
 		>
-
 			<div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors duration-150">
 				<div>
 					<div className="flex items-center gap-2.5 flex-wrap">
@@ -360,10 +460,11 @@ export const PolicyAnalyticsPage: React.FC = () => {
 					<button
 						type="button"
 						onClick={handleExportExcel}
-						className="h-10 flex items-center justify-center gap-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold transition-all shadow-xs active:scale-[0.99] cursor-pointer"
+						disabled={isExporting}
+						className="h-10 flex items-center justify-center gap-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold transition-all shadow-xs active:scale-[0.99] cursor-pointer disabled:opacity-50"
 					>
 						<Download className="w-4 h-4" strokeWidth={1.5} />
-						<span>Xuất Báo Cáo Excel</span>
+						<span>{isExporting ? "Đang xuất..." : "Xuất Báo Cáo Excel"}</span>
 					</button>
 
 					<button
@@ -437,11 +538,10 @@ export const PolicyAnalyticsPage: React.FC = () => {
 				aria-label="Phân tích dữ liệu chính sách và an sinh xã hội"
 				className="grid grid-cols-1 gap-3 lg:grid-cols-2"
 			>
-
 				<DistributionCard
 					icon={<Award className="size-4" />}
 					title="Cơ Cấu Độ Tuổi Chúc Thọ"
-					badge="8 mốc chúc thọ"
+					badge="10 mốc chúc thọ (mẫu xã)"
 					segments={policyData.chucThoSegments}
 					centerValue={`${formatNumber(policyData.chucThoTotal)} Cụ`}
 					centerLabel="Tổng cụ chúc thọ"
@@ -450,7 +550,7 @@ export const PolicyAnalyticsPage: React.FC = () => {
 
 				<DistributionCard
 					icon={<HeartHandshake className="size-4" />}
-					title="Phân Nhóm Đối Tượng Hỗ TrỢ Xã Hội"
+					title="Phân Nhóm Đối Tượng Hỗ Trợ Xã Hội"
 					badge="5 nhóm diện chính sách"
 					segments={policyData.htxhSegments}
 					centerValue={formatNumber(policyData.htxhTotal)}

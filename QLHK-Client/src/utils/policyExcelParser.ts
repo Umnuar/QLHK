@@ -124,14 +124,14 @@ export function parseExcelWithMapping(
 		if (profile.birthYear && calculationYear) {
 			const age = calculationYear - profile.birthYear;
 			if (type === "chuctho") {
-				if (!profile.age60 && age === 60) profile.age60 = "x";
-				if (!profile.age65 && age === 65) profile.age65 = "x";
-				if (!profile.age70 && age === 70) profile.age70 = "x";
-				if (!profile.age75 && age === 75) profile.age75 = "x";
-				if (!profile.age80 && age === 80) profile.age80 = "x";
-				if (!profile.age85 && age === 85) profile.age85 = "x";
-				if (!profile.age90 && age === 90) profile.age90 = "x";
-				if (!profile.age95 && age === 95) profile.age95 = "x";
+				if (!profile.age60 && age >= 60 && age < 65) profile.age60 = "x";
+				if (!profile.age65 && age >= 65 && age < 70) profile.age65 = "x";
+				if (!profile.age70 && age >= 70 && age < 75) profile.age70 = "x";
+				if (!profile.age75 && age >= 75 && age < 80) profile.age75 = "x";
+				if (!profile.age80 && age >= 80 && age < 85) profile.age80 = "x";
+				if (!profile.age85 && age >= 85 && age < 90) profile.age85 = "x";
+				if (!profile.age90 && age >= 90 && age < 95) profile.age90 = "x";
+				if (!profile.age95 && age >= 95 && age < 100) profile.age95 = "x";
 				if (!profile.age100 && age === 100) profile.age100 = "x";
 				if (!profile.age_over_100 && age > 100) profile.age_over_100 = "x";
 			} else if (type === "htxh") {

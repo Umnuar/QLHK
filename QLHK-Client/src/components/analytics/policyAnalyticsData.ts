@@ -13,12 +13,14 @@ export * from "./policyAnalyticsTypes";
 export * from "./policyAnalyticsProfiles";
 
 export const COLORS = {
+	emerald: "#059669",
+	blue: "#2563eb",
 	teal: "#0d9488",
 	sky: "#0284c7",
 	amber: "#d97706",
 	purple: "#7c3aed",
 	rose: "#e11d48",
-	emerald: "#059669",
+	orange: "#ea580c",
 	indigo: "#4f46e5",
 	slate: "#64748b",
 } as const;
@@ -61,26 +63,30 @@ export function buildPolicyDashboardData(
 	let rawCt: { id: string; label: string; count: number; color: string }[];
 	if (hasAgeData && ageMap) {
 		rawCt = [
+			{ id: "age60", label: "60 tuổi", count: ageMap.age60 || 0, color: COLORS.emerald },
+			{ id: "age65", label: "65 tuổi", count: ageMap.age65 || 0, color: COLORS.blue },
 			{ id: "age70", label: "70 tuổi", count: ageMap.age70 || 0, color: COLORS.teal },
 			{ id: "age75", label: "75 tuổi", count: ageMap.age75 || 0, color: COLORS.sky },
 			{ id: "age80", label: "80 tuổi", count: ageMap.age80 || 0, color: COLORS.amber },
 			{ id: "age85", label: "85 tuổi", count: ageMap.age85 || 0, color: COLORS.purple },
 			{ id: "age90", label: "90 tuổi", count: ageMap.age90 || 0, color: COLORS.rose },
-			{ id: "age95", label: "95 tuổi", count: ageMap.age95 || 0, color: COLORS.emerald },
+			{ id: "age95", label: "95 tuổi", count: ageMap.age95 || 0, color: COLORS.orange },
 			{ id: "age100", label: "100 tuổi", count: ageMap.age100 || 0, color: COLORS.indigo },
 			{ id: "age_over_100", label: "Trên 100 tuổi", count: ageMap.age_over_100 || 0, color: COLORS.slate },
 		];
 	} else {
 		const scale = totalCt / 428;
 		rawCt = [
-			{ id: "age70", label: "70 tuổi", count: Math.round(142 * scale), color: COLORS.teal },
-			{ id: "age75", label: "75 tuổi", count: Math.round(110 * scale), color: COLORS.sky },
-			{ id: "age80", label: "80 tuổi", count: Math.round(78 * scale), color: COLORS.amber },
-			{ id: "age85", label: "85 tuổi", count: Math.round(60 * scale), color: COLORS.purple },
-			{ id: "age90", label: "90 tuổi", count: Math.round(24 * scale), color: COLORS.rose },
-			{ id: "age95", label: "95 tuổi", count: Math.round(10 * scale), color: COLORS.emerald },
+			{ id: "age60", label: "60 tuổi", count: Math.round(90 * scale), color: COLORS.emerald },
+			{ id: "age65", label: "65 tuổi", count: Math.round(85 * scale), color: COLORS.blue },
+			{ id: "age70", label: "70 tuổi", count: Math.round(75 * scale), color: COLORS.teal },
+			{ id: "age75", label: "75 tuổi", count: Math.round(65 * scale), color: COLORS.sky },
+			{ id: "age80", label: "80 tuổi", count: Math.round(45 * scale), color: COLORS.amber },
+			{ id: "age85", label: "85 tuổi", count: Math.round(35 * scale), color: COLORS.purple },
+			{ id: "age90", label: "90 tuổi", count: Math.round(18 * scale), color: COLORS.rose },
+			{ id: "age95", label: "95 tuổi", count: Math.round(10 * scale), color: COLORS.orange },
 			{ id: "age100", label: "100 tuổi", count: Math.max(1, Math.round(3 * scale)), color: COLORS.indigo },
-			{ id: "age_over_100", label: "Trên 100 tuổi", count: Math.max(1, Math.round(1 * scale)), color: COLORS.slate },
+			{ id: "age_over_100", label: "Trên 100 tuổi", count: Math.max(1, Math.round(2 * scale)), color: COLORS.slate },
 		];
 	}
 

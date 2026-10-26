@@ -279,12 +279,14 @@ export const ProfileFilterBar: React.FC<ProfileFilterBarProps> = ({
 				</div>
 			</div>
 
-			<div className="shrink-0">
-				<YearSelector
-					year={globalCalculationYear}
-					onYearChange={onYearChange}
-				/>
-			</div>
+			{activeTab === "chuctho" && (
+				<div className="shrink-0">
+					<YearSelector
+						year={globalCalculationYear}
+						onYearChange={onYearChange}
+					/>
+				</div>
+			)}
 
 			{activeTab === "chuctho" && (
 				<div className="relative w-48 sm:w-56 shrink-0">

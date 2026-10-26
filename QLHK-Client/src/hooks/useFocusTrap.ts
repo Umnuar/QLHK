@@ -15,6 +15,16 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
 }: UseFocusTrapOptions) {
 	const containerRef = useRef<T>(null);
 	const previousActiveElement = useRef<HTMLElement | null>(null);
+	const onEscapeRef = useRef(onEscape);
+	const initialFocusRefRef = useRef(initialFocusRef);
+
+	useEffect(() => {
+		onEscapeRef.current = onEscape;
+	});
+
+	useEffect(() => {
+		initialFocusRefRef.current = initialFocusRef;
+	});
 
 	useEffect(() => {
 		if (!isActive) return;
@@ -29,8 +39,11 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
 		}
 
 		const timeoutId = setTimeout(() => {
-			if (initialFocusRef?.current) {
-				initialFocusRef.current.focus();
+			if (containerRef.current && containerRef.current.contains(document.activeElement)) {
+				return;
+			}
+			if (initialFocusRefRef.current?.current) {
+				initialFocusRefRef.current.current.focus();
 			} else if (containerRef.current) {
 				const focusableElements = containerRef.current.querySelectorAll<HTMLElement>(
 					'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
@@ -49,9 +62,9 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
 		}, 30);
 
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === "Escape" && onEscape) {
+			if (e.key === "Escape" && onEscapeRef.current) {
 				e.stopPropagation();
-				onEscape();
+				onEscapeRef.current();
 				return;
 			}
 
@@ -103,7 +116,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
 				previousActiveElement.current.focus();
 			}
 		};
-	}, [isActive, onEscape, initialFocusRef, lockScroll]);
+	}, [isActive, lockScroll]);
 
 	return containerRef;
 }

@@ -40,14 +40,7 @@ export const PolicyAnalyticsPage: React.FC = () => {
 	} = useApp();
 	const isAdmin = user?.role === "admin";
 	const currentYear = new Date().getFullYear();
-	const [selectedYear, setSelectedYear] = useState<number>(() => {
-		const saved = localStorage.getItem("globalCalculationYear");
-		if (saved) {
-			const parsed = parseInt(saved, 10);
-			if (!isNaN(parsed) && parsed >= 1900 && parsed <= 2100) return parsed;
-		}
-		return currentYear;
-	});
+	const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 	const userVillage = villages.find((v) => v.id === user?.village_id);
 	const userVillageName = userVillage
 		? userVillage.name

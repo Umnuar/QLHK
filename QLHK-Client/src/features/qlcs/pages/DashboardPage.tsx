@@ -6,8 +6,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApp } from "@/AppContext";
-import { htxhApi } from "@/api/htxh";
-import { profilesApi } from "@/api/profiles";
 import { settingsApi } from "@/api/settings";
 import { useModal } from "@/hooks/useModal";
 import { useToast } from "@/components/common/Toast";
@@ -54,35 +52,9 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 		new Date().getFullYear(),
 	);
 
-	useEffect(() => {
-		settingsApi
-			.getSettings()
-			.then((res: any) => {
-				const year =
-					res?.data?.globalCalculationYear ||
-					localStorage.getItem("globalCalculationYear");
-				if (year) setGlobalCalculationYear(parseInt(year, 10));
-			})
-			.catch(() => {
-				const saved = localStorage.getItem("globalCalculationYear");
-				if (saved) setGlobalCalculationYear(parseInt(saved, 10));
-			});
-	}, []);
-
-	const handleGlobalYearChange = async (year: number) => {
+	const handleGlobalYearChange = useCallback((year: number) => {
 		setGlobalCalculationYear(year);
-		try {
-			await settingsApi.updateSettings({ globalCalculationYear: String(year) });
-			if (activeTab === "chuctho") {
-				await profilesApi.recalculate(year);
-			} else {
-				await htxhApi.recalculate(year);
-			}
-		} catch (e) {
-			console.error("Failed to recalculate year:", e);
-		}
-		loadProfiles();
-	};
+	}, []);
 
 	const panelClass = isDarkMode
 		? "bg-slate-900 border-slate-800 text-slate-100"
@@ -187,10 +159,6 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 	);
 
 	const totalPages = Math.ceil(total / filters.itemsPerPage) || 1;
-
-	useEffect(() => {
-		loadProfiles();
-	}, [loadProfiles]);
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -392,11 +360,16 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 						</h2>
 					</div>
 					<p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-						Theo dõi, rà soát và thực hiện chế độ chính sách cho người cao tuổi
-						xã Đăk Hà • Năm tính toán:{" "}
-						<span className="tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
-							{globalCalculationYear}
-						</span>
+						{activeTab === "chuctho" ? (
+							<>
+								Theo dõi, rà soát và thực hiện chúc thọ người cao tuổi xã Đăk Hà • Năm tính toán:{" "}
+								<span className="tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
+									{globalCalculationYear}
+								</span>
+							</>
+						) : (
+							<>Theo dõi, rà soát và thực hiện chế độ chính sách cho đối tượng hưu trí, an sinh xã hội xã Đăk Hà</>
+						)}
 					</p>
 				</div>
 

@@ -11,7 +11,7 @@ import {
 	X,
 } from "lucide-react";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useApp } from "@/AppContext";
 import { VILLAGES } from "@/data/constants";
@@ -38,6 +38,9 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 	const availableVillages =
 		villages && villages.length > 0 ? villages : VILLAGES;
 
+	const [isRendered, setIsRendered] = useState(isOpen);
+	const [isVisible, setIsVisible] = useState(false);
+
 	const [villageId, setVillageId] = useState("");
 	const [status, setStatus] = useState("Thường trú");
 	const [address, setAddress] = useState("");
@@ -51,6 +54,29 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 	const [revealedCccdIds, setRevealedCccdIds] = useState<string[]>([]);
 	const [decryptedCccds, setDecryptedCccds] = useState<Record<string, string>>({});
 	const [revealingCccdIds, setRevealingCccdIds] = useState<string[]>([]);
+
+	const [error, setError] = useState<string | null>(null);
+	const [loading, setLoading] = useState(false);
+	const [initialSnapshot, setInitialSnapshot] = useState<string>("");
+	const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+
+	useEffect(() => {
+		if (isOpen) {
+			setIsRendered(true);
+			const frameId = requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					setIsVisible(true);
+				});
+			});
+			return () => cancelAnimationFrame(frameId);
+		} else {
+			setIsVisible(false);
+			const timer = setTimeout(() => {
+				setIsRendered(false);
+			}, 200);
+			return () => clearTimeout(timer);
+		}
+	}, [isOpen]);
 
 	const toggleRevealCccd = async (memId: string, fallbackCccd?: string) => {
 		if (revealedCccdIds.includes(memId)) {
@@ -76,11 +102,9 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 				if (plain) {
 					setDecryptedCccds((prev) => ({ ...prev, [memId]: plain }));
 					setRevealedCccdIds((prev) => [...prev, memId]);
-				} else {
-					console.warn(`[HouseholdDrawer] Không thể giải mã CCCD cho ${memId}`);
 				}
 			} catch (err) {
-				console.error("[HouseholdDrawer] Lỗi mở khóa CCCD:", err);
+				console.error(err);
 			} finally {
 				setRevealingCccdIds((prev) => prev.filter((x) => x !== memId));
 			}
@@ -89,11 +113,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 
 		setRevealedCccdIds((prev) => [...prev, memId]);
 	};
-
-	const [error, setError] = useState<string | null>(null);
-	const [loading, setLoading] = useState(false);
-	const [initialSnapshot, setInitialSnapshot] = useState<string>("");
-	const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
 	useEffect(() => {
 		if (isOpen) {
@@ -148,6 +167,13 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 			setDecryptedCccds({});
 			setRevealingCccdIds([]);
 			setError(null);
+		} else {
+			setShowDiscardConfirm(false);
+			setIsCitizenModalOpen(false);
+			setEditingMemberIndex(null);
+			setRevealedCccdIds([]);
+			setRevealingCccdIds([]);
+			setError(null);
 		}
 	}, [isOpen, household, selectedVillageId, availableVillages, user]);
 
@@ -173,26 +199,28 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 				})),
 			});
 
-	const handleRequestClose = () => {
+	const handleRequestClose = useCallback(() => {
 		if (isDirty) {
 			setShowDiscardConfirm(true);
 		} else {
 			onClose();
 		}
-	};
+	}, [isDirty, onClose]);
+
+	const handleEscape = useCallback(() => {
+		if (showDiscardConfirm) {
+			setShowDiscardConfirm(false);
+		} else {
+			handleRequestClose();
+		}
+	}, [showDiscardConfirm, handleRequestClose]);
 
 	const drawerRef = useFocusTrap<HTMLDivElement>({
-		isActive: isOpen && !isCitizenModalOpen && !showDiscardConfirm,
-		onEscape: () => {
-			if (showDiscardConfirm) {
-				setShowDiscardConfirm(false);
-			} else {
-				handleRequestClose();
-			}
-		},
+		isActive: isOpen && isVisible && !isCitizenModalOpen && !showDiscardConfirm,
+		onEscape: handleEscape,
 	});
 
-	if (!isOpen || typeof document === "undefined") return null;
+	if (!isRendered || typeof document === "undefined") return null;
 
 	const currentVillage = availableVillages.find((v) => v.id === villageId);
 	const headMember = members.find((m) => m.is_head) || members[0];
@@ -302,13 +330,53 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		const finalBookNumber =
-			household?.book_number || household?.code || `HGD-${Date.now()}`;
+		setError(null);
 
 		const finalVillageId =
 			user?.role === "user" && user.village_id ? user.village_id : villageId;
+		if (!finalVillageId) {
+			setError("Vui lòng chọn thôn quản lý hộ gia đình.");
+			return;
+		}
+
+		const trimmedAddress = address.trim();
+		if (!trimmedAddress) {
+			setError("Vui lòng nhập địa chỉ cư trú của hộ gia đình.");
+			return;
+		}
+
+		if (members.length === 0) {
+			setError("Hộ gia đình phải có ít nhất 1 nhân khẩu (chủ hộ).");
+			return;
+		}
+
+		const headMembers = members.filter((m) => m.is_head || m.relationship === "Chủ hộ");
+		if (headMembers.length === 0) {
+			setError("Hộ gia đình phải có 1 thành viên là Chủ hộ. Vui lòng bấm sửa nhân khẩu và chọn quan hệ 'Chủ hộ'.");
+			return;
+		}
+
+		if (headMembers.length > 1) {
+			setError(`Hộ gia đình chỉ được có 1 Chủ hộ duy nhất. Hiện có ${headMembers.length} nhân khẩu được chọn làm Chủ hộ.`);
+			return;
+		}
+
+		const cccdMap = new Map<string, string>();
+		for (const m of members) {
+			const digits = (m.cccd || "").replace(/\D/g, "");
+			if (digits.length === 12) {
+				if (cccdMap.has(digits)) {
+					setError(`Phát hiện trùng số CCCD (${digits}) giữa nhân khẩu "${cccdMap.get(digits)}" và "${m.full_name}".`);
+					return;
+				}
+				cccdMap.set(digits, m.full_name);
+			}
+		}
+
+		const finalBookNumber =
+			household?.book_number || household?.code || `HGD-${Date.now()}`;
 		const selectedV = availableVillages.find((v) => v.id === finalVillageId);
-		const finalHeadMember = members.find((m) => m.is_head) || members[0];
+		const finalHeadMember = headMembers[0];
 		const headName = finalHeadMember
 			? finalHeadMember.full_name
 			: household?.head_name || "Chưa xác định";
@@ -317,7 +385,6 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 			: household?.head_cccd || "";
 
 		setLoading(true);
-		setError(null);
 		try {
 			await onSave({
 				book_number: finalBookNumber,
@@ -326,7 +393,7 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 				village_name: selectedV?.name || "",
 				head_name: headName,
 				head_cccd: headCccd,
-				address: address.trim(),
+				address: trimmedAddress,
 				status,
 				notes: notes.trim(),
 				members_count: members.length,
@@ -362,7 +429,9 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 	return createPortal(
 		<>
 			<div
-				className="fixed inset-0 !m-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/45 dark:bg-black/60 backdrop-blur-sm select-none animate-in fade-in duration-150"
+				className={`fixed inset-0 !m-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/45 dark:bg-black/60 backdrop-blur-sm select-none transition-opacity duration-200 ease-out ${
+					isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+				}`}
 				onClick={(e) => {
 					if (e.target === e.currentTarget && !isCitizenModalOpen) {
 						handleRequestClose();
@@ -372,7 +441,11 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 			>
 				<div
 					ref={drawerRef}
-					className="w-full max-w-3xl h-[88vh] max-h-[88vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 relative"
+					className={`w-full max-w-3xl h-[88vh] max-h-[88vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden relative transform transition-all duration-200 ease-out ${
+						isVisible
+							? "opacity-100 scale-100 translate-y-0"
+							: "opacity-0 scale-95 translate-y-2"
+					}`}
 					role="dialog"
 					aria-modal="true"
 					aria-labelledby="household-drawer-title"
@@ -488,7 +561,7 @@ export const HouseholdDrawer: React.FC<HouseholdDrawerProps> = ({
 
 								<div>
 									<label htmlFor="drawer-address" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-										Địa chỉ cư trú
+										Địa chỉ cư trú <span className="text-rose-500">*</span>
 									</label>
 									<input
 										id="drawer-address"

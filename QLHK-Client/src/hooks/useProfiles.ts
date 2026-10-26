@@ -184,7 +184,7 @@ export function useProfiles(
 		abortControllerRef.current = abortController;
 
 		const vid = isGlobal || !villageId || villageId === "all" ? undefined : villageId?.trim() || undefined;
-		const yearTag = globalCalculationYear && globalCalculationYear > 0 ? `y${globalCalculationYear}` : "yall";
+		const yearTag = activeTab === "chuctho" && globalCalculationYear && globalCalculationYear > 0 ? `y${globalCalculationYear}` : "current";
 		const cacheKey = `profiles_${activeTab}_${vid || "all"}_${yearTag}_p${currentPage}_l${itemsPerPage}_${statusFilter}_${genderFilter || ""}_${ethnicityFilter || ""}_${residenceFilter || ""}_${ageGroup || ""}_${debouncedSearch || ""}_${dateFilter || ""}`;
 
 		try {
@@ -214,7 +214,7 @@ export function useProfiles(
 				gender: genderFilter || undefined, ethnicity: ethnicityFilter || undefined,
 				residence: residenceFilter || undefined, sortKey: sortKey || undefined,
 				sortDirection: sortDirection || undefined, page: currentPage || 1, limit: itemsPerPage || 50,
-				calculationYear: globalCalculationYear && globalCalculationYear > 0 ? globalCalculationYear : undefined,
+				calculationYear: activeTab === "chuctho" && globalCalculationYear && globalCalculationYear > 0 ? globalCalculationYear : undefined,
 			};
 
 			const fetchFn = activeTab === "chuctho"
@@ -235,7 +235,11 @@ export function useProfiles(
 					: res.data;
 				setPageData(cleanedData);
 				setTotal(res.pagination?.total ?? cleanedData.length);
-				await setCache(cacheKey, { ...res, data: cleanedData });
+				if (cleanedData.length > 0) {
+					await setCache(cacheKey, { ...res, data: cleanedData });
+				} else {
+					await removeCache(cacheKey);
+				}
 			}
 		} catch (e: any) {
 			if (abortController.signal.aborted || axios.isCancel(e) || e?.code === "ERR_CANCELED" || e?.name === "CanceledError" || e?.name === "AbortError") return;

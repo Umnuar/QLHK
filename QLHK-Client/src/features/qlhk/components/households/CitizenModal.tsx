@@ -131,6 +131,9 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 	readOnly = false,
 	zIndex = 70,
 }) => {
+	const [isRendered, setIsRendered] = useState(isOpen);
+	const [isVisible, setIsVisible] = useState(false);
+
 	const fullNameInputRef = useRef<HTMLInputElement>(null);
 	const occupationInputRef = useRef<HTMLInputElement>(null);
 	const formRef = useRef<HTMLFormElement>(null);
@@ -154,6 +157,24 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 	const [isRevealingCccd, setIsRevealingCccd] = useState(false);
 
 	const isRetiree = useMemo(() => isRetireeOccupation(occupation), [occupation]);
+
+	useEffect(() => {
+		if (isOpen) {
+			setIsRendered(true);
+			const frameId = requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					setIsVisible(true);
+				});
+			});
+			return () => cancelAnimationFrame(frameId);
+		} else {
+			setIsVisible(false);
+			const timer = setTimeout(() => {
+				setIsRendered(false);
+			}, 200);
+			return () => clearTimeout(timer);
+		}
+	}, [isOpen]);
 
 	const handleTogglePolicy = (key: string) => {
 		if (readOnly || !isRetiree) return;
@@ -254,6 +275,9 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				fullNameInputRef.current?.focus();
 			}, 50);
 			return () => clearTimeout(timer);
+		} else {
+			setError(null);
+			setIsRevealingCccd(false);
 		}
 	}, [isOpen, initialMember]);
 
@@ -267,7 +291,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 	}, [activeTab]);
 
 	const modalRef = useFocusTrap<HTMLDivElement>({
-		isActive: isOpen,
+		isActive: isOpen && isVisible,
 		onEscape: onClose,
 		initialFocusRef: fullNameInputRef,
 	});
@@ -280,6 +304,13 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 			setIsHead(true);
 		} else {
 			setIsHead(false);
+		}
+	};
+
+	const handleOccupationChange = (val: string) => {
+		setOccupation(val);
+		if (!isRetireeOccupation(val) && pensionPolicies.length > 0) {
+			setPensionPolicies([]);
 		}
 	};
 
@@ -332,34 +363,86 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 		}
 		setError(null);
 
-		const trimmedName = fullName.trim();
+		const trimmedName = fullName.trim().replace(/\s+/g, " ");
 		if (!trimmedName) {
 			setActiveTab("basic");
 			setError("Vui lòng nhập họ và tên nhân khẩu.");
 			return;
 		}
 
+		if (trimmedName.length < 2) {
+			setActiveTab("basic");
+			setError("Họ và tên phải có ít nhất 2 ký tự.");
+			return;
+		}
+
+		if (/\d/.test(trimmedName)) {
+			setActiveTab("basic");
+			setError("Họ và tên không được chứa chữ số.");
+			return;
+		}
+
+		if (!/^[a-zA-ZÀ-ỹ\s'.-]+$/u.test(trimmedName)) {
+			setActiveTab("basic");
+			setError("Họ và tên chỉ được chứa chữ cái và khoảng trắng.");
+			return;
+		}
+
+		const trimmedRel = relationship.trim().replace(/\s+/g, " ");
+		if (!trimmedRel) {
+			setActiveTab("basic");
+			setError("Vui lòng chọn hoặc nhập quan hệ với chủ hộ.");
+			return;
+		}
+
+		if (/\d/.test(trimmedRel)) {
+			setActiveTab("basic");
+			setError("Quan hệ gia đình không được chứa chữ số.");
+			return;
+		}
+
 		const trimmedDob = dob.trim();
 		if (!trimmedDob) {
 			setActiveTab("basic");
-			setError(
-				"Vui lòng nhập ngày tháng năm sinh (DD/MM/YYYY, MM/YYYY hoặc YYYY)",
-			);
+			setError("Vui lòng nhập ngày tháng năm sinh (DD/MM/YYYY, MM/YYYY hoặc YYYY)");
 			return;
 		}
 
 		const dobVal = parseAndValidateDob(trimmedDob);
 		if (!dobVal.isValid) {
 			setActiveTab("basic");
-			setError(
-				dobVal.error ||
-					"Ngày tháng năm sinh không hợp lệ (hỗ trợ DD/MM/YYYY, MM/YYYY hoặc YYYY)",
-			);
+			setError(dobVal.error || "Ngày tháng năm sinh không hợp lệ (hỗ trợ DD/MM/YYYY, MM/YYYY hoặc YYYY).");
 			return;
 		}
+
 		const dobFormatted = dobVal.formatted || trimmedDob;
-		const birthYear = dobVal.birthYear ?? 2000;
-		const age = calculateAge(dobFormatted, new Date().getFullYear());
+		const currentYear = new Date().getFullYear();
+		const birthYear = dobVal.birthYear ?? currentYear;
+
+		if (birthYear > currentYear) {
+			setActiveTab("basic");
+			setError(`Năm sinh không được lớn hơn năm hiện tại (${currentYear}).`);
+			return;
+		}
+
+		if (dobVal.formatted && dobVal.type === "full") {
+			const [d, m, y] = dobVal.formatted.split("/").map(Number);
+			const birthDate = new Date(y, m - 1, d);
+			const today = new Date();
+			today.setHours(23, 59, 59, 999);
+			if (birthDate > today) {
+				setActiveTab("basic");
+				setError("Ngày sinh không được vượt quá ngày hiện tại.");
+				return;
+			}
+		}
+
+		const age = calculateAge(dobFormatted, currentYear);
+		if (headStatus && age < 15) {
+			setActiveTab("basic");
+			setError(`Nhân khẩu là Chủ hộ phải từ đủ 15 tuổi trở lên (hiện tại ${age} tuổi).`);
+			return;
+		}
 
 		const trimmedCccd = cccd.trim();
 		const isMasked = trimmedCccd.includes("•") || trimmedCccd.includes("*");
@@ -367,17 +450,35 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 
 		if (isDuplicateCccd) {
 			setActiveTab("basic");
-			setError(
-				`Cảnh báo: Trùng CCCD với nhân khẩu "${duplicateMember?.full_name}" trong hộ gia đình.`,
-			);
+			setError(`Cảnh báo: Trùng CCCD với nhân khẩu "${duplicateMember?.full_name}" trong hộ gia đình.`);
 			return;
 		}
 
 		if (hasCccdEntered && !isMasked) {
-			const cccdVal = validateCccd(trimmedCccd);
+			const cleanDigits = trimmedCccd.replace(/\D/g, "");
+			if (cleanDigits.length !== 12 && cleanDigits.length !== 9) {
+				setActiveTab("basic");
+				setError(`Lỗi số CCCD: Số CCCD/CMND phải gồm đúng 12 chữ số (hoặc 9 chữ số đối với CMND cũ), hiện tại có ${cleanDigits.length} số.`);
+				return;
+			}
+
+			const cccdVal = validateCccd(cleanDigits);
 			if (!cccdVal.isValid) {
 				setActiveTab("basic");
 				setError(`Lỗi số CCCD: ${cccdVal.error}`);
+				return;
+			}
+		}
+
+		if (isRetiree) {
+			if (pensionPolicies.includes("age75plus") && age < 75) {
+				setActiveTab("pension");
+				setError(`Chính sách "Đối tượng đủ 75 tuổi trở lên" chỉ áp dụng cho người từ đủ 75 tuổi trở lên (hiện tại ${age} tuổi).`);
+				return;
+			}
+			if (pensionPolicies.includes("age70to74poor") && (age < 70 || age > 74)) {
+				setActiveTab("pension");
+				setError(`Chính sách "Đối tượng từ 70-74 tuổi thuộc hộ nghèo, cận nghèo" chỉ áp dụng cho người từ 70 đến 74 tuổi (hiện tại ${age} tuổi).`);
 				return;
 			}
 		}
@@ -410,7 +511,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 			last_name: lastName,
 			first_name: firstName,
 			name_unaccented: normalizeUnaccented(trimmedName),
-			relationship: (headStatus ? "Chủ hộ" : relationship) as RelationshipType,
+			relationship: (headStatus ? "Chủ hộ" : trimmedRel) as RelationshipType,
 			is_head: headStatus,
 			gender,
 			dob: dobFormatted,
@@ -488,7 +589,9 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 
 	return createPortal(
 		<div
-			className="fixed inset-0 !m-0 flex items-center justify-center p-3 sm:p-5 bg-slate-950/50 dark:bg-black/70 backdrop-blur-sm select-none animate-in fade-in duration-150"
+			className={`fixed inset-0 !m-0 flex items-center justify-center p-3 sm:p-5 bg-slate-950/50 dark:bg-black/70 backdrop-blur-sm select-none transition-opacity duration-200 ease-out ${
+				isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+			}`}
 			style={{ zIndex }}
 			onClick={(e) => {
 				if (e.target === e.currentTarget) onClose();
@@ -499,7 +602,11 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 		>
 			<div
 				ref={modalRef}
-				className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[580px] max-h-[92vh] animate-in zoom-in-95 duration-150"
+				className={`w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[580px] max-h-[92vh] transform transition-all duration-200 ease-out ${
+					isVisible
+						? "opacity-100 scale-100 translate-y-0"
+						: "opacity-0 scale-95 translate-y-2"
+				}`}
 			>
 				<aside className="w-full md:w-20 shrink-0 bg-slate-50/90 dark:bg-slate-950/50 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 py-5 px-2 flex flex-row md:flex-col items-center justify-between h-full">
 					<div className="flex flex-row md:flex-col items-center gap-4">
@@ -839,7 +946,6 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 												</div>
 											) : !readOnly && cleanCccd.length > 0 &&
 											  cleanCccd.length < 12 &&
-											  cleanCccd.length !== 9 &&
 											  !cccd.includes("•") ? (
 												<div className="mt-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
 													Đã nhập {cleanCccd.length}/12 số
@@ -923,7 +1029,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 												autoComplete="off"
 												spellCheck={false}
 												value={occupation}
-												onChange={(e) => setOccupation(e.target.value)}
+												onChange={(e) => handleOccupationChange(e.target.value)}
 												placeholder={readOnly ? "—" : "VD: Làm nông, Buôn bán, Công nhân, Học sinh..."}
 												className={inputClasses}
 											/>
@@ -1015,7 +1121,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 												<div className="pl-12">
 													<button
 														type="button"
-														onClick={() => setOccupation("Hưu trí")}
+														onClick={() => handleOccupationChange("Hưu trí")}
 														className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
 													>
 														<Sparkles className="w-3.5 h-3.5" />

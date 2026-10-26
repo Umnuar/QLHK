@@ -4,6 +4,7 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -84,10 +85,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 			setSelectedVillageIdState(user.village_id);
 		}
 	}, [user]);
+
 	const [villages, setVillages] = useState<Village[]>(VILLAGES);
-	const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+	const [isOnline, setIsOnline] = useState<boolean>(() =>
+		typeof navigator !== "undefined" ? navigator.onLine : true,
+	);
 	const [isBackendHealthy, setIsBackendHealthy] = useState<boolean>(true);
-	const [latency] = useState<number | null>(null);
+	const isBackendHealthyRef = useRef<boolean>(true);
+	const [latency, setLatency] = useState<number | null>(null);
 	const [isInitializing, setIsInitializing] = useState<boolean>(true);
 
 	const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
@@ -111,7 +116,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
 
-	const toggleSidebar = () => {
+	const toggleSidebar = useCallback(() => {
 		setIsSidebarCollapsed((prev) => {
 			const next = !prev;
 			try {
@@ -120,21 +125,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 			}
 			return next;
 		});
-	};
+	}, []);
 
-	const setSidebarCollapsed = (collapsed: boolean) => {
+	const setSidebarCollapsed = useCallback((collapsed: boolean) => {
 		setIsSidebarCollapsed(collapsed);
 		try {
 			localStorage.setItem("qlhk_sidebar_collapsed", String(collapsed));
 		} catch {
 		}
-	};
+	}, []);
 
-	const [theme, setTheme] = useState<"light" | "dark">(() => {
+	const [theme, setTheme] = useState<"light" | "dark">((): "light" | "dark" => {
 		try {
 			const saved = localStorage.getItem("qlhk_theme");
 			if (saved === "dark" || saved === "light") return saved;
-			return window.matchMedia?.("(prefers-color-scheme: dark)").matches
+			return typeof window !== "undefined" &&
+				window.matchMedia?.("(prefers-color-scheme: dark)").matches
 				? "dark"
 				: "light";
 		} catch {
@@ -155,9 +161,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 		}
 	}, [theme]);
 
-	const toggleTheme = () => {
+	const toggleTheme = useCallback(() => {
 		setTheme((prev) => (prev === "light" ? "dark" : "light"));
-	};
+	}, []);
 
 	const [zoomLevel, setZoomLevel] = useState<number>(() => {
 		try {
@@ -181,22 +187,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 		}
 		try {
 			localStorage.setItem("qlhk_zoom", String(zoomLevel));
-		} catch (err) {
-			console.warn("Cannot save zoom to localStorage", err);
+		} catch {
 		}
 	}, [zoomLevel]);
 
-	const zoomIn = () => {
+	const zoomIn = useCallback(() => {
 		setZoomLevel((prev) => Math.min(150, prev + 10));
-	};
+	}, []);
 
-	const zoomOut = () => {
+	const zoomOut = useCallback(() => {
 		setZoomLevel((prev) => Math.max(50, prev - 10));
-	};
+	}, []);
 
-	const resetZoom = () => {
+	const resetZoom = useCallback(() => {
 		setZoomLevel(100);
-	};
+	}, []);
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -216,17 +221,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, []);
+	}, [zoomIn, zoomOut, resetZoom]);
 
 	const [calculationYear, setCalculationYearState] = useState<number>(() => {
-		try {
-			const saved = localStorage.getItem("globalCalculationYear");
-			if (saved) {
-				const parsed = parseInt(saved, 10);
-				if (!isNaN(parsed) && parsed >= 1900 && parsed <= 2100) return parsed;
-			}
-		} catch {
-		}
 		return new Date().getFullYear();
 	});
 
@@ -238,10 +235,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 		}
 	}, []);
 
-	const logout = async () => {
+	const logout = useCallback(async () => {
 		try {
 			const refreshToken = await secureStorage.getItem("refreshToken");
-			if (refreshToken) {
+			if (refreshToken && !refreshToken.startsWith("offline-refresh-")) {
 				await authApi.logout(refreshToken);
 			}
 		} catch {
@@ -249,9 +246,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 			setCachedAccessToken(null);
 			await secureStorage.clear();
 			setUser(null);
-			setSelectedVillageId("");
+			setSelectedVillageIdState("");
 		}
-	};
+	}, []);
 
 	useInactivityTimeout(() => {
 		logout();
@@ -279,11 +276,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 			} else {
 				setVillages([]);
 			}
-		} catch (err) {
-			console.warn(
-				"Lỗi tải danh mục thôn từ Backend, nạp từ Offline Cache:",
-				err,
-			);
+		} catch {
 			try {
 				const cached = await getCache<Village[]>("villages");
 				if (cached && Array.isArray(cached)) {
@@ -316,7 +309,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 	}, []);
 
 	const checkServerHealth = useCallback(async (): Promise<boolean> => {
+		const t0 = performance.now();
 		try {
+			if (typeof navigator !== "undefined" && !navigator.onLine) {
+				setIsBackendHealthy(false);
+				isBackendHealthyRef.current = false;
+				setLatency(null);
+				return false;
+			}
 			const apiBase = getActiveApiBaseUrl();
 			const res = await fetch(`${apiBase}/ping`, {
 				method: "GET",
@@ -324,19 +324,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 			});
 
 			if (res.ok || res.status === 204) {
-				if (!isBackendHealthy) {
+				const rawLat = Math.round(performance.now() - t0);
+				setLatency(rawLat);
+				if (!isBackendHealthyRef.current) {
+					isBackendHealthyRef.current = true;
 					window.dispatchEvent(new CustomEvent("server:reconnected"));
 				}
 				setIsBackendHealthy(true);
 				return true;
 			}
 			setIsBackendHealthy(false);
+			isBackendHealthyRef.current = false;
+			setLatency(null);
 			return false;
 		} catch {
 			setIsBackendHealthy(false);
+			isBackendHealthyRef.current = false;
+			setLatency(null);
 			return false;
 		}
-	}, [isBackendHealthy]);
+	}, []);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -418,8 +425,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 				} else {
 					if (isMounted) setUser(null);
 				}
-			} catch (e) {
-				console.error("Init auth error:", e);
+			} catch {
 				if (isMounted) setUser(null);
 			} finally {
 				if (isMounted) setIsInitializing(false);
@@ -433,40 +439,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 	}, []);
 
 	useEffect(() => {
-		detectAndSetOptimalApiGateway().then(async () => {
-			const apiBase = getActiveApiBaseUrl();
-			try {
-				await fetch(`${apiBase}/ping`, { method: "GET", cache: "no-store" });
-				await fetch(`${apiBase}/ping`, { method: "GET", cache: "no-store" });
-			} catch {
-			}
+		detectAndSetOptimalApiGateway().then(() => {
 			checkServerHealth();
 		});
 
 		const handleOnline = () => {
 			setIsOnline(true);
-			window.dispatchEvent(new CustomEvent("server:reconnected"));
 			checkServerHealth();
 		};
 		const handleOffline = () => {
 			setIsOnline(false);
+			setIsBackendHealthy(false);
+			isBackendHealthyRef.current = false;
+			setLatency(null);
 		};
-		const handleAuthExpired = () => logout();
-		const handleReconnected = async () => {
+		const handleAuthExpired = () => {
+			logout();
+		};
+		const handleReconnected = () => {
 			refreshVillages();
+		};
+		const handlePortChanged = () => {
+			checkServerHealth();
 		};
 
 		window.addEventListener("online", handleOnline);
 		window.addEventListener("offline", handleOffline);
 		window.addEventListener("auth:expired", handleAuthExpired);
 		window.addEventListener("server:reconnected", handleReconnected);
+		window.addEventListener("backend:port_changed", handlePortChanged);
 		return () => {
 			window.removeEventListener("online", handleOnline);
 			window.removeEventListener("offline", handleOffline);
 			window.removeEventListener("auth:expired", handleAuthExpired);
 			window.removeEventListener("server:reconnected", handleReconnected);
+			window.removeEventListener("backend:port_changed", handlePortChanged);
 		};
-	}, [checkServerHealth, refreshVillages]);
+	}, [checkServerHealth, logout, refreshVillages]);
 
 	useEffect(() => {
 		if (user?.id) {
@@ -474,51 +483,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 		}
 	}, [user?.id, refreshVillages]);
 
-	const selectedVillage = villages.find((v) => v.id === selectedVillageId);
-	const selectedVillageName = selectedVillage
-		? selectedVillage.name
-		: user?.role === "admin"
-			? "Toàn xã Đăk Hà"
-			: "";
+	const selectedVillageName = useMemo(() => {
+		const selectedVillage = villages.find((v) => v.id === selectedVillageId);
+		if (selectedVillage) return selectedVillage.name;
+		if (user?.role === "admin") return "Toàn xã Đăk Hà";
+		return "";
+	}, [villages, selectedVillageId, user?.role]);
+
+	const contextValue = useMemo<AppContextType>(
+		() => ({
+			user,
+			setUser,
+			activeTab,
+			setActiveTab,
+			selectedVillageId,
+			setSelectedVillageId,
+			selectedVillageName,
+			villages,
+			setVillages,
+			isOnline,
+			isBackendHealthy,
+			latency,
+			isInitializing,
+			logout,
+			refreshVillages,
+			removeVillage,
+			checkServerHealth,
+
+			isSidebarCollapsed,
+			toggleSidebar,
+			setSidebarCollapsed,
+
+			theme,
+			isDarkMode: theme === "dark",
+			toggleTheme,
+
+			zoomLevel,
+			zoomIn,
+			zoomOut,
+			resetZoom,
+
+			calculationYear,
+			setCalculationYear,
+		}),
+		[
+			user,
+			activeTab,
+			selectedVillageId,
+			setSelectedVillageId,
+			selectedVillageName,
+			villages,
+			isOnline,
+			isBackendHealthy,
+			latency,
+			isInitializing,
+			logout,
+			refreshVillages,
+			removeVillage,
+			checkServerHealth,
+			isSidebarCollapsed,
+			toggleSidebar,
+			setSidebarCollapsed,
+			theme,
+			toggleTheme,
+			zoomLevel,
+			zoomIn,
+			zoomOut,
+			resetZoom,
+			calculationYear,
+			setCalculationYear,
+		],
+	);
 
 	return (
-		<AppContext.Provider
-			value={{
-				user,
-				setUser,
-				activeTab,
-				setActiveTab,
-				selectedVillageId,
-				setSelectedVillageId,
-				selectedVillageName,
-				villages,
-				setVillages,
-				isOnline,
-				isBackendHealthy,
-				latency,
-				isInitializing,
-				logout,
-				refreshVillages,
-				removeVillage,
-				checkServerHealth,
-
-				isSidebarCollapsed,
-				toggleSidebar,
-				setSidebarCollapsed,
-
-				theme,
-				isDarkMode: theme === "dark",
-				toggleTheme,
-
-				zoomLevel,
-				zoomIn,
-				zoomOut,
-				resetZoom,
-
-				calculationYear,
-				setCalculationYear,
-			}}
-		>
+		<AppContext.Provider value={contextValue}>
 			{children}
 		</AppContext.Provider>
 	);

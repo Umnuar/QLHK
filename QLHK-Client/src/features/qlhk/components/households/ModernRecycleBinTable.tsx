@@ -4,7 +4,6 @@ import { createPortal } from "react-dom";
 import {
 	AlertTriangle,
 	ArrowDown,
-	ArrowLeft,
 	ArrowUp,
 	ArrowUpDown,
 	Calendar,
@@ -47,7 +46,6 @@ export interface ModernRecycleBinTableProps {
 	onBatchRestore: () => void;
 	onBatchHardDelete: () => void;
 	onRefresh: () => Promise<void>;
-	onBack?: () => void;
 }
 
 type QuickFilter = "all" | "large_household" | "recent_7_days" | "expiring_soon";
@@ -75,7 +73,6 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 	onBatchRestore,
 	onBatchHardDelete,
 	onRefresh,
-	onBack,
 }) => {
 	const { user, selectedVillageId, setSelectedVillageId } = useApp();
 	const isAdmin = user?.role === "admin";
@@ -444,18 +441,6 @@ export const ModernRecycleBinTable: React.FC<ModernRecycleBinTableProps> = ({
 					</div>
 
 					<div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap justify-end">
-						{onBack && (
-							<button
-								type="button"
-								onClick={onBack}
-								title="Về danh sách Hộ Gia Đình"
-								className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
-							>
-								<ArrowLeft className="w-4 h-4" />
-								<span className="hidden sm:inline">Về danh sách Hộ Gia Đình</span>
-							</button>
-						)}
-
 						<button
 							type="button"
 							onClick={handleRefreshClick}

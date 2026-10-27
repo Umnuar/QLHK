@@ -24,7 +24,11 @@ Bản cập nhật lớn toàn diện đưa toàn bộ hệ thống QLHK từ ph
   - Loại bỏ tính năng nhập Excel phân tán tại mục Chúc Thọ và Hưu Trí của QLCS; quy tụ toàn bộ luồng nhập liệu dân cư và hồ sơ chính sách về một đầu mối duy nhất tại QLHK (Single Source of Truth).
 
 - **Đại Tu Động Cơ 10 Mốc Tuổi Chúc Thọ & Dự Báo Đa Năm (Multi-Year Projection Engine)**:
-  - Bao phủ đầy đủ 10 mốc tuổi quy định của Đảng và Nhà nước: **60, 65, 70, 75, 80, 85, 90, 95, 100+ tuổi**, khắc phục triệt để tình trạng thiếu sót các mốc 60, 65.
+  - Bao phủ đầy đủ 10 mốc tuổi quy định và biểu mẫu thực tế của Đảng, Nhà nước và UBND Xã: **60, 65, 70, 75, 80, 85, 90, 95, 100, 100+ tuổi**, khắc phục triệt để tình trạng thiếu sót hoặc loại bỏ nhầm các mốc 60 và 65 tuổi.
+  - **Chuẩn Hóa 10 Mốc Chúc Thọ Khớp Biểu Mẫu Nhập Xã Đăk Hà (`File_Mau_Chuc_Tho.xlsx`)**:
+    - Bổ sung 2 mốc `60` và `65` tuổi đồng bộ 100% trên cả 2 backend: Rust Native (`QLHK-Backend-Rust/src/handlers/policies.rs`, `src/models/policy.rs`) và Node.js Express (`QLHK-Backend/src/controllers/policyChuctho.controller.ts`), khôi phục tính năng thống kê và đối soát cho nhóm người cao tuổi từ 60-65 theo đúng biểu mẫu phân bổ thực tế tại địa phương.
+    - Nâng cấp bộ phân tích Excel chuyên sâu (`policyExcelParser.ts`): Tự động nhận diện cấu trúc tệp mẫu của xã, hỗ trợ định dạng số, chuỗi, boolean đánh dấu `x`/`v`, bóc tách chính xác 10 mốc tuổi không bỏ sót dữ liệu.
+    - Đồng bộ biểu đồ Donut Chart phân tích tỷ trọng mốc chúc thọ (`policyAnalyticsData.ts`) và Báo cáo Excel 2 Sheet liên thôn (`PolicyAnalyticsPage.tsx`: Sheet 1 tổng hợp đối soát từng thôn; Sheet 2 phân bổ chi tiết 10 mốc chúc thọ và 5 diện an sinh HTXH).
   - Cơ chế chọn năm tính toán linh hoạt (`calculationYear`): Cho phép cán bộ chuyển đổi năm tính toán tức thì, hiển thị banner chỉ báo dự báo năm động (Projection Indicator Banner) với cảnh báo xem trước danh sách chúc thọ cho các năm tương lai.
   - Huy hiệu mốc tuổi tròn nổi bật (`round milestone badges`): Tự động gắn tag màu sắc trực quan cho từng mốc tuổi của người cao tuổi.
 
@@ -78,6 +82,16 @@ Bản cập nhật lớn toàn diện đưa toàn bộ hệ thống QLHK từ ph
   - Gỡ bỏ icon lịch rườm rà bên trong nút chọn mốc thời gian, tinh gọn cấu trúc nút gồm nhãn thời gian trực quan và mũi tên chevron dropdown.
   - Đồng bộ màu nền, viền và bo góc khớp 100% với các dropdown lọc bên cạnh (`CustomSelect` variant `filter`: `bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 font-semibold rounded-xl`).
   - Tự động chuyển nền xanh ngọc nổi bật `bg-emerald-50/70 border-emerald-500/80 text-emerald-900 dark:bg-emerald-950/50` khi kích hoạt mốc tính toán tùy biến khác năm hiện hành.
+- **Mặc Định Năm Tính Toán Chúc Thọ Là Năm Hiện Tại & Dọn Sạch Năm Tính Ở Bảng Hưu Trí**:
+  - Mặc định năm tính toán khởi tạo luôn là năm hiện hành (`new Date().getFullYear()`), không lưu đè hoặc tái sử dụng giá trị cũ từ `localStorage`.
+  - Tinh giản giao diện: Ẩn hoàn toàn `YearSelector` và dòng chữ `• Năm tính toán: ...` khi cán bộ chuyển sang tab Hưu Trí (`htxh`), đảm bảo bảng hưu trí không bị chi phối bởi năm mừng thọ.
+  - Tách biệt hoàn toàn tham số API và phân vùng cache của `useProfiles.ts` giữa phân hệ Chúc thọ và Hưu trí.
+- **Nâng Cấp Khóa Tiêu Điểm Bền Vững Chống Cướp Con Trỏ (`useFocusTrap.ts`)**:
+  - Khắc phục triệt để lỗi khi người dùng gõ nội dung vào ô Địa chỉ hoặc Ghi chú trong drawer sửa hộ thì con trỏ soạn thảo bị cướp và nhảy giật lên nút đóng modal `X`.
+  - Lưu trữ callback `onEscape` và `initialFocusRef` qua `useRef` nhằm cô lập hook khỏi chu kỳ re-render của component cha. Bổ sung điều kiện kiểm tra an toàn: nếu tiêu điểm đang nằm trong container (`containerRef.current.contains(document.activeElement)`), tuyệt đối không giật tiêu điểm về phần tử đầu tiên.
+- **Audit & Tinh Giản Toàn Diện 10 Phân Hệ Backend Rust (`QLHK-Backend-Rust`)**:
+  - Kích hoạt song song bộ 3 kỹ năng `audit`, `clean`, `fix` rà soát 10 phân hệ Backend Rust: Auth & Session, Crypto & PII Security, Middlewares & RBAC, Households, Citizens, Policies, Excel Engine, Backup & Updates, Analytics & Audit Trail, System Admin.
+  - Dọn sạch toàn bộ dead code, unused imports, biến không dùng; bảo đảm biên dịch đạt 0 errors, 0 warnings và tuân thủ 100% P0 Zero Comments.
 - **Tính Toán Tuổi & Phân Loại Mốc Chúc Thọ Động Thời Gian Thực**:
   - Nâng cấp hàm `calculateAge(dob, targetYear, referenceDate)` trong `date.ts`: tính toán chính xác tuổi công dân theo mốc tham chiếu (`referenceDate`).
   - Hỗ trợ đầy đủ các định dạng ngày sinh: đủ ngày tháng năm (`DD/MM/YYYY`), tháng năm (`MM/YYYY`), hoặc chỉ năm sinh (`YYYY`).
@@ -117,8 +131,13 @@ Bản cập nhật lớn toàn diện đưa toàn bộ hệ thống QLHK từ ph
   - Loại bỏ hoàn toàn tình trạng người chưa đủ tuổi (ví dụ 59 tuổi) xuất hiện sai lệch trong bảng Chúc thọ khi tính toán theo các tháng trước ngày sinh.
 - **Khắc phục Lỗi Bộ lọc Ngày sinh Không Hoạt động**:
   - Sửa lỗi logic so khớp ngày tháng khiến việc nhập năm sinh hoặc ngày đầy đủ bị trả về danh sách rỗng; chuẩn hóa chuỗi ngày tháng hai đầu API và Client.
-- **Khóa Tuyệt đối Quyền Sửa/Xóa Hồ sơ từ Bảng Chính sách**:
-  - Khóa vĩnh viễn thao tác sửa đổi trực tiếp trên bảng Chúc thọ/Chính sách, cưỡng chế nguyên tắc Single Source of Truth: mọi biến động nhân thân phải thực hiện trực tiếp từ Sổ hộ khẩu gốc.
+- **Vá Lỗi Nhảy Focus Lên Nút Tắt Modal Khi Chỉnh Sửa Hộ Khẩu (`HouseholdDrawer.tsx` & `useFocusTrap.ts`)**:
+  - Khắc phục triệt để lỗi khi người dùng gõ 1 ký tự vào ô Địa chỉ cư trú hoặc Ghi chú thì con trỏ soạn thảo bị cướp và nhảy lên nút tắt modal `X`.
+  - Memoize các hàm `handleRequestClose` và `handleEscape` bằng `useCallback`, ngăn chặn chu kỳ re-render cướp focus của input.
+- **Vá Lỗi Ẩn Chỉ Báo Số CCCD Khi Nhập Đến 9 Chữ Số (`CitizenModal.tsx`)**:
+  - Loại bỏ điều kiện loại trừ `cleanCccd.length !== 9`. Chuẩn hóa chỉ báo độ dài số CCCD hiển thị mượt mà liên tục `Đã nhập {n}/12 số` (từ 1 đến 11 số) và chuyển trạng thái `CCCD hợp lệ (12 số)` màu xanh lục khi đủ 12 số.
+- **Khắc Phục Lỗi Khung Viền Cạnh Đáy Bảng Thùng Rác (`ModernRecycleBinTable.tsx`)**:
+  - Gỡ bỏ thẻ `div` bọc ngoài có padding và viền trên thừa (`p-4 border-t ...`) quanh thanh phân trang `TablePagination`, trả lại thiết kế phẳng liền khối (flush bottom) đồng bộ 100% chuẩn Civic Tech với các bảng dữ liệu khác.
 - **Khắc phục Lỗi Khoảng Trống Cột Thao tác Bị Dư Thừa**:
   - Triệt tiêu hoàn toàn khoảng trắng layout sau khi ẩn cột thao tác, tái cân bằng tỷ lệ chiều rộng các cột hiển thị trên toàn bộ độ phân giải màn hình.
 
@@ -126,6 +145,9 @@ Bản cập nhật lớn toàn diện đưa toàn bộ hệ thống QLHK từ ph
 
 ### 🧹 CLEAN (Dọn dẹp mã nguồn & Tối giản)
 
+- **Xóa Nút Shortcut Đặt Nghề Nghiệp Hưu Trí Nhanh trong Modal Nhân Khẩu (`CitizenModal.tsx`)**:
+  - Xóa bỏ nút bấm tiện ích `✨ Đặt nghề nghiệp: Hưu trí để mở khóa` trong tab chính sách. Cưỡng chế quy trình nghiệp vụ chuẩn: cán bộ bắt buộc phải thẩm định và cập nhật nghề nghiệp tại tab thông tin cơ bản trước khi thiết lập diện chính sách, ngăn chặn việc gán nhầm hoặc thiếu xác minh.
+  - Cập nhật test case 15 và 17 trong `CitizenModal.test.tsx` (17/17 tests PASS).
 - **Dọn dẹp Giao diện Điều hướng & Tinh giản Thao tác (Navigation & Clutter Clean)**:
   - Gỡ bỏ sạch sẽ các nút điều hướng thừa "Đổi thôn" / "Quay lại danh sách thôn" tại trang Thống kê Dân cư (`AnalyticsDashboard.tsx`) và Quản lý Hộ gia đình (`HouseholdsPage.tsx`).
   - Xóa bỏ nút "Về danh sách Hộ Gia Đình" (`onBack`) và icon `ArrowLeft` trong Thùng rác (`ModernRecycleBinTable.tsx` & `RecycleBinPage.tsx`).

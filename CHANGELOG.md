@@ -1,7 +1,144 @@
 # NHẬT KÝ NÂNG CẤP & TIẾN BỘ ỨNG DỤNG (CHANGELOG)
-## HỆ THỐNG QUẢN LÝ HỘ KHẨU - NHÂN KHẨU XÃ ĐĂK HÀ (BẢN PHÁT HÀNH ĐỒNG BỘ v1.5)
+## HỆ THỐNG QUẢN LÝ HỘ KHẨU - NHÂN KHẨU XÃ ĐĂK HÀ (BẢN PHÁT HÀNH ĐỒNG BỘ v1.5.2)
 
-Bản cập nhật lớn toàn diện đưa toàn bộ hệ thống QLHK từ phiên bản thử nghiệm ban đầu lên chuẩn **v1.5**, đánh dấu bước tiến nhảy vọt về tốc độ, tính toàn vẹn dữ liệu và độ an toàn thông tin: chuyển đổi toàn diện sang nền tảng Thin-Client Tauri v2 (Rust) kết hợp Backend Rust Native hiệu năng cao (Axum + SQLx), chuẩn hóa CSDL PostgreSQL Native độc lập (schema `qlhk`), bảo mật CCCD đa tầng, hợp nhất dữ liệu chính sách dân cư và tối ưu hóa giao diện điều hành chuẩn Civic Tech.
+Bản cập nhật lớn toàn diện đưa toàn bộ hệ thống QLHK từ phiên bản thử nghiệm ban đầu lên chuẩn **v1.5.2**, đánh dấu bước tiến nhảy vọt về tốc độ, tính toàn vẹn dữ liệu và độ an toàn thông tin: chuyển đổi toàn diện sang nền tảng Thin-Client Tauri v2 (Rust) kết hợp Backend Rust Native hiệu năng cao (Axum + SQLx), chuẩn hóa CSDL PostgreSQL Native độc lập (schema `qlhk`), bảo mật CCCD đa tầng, hợp nhất dữ liệu chính sách dân cư và tối ưu hóa giao diện điều hành chuẩn Civic Tech.
+
+---
+
+## [v1.5.2] - 2026-10-27 (Bầy Subagent E2E Crawler 100% Xanh, Wizard Khớp Cột Excel QLHK, Đại Tu 10 Mốc Chúc Thọ, Hiện Đại Hóa Thùng Rác & Đồng Bộ Toàn Diện Chính Sách)
+
+### 🚀 NEW (Tính năng mới)
+
+- **Hệ Thống Kiểm Định Tự Động Smart Crawler E2E Vượt Qua 100% Xanh (crawler.spec.ts)**:
+  - **Triệu Hồi Bầy 5 Subagent Tác Chiến Chuyên Biệt**:
+    - `subagent-db-fixture`: Xây dựng kịch bản seed CSDL PostgreSQL mẫu toàn diện (`seed_runner.cjs`) trên schema `qlhk`: tài khoản admin/cán bộ thôn, 3 địa bàn thôn, 5 hộ gia đình hoàn chỉnh (CCCD mã hóa đối xứng AES-256-GCM kèm mã băm mù HMAC-SHA256 và last4), các cụ thọ đầy đủ mốc 70-100+, 2 hộ dân lưu trong thùng rác và 5 bản ghi mẫu kiểm toán.
+    - `subagent-network-guardian`: Xây dựng module giám sát bẫy lỗi (`networkTrap.ts`) bắt toàn bộ request lỗi HTTP $\ge 400$ trên cả 2 backend Node.js (5002) và Rust (5012), chặn console error, unhandled rejection và React Error Boundary.
+    - `subagent-crud-cccd`: Quét tìm kiếm tiếng Việt không dấu (`name_unaccented`), lọc combobox thôn, phân trang, giải mã và hiển thị CCCD thời gian thực (`/reveal-cccd`), drawer thêm/sửa hộ và modal nhân khẩu.
+    - `subagent-policy-trash`: Quét danh sách mừng thọ các mốc tuổi, cập nhật trạng thái nhận quà (`/received`), thùng rác (xem hồ sơ thành viên đã xóa, khôi phục hộ, xóa vĩnh viễn), danh sách cán bộ và bộ lọc lịch sử.
+    - `subagent-analytics-excel`: Kiểm tra thẻ KPI dân cư không bị NaN, biểu đồ DonutChart SVG render chuẩn, tải file Excel trực tiếp qua Playwright download event (> 0 bytes) và API stream endpoint trả về HTTP 200.
+  - **Kết Quả Thực Nghiệm Toàn Diện**: `1 passed (1.3m)`, duyệt qua 10 route liên thông, 136 thao tác tương tác, độ phủ click đạt 87.2% (95/110 phần tử), tuyệt đối **0 lỗi HTTP $\ge 400$, 0 console error, 0 React crash**.
+  - **Tuân Thủ Tuyệt Đối P0 Zero Comments**: Toàn bộ hơn 1,800 dòng lệnh trong `crawler.spec.ts`, `networkTrap.ts`, `seed_runner.cjs` không chứa bất kỳ dòng comment nào.
+
+- **Chuyển Giao Tính Năng Khớp Cột Excel Thông Minh & Wizard 3 Bước vào QLHK (Smart Column Mapping & 3-Step Import Wizard)**:
+  - Tích hợp `ColumnMappingStep.tsx` và `ImportPreviewModal.tsx` vào phân hệ Quản lý Hộ khẩu QLHK, cho phép cán bộ tải lên bất kỳ bảng tính Excel nào với cấu trúc cột tùy biến, tự động so khớp hoặc gán thủ công các cột dữ liệu hộ khẩu và nhân khẩu.
+  - Loại bỏ tính năng nhập Excel phân tán tại mục Chúc Thọ và Hưu Trí của QLCS; quy tụ toàn bộ luồng nhập liệu dân cư và hồ sơ chính sách về một đầu mối duy nhất tại QLHK (Single Source of Truth).
+
+- **Đại Tu Động Cơ 10 Mốc Tuổi Chúc Thọ & Dự Báo Đa Năm (Multi-Year Projection Engine)**:
+  - Bao phủ đầy đủ 10 mốc tuổi quy định của Đảng và Nhà nước: **60, 65, 70, 75, 80, 85, 90, 95, 100+ tuổi**, khắc phục triệt để tình trạng thiếu sót các mốc 60, 65.
+  - Cơ chế chọn năm tính toán linh hoạt (`calculationYear`): Cho phép cán bộ chuyển đổi năm tính toán tức thì, hiển thị banner chỉ báo dự báo năm động (Projection Indicator Banner) với cảnh báo xem trước danh sách chúc thọ cho các năm tương lai.
+  - Huy hiệu mốc tuổi tròn nổi bật (`round milestone badges`): Tự động gắn tag màu sắc trực quan cho từng mốc tuổi của người cao tuổi.
+
+- **Đập Đi Xây Lại Động Cơ Chọn & Lưu Trữ Chính Sách Xã Hội/Hưu Trí (Policy Selection & Storage Engine Overhaul)**:
+  - **Xây mới UI Thẻ Chính sách (`CitizenModal.tsx`)**: Chuyển đổi toàn diện 6 ô chọn chính sách thành dạng thẻ nút bấm (`<button type="button" role="checkbox">`) độc lập chuẩn công thái học, phản hồi 1-click tức thì không bị nuốt sự kiện hay phụ thuộc input checkbox native.
+  - **Tháo bỏ Rào cản Tuổi cứng**: Gỡ bỏ hoàn toàn chặn lỗi cứng 75+ và 70-74 tuổi khi cán bộ đánh dấu hồ sơ thực tế; tôn trọng quyền quyết định nghiệp vụ thực tế của cán bộ cơ sở.
+  - **Đồng bộ Đa tầng CSDL & Backend Rust Native (Axum + SQLx)**:
+    - Bổ sung toàn diện 7 cột chính sách (`huu_tri`, `age75plus`, `age70to74poor`, `bao_tro`, `huu_tuat_bao_hiem`, `nguoi_co_cong`, `pension_policies`) vào 11 câu lệnh `SELECT ... FROM qlhk.citizens` trong `households.rs`.
+    - Bộ giải mã Serde `deserialize_string_or_bool` linh hoạt: tiếp nhận trơn tru cả cờ boolean `true`/`false` lẫn chuỗi định danh `"x"`/`""`.
+    - Ánh xạ 2 chiều giữa mảng `pension_policies` và các cột cờ, chống tuyệt đối tình trạng mất tick hay tự động reset về duy nhất 1 chính sách hưu trí khi mở lại hồ sơ.
+    - Kích hoạt tiến trình đồng bộ nền `sync_single_citizen_to_policies` tức thời sau khi cập nhật hoặc tạo mới hộ khẩu, tự động cập nhật danh sách thụ hưởng sang bảng `qlhk.htxh_profiles`.
+  - **Nâng cấp Popover Chi tiết Chính sách HTXH (`ProfileRow.tsx`)**: Bổ sung 2 chính sách "Đối tượng đủ 75 tuổi trở lên" và "Đối tượng từ 70-74 tuổi thuộc hộ nghèo, cận nghèo" vào danh sách chi tiết chính sách đang thụ hưởng.
+
+- **Bộ Điều Hướng Mốc Thời Gian Tính Toán Chính Sách Chúc Thọ Đa Chế Độ (YearSelector.tsx - QLHK/QLCS)**:
+  - Thay thế nút chọn năm đơn điệu bằng Bộ điều hướng mốc thời gian 3 chế độ (`Theo Ngày`, `Theo Tháng`, `Theo Năm`), phỏng theo kiến trúc bộ chọn lịch chuyên nghiệp chuẩn Civic Tech.
+  - **Chế độ Theo Ngày (`DD/MM/YYYY`)**: Lưới lịch trực quan hỗ trợ chọn chính xác ngày trong tháng, điều hướng lùi/tiến từng tháng/năm, nút tắt "Hôm nay", tự động tính tuổi chính xác đến từng ngày.
+  - **Chế độ Theo Tháng (`MM/YYYY`)**: Lưới 12 tháng trực quan, chọn tháng trực tiếp không bắt buộc chọn ngày, nút tắt "Tháng này", tự động tính mốc chúc thọ dựa trên ngày cuối tháng (`referenceDate`) và đồng bộ bộ lọc hồ sơ người cao tuổi sinh trong tháng.
+  - **Chế độ Theo Năm (`YYYY`)**: Lưới 12 năm trực quan với điều hướng thập kỷ (`< 2020 - 2029 >`), nút tắt "Năm nay", chọn năm tức thì không bắt buộc chọn ngày/tháng; dọn sạch thanh nhập số thủ công rườm rà.
+
+- **Đại tu Toàn diện Động cơ Nhật ký Kiểm toán & Biến động Dữ liệu (Audit Log & Data Fluctuation Engine)**:
+  - **Hiển thị Biến động Nhân khẩu Cập nhật (`updated_members`)**: Bổ sung khối giao diện chuyên biệt dạng card màu xanh dương (`border-blue-500/25 bg-blue-50/40`) hiển thị trực quan toàn bộ các nhân khẩu được điều chỉnh thông tin trong sổ hộ khẩu. Mỗi nhân khẩu liệt kê rõ họ tên, quan hệ gia đình và bảng diff chi tiết từng trường dữ liệu thay đổi (giá trị cũ màu đỏ gạch ngang $\to$ giá trị mới màu xanh lục in đậm kèm mũi tên chuyển hướng).
+  - **Khắc phục Triệt để Lỗi Fallback Trống Dữ liệu**: Loại bỏ hoàn toàn tình trạng hiển thị thông báo nhầm *"Không có trường dữ liệu văn bản thay đổi trực tiếp..."* khi có biến động nhân khẩu ngầm (`updated_members`, `added_members`, `removed_members`, tra cứu CCCD); chỉ kích hoạt fallback khi thực sự không có bất kỳ thay đổi nào.
+  - **Chuẩn hóa Toàn bộ Các Hành động Biến động (Universal Action Coverage)**:
+    - **Cập nhật (`UPDATE`)**: Trình bày đồng thời thay đổi cấp hộ và danh sách nhân khẩu thêm mới, sửa đổi hoặc tách/gỡ, tích hợp thẻ thông báo bảo mật khi cán bộ thực hiện tra cứu giải mã số CCCD (`REVEAL_CCCD`).
+    - **Thêm mới (`CREATE`)**: Hiển thị bảng tổng hợp thông số hộ/nhân khẩu mới kèm danh sách chi tiết các nhân khẩu khởi tạo ban đầu (`citizens`).
+    - **Xóa thường, Xóa theo lô & Xóa vĩnh viễn (`DELETE`, `BULK_DELETE`, `HARD_DELETE`)**: Khôi phục và hiển thị đầy đủ thông tin đối tượng đã xóa từ bản ghi lưu vết `old_values` (Chủ hộ, Mã định danh, Địa chỉ, Số nhân khẩu, Lý do xóa) kèm dải huy hiệu phân cấp mức độ nguy hiểm trực quan.
+    - **Khôi phục (`RESTORE`)**: Hiển thị thông tin đối tượng được phục hồi từ Thùng rác kèm ghi chú lý do.
+    - **Nhập Excel (`IMPORT`)**: Hiển thị thẻ tệp nguồn Excel, số lượng hộ và số lượng nhân khẩu nhập khẩu thành công.
+  - **Dòng Tóm tắt Nhanh Tường minh (`getQuickInlineSummary`)**: Cập nhật tiêu đề tóm tắt hiển thị trực tiếp họ tên nhân khẩu thay đổi (ví dụ: `Cập nhật thông tin 1 nhân khẩu (NGUYỄN VĂN A)`) thay vì thông báo chung chung.
+  - **Backend Audit Aggregation**: Nâng cấp bộ lọc API `/api/audit?action=DELETE` tự động gom đồng thời các hành động `DELETE`, `BULK_DELETE` và `HARD_DELETE`, hỗ trợ cán bộ tra cứu toàn diện lịch sử dọn dẹp dữ liệu.
+
+- **Nghiệp vụ Chúc thọ Người Cao tuổi Thời gian thực $\ge 60$ Tuổi (Real-Time Senior Citizens Eligibility Engine)**:
+  - **Động thái Chúc thọ Thời gian thực**: Xóa bỏ hoàn toàn cơ chế lọc cứng chỉ nhận các mốc tròn tuổi chẵn (60, 65, 70, 75, 80, 85, 90+). Hệ thống tự động nhận diện và đưa công dân vào danh sách chúc thọ/mừng thọ tức thời ngay khi vừa bước qua tuổi 60, bao quát toàn bộ dải độ tuổi trải dài từ 60 trở lên theo thời gian thực.
+  - **Đồng bộ Đa nền tảng Backend & Frontend**: Cập nhật câu truy vấn lọc dữ liệu phía backend (Node.js Express & Rust Native Axum) song hành cùng bộ lọc phân hệ Chính sách Client, đảm bảo không bỏ sót bất kỳ người cao tuổi nào đủ điều kiện thụ hưởng chính sách an sinh.
+
+---
+
+### ⚡ UPDATE & PERFORMANCE (Cải tiến & Tối ưu hóa hiệu năng)
+
+- **Hiện Đại Hóa Toàn Diện Bảng Thùng Rác (ModernRecycleBinTable.tsx)**:
+  - Bổ sung chế độ xem kép: Bảng chi tiết (`LayoutList`) và Lưới thẻ (`LayoutGrid`), tích hợp bộ lọc chip thông minh (`Đông khẩu ≥ 4`, `Mới xóa 7 ngày`, `Sắp hết hạn lưu trữ`).
+  - Hỗ trợ xem chi tiết hồ sơ thành viên đã xóa trong hộ qua modal lồng an toàn, tối ưu phân trang, xác nhận khôi phục và xóa vĩnh viễn với thông điệp cảnh báo rõ ràng.
+- **Ẩn / Xóa Mã Thôn & Chuẩn Hóa Thẻ Quản Lý Thôn & Làng**:
+  - Ẩn/xóa mã thôn trên toàn bộ thẻ và bảng Quản lý Địa bàn Thôn & Làng, chỉ hiển thị tên thôn và chỉ số cốt lõi.
+  - Loại bỏ nút tạo thôn mới trùng lặp trên card header, giữ đúng 1 nút chuẩn trên thanh điều khiển.
+- **Tối Ưu Dynamic Island Hỗ Trợ Light Mode & Triệt Tiêu Khoảng Trống Cột Bị Ẩn**:
+  - Khắc phục lỗi Dynamic Island không có nền sáng ở Light Mode; tự động nhận diện và áp dụng màu nền, đường viền tương phản cao khi ở giao diện sáng.
+  - Triệt tiêu 100% khoảng trống padding/width khi ẩn cột thao tác trên bảng chính sách, phân bổ đều tỷ lệ các cột còn lại.
+  - Khóa sự kiện click vào dòng chủ thể hưu trí (chỉ bấm nút Sửa mới mở modal), bảo vệ an toàn dữ liệu.
+- **Đồng Bộ Giao Diện Nút Mốc Tính Toán Chuẩn Công Thái Học**:
+  - Gỡ bỏ icon lịch rườm rà bên trong nút chọn mốc thời gian, tinh gọn cấu trúc nút gồm nhãn thời gian trực quan và mũi tên chevron dropdown.
+  - Đồng bộ màu nền, viền và bo góc khớp 100% với các dropdown lọc bên cạnh (`CustomSelect` variant `filter`: `bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 font-semibold rounded-xl`).
+  - Tự động chuyển nền xanh ngọc nổi bật `bg-emerald-50/70 border-emerald-500/80 text-emerald-900 dark:bg-emerald-950/50` khi kích hoạt mốc tính toán tùy biến khác năm hiện hành.
+- **Tính Toán Tuổi & Phân Loại Mốc Chúc Thọ Động Thời Gian Thực**:
+  - Nâng cấp hàm `calculateAge(dob, targetYear, referenceDate)` trong `date.ts`: tính toán chính xác tuổi công dân theo mốc tham chiếu (`referenceDate`).
+  - Hỗ trợ đầy đủ các định dạng ngày sinh: đủ ngày tháng năm (`DD/MM/YYYY`), tháng năm (`MM/YYYY`), hoặc chỉ năm sinh (`YYYY`).
+- **Tối ưu Công thái học Bảng Chính sách (Policy & Senior Citizens Table Ergonomics)**:
+  - **Loại bỏ Cột Thao tác Thừa & Triệt tiêu Khoảng trống**: Gỡ bỏ triệt để cột "Thao tác" và khoảng đệm padding thừa trên bảng Chúc thọ; giao diện tự động dồn không gian cho các cột dữ liệu quan trọng (Họ tên, Ngày sinh, Nơi thường trú, Độ tuổi, Trạng thái nhận quà).
+  - **Thu hẹp Viền Ngăn cách Hàng (Row Border Spacing)**: Giảm độ dày và khoảng cách đường viền ngăn cách giữa các dòng trong bảng Chúc thọ đồng bộ chuẩn với bảng Quản lý Hộ khẩu (`border-slate-100` / `border-slate-800`), giúp mật độ hiển thị cao hơn, thanh thoát và chống mỏi mắt cho cán bộ khi rà soát danh sách dài.
+- **Nâng cấp Bộ lọc Ngày sinh & Chuẩn hóa Định dạng Nhập liệu (DoB Filter Engine)**:
+  - Hỗ trợ đa dạng phương thức tra cứu: cán bộ có thể lọc linh hoạt theo năm sinh 4 chữ số (`YYYY`), tháng/năm (`MM/YYYY`), hoặc ngày tháng năm sinh đầy đủ (`DD/MM/YYYY`).
+  - Trang bị placeholder hướng dẫn trực quan `DD/MM/YYYY (hoặc YYYY)` cùng cơ chế tự động nhận diện định dạng và chống lỗi nhập liệu.
+- **Hệ thống Kiểm định Toàn diện Đạt 100% Tuyệt đối**:
+  - **QLHK-Client**: 29 test suites, **230/230 tests PASS**.
+  - **QLHK-Backend-Rust**: 4 test suites, **37/37 tests PASS**.
+  - **QLHK-Backend (Node.js)**: 20 test suites, **169/169 tests PASS**.
+  - **TypeScript Gate**: **0 compiler errors** (`npx tsc --noEmit`).
+
+---
+
+### 🛠️ FIX (Sửa lỗi & Vá lỗi giao diện)
+
+- **Sửa Lỗi Selector Hộp Thoại Khôi Phục Thùng Rác & Deselect All**:
+  - Sửa lỗi locator `.filter({ hasText: /^Khôi Phục$/i })` phân biệt rành mạch giữa nút Khôi phục trên dòng bảng và nút Khôi phục trong hộp thoại xác nhận `useModal`.
+  - Cập nhật selector nút bỏ chọn hàng loạt `button[title*="Bỏ chọn"]` giúp kiểm thử E2E crawler tự động vượt qua 100%.
+  - Khắc phục lỗi đóng modal chi tiết nhân khẩu (`CitizenModal`) không khép kín khiến backdrop che phủ bảng nền.
+- **Khóa Tuyệt đối Quyền Sửa/Xóa Hồ sơ từ Bảng Chính sách & Bảng Hưu Trí**:
+  - Khóa sự kiện click vào dòng chủ thể hưu trí (chỉ bấm nút Sửa mới mở modal), bảo vệ toàn vẹn dữ liệu.
+  - Khóa vĩnh viễn thao tác sửa đổi trực tiếp trên bảng Chúc thọ/Chính sách, cưỡng chế nguyên tắc Single Source of Truth: mọi biến động nhân thân phải thực hiện trực tiếp từ Sổ hộ khẩu gốc.
+- **Khắc Phục Triệt Để Lỗi Mất Tick & Reset Chính Sách Hưu Trí Khi Lưu**:
+  - Khắc phục lỗi Rust Backend không SELECT 7 cột chính sách (`huu_tri`, `age75plus`, `age70to74poor`, `bao_tro`, `huu_tuat_bao_hiem`, `nguoi_co_cong`, `pension_policies`) khiến dữ liệu nhân khẩu trả về luôn rỗng.
+  - Sửa lỗi Serde deserialization boolean/string gây mất dữ liệu chính sách khi lưu từ modal.
+  - Khắc phục lỗi `pension_policies` không đồng bộ với bảng `htxh_profiles` và popover hiển thị thiếu chính sách.
+- **Khắc Phục Triệt Để Lỗi Mất Dữ Liệu Khi Đổi Năm Tính Toán**:
+  - Sửa lỗi chuyển sang năm 2027 tính đúng nhưng quay lại 2026 hoặc đổi năm liên tục bị trắng bảng / không tìm thấy hồ sơ.
+  - Tích hợp `calculationTarget` (`precision`, `year`, `month`, `day`, `referenceDate`) xuyên suốt từ `DashboardPage` -> `useProfiles` -> `profilesApi` -> backend SQL/Prisma query (`month`, `day`, `calculationYear`).
+  - Phân tách phân vùng cache IndexedDB độc lập theo từng mốc `y{year}_{precision}_m{month}_d{day}` loại bỏ hoàn toàn xung đột dữ liệu giữa các mốc tính toán.
+- **Khắc Phục Lỗi Lọc Theo Tháng & Theo Ngày**:
+  - Bổ sung tham số `month` và `day` vào `ProfileQueryParams`, truyền trực tiếp vào backend `/policies/chuctho` để lọc chính xác danh sách đối tượng mừng thọ theo tháng hoặc ngày được chọn.
+  - Loại bỏ hoàn toàn tình trạng người chưa đủ tuổi (ví dụ 59 tuổi) xuất hiện sai lệch trong bảng Chúc thọ khi tính toán theo các tháng trước ngày sinh.
+- **Khắc phục Lỗi Bộ lọc Ngày sinh Không Hoạt động**:
+  - Sửa lỗi logic so khớp ngày tháng khiến việc nhập năm sinh hoặc ngày đầy đủ bị trả về danh sách rỗng; chuẩn hóa chuỗi ngày tháng hai đầu API và Client.
+- **Khóa Tuyệt đối Quyền Sửa/Xóa Hồ sơ từ Bảng Chính sách**:
+  - Khóa vĩnh viễn thao tác sửa đổi trực tiếp trên bảng Chúc thọ/Chính sách, cưỡng chế nguyên tắc Single Source of Truth: mọi biến động nhân thân phải thực hiện trực tiếp từ Sổ hộ khẩu gốc.
+- **Khắc phục Lỗi Khoảng Trống Cột Thao tác Bị Dư Thừa**:
+  - Triệt tiêu hoàn toàn khoảng trắng layout sau khi ẩn cột thao tác, tái cân bằng tỷ lệ chiều rộng các cột hiển thị trên toàn bộ độ phân giải màn hình.
+
+---
+
+### 🧹 CLEAN (Dọn dẹp mã nguồn & Tối giản)
+
+- **Dọn dẹp Giao diện Điều hướng & Tinh giản Thao tác (Navigation & Clutter Clean)**:
+  - Gỡ bỏ sạch sẽ các nút điều hướng thừa "Đổi thôn" / "Quay lại danh sách thôn" tại trang Thống kê Dân cư (`AnalyticsDashboard.tsx`) và Quản lý Hộ gia đình (`HouseholdsPage.tsx`).
+  - Xóa bỏ nút "Về danh sách Hộ Gia Đình" (`onBack`) và icon `ArrowLeft` trong Thùng rác (`ModernRecycleBinTable.tsx` & `RecycleBinPage.tsx`).
+  - Xóa phím tắt gán nhanh nghề nghiệp trong `CitizenModal` để bảo đảm cán bộ phải xác minh đúng đối tượng hưu trí.
+  - Tinh giản mã thôn: loại bỏ badge mã thôn rườm rà, chuẩn hóa logic tự động sinh mã thôn tại backend.
+- **Tối Giản Hóa Hàng Điều Khiển Năm (YearSelector)**:
+  - Xóa bỏ hàng nút bấm tăng giảm năm `[ - ] [ 2026 ] [ + ] [ Áp dụng ]` thừa trong tab "Theo Năm", giữ lại giao diện lưới 12 năm tối giản, sạch sẽ và phản hồi tức thời.
+  - Dọn sạch các import (`Minus`, `Plus`) và biến state thừa (`inputYearValue`, `handleYearInputCommit`).
+- **Dọn dẹp & Hợp nhất Giao diện Quản lý Thôn (Village Management Streamlining)**:
+  - Sử dụng skill `clean` rà soát và loại bỏ sạch sẽ các đoạn mã nguồn và component giao diện quản lý thôn cũ bị phân mảnh.
+  - Hợp nhất toàn bộ nghiệp vụ quản lý thôn (danh sách thôn, thêm thôn mới, sửa thông tin, thống kê số hộ/nhân khẩu) vào một giao diện chuẩn hóa duy nhất với thiết kế Card lưới phẳng hiện đại.
+- **Tuân thủ Tuyệt đối Quy chuẩn P0 Zero Comments**:
+  - Toàn bộ mã nguồn mới và sửa đổi trong `crawler.spec.ts`, `networkTrap.ts`, `seed_runner.cjs`, `ColumnMappingStep.tsx`, `ImportPreviewModal.tsx`, `CitizenModal.tsx`, `ModernRecycleBinTable.tsx`, `RecycleBinPage.tsx`, `households.rs`, `citizen.rs`, `YearSelector.tsx`, `useProfiles.ts`, `profiles.ts`, `DashboardPage.tsx`, `date.ts`, `AuditLogView.tsx`, `auditApi.ts`, `audit.controller.ts` tuân thủ nghiêm ngặt 100% Zero Comments, loại bỏ toàn bộ chú thích thừa, đảm bảo mã nguồn tự minh bạch.
 
 ---
 

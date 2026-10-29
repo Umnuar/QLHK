@@ -39,7 +39,7 @@ describe("Policy HTXH Controller", () => {
     (prisma.htxh_profiles.count as any).mockResolvedValue(1);
     await getHtxhProfiles(req, res);
     expect(prisma.htxh_profiles.findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({ village_id: "v-1", calculation_year: 2024, received: false, bao_tro: "x", huu_tri: "x" }),
+      where: expect.objectContaining({ village_id: "v-1", received: false, bao_tro: "x", huu_tri: "x" }),
       orderBy: { dob: "asc" },
     }));
   });

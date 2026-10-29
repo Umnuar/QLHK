@@ -33,6 +33,7 @@ interface MainTableProps {
 	panelClass: string;
 	softTextClass: string;
 	calculationYear?: number;
+	referenceDate?: Date;
 }
 
 function SortIcon({
@@ -83,6 +84,7 @@ export function MainTable({
 	panelClass,
 	softTextClass,
 	calculationYear,
+	referenceDate,
 }: MainTableProps) {
 	const [openPolicyPopover, setOpenPolicyPopover] = useState<string | null>(
 		null,
@@ -290,6 +292,7 @@ export function MainTable({
 									panelClass={panelClass}
 									softTextClass={softTextClass}
 									calculationYear={calculationYear}
+									referenceDate={referenceDate}
 								/>
 							);
 						})

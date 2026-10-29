@@ -70,8 +70,17 @@ pub async fn get_users(
 
 pub async fn create_user(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateUserRequest>,
 ) -> Response {
+    if claims.role != "admin" {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Chỉ Quản trị viên mới có quyền tạo tài khoản người dùng" })),
+        )
+            .into_response();
+    }
+
     let trimmed_username = payload.username.trim();
     if trimmed_username.len() < 3 {
         return (
@@ -126,6 +135,23 @@ pub async fn create_user(
     } else {
         payload.village_id
     };
+
+    if let Some(vid) = village_id {
+        let village_exists: Result<Option<(Uuid,)>, _> = sqlx::query_as(
+            "SELECT id FROM qlhk.villages WHERE id = $1 LIMIT 1",
+        )
+        .bind(vid)
+        .fetch_optional(&state.pool)
+        .await;
+
+        if let Ok(None) = village_exists {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "Thôn được phân công không tồn tại" })),
+            )
+                .into_response();
+        }
+    }
 
     let module_access = match payload.module_access.as_deref() {
         Some("qlhk") => "qlhk",
@@ -201,9 +227,18 @@ pub async fn create_user(
 
 pub async fn update_user(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateUserRequest>,
 ) -> Response {
+    if claims.role != "admin" && claims.id != id.to_string() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Bạn không có quyền sửa thông tin người dùng khác" })),
+        )
+            .into_response();
+    }
+
     let existing_res: Result<Option<UserDb>, _> = sqlx::query_as(
         "SELECT id, username, password_hash, full_name, role, village_id, module_access, created_at, updated_at FROM qlhk.users WHERE id = $1",
     )
@@ -230,25 +265,54 @@ pub async fn update_user(
         }
     };
 
-    let updated_role = match payload.role.as_deref() {
-        Some("admin") => "admin".to_string(),
-        Some("user") => "user".to_string(),
-        _ => existing.role,
+    let updated_role = if claims.role == "admin" {
+        match payload.role.as_deref() {
+            Some("admin") => "admin".to_string(),
+            Some("user") => "user".to_string(),
+            _ => existing.role,
+        }
+    } else {
+        existing.role
     };
 
-    let updated_village_id = if updated_role == "admin" {
-        None
-    } else if payload.village_id.is_some() {
-        payload.village_id
+    let updated_village_id = if claims.role == "admin" {
+        if updated_role == "admin" {
+            None
+        } else if payload.village_id.is_some() {
+            payload.village_id
+        } else {
+            existing.village_id
+        }
     } else {
         existing.village_id
     };
 
-    let updated_module_access = match payload.module_access.as_deref() {
-        Some("qlhk") => Some("qlhk".to_string()),
-        Some("qlcs") => Some("qlcs".to_string()),
-        Some("all") => Some("all".to_string()),
-        _ => existing.module_access.or(Some("all".to_string())),
+    if let Some(vid) = updated_village_id {
+        let village_exists: Result<Option<(Uuid,)>, _> = sqlx::query_as(
+            "SELECT id FROM qlhk.villages WHERE id = $1 LIMIT 1",
+        )
+        .bind(vid)
+        .fetch_optional(&state.pool)
+        .await;
+
+        if let Ok(None) = village_exists {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "Thôn được phân công không tồn tại" })),
+            )
+                .into_response();
+        }
+    }
+
+    let updated_module_access = if claims.role == "admin" {
+        match payload.module_access.as_deref() {
+            Some("qlhk") => Some("qlhk".to_string()),
+            Some("qlcs") => Some("qlcs".to_string()),
+            Some("all") => Some("all".to_string()),
+            _ => existing.module_access.or(Some("all".to_string())),
+        }
+    } else {
+        existing.module_access
     };
 
     let updated_full_name = payload
@@ -326,6 +390,14 @@ pub async fn delete_user(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> Response {
+    if claims.role != "admin" {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Chỉ Quản trị viên mới có quyền xóa tài khoản" })),
+        )
+            .into_response();
+    }
+
     if claims.id == id.to_string() {
         return (
             StatusCode::BAD_REQUEST,
@@ -430,7 +502,7 @@ pub async fn delete_user(
             Json(json!({ "error": "Lỗi máy chủ khi xóa tài khoản" })),
         )
             .into_response();
-        }
+    }
 
     if let Err(e) = tx.commit().await {
         eprintln!("delete user tx commit error: {:?}", e);

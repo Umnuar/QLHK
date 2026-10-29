@@ -91,16 +91,22 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
 	const [modal, setModal] = useState<ModalOptions | null>(null);
 	const [isOpen, setIsOpen] = useState(false);
+	const [isClosing, setIsClosing] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 
 	const showModal = useCallback((options: ModalOptions) => {
 		setModal(options);
+		setIsClosing(false);
 		setIsOpen(true);
 	}, []);
 
 	const hideModal = useCallback(() => {
-		setIsOpen(false);
-		setTimeout(() => setModal(null), 200);
+		setIsClosing(true);
+		setTimeout(() => {
+			setIsOpen(false);
+			setIsClosing(false);
+			setModal(null);
+		}, 150);
 	}, []);
 
 	const handleConfirm = async () => {
@@ -110,7 +116,7 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({
 				await modal.onConfirm();
 				hideModal();
 			} catch (error) {
-				console.error("Modal action error:", error);
+				console.error(error);
 			} finally {
 				setIsLoading(false);
 			}
@@ -119,10 +125,23 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({
 		}
 	};
 
-	const handleCancel = () => {
+	const handleCancel = useCallback(() => {
 		if (modal?.onCancel) modal.onCancel();
 		hideModal();
-	};
+	}, [modal, hideModal]);
+
+	useEffect(() => {
+		if (!isOpen || isLoading) return;
+
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				handleCancel();
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [isOpen, isLoading, handleCancel]);
 
 	useEffect(() => {
 		globalShowModal = showModal;
@@ -139,15 +158,19 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({
 				typeof document !== "undefined" &&
 				createPortal(
 					<div
-						className="fixed inset-0 !m-0 z-[100] flex items-center justify-center p-4 bg-slate-950/45 dark:bg-black/60 backdrop-blur-sm select-none animate-in fade-in duration-150"
+						className={`fixed inset-0 !m-0 z-[100] flex items-center justify-center p-4 bg-slate-950/45 dark:bg-black/60 backdrop-blur-sm select-none transition-all duration-150 ${
+							isClosing ? "opacity-0 pointer-events-none" : "animate-in fade-in duration-150"
+						}`}
 						onClick={(e) => {
-							if (e.target === e.currentTarget) handleCancel();
+							if (e.target === e.currentTarget && !isLoading) handleCancel();
 						}}
 						role="dialog"
 						aria-modal="true"
 					>
 						<div
-							className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full overflow-hidden scale-100 transition-all text-slate-900 dark:text-slate-100 animate-in zoom-in-95 duration-150"
+							className={`bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full overflow-hidden transition-all duration-150 text-slate-900 dark:text-slate-100 ${
+								isClosing ? "opacity-0 scale-95" : "animate-in zoom-in-95 duration-150"
+							}`}
 							onClick={(e) => e.stopPropagation()}
 						>
 							<div className="p-6 flex items-start gap-4">
@@ -181,8 +204,9 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({
 								<button
 									type="button"
 									onClick={handleCancel}
+									disabled={isLoading}
 									aria-label="Đóng hộp thoại"
-									className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-2 rounded-xl cursor-pointer"
+									className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-2 rounded-xl cursor-pointer disabled:opacity-50"
 								>
 									<X className="w-5 h-5" strokeWidth={1.5} />
 								</button>
@@ -229,3 +253,5 @@ export const useModal = () => {
 	}
 	return context;
 };
+
+export default useModal;

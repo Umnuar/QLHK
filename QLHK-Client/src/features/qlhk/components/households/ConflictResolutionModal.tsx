@@ -1,7 +1,9 @@
 import { AlertTriangle, ArrowRight, Check, Database, RefreshCw, X } from "lucide-react";
-import React from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Household } from "@/types";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 export interface ConflictResolutionModalProps {
 	isOpen: boolean;
@@ -22,7 +24,35 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
 	onReloadServer,
 	loading = false,
 }) => {
-	if (!isOpen || typeof document === "undefined") return null;
+	const [isRendered, setIsRendered] = useState(isOpen);
+	const [isVisible, setIsVisible] = useState(false);
+
+	useEffect(() => {
+		if (isOpen) {
+			setIsRendered(true);
+			const frameId = requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					setIsVisible(true);
+				});
+			});
+			return () => cancelAnimationFrame(frameId);
+		} else {
+			setIsVisible(false);
+			const timer = setTimeout(() => {
+				setIsRendered(false);
+			}, 200);
+			return () => clearTimeout(timer);
+		}
+	}, [isOpen]);
+
+	const modalRef = useFocusTrap<HTMLDivElement>({
+		isActive: isOpen && isVisible,
+		onEscape: () => {
+			if (!loading) onClose();
+		},
+	});
+
+	if (!isRendered || typeof document === "undefined") return null;
 
 	const clientHead =
 		clientData?.members?.find((m) => m.is_head)?.full_name ||
@@ -34,15 +64,35 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
 		"Chưa xác định";
 
 	return createPortal(
-		<div className="fixed inset-0 !m-0 z-[70] flex items-center justify-center p-4 bg-slate-950/45 dark:bg-black/60 backdrop-blur-sm select-none animate-in fade-in duration-150">
-			<div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
+		<div
+			className={`fixed inset-0 !m-0 z-[70] flex items-center justify-center p-4 bg-slate-950/45 dark:bg-black/60 backdrop-blur-sm select-none transition-opacity duration-200 ease-out ${
+				isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+			}`}
+			onClick={(e) => {
+				if (e.target === e.currentTarget && !loading) onClose();
+			}}
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="conflict-resolution-title"
+		>
+			<div
+				ref={modalRef}
+				className={`w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col transform transition-all duration-200 ease-out ${
+					isVisible
+						? "opacity-100 scale-100 translate-y-0"
+						: "opacity-0 scale-95 translate-y-2"
+				}`}
+			>
 				<div className="p-5 px-6 border-b border-slate-200 dark:border-slate-800 bg-amber-50/70 dark:bg-amber-950/30 flex items-center justify-between shrink-0">
 					<div className="flex items-center gap-3">
 						<div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20">
 							<AlertTriangle className="w-5 h-5" strokeWidth={2} />
 						</div>
 						<div>
-							<h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+							<h3
+								id="conflict-resolution-title"
+								className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2"
+							>
 								<span>Xung Đột Phiên Bản Dữ Liệu (HTTP 409)</span>
 							</h3>
 							<p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -53,8 +103,9 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
 					<button
 						type="button"
 						onClick={onClose}
+						disabled={loading}
 						aria-label="Đóng"
-						className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800 cursor-pointer"
+						className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800 cursor-pointer disabled:opacity-50"
 					>
 						<X className="w-5 h-5" />
 					</button>
@@ -141,7 +192,7 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
 						type="button"
 						onClick={onClose}
 						disabled={loading}
-						className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+						className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
 					>
 						Giữ Form Để Chỉnh Tiếp
 					</button>
@@ -151,7 +202,7 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
 							type="button"
 							onClick={onReloadServer}
 							disabled={loading}
-							className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+							className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors cursor-pointer disabled:opacity-50"
 						>
 							<RefreshCw className="w-3.5 h-3.5" />
 							<span>Nạp Dữ Liệu Máy Chủ</span>
@@ -161,7 +212,7 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
 							type="button"
 							onClick={onForceOverwrite}
 							disabled={loading}
-							className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 transition-all shadow-md active:scale-95 cursor-pointer"
+							className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
 						>
 							<span>Ghi Đè Bằng Dữ Liệu Của Tôi</span>
 							<ArrowRight className="w-3.5 h-3.5" />

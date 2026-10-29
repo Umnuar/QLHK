@@ -70,16 +70,19 @@ pub struct SplitHouseholdRequest {
     pub new_head_id: Uuid,
     pub citizen_ids: Vec<Uuid>,
     pub remaining_head_id: Option<Uuid>,
+    pub version: Option<i32>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct MergeHouseholdRequest {
     pub target_household_id: Uuid,
+    pub version: Option<i32>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ChangeHeadRequest {
     pub new_head_id: Uuid,
+    pub version: Option<i32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -91,9 +94,19 @@ pub struct HouseholdFilter {
     pub village_id_camel: Option<Uuid>,
     pub status: Option<String>,
     pub search: Option<String>,
+    pub gender: Option<String>,
+    pub ethnicity: Option<String>,
+    pub min_age: Option<i32>,
+    #[serde(rename = "minAge")]
+    pub min_age_camel: Option<i32>,
+    pub max_age: Option<i32>,
+    #[serde(rename = "maxAge")]
+    pub max_age_camel: Option<i32>,
+    pub year: Option<i32>,
     pub include_deleted: Option<bool>,
     #[serde(rename = "includeDeleted")]
     pub include_deleted_camel: Option<String>,
+    pub deleted_only: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -109,17 +122,6 @@ pub struct PaginationMeta {
 pub struct PaginatedResponse<T> {
     pub data: Vec<T>,
     pub pagination: PaginationMeta,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ApiResponse<T> {
-    pub message: Option<String>,
-    pub data: T,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MessageResponse {
-    pub message: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

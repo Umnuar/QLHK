@@ -1,5 +1,5 @@
 use axum::{
-    extract::State,
+    extract::{Extension, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, post},
@@ -10,6 +10,7 @@ use serde_json::json;
 use uuid::Uuid;
 
 use crate::{
+    middlewares::auth::Claims,
     models::settings::{
         SettingItemDto, SettingRow, SettingsListResponse, UpdateSettingItem,
         UpdateSettingsPayload,
@@ -54,8 +55,20 @@ async fn get_settings(State(state): State<AppState>) -> Response {
 
 async fn update_settings(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<UpdateSettingsPayload>,
 ) -> Response {
+    if claims.role != "admin" {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({
+                "success": false,
+                "error": "Chỉ Quản trị viên mới có quyền cập nhật cấu hình hệ thống"
+            })),
+        )
+            .into_response();
+    }
+
     let mut items_to_upsert: Vec<UpdateSettingItem> = Vec::new();
 
     match payload {

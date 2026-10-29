@@ -17,6 +17,7 @@ import { useProfiles } from "@/hooks/useProfiles";
 import { ExportModal } from "../components/dashboard/ExportModal";
 import { ProfileModal } from "../components/dashboard/ProfileModal";
 import type { TabType } from "@/types";
+import { type CalculationTarget } from "../components/dashboard/YearSelector";
 
 interface DashboardProps {
 	isGlobal?: boolean;
@@ -48,12 +49,34 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 	const [isNewProfile, setIsNewProfile] = useState(false);
 	const [activeProfileData, setActiveProfileData] = useState<any>(null);
 
+	const [calculationTarget, setCalculationTarget] = useState<CalculationTarget>(() => {
+		const now = new Date();
+		const y = now.getFullYear();
+		return {
+			precision: "year",
+			year: y,
+			displayLabel: `Năm ${y}`,
+			referenceDate: new Date(y, 11, 31),
+		};
+	});
+
 	const [globalCalculationYear, setGlobalCalculationYear] = useState(
 		new Date().getFullYear(),
 	);
 
+	const handleTargetChange = useCallback((tgt: CalculationTarget) => {
+		setCalculationTarget(tgt);
+		setGlobalCalculationYear(tgt.year);
+	}, []);
+
 	const handleGlobalYearChange = useCallback((year: number) => {
 		setGlobalCalculationYear(year);
+		setCalculationTarget({
+			precision: "year",
+			year,
+			displayLabel: `Năm ${year}`,
+			referenceDate: new Date(year, 11, 31),
+		});
 	}, []);
 
 	const panelClass = isDarkMode
@@ -128,6 +151,7 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 		activeTab,
 		profileFilters,
 		globalCalculationYear,
+		calculationTarget,
 	);
 
 	const {
@@ -426,6 +450,8 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 				}}
 				globalCalculationYear={globalCalculationYear}
 				onYearChange={handleGlobalYearChange}
+				calculationTarget={calculationTarget}
+				onTargetChange={handleTargetChange}
 				genderFilter={filters.genderFilter}
 				setGenderFilter={filters.setGenderFilter}
 				ethnicityFilter={filters.ethnicityFilter}
@@ -467,6 +493,7 @@ export default function Dashboard({ isGlobal, tabOverride }: DashboardProps) {
 				panelClass={panelClass}
 				softTextClass={softTextClass}
 				calculationYear={globalCalculationYear}
+				referenceDate={calculationTarget.referenceDate}
 			/>
 
 			<ProfileModal

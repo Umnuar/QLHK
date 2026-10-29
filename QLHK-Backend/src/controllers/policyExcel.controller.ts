@@ -146,11 +146,10 @@ export const exportPolicyExcel = async (req: AuthRequest, res: Response): Promis
     const type = req.query.type === "htxh" ? "htxh" : "chuctho";
     const rawVillageId = (req.query.village_id || req.query.villageId) as string;
     const villageId = req.user?.role === "admin" ? rawVillageId : req.user?.village_id;
-    const rawCalcYear = req.query.calculation_year || req.query.calculationYear;
-    const calcYear = rawCalcYear ? parseInt(rawCalcYear as string, 10) : undefined;
+    const rawCalcYear = req.query.calculation_year || req.query.calculationYear || req.query.year;
+    const calcYear = rawCalcYear ? parseInt(rawCalcYear as string, 10) : new Date().getFullYear();
     const where: Record<string, unknown> = { is_deleted: false };
     if (villageId) where.village_id = villageId;
-    if (calcYear) where.calculation_year = calcYear;
 
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet(type === "chuctho" ? "Danh sách Chúc Thọ" : "Danh sách HTXH");
@@ -158,11 +157,31 @@ export const exportPolicyExcel = async (req: AuthRequest, res: Response): Promis
     if (type === "chuctho") {
       sheet.addRow(["STT", "Họ và tên", "Ngày sinh", "CCCD", "60", "65", "70", "75", "80", "85", "90", "95", "100", ">100", "Đã nhận"]);
       const list = await prisma.chuctho_profiles.findMany({ where, orderBy: { stt: "asc" } });
-      list.forEach((p, idx) => sheet.addRow([p.stt || idx + 1, p.name, p.dob, resolveExportCccd(p), p.age60, p.age65, p.age70, p.age75, p.age80, p.age85, p.age90, p.age95, p.age100, p.age_over_100, p.received ? "X" : ""]));
+      list.forEach((p, idx) => {
+        let ms: Record<string, string> = { age60: p.age60 || "", age65: p.age65 || "", age70: p.age70 || "", age75: p.age75 || "", age80: p.age80 || "", age85: p.age85 || "", age90: p.age90 || "", age95: p.age95 || "", age100: p.age100 || "", age_over_100: p.age_over_100 || "" };
+        if (p.dob) {
+          const parsed = parseDobValue(p.dob);
+          if (parsed) {
+            const age = calcYear - parsed.year;
+            if (age >= 60) ms = computeChucthoMilestones(age) as any;
+            else ms = { age60: "", age65: "", age70: "", age75: "", age80: "", age85: "", age90: "", age95: "", age100: "", age_over_100: "" };
+          }
+        }
+        sheet.addRow([p.stt || idx + 1, p.name, p.dob, resolveExportCccd(p), ms.age60, ms.age65, ms.age70, ms.age75, ms.age80, ms.age85, ms.age90, ms.age95, ms.age100, ms.age_over_100, p.received ? "X" : ""]);
+      });
     } else {
       sheet.addRow(["STT", "Họ và tên", "Ngày sinh", "CCCD", "75+", "70-74 nghèo", "Bảo trợ", "Hưu trí", "Hưu tuất", "Người có công", "Đã nhận"]);
       const list = await prisma.htxh_profiles.findMany({ where, orderBy: { stt: "asc" } });
-      list.forEach((p, idx) => sheet.addRow([p.stt || idx + 1, p.name, p.dob, resolveExportCccd(p), p.age75plus, p.age70to74poor, p.bao_tro, p.huu_tri, p.huu_tuat_bao_hiem, p.nguoi_co_cong, p.received ? "X" : ""]));
+      list.forEach((p, idx) => {
+        let ms: Record<string, string> = { age75plus: p.age75plus || "", age70to74poor: p.age70to74poor || "", bao_tro: p.bao_tro || "", huu_tri: p.huu_tri || "", huu_tuat_bao_hiem: p.huu_tuat_bao_hiem || "", nguoi_co_cong: p.nguoi_co_cong || "" };
+        if (p.dob) {
+          const parsed = parseDobValue(p.dob);
+          if (parsed) {
+            ms = computeHtxhMilestones(parsed.year, calcYear, p) as any;
+          }
+        }
+        sheet.addRow([p.stt || idx + 1, p.name, p.dob, resolveExportCccd(p), ms.age75plus, ms.age70to74poor, ms.bao_tro, ms.huu_tri, ms.huu_tuat_bao_hiem, ms.nguoi_co_cong, p.received ? "X" : ""]);
+      });
     }
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

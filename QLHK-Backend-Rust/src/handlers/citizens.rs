@@ -23,7 +23,7 @@ use crate::{
     state::AppState,
 };
 
-#[derive(Serialize, FromRow)]
+#[derive(Clone, Serialize, FromRow)]
 struct CitizenWithHouseholdRow {
     pub id: Uuid,
     pub household_id: Uuid,
@@ -44,6 +44,20 @@ struct CitizenWithHouseholdRow {
     pub occupation: Option<String>,
     pub native_place: Option<String>,
     pub notes: Option<String>,
+    #[sqlx(default)]
+    pub huu_tri: Option<String>,
+    #[sqlx(default)]
+    pub age75plus: Option<String>,
+    #[sqlx(default)]
+    pub age70to74poor: Option<String>,
+    #[sqlx(default)]
+    pub bao_tro: Option<String>,
+    #[sqlx(default)]
+    pub huu_tuat_bao_hiem: Option<String>,
+    #[sqlx(default)]
+    pub nguoi_co_cong: Option<String>,
+    #[sqlx(default)]
+    pub pension_policies: Option<Vec<String>>,
     pub version: i32,
     pub is_deleted: bool,
     pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -56,14 +70,6 @@ struct CitizenWithHouseholdRow {
 }
 
 fn row_to_response(row: CitizenWithHouseholdRow) -> CitizenResponse {
-    let decrypted = row.cccd.as_deref().and_then(|enc| {
-        if enc.contains(':') {
-            decrypt_cccd(enc).ok()
-        } else {
-            None
-        }
-    });
-
     let db = CitizenDb {
         id: row.id,
         household_id: row.household_id,
@@ -84,6 +90,13 @@ fn row_to_response(row: CitizenWithHouseholdRow) -> CitizenResponse {
         occupation: row.occupation,
         native_place: row.native_place,
         notes: row.notes,
+        huu_tri: row.huu_tri,
+        age75plus: row.age75plus,
+        age70to74poor: row.age70to74poor,
+        bao_tro: row.bao_tro,
+        huu_tuat_bao_hiem: row.huu_tuat_bao_hiem,
+        nguoi_co_cong: row.nguoi_co_cong,
+        pension_policies: row.pension_policies,
         version: row.version,
         is_deleted: row.is_deleted,
         deleted_at: row.deleted_at,
@@ -91,7 +104,7 @@ fn row_to_response(row: CitizenWithHouseholdRow) -> CitizenResponse {
         updated_at: row.updated_at,
     };
 
-    let mut resp = CitizenResponse::from_db(db, decrypted);
+    let mut resp = CitizenResponse::from_db(db, None);
     resp.household = Some(CitizenHouseholdInfo {
         id: row.household_id,
         book_number: row.book_number,
@@ -130,9 +143,7 @@ pub async fn get_citizens(
 
     let target_village_id = match &claims {
         Some(c) if c.role != "admin" => c.village_id.as_deref().and_then(|v| Uuid::parse_str(v).ok()),
-        _ => filter
-            .village_id
-            .or(filter.village_id_camel),
+        _ => filter.village_id.or(filter.village_id_camel),
     };
 
     let include_deleted = filter
@@ -167,7 +178,7 @@ pub async fn get_citizens(
 
     if let Some(gender) = &filter.gender {
         let trimmed = gender.trim();
-        if !trimmed.is_empty() {
+        if !trimmed.is_empty() && trimmed != "all" && trimmed != "Tất cả" {
             count_builder.push(" AND c.gender = ");
             count_builder.push_bind(trimmed.to_string());
             select_builder.push(" AND c.gender = ");
@@ -178,7 +189,8 @@ pub async fn get_citizens(
     if let Some(ethnicity) = &filter.ethnicity {
         let trimmed = ethnicity.trim();
         if !trimmed.is_empty() && trimmed != "all" && trimmed != "Tất cả" {
-            if trimmed.to_lowercase() == "dtts" {
+            let lower = trimmed.to_lowercase();
+            if lower == "dtts" || lower == "thiểu số" || lower == "dân tộc thiểu số" {
                 count_builder.push(" AND c.ethnicity != 'Kinh'");
                 select_builder.push(" AND c.ethnicity != 'Kinh'");
             } else {
@@ -192,7 +204,7 @@ pub async fn get_citizens(
 
     if let Some(religion) = &filter.religion {
         let trimmed = religion.trim();
-        if !trimmed.is_empty() {
+        if !trimmed.is_empty() && trimmed != "all" && trimmed != "Tất cả" {
             count_builder.push(" AND c.religion = ");
             count_builder.push_bind(trimmed.to_string());
             select_builder.push(" AND c.religion = ");
@@ -218,6 +230,42 @@ pub async fn get_citizens(
         }
     }
 
+    if let Some(dob_q) = &filter.dob {
+        let trimmed = dob_q.trim();
+        if !trimmed.is_empty() {
+            let like_dob = format!("%{}%", trimmed);
+            count_builder.push(" AND c.dob ILIKE ");
+            count_builder.push_bind(like_dob.clone());
+            select_builder.push(" AND c.dob ILIKE ");
+            select_builder.push_bind(like_dob);
+        }
+    }
+
+    if let Some(by) = filter.birth_year.or(filter.birth_year_camel) {
+        count_builder.push(" AND CASE WHEN c.dob ~ '[0-9]{4}' THEN SUBSTRING(c.dob FROM '[0-9]{4}')::integer ELSE NULL END = ");
+        count_builder.push_bind(by);
+        select_builder.push(" AND CASE WHEN c.dob ~ '[0-9]{4}' THEN SUBSTRING(c.dob FROM '[0-9]{4}')::integer ELSE NULL END = ");
+        select_builder.push_bind(by);
+    }
+
+    let current_year = chrono::Utc::now().format("%Y").to_string().parse::<i32>().unwrap_or(2026);
+
+    if let Some(min_a) = filter.min_age.or(filter.min_age_camel) {
+        let max_birth_year = current_year - min_a;
+        count_builder.push(" AND CASE WHEN c.dob ~ '[0-9]{4}' THEN SUBSTRING(c.dob FROM '[0-9]{4}')::integer ELSE NULL END <= ");
+        count_builder.push_bind(max_birth_year);
+        select_builder.push(" AND CASE WHEN c.dob ~ '[0-9]{4}' THEN SUBSTRING(c.dob FROM '[0-9]{4}')::integer ELSE NULL END <= ");
+        select_builder.push_bind(max_birth_year);
+    }
+
+    if let Some(max_a) = filter.max_age.or(filter.max_age_camel) {
+        let min_birth_year = current_year - max_a;
+        count_builder.push(" AND CASE WHEN c.dob ~ '[0-9]{4}' THEN SUBSTRING(c.dob FROM '[0-9]{4}')::integer ELSE NULL END >= ");
+        count_builder.push_bind(min_birth_year);
+        select_builder.push(" AND CASE WHEN c.dob ~ '[0-9]{4}' THEN SUBSTRING(c.dob FROM '[0-9]{4}')::integer ELSE NULL END >= ");
+        select_builder.push_bind(min_birth_year);
+    }
+
     if let Some(q) = &filter.search {
         let trimmed_q = q.trim();
         if !trimmed_q.is_empty() {
@@ -241,6 +289,8 @@ pub async fn get_citizens(
             count_builder.push_bind(like_q.clone());
             count_builder.push(" OR c.name_unaccented ILIKE ");
             count_builder.push_bind(unacc.clone());
+            count_builder.push(" OR c.dob ILIKE ");
+            count_builder.push_bind(like_q.clone());
 
             if let Some(hash) = &cccd_hash {
                 count_builder.push(" OR c.cccd_hash = ");
@@ -255,9 +305,11 @@ pub async fn get_citizens(
             count_builder.push(")");
 
             select_builder.push(" AND (c.full_name ILIKE ");
-            select_builder.push_bind(like_q);
+            select_builder.push_bind(like_q.clone());
             select_builder.push(" OR c.name_unaccented ILIKE ");
             select_builder.push_bind(unacc);
+            select_builder.push(" OR c.dob ILIKE ");
+            select_builder.push_bind(like_q);
 
             if let Some(hash) = cccd_hash {
                 select_builder.push(" OR c.cccd_hash = ");
@@ -427,6 +479,25 @@ pub async fn reveal_cccd(
         _ => None,
     };
 
+    let audit_pool = state.pool.clone();
+    let audit_vid = row.village_id;
+    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    let id_str = id.to_string();
+    tokio::spawn(async move {
+        let _ = crate::utils::audit::record_audit(
+            &audit_pool,
+            Some(audit_vid),
+            audit_uid,
+            "REVEAL_CCCD",
+            "citizen",
+            Some(&id_str),
+            None,
+            Some("{\"action\":\"REVEAL_CCCD\"}"),
+            None,
+        )
+        .await;
+    });
+
     Json(json!({ "cccd": plain })).into_response()
 }
 
@@ -437,7 +508,7 @@ pub async fn create_citizen(
 ) -> Response {
     let claims = claims_ext.map(|Extension(c)| c);
 
-    let household_id = match req.household_id {
+    let household_id = match req.household_id.or(req.household_id_camel) {
         Some(hid) => hid,
         None => {
             return (
@@ -498,6 +569,8 @@ pub async fn create_citizen(
     let raw_cccd = req.cccd.as_deref().unwrap_or("").trim();
     let is_valid_cccd = !raw_cccd.is_empty()
         && !raw_cccd.to_lowercase().contains("chưa có")
+        && !raw_cccd.to_lowercase().contains("chua co")
+        && !raw_cccd.to_lowercase().contains("chưa")
         && !raw_cccd.contains('•')
         && !raw_cccd.contains('*')
         && raw_cccd.chars().all(|c| c.is_ascii_digit())
@@ -512,7 +585,7 @@ pub async fn create_citizen(
         (None, None, None)
     };
 
-    let is_head = req.is_head.unwrap_or(false);
+    let is_head = req.is_head.or(req.is_head_camel).unwrap_or(false);
     let relationship = req.relationship.unwrap_or_else(|| {
         if is_head {
             "Chủ hộ".to_string()
@@ -522,6 +595,20 @@ pub async fn create_citizen(
     });
     let name_unacc = remove_accents(&clean_name);
     let citizen_id = req.id.unwrap_or_else(Uuid::new_v4);
+
+    let gender_val = req.gender.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()).unwrap_or("Nam");
+    let ethnicity_val = req.ethnicity.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()).unwrap_or("Kinh");
+    let religion_val = req.religion.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()).unwrap_or("Không");
+    let dob_val = req.dob.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty());
+    let military_val = req.military_status.or(req.military_status_camel).map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+    let native_val = req.native_place.or(req.native_place_camel).map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+    let huu_tri_val = req.huu_tri.or(req.huu_tri_camel).unwrap_or_default();
+    let age75plus_val = req.age75plus.or(req.age75plus_camel).unwrap_or_default();
+    let age70to74poor_val = req.age70to74poor.or(req.age70to74poor_camel).unwrap_or_default();
+    let bao_tro_val = req.bao_tro.or(req.bao_tro_camel).unwrap_or_default();
+    let huu_tuat_val = req.huu_tuat_bao_hiem.or(req.huu_tuat_bao_hiem_camel).unwrap_or_default();
+    let nguoi_co_cong_val = req.nguoi_co_cong.or(req.nguoi_co_cong_camel).unwrap_or_default();
+    let policies_val = req.pension_policies.or(req.pension_policies_camel).unwrap_or_default();
 
     let mut tx = match state.pool.begin().await {
         Ok(t) => t,
@@ -536,7 +623,7 @@ pub async fn create_citizen(
 
     if is_head {
         let _ = sqlx::query(
-            "UPDATE qlhk.citizens SET is_head = false, version = version + 1, updated_at = NOW() WHERE household_id = $1 AND is_head = true AND is_deleted = false",
+            "UPDATE qlhk.citizens SET is_head = false, relationship = CASE WHEN relationship = 'Chủ hộ' THEN 'Thành viên' ELSE relationship END, version = version + 1, updated_at = NOW() WHERE household_id = $1 AND is_head = true AND is_deleted = false",
         )
         .bind(household_id)
         .execute(&mut *tx)
@@ -544,7 +631,7 @@ pub async fn create_citizen(
     }
 
     let inserted = sqlx::query_as::<_, CitizenDb>(
-        "INSERT INTO qlhk.citizens (id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 1, false, NOW(), NOW()) RETURNING id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, deleted_at, created_at, updated_at",
+        "INSERT INTO qlhk.citizens (id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, huu_tri, age75plus, age70to74poor, bao_tro, huu_tuat_bao_hiem, nguoi_co_cong, pension_policies, version, is_deleted, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, 1, false, NOW(), NOW()) RETURNING *",
     )
     .bind(citizen_id)
     .bind(household_id)
@@ -553,18 +640,25 @@ pub async fn create_citizen(
     .bind(relationship)
     .bind(clean_name)
     .bind(name_unacc)
-    .bind(req.dob.as_deref())
-    .bind(req.gender.as_deref())
+    .bind(dob_val)
+    .bind(gender_val)
     .bind(cccd_cipher)
     .bind(cccd_hash_val)
     .bind(cccd_last4_val)
-    .bind(req.ethnicity.as_deref())
-    .bind(req.religion.as_deref())
-    .bind(req.education.as_deref())
-    .bind(req.military_status.as_deref())
-    .bind(req.occupation.as_deref())
-    .bind(req.native_place.as_deref())
-    .bind(req.notes.as_deref())
+    .bind(ethnicity_val)
+    .bind(religion_val)
+    .bind(req.education.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()))
+    .bind(military_val.as_deref())
+    .bind(req.occupation.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()))
+    .bind(native_val.as_deref())
+    .bind(req.notes.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty()))
+    .bind(huu_tri_val)
+    .bind(age75plus_val)
+    .bind(age70to74poor_val)
+    .bind(bao_tro_val)
+    .bind(huu_tuat_val)
+    .bind(nguoi_co_cong_val)
+    .bind(policies_val)
     .fetch_one(&mut *tx)
     .await;
 
@@ -594,9 +688,12 @@ pub async fn create_citizen(
     });
 
     let audit_pool = state.pool.clone();
-    let audit_new = serde_json::to_string(&created_db).ok();
+    let mut audit_record = created_db.clone();
+    audit_record.cccd = audit_record.cccd_last4.as_ref().map(|l4| format!("••••••••{}", l4));
+    let audit_new = serde_json::to_string(&audit_record).ok();
     let audit_vid = household.village_id;
     let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    let id_str = citizen_id.to_string();
     tokio::spawn(async move {
         let _ = crate::utils::audit::record_audit(
             &audit_pool,
@@ -604,7 +701,7 @@ pub async fn create_citizen(
             audit_uid,
             "CREATE",
             "citizen",
-            Some(&citizen_id.to_string()),
+            Some(&id_str),
             None,
             audit_new.as_deref(),
             None,
@@ -612,12 +709,8 @@ pub async fn create_citizen(
         .await;
     });
 
-    let sync_pool = state.pool.clone();
-    tokio::spawn(async move {
-        let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, citizen_id).await;
-    });
-
-    let resp = format_citizen(created_db);
+    let mut resp = format_citizen(created_db);
+    resp.cccd = None;
     (
         StatusCode::CREATED,
         Json(json!({
@@ -698,9 +791,14 @@ pub async fn update_citizen(
         }
     };
 
-    if req.is_head == Some(true) {
+    let mut audit_old_record = current.clone();
+    audit_old_record.cccd = audit_old_record.cccd_last4.as_ref().map(|l4| format!("••••••••{}", l4));
+    let audit_vid = current.village_id;
+
+    let is_head_opt = req.is_head.or(req.is_head_camel);
+    if is_head_opt == Some(true) {
         let _ = sqlx::query(
-            "UPDATE qlhk.citizens SET is_head = false, version = version + 1, updated_at = NOW() WHERE household_id = $1 AND is_head = true AND id != $2 AND is_deleted = false",
+            "UPDATE qlhk.citizens SET is_head = false, relationship = CASE WHEN relationship = 'Chủ hộ' THEN 'Thành viên' ELSE relationship END, version = version + 1, updated_at = NOW() WHERE household_id = $1 AND is_head = true AND id != $2 AND is_deleted = false",
         )
         .bind(current.household_id)
         .bind(id)
@@ -708,15 +806,32 @@ pub async fn update_citizen(
         .await;
     }
 
-    let clean_name = req.full_name.as_deref().unwrap_or(&current.full_name).trim().to_string();
+    let clean_name = req
+        .full_name
+        .or(req.full_name_camel)
+        .as_deref()
+        .unwrap_or(&current.full_name)
+        .trim()
+        .to_string();
     let name_unacc = remove_accents(&clean_name);
 
     let (final_cccd, final_hash, final_last4) = match req.cccd.as_deref() {
         Some(raw) => {
             let trimmed = raw.trim();
-            let is_invalid = trimmed.to_lowercase().contains("chưa có") || trimmed.contains('—') || trimmed == "-";
-            let is_masked = !is_invalid && (trimmed.contains('•') || trimmed.contains('*'));
-            if !is_invalid && !is_masked && trimmed.chars().all(|c| c.is_ascii_digit()) && (trimmed.len() == 9 || trimmed.len() == 12) {
+            let is_invalid = trimmed.to_lowercase().contains("chưa có")
+                || trimmed.to_lowercase().contains("chua co")
+                || trimmed.to_lowercase().contains("chưa")
+                || trimmed.contains('—')
+                || trimmed == "-";
+            let is_masked = !is_invalid
+                && (trimmed.contains('•')
+                    || trimmed.contains('*')
+                    || (trimmed.contains(' ') && trimmed.replace(' ', "").len() == 4));
+            if !is_invalid
+                && !is_masked
+                && trimmed.chars().all(|c| c.is_ascii_digit())
+                && (trimmed.len() == 9 || trimmed.len() == 12)
+            {
                 match encrypt_cccd(trimmed) {
                     Ok(enc) => (Some(enc.encrypted), Some(enc.hash), Some(enc.last4)),
                     Err(_) => (None, None, None),
@@ -730,31 +845,74 @@ pub async fn update_citizen(
         None => (current.cccd.clone(), current.cccd_hash.clone(), current.cccd_last4.clone()),
     };
 
-    let is_head = req.is_head.unwrap_or(current.is_head);
-    let relationship = req.relationship.as_deref().unwrap_or_else(|| {
-        current.relationship.as_deref().unwrap_or(if is_head { "Chủ hộ" } else { "Thành viên" })
-    });
+    let is_head = is_head_opt.unwrap_or(current.is_head);
+    let relationship = match req.relationship.as_deref() {
+        Some(r) if !r.trim().is_empty() => r.trim().to_string(),
+        _ => {
+            if is_head {
+                "Chủ hộ".to_string()
+            } else if current.relationship.as_deref() == Some("Chủ hộ") {
+                "Thành viên".to_string()
+            } else {
+                current.relationship.unwrap_or_else(|| "Thành viên".to_string())
+            }
+        }
+    };
+
+    let military_val = req
+        .military_status
+        .or(req.military_status_camel)
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .or(current.military_status);
+    let native_val = req
+        .native_place
+        .or(req.native_place_camel)
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .or(current.native_place);
+    let dob_val = req.dob.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).or(current.dob);
+    let gender_val = req.gender.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).or(current.gender);
+    let ethnicity_val = req.ethnicity.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).or(current.ethnicity);
+    let religion_val = req.religion.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).or(current.religion);
+    let education_val = req.education.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).or(current.education);
+    let occupation_val = req.occupation.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).or(current.occupation);
+    let notes_val = req.notes.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).or(current.notes);
+    let huu_tri_val = req.huu_tri.or(req.huu_tri_camel).or(current.huu_tri).unwrap_or_default();
+    let age75plus_val = req.age75plus.or(req.age75plus_camel).or(current.age75plus).unwrap_or_default();
+    let age70to74poor_val = req.age70to74poor.or(req.age70to74poor_camel).or(current.age70to74poor).unwrap_or_default();
+    let bao_tro_val = req.bao_tro.or(req.bao_tro_camel).or(current.bao_tro).unwrap_or_default();
+    let huu_tuat_val = req.huu_tuat_bao_hiem.or(req.huu_tuat_bao_hiem_camel).or(current.huu_tuat_bao_hiem).unwrap_or_default();
+    let nguoi_co_cong_val = req.nguoi_co_cong.or(req.nguoi_co_cong_camel).or(current.nguoi_co_cong).unwrap_or_default();
+    let policies_val = req.pension_policies.or(req.pension_policies_camel).or(current.pension_policies).unwrap_or_default();
 
     let update_res = sqlx::query_as::<_, CitizenDb>(
-        "UPDATE qlhk.citizens SET full_name = $1, name_unaccented = $2, dob = $3, gender = $4, is_head = $5, relationship = $6, ethnicity = $7, religion = $8, education = $9, military_status = $10, occupation = $11, native_place = $12, notes = $13, stt = $14, cccd = $15, cccd_hash = $16, cccd_last4 = $17, version = version + 1, updated_at = NOW() WHERE id = $18 AND version = $19 AND is_deleted = false RETURNING id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, deleted_at, created_at, updated_at",
+        "UPDATE qlhk.citizens SET full_name = $1, name_unaccented = $2, dob = $3, gender = $4, is_head = $5, relationship = $6, ethnicity = $7, religion = $8, education = $9, military_status = $10, occupation = $11, native_place = $12, notes = $13, stt = $14, cccd = $15, cccd_hash = $16, cccd_last4 = $17, huu_tri = $18, age75plus = $19, age70to74poor = $20, bao_tro = $21, huu_tuat_bao_hiem = $22, nguoi_co_cong = $23, pension_policies = $24, version = version + 1, updated_at = NOW() WHERE id = $25 AND version = $26 AND is_deleted = false RETURNING *",
     )
     .bind(clean_name)
     .bind(name_unacc)
-    .bind(req.dob.as_deref().or(current.dob.as_deref()))
-    .bind(req.gender.as_deref().or(current.gender.as_deref()))
+    .bind(dob_val)
+    .bind(gender_val)
     .bind(is_head)
     .bind(relationship)
-    .bind(req.ethnicity.as_deref().or(current.ethnicity.as_deref()))
-    .bind(req.religion.as_deref().or(current.religion.as_deref()))
-    .bind(req.education.as_deref().or(current.education.as_deref()))
-    .bind(req.military_status.as_deref().or(current.military_status.as_deref()))
-    .bind(req.occupation.as_deref().or(current.occupation.as_deref()))
-    .bind(req.native_place.as_deref().or(current.native_place.as_deref()))
-    .bind(req.notes.as_deref().or(current.notes.as_deref()))
+    .bind(ethnicity_val)
+    .bind(religion_val)
+    .bind(education_val)
+    .bind(military_val)
+    .bind(occupation_val)
+    .bind(native_val)
+    .bind(notes_val)
     .bind(req.stt.or(current.stt))
     .bind(final_cccd)
     .bind(final_hash)
     .bind(final_last4)
+    .bind(huu_tri_val)
+    .bind(age75plus_val)
+    .bind(age70to74poor_val)
+    .bind(bao_tro_val)
+    .bind(huu_tuat_val)
+    .bind(nguoi_co_cong_val)
+    .bind(policies_val)
     .bind(id)
     .bind(expected_version)
     .fetch_optional(&mut *tx)
@@ -806,10 +964,13 @@ pub async fn update_citizen(
     });
 
     let audit_pool = state.pool.clone();
-    let audit_old = serde_json::to_string(&current).ok();
-    let audit_new = serde_json::to_string(&updated_db).ok();
-    let audit_vid = current.village_id;
+    let mut audit_new_record = updated_db.clone();
+    audit_new_record.cccd = audit_new_record.cccd_last4.as_ref().map(|l4| format!("••••••••{}", l4));
+
+    let audit_old = serde_json::to_string(&audit_old_record).ok();
+    let audit_new = serde_json::to_string(&audit_new_record).ok();
     let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    let id_str = id.to_string();
     tokio::spawn(async move {
         let _ = crate::utils::audit::record_audit(
             &audit_pool,
@@ -817,7 +978,7 @@ pub async fn update_citizen(
             audit_uid,
             "UPDATE",
             "citizen",
-            Some(&id.to_string()),
+            Some(&id_str),
             audit_old.as_deref(),
             audit_new.as_deref(),
             None,
@@ -825,12 +986,8 @@ pub async fn update_citizen(
         .await;
     });
 
-    let sync_pool = state.pool.clone();
-    tokio::spawn(async move {
-        let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, id).await;
-    });
-
-    let resp = format_citizen(updated_db);
+    let mut resp = format_citizen(updated_db);
+    resp.cccd = None;
     Json(json!({
         "message": "Cập nhật nhân khẩu thành công",
         "data": resp
@@ -904,9 +1061,12 @@ pub async fn delete_citizen(
     });
 
     let audit_pool = state.pool.clone();
-    let audit_old = serde_json::to_string(&current).ok();
+    let mut audit_old_record = current.clone();
+    audit_old_record.cccd = audit_old_record.cccd_last4.as_ref().map(|l4| format!("••••••••{}", l4));
+    let audit_old = serde_json::to_string(&audit_old_record).ok();
     let audit_vid = current.village_id;
     let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    let id_str = id.to_string();
     tokio::spawn(async move {
         let _ = crate::utils::audit::record_audit(
             &audit_pool,
@@ -914,7 +1074,7 @@ pub async fn delete_citizen(
             audit_uid,
             "DELETE",
             "citizen",
-            Some(&id.to_string()),
+            Some(&id_str),
             audit_old.as_deref(),
             None,
             None,

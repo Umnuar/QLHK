@@ -9,8 +9,16 @@ export type AuditAction =
 	| "HARD_DELETE"
 	| "RESTORE"
 	| "IMPORT"
+	| "EXPORT"
+	| "LOGIN"
+	| "LOGOUT"
 	| (string & {});
-export type AuditEntityType = "household" | "citizen" | "excel_import";
+
+export type AuditEntityType =
+	| "household"
+	| "citizen"
+	| "excel_import"
+	| (string & {});
 
 export interface AuditLogItem {
 	id: string;
@@ -232,6 +240,45 @@ const SAMPLE_AUDIT_LOGS: AuditLogItem[] = [
 		created_at: "2026-09-03T08:50:00.000Z",
 		description:
 			"Đăng ký khai sinh và nhập hộ khẩu cho nhân khẩu mới sinh Lê Minh Khôi",
+	},
+	{
+		id: "aud-008",
+		user_id: "usr-admin-01",
+		username: "admin",
+		full_name: "Quản trị viên Xã Đăk Hà",
+		action: "EXPORT",
+		entity_type: "excel_import",
+		entity_id: "exp-20260902",
+		village_id: null,
+		village_name: "Toàn xã",
+		old_values: null,
+		new_values: {
+			file_name: "BaoCao_BienDong_DanCu_Thang8_2026.xlsx",
+			total_records: 412,
+			format: "XLSX",
+		},
+		ip_address: "192.168.1.45",
+		created_at: "2026-09-02T16:45:00.000Z",
+		description: "Xuất báo cáo thống kê biến động dân cư tháng 8/2026",
+	},
+	{
+		id: "aud-009",
+		user_id: "usr-cb-01",
+		username: "canboxa",
+		full_name: "Cán bộ Xã Đăk Hà",
+		action: "LOGIN",
+		entity_type: "citizen",
+		entity_id: null,
+		village_id: null,
+		village_name: null,
+		old_values: null,
+		new_values: {
+			login_status: "SUCCESS",
+			device: "Chrome / Windows 11",
+		},
+		ip_address: "192.168.1.18",
+		created_at: "2026-09-02T08:00:15.000Z",
+		description: "Đăng nhập hệ thống quản lý nhân khẩu hộ khẩu thành công",
 	},
 ];
 

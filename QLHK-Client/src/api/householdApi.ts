@@ -1,4 +1,5 @@
 import type { Household, Person } from "../types";
+import { normalizeUnaccented } from "../utils/vietnamese";
 import { apiClient } from "./client";
 
 export interface GetHouseholdsParams {
@@ -35,7 +36,7 @@ export function normalizeHousehold(item: any): Household {
 		full_name: c.full_name || "",
 		last_name: c.last_name || "",
 		first_name: c.first_name || "",
-		name_unaccented: c.name_unaccented || "",
+		name_unaccented: c.name_unaccented || normalizeUnaccented(c.full_name || ""),
 		relationship: c.relationship || (c.is_head ? "Chủ hộ" : "Khác"),
 		is_head: Boolean(c.is_head),
 		gender: c.gender || "Nam",
@@ -81,7 +82,26 @@ export function normalizeHousehold(item: any): Household {
 		native_place: c.native_place ? String(c.native_place).trim() : (c.que_quan ? String(c.que_quan).trim() : ""),
 		address: c.address || item.address || "",
 		notes: c.notes ? String(c.notes).trim() : (c.ghi_chu ? String(c.ghi_chu).trim() : ""),
+		pension_policies: Array.isArray(c.pension_policies) && c.pension_policies.length > 0
+			? c.pension_policies
+			: [
+					c.huu_tri === "x" || c.huu_tri === true ? "huu_tri" : null,
+					c.bao_tro === "x" || c.bao_tro === true ? "bao_tro" : null,
+					c.huu_tuat_bao_hiem === "x" || c.huu_tuat_bao_hiem === true ? "huu_tuat_bao_hiem" : null,
+					c.nguoi_co_cong === "x" || c.nguoi_co_cong === true ? "nguoi_co_cong" : null,
+					c.age75plus === "x" || c.age75plus === true ? "age75plus" : null,
+					c.age70to74poor === "x" || c.age70to74poor === true ? "age70to74poor" : null,
+				].filter(Boolean) as string[],
+		huu_tri: c.huu_tri === "x" || c.huu_tri === true || (Array.isArray(c.pension_policies) && c.pension_policies.includes("huu_tri")),
+		huu_tuat_bao_hiem: c.huu_tuat_bao_hiem === "x" || c.huu_tuat_bao_hiem === true || (Array.isArray(c.pension_policies) && c.pension_policies.includes("huu_tuat_bao_hiem")),
+		bao_tro: c.bao_tro === "x" || c.bao_tro === true || (Array.isArray(c.pension_policies) && c.pension_policies.includes("bao_tro")),
+		nguoi_co_cong: c.nguoi_co_cong === "x" || c.nguoi_co_cong === true || (Array.isArray(c.pension_policies) && c.pension_policies.includes("nguoi_co_cong")),
+		age75plus: c.age75plus === "x" || c.age75plus === true || (Array.isArray(c.pension_policies) && c.pension_policies.includes("age75plus")),
+		age70to74poor: c.age70to74poor === "x" || c.age70to74poor === true || (Array.isArray(c.pension_policies) && c.pension_policies.includes("age70to74poor")),
 	}));
+
+	const headName = item.head_name || head?.full_name || "Chưa xác định";
+	const headCccd = item.head_cccd || head?.cccd || head?.cccd_last4 || "";
 
 	return {
 		id: item.id,
@@ -89,8 +109,8 @@ export function normalizeHousehold(item: any): Household {
 		book_number: item.book_number || item.code || "",
 		village_id: item.village_id || item.village?.id || "",
 		village_name: item.village_name || item.village?.name || "",
-		head_name: item.head_name || head?.full_name || "Chưa xác định",
-		head_cccd: item.head_cccd || head?.cccd || head?.cccd_last4 || "",
+		head_name: headName,
+		head_cccd: headCccd,
 		address: item.address || "",
 		status:
 			item.status === "active" ? "Thường trú" : item.status || "Thường trú",
@@ -107,34 +127,40 @@ export function normalizeHousehold(item: any): Household {
 
 export const householdApi = {
 	async getPage(params?: GetHouseholdsParams): Promise<HouseholdsResponse> {
+		const page = Math.max(1, params?.page || 1);
+		const limit = Math.max(1, params?.limit || 10);
 		const res = await apiClient.get("/households", {
 			params: {
 				villageId: params?.villageId || undefined,
-				search: params?.search || undefined,
+				search: params?.search ? params.search.trim() : undefined,
 				status: params?.status || undefined,
 				minAge: params?.minAge !== undefined ? params.minAge : undefined,
 				maxAge: params?.maxAge !== undefined ? params.maxAge : undefined,
 				year: params?.year !== undefined ? params.year : undefined,
 				gender: params?.gender || undefined,
 				ethnicity: params?.ethnicity || undefined,
-				page: params?.page || 1,
-				limit: params?.limit || 10,
+				page,
+				limit,
 				includeDeleted: params?.includeDeleted ? "true" : "false",
 			},
 		});
 
 		const rawList = res.data?.data || [];
 		const normalizedData = rawList.map(normalizeHousehold);
-		const pagination = res.data?.pagination || {
-			page: params?.page || 1,
-			limit: params?.limit || 10,
-			total: normalizedData.length,
-			totalPages: Math.ceil(normalizedData.length / (params?.limit || 10)) || 1,
-		};
+		const rawPagination = res.data?.pagination;
+		const total = typeof rawPagination?.total === "number" ? Math.max(0, rawPagination.total) : normalizedData.length;
+		const totalPages = typeof rawPagination?.totalPages === "number" && rawPagination.totalPages > 0
+			? rawPagination.totalPages
+			: Math.max(1, Math.ceil(total / limit));
 
 		return {
 			data: normalizedData,
-			pagination,
+			pagination: {
+				page: typeof rawPagination?.page === "number" ? rawPagination.page : page,
+				limit: typeof rawPagination?.limit === "number" ? rawPagination.limit : limit,
+				total,
+				totalPages,
+			},
 		};
 	},
 
@@ -223,33 +249,69 @@ export const householdApi = {
 		village_id?: string | null;
 		search?: string;
 	}): Promise<HouseholdsResponse> {
+		const page = Math.max(1, params?.page || 1);
+		const limit = Math.max(1, params?.limit || 10);
 		try {
-			const res = await apiClient.get("/households/recycle-bin", { params });
+			const res = await apiClient.get("/households/recycle-bin", {
+				params: {
+					...params,
+					page,
+					limit,
+				},
+			});
 			const rawList = res.data?.data || [];
+			const normalizedData = rawList.map(normalizeHousehold);
+			const rawPagination = res.data?.pagination;
+			const total = typeof rawPagination?.total === "number" ? Math.max(0, rawPagination.total) : normalizedData.length;
+			const totalPages = typeof rawPagination?.totalPages === "number" && rawPagination.totalPages > 0
+				? rawPagination.totalPages
+				: Math.max(1, Math.ceil(total / limit));
+
 			return {
-				data: rawList.map(normalizeHousehold),
-				pagination: res.data?.pagination || {
-					page: params?.page || 1,
-					limit: params?.limit || 10,
-					total: rawList.length,
-					totalPages: 1,
+				data: normalizedData,
+				pagination: {
+					page: typeof rawPagination?.page === "number" ? rawPagination.page : page,
+					limit: typeof rawPagination?.limit === "number" ? rawPagination.limit : limit,
+					total,
+					totalPages,
 				},
 			};
 		} catch {
 			const res = await apiClient.get("/households", {
-				params: { ...params, includeDeleted: "true", villageId: params?.village_id },
+				params: {
+					villageId: params?.village_id || undefined,
+					includeDeleted: "true",
+				},
 			});
 			const allHouseholds = (res.data?.data || []).map(normalizeHousehold);
-			const deletedOnly = allHouseholds.filter((h: Household) => h.is_deleted);
-			const limit = params?.limit || 10;
-			const page = params?.page || 1;
+			let deletedOnly = allHouseholds.filter((h: Household) => h.is_deleted);
+			if (params?.search && params.search.trim()) {
+				const q = normalizeUnaccented(params.search);
+				const cleanDigits = params.search.replace(/\D/g, "");
+				deletedOnly = deletedOnly.filter((h: Household) => {
+					if (h.head_name && normalizeUnaccented(h.head_name).includes(q)) return true;
+					if (h.book_number && normalizeUnaccented(h.book_number).includes(q)) return true;
+					if (h.code && normalizeUnaccented(h.code).includes(q)) return true;
+					if (h.address && normalizeUnaccented(h.address).includes(q)) return true;
+					if (cleanDigits && h.head_cccd && h.head_cccd.replace(/\D/g, "").includes(cleanDigits)) return true;
+					return (h.members || []).some((m) => {
+						if (m.full_name && normalizeUnaccented(m.full_name).includes(q)) return true;
+						if (m.name_unaccented && normalizeUnaccented(m.name_unaccented).includes(q)) return true;
+						if (cleanDigits && m.cccd && m.cccd.replace(/\D/g, "").includes(cleanDigits)) return true;
+						return false;
+					});
+				});
+			}
+			const total = deletedOnly.length;
+			const totalPages = Math.max(1, Math.ceil(total / limit));
+			const paginated = deletedOnly.slice((page - 1) * limit, page * limit);
 			return {
-				data: deletedOnly.slice((page - 1) * limit, page * limit),
+				data: paginated,
 				pagination: {
 					page,
 					limit,
-					total: deletedOnly.length,
-					totalPages: Math.ceil(deletedOnly.length / limit) || 1,
+					total,
+					totalPages,
 				},
 			};
 		}
@@ -270,7 +332,7 @@ export const householdApi = {
 				village_id: params?.village_id,
 				status: params?.status,
 				household_ids: params?.household_ids,
-				search: params?.search,
+				search: params?.search ? params.search.trim() : undefined,
 				year: params?.year,
 				gender: params?.gender,
 				ethnicity: params?.ethnicity,
@@ -289,8 +351,7 @@ export const householdApi = {
 			try {
 				const res = await apiClient.post(`/citizens/${citizenId}/reveal-cccd`);
 				return res.data?.cccd || res.data?.data?.cccd || null;
-			} catch (err) {
-				console.error(`[revealCitizenCCCD] Lỗi giải mã CCCD (${citizenId}):`, err);
+			} catch {
 				return null;
 			}
 		}

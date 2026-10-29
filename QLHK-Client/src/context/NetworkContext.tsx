@@ -4,6 +4,7 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useMemo,
 	useState,
 } from "react";
 import { getActiveApiBaseUrl } from "../api/client";
@@ -14,6 +15,13 @@ export interface NetworkContextType {
 	latency: number | null;
 	checkServerHealth: () => Promise<boolean>;
 }
+
+const defaultNetworkContext: NetworkContextType = {
+	isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,
+	isBackendHealthy: true,
+	latency: null,
+	checkServerHealth: async () => true,
+};
 
 const NetworkContext = createContext<NetworkContextType | undefined>(undefined);
 
@@ -32,6 +40,12 @@ export const NetworkProvider: React.FC<{ children: React.ReactNode }> = ({
 	const checkServerHealth = useCallback(async (): Promise<boolean> => {
 		const t0 = performance.now();
 		try {
+			if (typeof navigator !== "undefined" && !navigator.onLine) {
+				setIsBackendHealthy(false);
+				setLatency(null);
+				emaLatency = null;
+				return false;
+			}
 			const apiBase = getActiveApiBaseUrl();
 			const res = await fetch(`${apiBase}/ping`, {
 				method: "GET",
@@ -70,7 +84,9 @@ export const NetworkProvider: React.FC<{ children: React.ReactNode }> = ({
 		};
 		const handleOffline = () => {
 			setIsOnline(false);
+			setIsBackendHealthy(false);
 			setLatency(null);
+			emaLatency = null;
 		};
 		const handlePortChanged = () => {
 			checkServerHealth();
@@ -94,15 +110,18 @@ export const NetworkProvider: React.FC<{ children: React.ReactNode }> = ({
 		};
 	}, [checkServerHealth]);
 
+	const value = useMemo<NetworkContextType>(
+		() => ({
+			isOnline,
+			isBackendHealthy,
+			latency,
+			checkServerHealth,
+		}),
+		[isOnline, isBackendHealthy, latency, checkServerHealth],
+	);
+
 	return (
-		<NetworkContext.Provider
-			value={{
-				isOnline,
-				isBackendHealthy,
-				latency,
-				checkServerHealth,
-			}}
-		>
+		<NetworkContext.Provider value={value}>
 			{children}
 		</NetworkContext.Provider>
 	);
@@ -111,12 +130,7 @@ export const NetworkProvider: React.FC<{ children: React.ReactNode }> = ({
 export const useNetwork = (): NetworkContextType => {
 	const context = useContext(NetworkContext);
 	if (!context) {
-		return {
-			isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,
-			isBackendHealthy: true,
-			latency: null,
-			checkServerHealth: async () => true,
-		};
+		return defaultNetworkContext;
 	}
 	return context;
 };

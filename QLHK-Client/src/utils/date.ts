@@ -162,7 +162,7 @@ export function parseAndValidateDob(
 export function calculateAge(
 	dobInput: string | number | null | undefined,
 	currentYear = CURRENT_YEAR,
-	referenceDate = new Date(),
+	referenceDate?: Date,
 ): number {
 	if (
 		typeof dobInput === "number" &&
@@ -176,7 +176,7 @@ export function calculateAge(
 		return 0;
 	}
 
-	if (currentYear === referenceDate.getFullYear() && res.formatted) {
+	if (referenceDate && res.formatted) {
 		const parts = res.formatted.split("/");
 		if (parts.length === 3) {
 			const birthDay = parseInt(parts[0], 10);

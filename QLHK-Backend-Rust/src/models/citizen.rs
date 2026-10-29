@@ -24,6 +24,20 @@ pub struct CitizenDb {
     pub occupation: Option<String>,
     pub native_place: Option<String>,
     pub notes: Option<String>,
+    #[sqlx(default)]
+    pub huu_tri: Option<String>,
+    #[sqlx(default)]
+    pub age75plus: Option<String>,
+    #[sqlx(default)]
+    pub age70to74poor: Option<String>,
+    #[sqlx(default)]
+    pub bao_tro: Option<String>,
+    #[sqlx(default)]
+    pub huu_tuat_bao_hiem: Option<String>,
+    #[sqlx(default)]
+    pub nguoi_co_cong: Option<String>,
+    #[sqlx(default)]
+    pub pension_policies: Option<Vec<String>>,
     pub version: i32,
     pub is_deleted: bool,
     pub deleted_at: Option<DateTime<Utc>>,
@@ -42,6 +56,7 @@ pub struct CitizenResponse {
     pub name_unaccented: Option<String>,
     pub dob: Option<String>,
     pub gender: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cccd: Option<String>,
     pub cccd_masked: Option<String>,
     pub cccd_last4: Option<String>,
@@ -53,6 +68,13 @@ pub struct CitizenResponse {
     pub occupation: Option<String>,
     pub native_place: Option<String>,
     pub notes: Option<String>,
+    pub huu_tri: Option<String>,
+    pub age75plus: Option<String>,
+    pub age70to74poor: Option<String>,
+    pub bao_tro: Option<String>,
+    pub huu_tuat_bao_hiem: Option<String>,
+    pub nguoi_co_cong: Option<String>,
+    pub pension_policies: Option<Vec<String>>,
     pub version: i32,
     pub is_deleted: Option<bool>,
     pub created_at: Option<DateTime<Utc>>,
@@ -71,7 +93,8 @@ pub struct CitizenHouseholdInfo {
 
 impl CitizenResponse {
     pub fn from_db(db: CitizenDb, decrypted_cccd: Option<String>) -> Self {
-        let has_real_cccd = db.cccd.as_ref().map(|s| !s.is_empty()).unwrap_or(false);
+        let has_real_cccd = db.cccd.as_ref().map(|s| !s.is_empty()).unwrap_or(false)
+            || db.cccd_last4.as_ref().map(|s| !s.is_empty()).unwrap_or(false);
         let final_last4 = db.cccd_last4.clone().or_else(|| {
             decrypted_cccd.as_ref().and_then(|plain| {
                 if plain.len() >= 4 {
@@ -107,6 +130,13 @@ impl CitizenResponse {
             occupation: db.occupation,
             native_place: db.native_place,
             notes: db.notes,
+            huu_tri: db.huu_tri,
+            age75plus: db.age75plus,
+            age70to74poor: db.age70to74poor,
+            bao_tro: db.bao_tro,
+            huu_tuat_bao_hiem: db.huu_tuat_bao_hiem,
+            nguoi_co_cong: db.nguoi_co_cong,
+            pension_policies: db.pension_policies,
             version: db.version,
             is_deleted: Some(db.is_deleted),
             created_at: db.created_at,
@@ -117,11 +147,11 @@ impl CitizenResponse {
 }
 
 pub fn format_citizen(c: CitizenDb) -> CitizenResponse {
-    let decrypted = c.cccd.as_deref().and_then(|enc| {
-        if enc.contains(':') {
-            crate::crypto::decrypt_cccd(enc).ok()
+    let decrypted = c.cccd.as_deref().and_then(|raw| {
+        if raw.contains(':') {
+            crate::crypto::decrypt_cccd(raw).ok()
         } else {
-            None
+            Some(raw.to_string())
         }
     });
     CitizenResponse::from_db(c, decrypted)
@@ -145,16 +175,47 @@ where
     }
 }
 
+fn deserialize_string_or_bool<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = Option::<serde_json::Value>::deserialize(deserializer)?;
+    match opt {
+        Some(serde_json::Value::Bool(b)) => {
+            if b {
+                Ok(Some("x".to_string()))
+            } else {
+                Ok(Some(String::new()))
+            }
+        }
+        Some(serde_json::Value::String(s)) => {
+            let trimmed = s.trim();
+            if trimmed.is_empty() {
+                Ok(Some(String::new()))
+            } else {
+                Ok(Some(trimmed.to_string()))
+            }
+        }
+        _ => Ok(None),
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct CreateCitizenInput {
     #[serde(default, deserialize_with = "deserialize_optional_uuid")]
     pub id: Option<Uuid>,
     #[serde(default, deserialize_with = "deserialize_optional_uuid")]
     pub household_id: Option<Uuid>,
+    #[serde(rename = "householdId", default, deserialize_with = "deserialize_optional_uuid")]
+    pub household_id_camel: Option<Uuid>,
     pub stt: Option<i32>,
     pub is_head: Option<bool>,
+    #[serde(rename = "isHead")]
+    pub is_head_camel: Option<bool>,
     pub relationship: Option<String>,
     pub full_name: String,
+    #[serde(rename = "fullName")]
+    pub full_name_camel: Option<String>,
     pub dob: Option<String>,
     pub gender: Option<String>,
     pub cccd: Option<String>,
@@ -162,9 +223,40 @@ pub struct CreateCitizenInput {
     pub religion: Option<String>,
     pub education: Option<String>,
     pub military_status: Option<String>,
+    #[serde(rename = "militaryStatus")]
+    pub military_status_camel: Option<String>,
     pub occupation: Option<String>,
     pub native_place: Option<String>,
+    #[serde(rename = "nativePlace")]
+    pub native_place_camel: Option<String>,
     pub notes: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_or_bool")]
+    pub huu_tri: Option<String>,
+    #[serde(rename = "huuTri", default, deserialize_with = "deserialize_string_or_bool")]
+    pub huu_tri_camel: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_or_bool")]
+    pub age75plus: Option<String>,
+    #[serde(rename = "age75Plus", default, deserialize_with = "deserialize_string_or_bool")]
+    pub age75plus_camel: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_or_bool")]
+    pub age70to74poor: Option<String>,
+    #[serde(rename = "age70To74Poor", default, deserialize_with = "deserialize_string_or_bool")]
+    pub age70to74poor_camel: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_or_bool")]
+    pub bao_tro: Option<String>,
+    #[serde(rename = "baoTro", default, deserialize_with = "deserialize_string_or_bool")]
+    pub bao_tro_camel: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_or_bool")]
+    pub huu_tuat_bao_hiem: Option<String>,
+    #[serde(rename = "huuTuatBaoHiem", default, deserialize_with = "deserialize_string_or_bool")]
+    pub huu_tuat_bao_hiem_camel: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_or_bool")]
+    pub nguoi_co_cong: Option<String>,
+    #[serde(rename = "nguoiCoCong", default, deserialize_with = "deserialize_string_or_bool")]
+    pub nguoi_co_cong_camel: Option<String>,
+    pub pension_policies: Option<Vec<String>>,
+    #[serde(rename = "pensionPolicies")]
+    pub pension_policies_camel: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -173,8 +265,12 @@ pub struct UpdateCitizenInput {
     pub id: Option<Uuid>,
     pub stt: Option<i32>,
     pub is_head: Option<bool>,
+    #[serde(rename = "isHead")]
+    pub is_head_camel: Option<bool>,
     pub relationship: Option<String>,
     pub full_name: Option<String>,
+    #[serde(rename = "fullName")]
+    pub full_name_camel: Option<String>,
     pub dob: Option<String>,
     pub gender: Option<String>,
     pub cccd: Option<String>,
@@ -182,9 +278,40 @@ pub struct UpdateCitizenInput {
     pub religion: Option<String>,
     pub education: Option<String>,
     pub military_status: Option<String>,
+    #[serde(rename = "militaryStatus")]
+    pub military_status_camel: Option<String>,
     pub occupation: Option<String>,
     pub native_place: Option<String>,
+    #[serde(rename = "nativePlace")]
+    pub native_place_camel: Option<String>,
     pub notes: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_or_bool")]
+    pub huu_tri: Option<String>,
+    #[serde(rename = "huuTri", default, deserialize_with = "deserialize_string_or_bool")]
+    pub huu_tri_camel: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_or_bool")]
+    pub age75plus: Option<String>,
+    #[serde(rename = "age75Plus", default, deserialize_with = "deserialize_string_or_bool")]
+    pub age75plus_camel: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_or_bool")]
+    pub age70to74poor: Option<String>,
+    #[serde(rename = "age70To74Poor", default, deserialize_with = "deserialize_string_or_bool")]
+    pub age70to74poor_camel: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_or_bool")]
+    pub bao_tro: Option<String>,
+    #[serde(rename = "baoTro", default, deserialize_with = "deserialize_string_or_bool")]
+    pub bao_tro_camel: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_or_bool")]
+    pub huu_tuat_bao_hiem: Option<String>,
+    #[serde(rename = "huuTuatBaoHiem", default, deserialize_with = "deserialize_string_or_bool")]
+    pub huu_tuat_bao_hiem_camel: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_or_bool")]
+    pub nguoi_co_cong: Option<String>,
+    #[serde(rename = "nguoiCoCong", default, deserialize_with = "deserialize_string_or_bool")]
+    pub nguoi_co_cong_camel: Option<String>,
+    pub pension_policies: Option<Vec<String>>,
+    #[serde(rename = "pensionPolicies")]
+    pub pension_policies_camel: Option<Vec<String>>,
     pub version: Option<i32>,
 }
 
@@ -206,6 +333,16 @@ pub struct CitizenFilter {
     pub is_head: Option<bool>,
     #[serde(rename = "isHead")]
     pub is_head_camel: Option<bool>,
+    pub dob: Option<String>,
+    pub birth_year: Option<i32>,
+    #[serde(rename = "birthYear")]
+    pub birth_year_camel: Option<i32>,
+    pub min_age: Option<i32>,
+    #[serde(rename = "minAge")]
+    pub min_age_camel: Option<i32>,
+    pub max_age: Option<i32>,
+    #[serde(rename = "maxAge")]
+    pub max_age_camel: Option<i32>,
     pub include_deleted: Option<bool>,
     #[serde(rename = "includeDeleted")]
     pub include_deleted_camel: Option<String>,

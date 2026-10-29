@@ -208,12 +208,15 @@ apiClient.interceptors.response.use(
 			originalRequest &&
 			!originalRequest._retry &&
 			!originalRequest.url?.includes("/auth/login") &&
-			!originalRequest.url?.includes("/auth/refresh")
+			!originalRequest.url?.includes("/auth/refresh") &&
+			!originalRequest.url?.includes("/auth/logout") &&
+			!originalRequest.url?.includes("/ping")
 		) {
 			if (isRefreshing) {
 				return new Promise((resolve, reject) => {
 					failedQueue.push({
 						resolve: (token: string) => {
+							originalRequest._retry = true;
 							originalRequest.headers = originalRequest.headers || {};
 							originalRequest.headers.Authorization = `Bearer ${token}`;
 							resolve(apiClient(originalRequest));
@@ -253,12 +256,14 @@ apiClient.interceptors.response.use(
 				await secureStorage.removeItem("accessToken");
 				await secureStorage.removeItem("refreshToken");
 				window.dispatchEvent(new CustomEvent("auth:expired"));
+				return Promise.reject(error);
 			} catch (refreshErr) {
 				processQueue(refreshErr, null);
 				setCachedAccessToken(null);
 				await secureStorage.removeItem("accessToken");
 				await secureStorage.removeItem("refreshToken");
 				window.dispatchEvent(new CustomEvent("auth:expired"));
+				return Promise.reject(refreshErr);
 			} finally {
 				isRefreshing = false;
 			}

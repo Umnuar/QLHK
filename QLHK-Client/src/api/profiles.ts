@@ -15,6 +15,8 @@ export interface ProfileQueryParams {
 	page?: number;
 	limit?: number;
 	calculationYear?: number;
+	month?: string | number;
+	day?: string | number;
 	dob?: string;
 	exact_date?: string;
 	exactDate?: string;
@@ -39,8 +41,8 @@ export const profilesApi = {
 			dob: params.dob?.trim() || undefined,
 			exact_date: params.dob?.trim() || undefined,
 			status: params.status !== "all" ? params.status : undefined,
-			ageGroup: params.ageGroup || undefined,
-			milestone: params.ageGroup || undefined,
+			ageGroup: params.ageGroup && params.ageGroup !== "all" ? params.ageGroup : undefined,
+			milestone: params.ageGroup && params.ageGroup !== "all" ? params.ageGroup : undefined,
 			gender: params.gender || undefined,
 			ethnicity: params.ethnicity || undefined,
 			residence: params.residence || undefined,
@@ -54,6 +56,13 @@ export const profilesApi = {
 		if (params.calculationYear && !isNaN(params.calculationYear)) {
 			cleanParams.calculationYear = params.calculationYear;
 			cleanParams.calculation_year = params.calculationYear;
+			cleanParams.year = params.calculationYear;
+		}
+		if (params.month !== undefined && params.month !== "") {
+			cleanParams.month = String(params.month);
+		}
+		if (params.day !== undefined && params.day !== "") {
+			cleanParams.day = String(params.day);
 		}
 		if (cleanParams.status === "received" || cleanParams.status === 1 || cleanParams.status === true) {
 			cleanParams.received = true;
@@ -83,6 +92,7 @@ export const profilesApi = {
 		if (calculationYear) {
 			params.calculationYear = calculationYear;
 			params.calculation_year = calculationYear;
+			params.year = calculationYear;
 		}
 		const res = await apiClient.get("/policies/analytics", { params });
 		const d = res.data?.data || res.data;

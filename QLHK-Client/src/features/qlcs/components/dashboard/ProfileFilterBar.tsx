@@ -15,7 +15,7 @@ import { useApp } from "@/AppContext";
 import type { Village } from "@/types";
 import { CustomSelect } from "@/components/common/CustomSelect";
 import { DAKHA_ETHNICITIES } from "./constants";
-import { YearSelector } from "./YearSelector";
+import { type CalculationTarget, YearSelector } from "./YearSelector";
 
 export interface ProfileFilterBarProps {
 	activeTab: "chuctho" | "htxh";
@@ -34,6 +34,8 @@ export interface ProfileFilterBarProps {
 	onAgeMilestoneChange: (milestone: string) => void;
 	globalCalculationYear: number;
 	onYearChange: (year: number) => void;
+	calculationTarget?: CalculationTarget;
+	onTargetChange?: (target: CalculationTarget) => void;
 	genderFilter: string;
 	setGenderFilter: (val: string) => void;
 	ethnicityFilter: string;
@@ -143,6 +145,8 @@ export const ProfileFilterBar: React.FC<ProfileFilterBarProps> = ({
 	onAgeMilestoneChange,
 	globalCalculationYear,
 	onYearChange,
+	calculationTarget,
+	onTargetChange,
 	genderFilter,
 	setGenderFilter,
 	ethnicityFilter,
@@ -284,6 +288,8 @@ export const ProfileFilterBar: React.FC<ProfileFilterBarProps> = ({
 					<YearSelector
 						year={globalCalculationYear}
 						onYearChange={onYearChange}
+						target={calculationTarget}
+						onTargetChange={onTargetChange}
 					/>
 				</div>
 			)}

@@ -30,6 +30,10 @@ export const VillagesPage: React.FC = () => {
 	const { showModal } = useModal();
 	const isAdmin = user?.role === "admin";
 
+	const visibleVillages = isAdmin
+		? villages
+		: villages.filter((v) => v.id === user?.village_id);
+
 	const [userList, setUserList] = useState<User[]>([]);
 	const [overview, setOverview] = useState<AnalyticsOverviewData | null>(null);
 	const [villageStats, setVillageStats] = useState<
@@ -142,6 +146,8 @@ export const VillagesPage: React.FC = () => {
 	}, [fetchVillageStats, fetchUsers]);
 
 	const handleDelete = (id: string, name: string) => {
+		if (!isAdmin) return;
+
 		const vStat =
 			villageStats[id] ||
 			villageStats[name] ||
@@ -205,6 +211,7 @@ export const VillagesPage: React.FC = () => {
 	};
 
 	const handleCreateModern = async (name: string, code?: string, officerId?: string) => {
+		if (!isAdmin) return;
 		const created = await villageApi.create(name, code);
 		if (officerId) {
 			try {
@@ -225,6 +232,7 @@ export const VillagesPage: React.FC = () => {
 	};
 
 	const handleUpdateModern = async (id: string, name: string, code?: string, officerId?: string) => {
+		if (!isAdmin) return;
 		await villageApi.update(id, name, code);
 		if (officerId !== undefined) {
 			const currentOfficer = userList.find((u) => u.village_id === id);
@@ -255,12 +263,15 @@ export const VillagesPage: React.FC = () => {
 	return (
 		<div className="space-y-6 animate-in fade-in pb-10">
 			<ModernVillageTable
-				villages={villages}
+				villages={visibleVillages}
 				villageStats={villageStats}
 				overview={overview}
 				userList={userList}
 				isAdmin={isAdmin}
 				onSelectVillage={(id, dest) => {
+					if (!isAdmin && user?.village_id && id && id !== user.village_id) {
+						return;
+					}
 					setSelectedVillageId(id);
 					setActiveTab(dest);
 				}}

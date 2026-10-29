@@ -15,15 +15,19 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
 	const isDisconnected = !isOnline || !isBackendHealthy;
 
 	useEffect(() => {
+		let timerId: ReturnType<typeof setTimeout> | undefined;
+
 		const handleReconnected = () => {
 			setIsReconnected(true);
-			const t = setTimeout(() => setIsReconnected(false), 3500);
-			return () => clearTimeout(t);
+			if (timerId) clearTimeout(timerId);
+			timerId = setTimeout(() => setIsReconnected(false), 3500);
 		};
 
 		window.addEventListener("server:reconnected", handleReconnected);
-		return () =>
+		return () => {
+			if (timerId) clearTimeout(timerId);
 			window.removeEventListener("server:reconnected", handleReconnected);
+		};
 	}, []);
 
 	const handleRetry = async () => {
@@ -41,7 +45,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({
 				onRetry={handleRetry}
 				isRetrying={isRetrying}
 			/>
-			<div className="flex flex-1 overflow-hidden">
+			<div className="flex flex-1 overflow-hidden relative">
 				<Sidebar />
 				<main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-100/70 dark:bg-slate-900/30">
 					<div className="w-full max-w-none space-y-6">{children}</div>

@@ -5,7 +5,7 @@ use axum::{
     routing::{delete, get, post},
     Json, Router,
 };
-use chrono::Utc;
+use chrono::{Datelike, Utc};
 use serde_json::json;
 use sqlx::QueryBuilder;
 use std::collections::HashMap;
@@ -66,6 +66,7 @@ pub async fn get_households(
             .or(filter.village_id_camel),
     };
 
+    let deleted_only = filter.deleted_only.unwrap_or(false);
     let include_deleted = filter
         .include_deleted
         .unwrap_or_else(|| filter.include_deleted_camel.as_deref() == Some("true"));
@@ -75,7 +76,10 @@ pub async fn get_households(
         "SELECT h.id, h.village_id, h.book_number, h.address, h.status, h.version, h.is_deleted, h.deleted_at, h.created_at, h.updated_at FROM qlhk.households h WHERE 1=1",
     );
 
-    if !include_deleted {
+    if deleted_only {
+        count_builder.push(" AND h.is_deleted = true");
+        select_builder.push(" AND h.is_deleted = true");
+    } else if !include_deleted {
         count_builder.push(" AND h.is_deleted = false");
         select_builder.push(" AND h.is_deleted = false");
     }
@@ -111,6 +115,66 @@ pub async fn get_households(
         }
     }
 
+    let gender_filter = filter.gender.as_deref().map(str::trim).filter(|s| !s.is_empty());
+    let ethnicity_filter = filter.ethnicity.as_deref().map(str::trim).filter(|s| !s.is_empty() && *s != "all" && *s != "Tất cả");
+    let min_age = filter.min_age.or(filter.min_age_camel).filter(|&a| a >= 0 && a <= 130);
+    let max_age = filter.max_age.or(filter.max_age_camel).filter(|&a| a >= 0 && a <= 130);
+    let target_year = filter.year.unwrap_or_else(|| Utc::now().year());
+
+    if gender_filter.is_some() || ethnicity_filter.is_some() || min_age.is_some() || max_age.is_some() {
+        let apply_citizen_filter = |builder: &mut QueryBuilder<sqlx::Postgres>| {
+            builder.push(" AND EXISTS (SELECT 1 FROM qlhk.citizens c WHERE c.household_id = h.id");
+            if !deleted_only {
+                builder.push(" AND c.is_deleted = false");
+            }
+            if let Some(g) = gender_filter {
+                builder.push(" AND c.gender = ");
+                builder.push_bind(g.to_string());
+            }
+            if let Some(eth) = ethnicity_filter {
+                if eth.eq_ignore_ascii_case("dtts") {
+                    builder.push(" AND c.ethnicity != 'Kinh'");
+                } else {
+                    builder.push(" AND c.ethnicity = ");
+                    builder.push_bind(eth.to_string());
+                }
+            }
+            if min_age.is_some() || max_age.is_some() {
+                let start_year = if let Some(max_a) = max_age {
+                    (target_year - max_a).max(1900)
+                } else {
+                    1900
+                };
+                let end_year = if let Some(min_a) = min_age {
+                    (target_year - min_a).min(target_year)
+                } else {
+                    target_year
+                };
+                if start_year <= end_year {
+                    let mut years = Vec::new();
+                    for y in start_year..=end_year {
+                        years.push(y);
+                        if years.len() >= 150 {
+                            break;
+                        }
+                    }
+                    builder.push(" AND (");
+                    for (idx, y) in years.into_iter().enumerate() {
+                        if idx > 0 {
+                            builder.push(" OR ");
+                        }
+                        builder.push("c.dob ILIKE ");
+                        builder.push_bind(format!("%{}%", y));
+                    }
+                    builder.push(")");
+                }
+            }
+            builder.push(")");
+        };
+        apply_citizen_filter(&mut count_builder);
+        apply_citizen_filter(&mut select_builder);
+    }
+
     if let Some(q) = &filter.search {
         let trimmed_q = q.trim();
         if !trimmed_q.is_empty() {
@@ -130,48 +194,35 @@ pub async fn get_households(
                 None
             };
 
-            let search_clause = " AND (h.book_number ILIKE ";
-            count_builder.push(search_clause);
-            count_builder.push_bind(like_q.clone());
-            count_builder.push(" OR h.address ILIKE ");
-            count_builder.push_bind(like_q.clone());
-            count_builder.push(" OR EXISTS (SELECT 1 FROM qlhk.citizens c WHERE c.household_id = h.id AND c.is_deleted = false AND (c.full_name ILIKE ");
-            count_builder.push_bind(like_q.clone());
-            count_builder.push(" OR c.name_unaccented ILIKE ");
-            count_builder.push_bind(unacc.clone());
+            let apply_search = |builder: &mut QueryBuilder<sqlx::Postgres>| {
+                builder.push(" AND (h.book_number ILIKE ");
+                builder.push_bind(like_q.clone());
+                builder.push(" OR h.address ILIKE ");
+                builder.push_bind(like_q.clone());
+                builder.push(" OR EXISTS (SELECT 1 FROM qlhk.citizens c WHERE c.household_id = h.id");
+                if !deleted_only {
+                    builder.push(" AND c.is_deleted = false");
+                }
+                builder.push(" AND (c.full_name ILIKE ");
+                builder.push_bind(like_q.clone());
+                builder.push(" OR c.name_unaccented ILIKE ");
+                builder.push_bind(unacc.clone());
 
-            if let Some(hash) = &cccd_hash {
-                count_builder.push(" OR c.cccd_hash = ");
-                count_builder.push_bind(hash.clone());
-            }
+                if let Some(hash) = &cccd_hash {
+                    builder.push(" OR c.cccd_hash = ");
+                    builder.push_bind(hash.clone());
+                }
 
-            if let Some(l4) = &cccd_l4 {
-                count_builder.push(" OR c.cccd_last4 ILIKE ");
-                count_builder.push_bind(l4.clone());
-            }
+                if let Some(l4) = &cccd_l4 {
+                    builder.push(" OR c.cccd_last4 ILIKE ");
+                    builder.push_bind(l4.clone());
+                }
 
-            count_builder.push(")))");
+                builder.push(")))");
+            };
 
-            select_builder.push(search_clause);
-            select_builder.push_bind(like_q.clone());
-            select_builder.push(" OR h.address ILIKE ");
-            select_builder.push_bind(like_q.clone());
-            select_builder.push(" OR EXISTS (SELECT 1 FROM qlhk.citizens c WHERE c.household_id = h.id AND c.is_deleted = false AND (c.full_name ILIKE ");
-            select_builder.push_bind(like_q.clone());
-            select_builder.push(" OR c.name_unaccented ILIKE ");
-            select_builder.push_bind(unacc);
-
-            if let Some(hash) = cccd_hash {
-                select_builder.push(" OR c.cccd_hash = ");
-                select_builder.push_bind(hash);
-            }
-
-            if let Some(l4) = cccd_l4 {
-                select_builder.push(" OR c.cccd_last4 ILIKE ");
-                select_builder.push_bind(l4);
-            }
-
-            select_builder.push(")))");
+            apply_search(&mut count_builder);
+            apply_search(&mut select_builder);
         }
     }
 
@@ -186,7 +237,11 @@ pub async fn get_households(
         }
     };
 
-    select_builder.push(" ORDER BY h.created_at DESC LIMIT ");
+    if deleted_only {
+        select_builder.push(" ORDER BY h.deleted_at DESC NULLS LAST, h.updated_at DESC LIMIT ");
+    } else {
+        select_builder.push(" ORDER BY h.created_at DESC LIMIT ");
+    }
     select_builder.push_bind(limit);
     select_builder.push(" OFFSET ");
     select_builder.push_bind(offset);
@@ -202,6 +257,12 @@ pub async fn get_households(
         }
     };
 
+    let total_pages = if total == 0 {
+        0
+    } else {
+        ((total as f64) / (limit as f64)).ceil() as i64
+    };
+
     if households.is_empty() {
         return Json(PaginatedResponse {
             data: Vec::<HouseholdResponse>::new(),
@@ -209,7 +270,7 @@ pub async fn get_households(
                 page,
                 limit,
                 total,
-                total_pages: ((total as f64) / (limit as f64)).ceil() as i64,
+                total_pages,
             },
         })
         .into_response();
@@ -228,13 +289,23 @@ pub async fn get_households(
 
     let village_map: HashMap<Uuid, VillageInfo> = villages.into_iter().map(|v| (v.id, v)).collect();
 
-    let citizens = sqlx::query_as::<_, CitizenDb>(
-        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = ANY($1) AND is_deleted = false ORDER BY is_head DESC, stt ASC NULLS LAST",
-    )
-    .bind(&household_ids)
-    .fetch_all(&state.pool)
-    .await
-    .unwrap_or_default();
+    let citizens = if deleted_only {
+        sqlx::query_as::<_, CitizenDb>(
+            "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, huu_tri, age75plus, age70to74poor, bao_tro, huu_tuat_bao_hiem, nguoi_co_cong, pension_policies, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = ANY($1) ORDER BY is_head DESC, stt ASC NULLS LAST",
+        )
+        .bind(&household_ids)
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default()
+    } else {
+        sqlx::query_as::<_, CitizenDb>(
+            "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, huu_tri, age75plus, age70to74poor, bao_tro, huu_tuat_bao_hiem, nguoi_co_cong, pension_policies, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = ANY($1) AND is_deleted = false ORDER BY is_head DESC, stt ASC NULLS LAST",
+        )
+        .bind(&household_ids)
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default()
+    };
 
     let mut citizen_map: HashMap<Uuid, Vec<CitizenResponse>> = HashMap::new();
     for c in citizens {
@@ -263,12 +334,6 @@ pub async fn get_households(
             }
         })
         .collect();
-
-    let total_pages = if total == 0 {
-        0
-    } else {
-        ((total as f64) / (limit as f64)).ceil() as i64
-    };
 
     Json(PaginatedResponse {
         data,
@@ -344,7 +409,7 @@ pub async fn get_household_by_id(
     .unwrap_or_default();
 
     let citizens = sqlx::query_as::<_, CitizenDb>(
-        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false ORDER BY is_head DESC, stt ASC NULLS LAST",
+        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, huu_tri, age75plus, age70to74poor, bao_tro, huu_tuat_bao_hiem, nguoi_co_cong, pension_policies, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false ORDER BY is_head DESC, stt ASC NULLS LAST",
     )
     .bind(household.id)
     .fetch_all(&state.pool)
@@ -474,9 +539,43 @@ pub async fn create_household(
         });
         let stt = m.stt.unwrap_or((idx + 1) as i32);
         let citizen_id = m.id.unwrap_or_else(Uuid::new_v4);
+        let mut policies_val = m.pension_policies.or(m.pension_policies_camel);
+        let (huu_tri_val, age75plus_val, age70to74poor_val, bao_tro_val, huu_tuat_val, nguoi_co_cong_val) = if let Some(ref p) = policies_val {
+            let has = |k: &str| if p.iter().any(|item| item == k) { "x".to_string() } else { "".to_string() };
+            (
+                m.huu_tri.or(m.huu_tri_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("huu_tri")),
+                m.age75plus.or(m.age75plus_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("age75plus")),
+                m.age70to74poor.or(m.age70to74poor_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("age70to74poor")),
+                m.bao_tro.or(m.bao_tro_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("bao_tro")),
+                m.huu_tuat_bao_hiem.or(m.huu_tuat_bao_hiem_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("huu_tuat_bao_hiem")),
+                m.nguoi_co_cong.or(m.nguoi_co_cong_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("nguoi_co_cong")),
+            )
+        } else {
+            let h = m.huu_tri.or(m.huu_tri_camel).unwrap_or_default();
+            let a75 = m.age75plus.or(m.age75plus_camel).unwrap_or_default();
+            let a70 = m.age70to74poor.or(m.age70to74poor_camel).unwrap_or_default();
+            let bt = m.bao_tro.or(m.bao_tro_camel).unwrap_or_default();
+            let ht = m.huu_tuat_bao_hiem.or(m.huu_tuat_bao_hiem_camel).unwrap_or_default();
+            let ncc = m.nguoi_co_cong.or(m.nguoi_co_cong_camel).unwrap_or_default();
+            let mut p_list = Vec::new();
+            let mut add_if = |val: &str, k: &str| {
+                if val == "x" && !p_list.iter().any(|item| item == k) {
+                    p_list.push(k.to_string());
+                }
+            };
+            add_if(&h, "huu_tri");
+            add_if(&a75, "age75plus");
+            add_if(&a70, "age70to74poor");
+            add_if(&bt, "bao_tro");
+            add_if(&ht, "huu_tuat_bao_hiem");
+            add_if(&ncc, "nguoi_co_cong");
+            policies_val = Some(p_list);
+            (h, a75, a70, bt, ht, ncc)
+        };
+        let policies_val = policies_val.unwrap_or_default();
 
         let citizen_res = sqlx::query_as::<_, CitizenDb>(
-            "INSERT INTO qlhk.citizens (id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 1, false, NOW(), NOW()) RETURNING id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, deleted_at, created_at, updated_at",
+            "INSERT INTO qlhk.citizens (id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, huu_tri, age75plus, age70to74poor, bao_tro, huu_tuat_bao_hiem, nguoi_co_cong, pension_policies, version, is_deleted, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, 1, false, NOW(), NOW()) RETURNING *",
         )
         .bind(citizen_id)
         .bind(household_id)
@@ -497,6 +596,13 @@ pub async fn create_household(
         .bind(m.occupation.as_deref())
         .bind(m.native_place.as_deref())
         .bind(m.notes.as_deref())
+        .bind(huu_tri_val)
+        .bind(age75plus_val)
+        .bind(age70to74poor_val)
+        .bind(bao_tro_val)
+        .bind(huu_tuat_val)
+        .bind(nguoi_co_cong_val)
+        .bind(policies_val)
         .fetch_one(&mut *tx)
         .await;
 
@@ -543,6 +649,14 @@ pub async fn create_household(
         village,
         citizens: created_citizens,
     };
+
+    let sync_pool = state.pool.clone();
+    let sync_cids: Vec<Uuid> = response.citizens.iter().map(|c| c.id).collect();
+    tokio::spawn(async move {
+        for cid in sync_cids {
+            let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, cid).await;
+        }
+    });
 
     let audit_pool = state.pool.clone();
     let audit_new = serde_json::to_string(&response).ok();
@@ -689,9 +803,11 @@ pub async fn update_household(
         }
     };
 
+    let mut affected_citizen_ids = Vec::new();
+
     if let Some(members) = req.members.or(req.citizens) {
         let existing = sqlx::query_as::<_, CitizenDb>(
-            "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false",
+            "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, huu_tri, age75plus, age70to74poor, bao_tro, huu_tuat_bao_hiem, nguoi_co_cong, pension_policies, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false",
         )
         .bind(id)
         .fetch_all(&mut *tx)
@@ -728,6 +844,7 @@ pub async fn update_household(
             if let Some(c_id) = m.id {
                 if let Some(existing_c) = existing.iter().find(|c| c.id == c_id) {
                     processed_ids.push(c_id);
+                    affected_citizen_ids.push(c_id);
                     let final_name = if !clean_name.is_empty() {
                         clean_name
                     } else {
@@ -753,8 +870,43 @@ pub async fn update_household(
                         (existing_c.cccd.clone(), existing_c.cccd_hash.clone(), existing_c.cccd_last4.clone())
                     };
 
+                    let mut policies_val = m.pension_policies.or(m.pension_policies_camel);
+                    let (huu_tri_val, age75plus_val, age70to74poor_val, bao_tro_val, huu_tuat_val, nguoi_co_cong_val) = if let Some(ref p) = policies_val {
+                        let has = |k: &str| if p.iter().any(|item| item == k) { "x".to_string() } else { "".to_string() };
+                        (
+                            m.huu_tri.or(m.huu_tri_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("huu_tri")),
+                            m.age75plus.or(m.age75plus_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("age75plus")),
+                            m.age70to74poor.or(m.age70to74poor_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("age70to74poor")),
+                            m.bao_tro.or(m.bao_tro_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("bao_tro")),
+                            m.huu_tuat_bao_hiem.or(m.huu_tuat_bao_hiem_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("huu_tuat_bao_hiem")),
+                            m.nguoi_co_cong.or(m.nguoi_co_cong_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("nguoi_co_cong")),
+                        )
+                    } else {
+                        let h = m.huu_tri.or(m.huu_tri_camel).or_else(|| existing_c.huu_tri.clone()).unwrap_or_default();
+                        let a75 = m.age75plus.or(m.age75plus_camel).or_else(|| existing_c.age75plus.clone()).unwrap_or_default();
+                        let a70 = m.age70to74poor.or(m.age70to74poor_camel).or_else(|| existing_c.age70to74poor.clone()).unwrap_or_default();
+                        let bt = m.bao_tro.or(m.bao_tro_camel).or_else(|| existing_c.bao_tro.clone()).unwrap_or_default();
+                        let ht = m.huu_tuat_bao_hiem.or(m.huu_tuat_bao_hiem_camel).or_else(|| existing_c.huu_tuat_bao_hiem.clone()).unwrap_or_default();
+                        let ncc = m.nguoi_co_cong.or(m.nguoi_co_cong_camel).or_else(|| existing_c.nguoi_co_cong.clone()).unwrap_or_default();
+                        let mut p_list = existing_c.pension_policies.clone().unwrap_or_default();
+                        let mut add_if = |val: &str, k: &str| {
+                            if val == "x" && !p_list.iter().any(|item| item == k) {
+                                p_list.push(k.to_string());
+                            }
+                        };
+                        add_if(&h, "huu_tri");
+                        add_if(&a75, "age75plus");
+                        add_if(&a70, "age70to74poor");
+                        add_if(&bt, "bao_tro");
+                        add_if(&ht, "huu_tuat_bao_hiem");
+                        add_if(&ncc, "nguoi_co_cong");
+                        policies_val = Some(p_list);
+                        (h, a75, a70, bt, ht, ncc)
+                    };
+                    let policies_val = policies_val.unwrap_or_default();
+
                     let _ = sqlx::query(
-                        "UPDATE qlhk.citizens SET full_name = $1, name_unaccented = $2, dob = $3, gender = $4, is_head = $5, relationship = $6, ethnicity = $7, religion = $8, education = $9, military_status = $10, occupation = $11, native_place = $12, notes = $13, stt = $14, cccd = $15, cccd_hash = $16, cccd_last4 = $17, version = version + 1, updated_at = NOW() WHERE id = $18",
+                        "UPDATE qlhk.citizens SET full_name = $1, name_unaccented = $2, dob = $3, gender = $4, is_head = $5, relationship = $6, ethnicity = $7, religion = $8, education = $9, military_status = $10, occupation = $11, native_place = $12, notes = $13, stt = $14, cccd = $15, cccd_hash = $16, cccd_last4 = $17, huu_tri = $18, age75plus = $19, age70to74poor = $20, bao_tro = $21, huu_tuat_bao_hiem = $22, nguoi_co_cong = $23, pension_policies = $24, version = version + 1, updated_at = NOW() WHERE id = $25",
                     )
                     .bind(final_name)
                     .bind(final_unacc)
@@ -773,6 +925,13 @@ pub async fn update_household(
                     .bind(cccd_cipher)
                     .bind(cccd_hash_val)
                     .bind(cccd_last4_val)
+                    .bind(huu_tri_val)
+                    .bind(age75plus_val)
+                    .bind(age70to74poor_val)
+                    .bind(bao_tro_val)
+                    .bind(huu_tuat_val)
+                    .bind(nguoi_co_cong_val)
+                    .bind(policies_val)
                     .bind(c_id)
                     .execute(&mut *tx)
                     .await;
@@ -784,6 +943,7 @@ pub async fn update_household(
             if !clean_name.is_empty() {
                 let new_cid = Uuid::new_v4();
                 processed_ids.push(new_cid);
+                affected_citizen_ids.push(new_cid);
                 let is_head = m.is_head.unwrap_or(false);
                 let relationship = m.relationship.unwrap_or_else(|| {
                     if is_head {
@@ -797,8 +957,43 @@ pub async fn update_household(
                     None => (None, None, None),
                 };
 
+                let mut policies_val = m.pension_policies.or(m.pension_policies_camel);
+                let (huu_tri_val, age75plus_val, age70to74poor_val, bao_tro_val, huu_tuat_val, nguoi_co_cong_val) = if let Some(ref p) = policies_val {
+                    let has = |k: &str| if p.iter().any(|item| item == k) { "x".to_string() } else { "".to_string() };
+                    (
+                        m.huu_tri.or(m.huu_tri_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("huu_tri")),
+                        m.age75plus.or(m.age75plus_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("age75plus")),
+                        m.age70to74poor.or(m.age70to74poor_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("age70to74poor")),
+                        m.bao_tro.or(m.bao_tro_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("bao_tro")),
+                        m.huu_tuat_bao_hiem.or(m.huu_tuat_bao_hiem_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("huu_tuat_bao_hiem")),
+                        m.nguoi_co_cong.or(m.nguoi_co_cong_camel).filter(|s| !s.is_empty()).unwrap_or_else(|| has("nguoi_co_cong")),
+                    )
+                } else {
+                    let h = m.huu_tri.or(m.huu_tri_camel).unwrap_or_default();
+                    let a75 = m.age75plus.or(m.age75plus_camel).unwrap_or_default();
+                    let a70 = m.age70to74poor.or(m.age70to74poor_camel).unwrap_or_default();
+                    let bt = m.bao_tro.or(m.bao_tro_camel).unwrap_or_default();
+                    let ht = m.huu_tuat_bao_hiem.or(m.huu_tuat_bao_hiem_camel).unwrap_or_default();
+                    let ncc = m.nguoi_co_cong.or(m.nguoi_co_cong_camel).unwrap_or_default();
+                    let mut p_list = Vec::new();
+                    let mut add_if = |val: &str, k: &str| {
+                        if val == "x" && !p_list.iter().any(|item| item == k) {
+                            p_list.push(k.to_string());
+                        }
+                    };
+                    add_if(&h, "huu_tri");
+                    add_if(&a75, "age75plus");
+                    add_if(&a70, "age70to74poor");
+                    add_if(&bt, "bao_tro");
+                    add_if(&ht, "huu_tuat_bao_hiem");
+                    add_if(&ncc, "nguoi_co_cong");
+                    policies_val = Some(p_list);
+                    (h, a75, a70, bt, ht, ncc)
+                };
+                let policies_val = policies_val.unwrap_or_default();
+
                 let _ = sqlx::query(
-                    "INSERT INTO qlhk.citizens (id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 1, false, NOW(), NOW())",
+                    "INSERT INTO qlhk.citizens (id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, huu_tri, age75plus, age70to74poor, bao_tro, huu_tuat_bao_hiem, nguoi_co_cong, pension_policies, version, is_deleted, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, 1, false, NOW(), NOW())",
                 )
                 .bind(new_cid)
                 .bind(id)
@@ -819,6 +1014,13 @@ pub async fn update_household(
                 .bind(m.occupation.as_deref())
                 .bind(m.native_place.as_deref())
                 .bind(m.notes.as_deref())
+                .bind(huu_tri_val)
+                .bind(age75plus_val)
+                .bind(age70to74poor_val)
+                .bind(bao_tro_val)
+                .bind(huu_tuat_val)
+                .bind(nguoi_co_cong_val)
+                .bind(policies_val)
                 .execute(&mut *tx)
                 .await;
             }
@@ -831,6 +1033,7 @@ pub async fn update_household(
             .collect();
 
         if !to_delete.is_empty() {
+            affected_citizen_ids.extend(to_delete.iter().cloned());
             let _ = sqlx::query(
                 "UPDATE qlhk.citizens SET is_deleted = true, deleted_at = NOW(), version = version + 1, updated_at = NOW() WHERE id = ANY($1)",
             )
@@ -857,7 +1060,7 @@ pub async fn update_household(
     .unwrap_or_default();
 
     let citizens = sqlx::query_as::<_, CitizenDb>(
-        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false ORDER BY is_head DESC, stt ASC NULLS LAST",
+        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, huu_tri, age75plus, age70to74poor, bao_tro, huu_tuat_bao_hiem, nguoi_co_cong, pension_policies, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false ORDER BY is_head DESC, stt ASC NULLS LAST",
     )
     .bind(updated_hh.id)
     .fetch_all(&state.pool)
@@ -881,6 +1084,13 @@ pub async fn update_household(
         village,
         citizens,
     };
+
+    let sync_pool = state.pool.clone();
+    tokio::spawn(async move {
+        for cid in affected_citizen_ids {
+            let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, cid).await;
+        }
+    });
 
     let audit_pool = state.pool.clone();
     let audit_old = serde_json::to_string(&current).ok();
@@ -982,7 +1192,7 @@ pub async fn delete_household(
     }
 
     let citizens_delete = sqlx::query(
-        "UPDATE qlhk.citizens SET is_deleted = true, deleted_at = NOW(), updated_at = NOW() WHERE household_id = $1 AND is_deleted = false",
+        "UPDATE qlhk.citizens SET is_deleted = true, deleted_at = NOW(), version = version + 1, updated_at = NOW() WHERE household_id = $1 AND is_deleted = false",
     )
     .bind(id)
     .execute(&mut *tx)
@@ -1047,7 +1257,7 @@ pub async fn get_recycle_bin(
     claims_ext: Option<Extension<Claims>>,
     Query(mut filter): Query<HouseholdFilter>,
 ) -> Response {
-    filter.include_deleted = Some(true);
+    filter.deleted_only = Some(true);
     get_households(State(state), claims_ext, Query(filter)).await
 }
 
@@ -1107,7 +1317,7 @@ pub async fn restore_household(
     };
 
     let hh_restore = sqlx::query(
-        "UPDATE qlhk.households SET is_deleted = false, deleted_at = NULL, version = version + 1, updated_at = NOW() WHERE id = $1",
+        "UPDATE qlhk.households SET is_deleted = false, deleted_at = NULL, version = version + 1, updated_at = NOW() WHERE id = $1 AND is_deleted = true",
     )
     .bind(id)
     .execute(&mut *tx)
@@ -1123,7 +1333,7 @@ pub async fn restore_household(
     }
 
     let citizens_restore = sqlx::query(
-        "UPDATE qlhk.citizens SET is_deleted = false, deleted_at = NULL, updated_at = NOW() WHERE household_id = $1 AND is_deleted = true",
+        "UPDATE qlhk.citizens SET is_deleted = false, deleted_at = NULL, version = version + 1, updated_at = NOW() WHERE household_id = $1 AND is_deleted = true",
     )
     .bind(id)
     .execute(&mut *tx)
@@ -1203,7 +1413,7 @@ pub async fn hard_delete_household(
         }
     }
 
-    let _current = match sqlx::query_as::<_, HouseholdDb>(
+    let current = match sqlx::query_as::<_, HouseholdDb>(
         "SELECT id, village_id, book_number, address, status, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.households WHERE id = $1",
     )
     .bind(id)
@@ -1231,17 +1441,27 @@ pub async fn hard_delete_household(
         }
     };
 
-    let _ = sqlx::query("DELETE FROM qlhk.citizens WHERE household_id = $1")
+    let citizens_del = sqlx::query("DELETE FROM qlhk.citizens WHERE household_id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await;
 
-    let _ = sqlx::query("DELETE FROM qlhk.households WHERE id = $1")
+    if citizens_del.is_err() {
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Lỗi khi xóa vĩnh viễn nhân khẩu trong hộ" })),
+        )
+            .into_response();
+    }
+
+    let hh_del = sqlx::query("DELETE FROM qlhk.households WHERE id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await;
 
-    if tx.commit().await.is_err() {
+    if hh_del.is_err() {
+        let _ = tx.rollback().await;
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({ "error": "Lỗi xóa vĩnh viễn hộ khẩu" })),
@@ -1249,16 +1469,24 @@ pub async fn hard_delete_household(
             .into_response();
     }
 
+    if tx.commit().await.is_err() {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Lỗi hoàn tất giao dịch xóa vĩnh viễn" })),
+        )
+            .into_response();
+    }
+
     let audit_pool = state.pool.clone();
-    let audit_vid = _current.village_id;
+    let audit_vid = current.village_id;
     let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
-    let audit_old = serde_json::to_string(&_current).ok();
+    let audit_old = serde_json::to_string(&current).ok();
     tokio::spawn(async move {
         let _ = crate::utils::audit::record_audit(
             &audit_pool,
             Some(audit_vid),
             audit_uid,
-            "DELETE",
+            "HARD_DELETE",
             "household",
             Some(&id.to_string()),
             audit_old.as_deref(),
@@ -1294,6 +1522,47 @@ pub async fn batch_delete_households(
             .into_response();
     }
 
+    let households = match sqlx::query_as::<_, HouseholdDb>(
+        "SELECT id, village_id, book_number, address, status, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.households WHERE id = ANY($1) AND is_deleted = false",
+    )
+    .bind(&req.ids)
+    .fetch_all(&state.pool)
+    .await
+    {
+        Ok(list) => list,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Lỗi truy vấn danh sách hộ khẩu cần xóa" })),
+            )
+                .into_response();
+        }
+    };
+
+    if households.is_empty() {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Không tìm thấy hộ khẩu nào cần xóa" })),
+        )
+            .into_response();
+    }
+
+    if let Some(c) = &claims {
+        if c.role != "admin" {
+            if let Some(user_vid) = c.village_id.as_deref().and_then(|v| Uuid::parse_str(v).ok()) {
+                if households.iter().any(|h| h.village_id != user_vid) {
+                    return (
+                        StatusCode::FORBIDDEN,
+                        Json(json!({ "error": "Không có quyền xóa hộ khẩu của thôn khác" })),
+                    )
+                        .into_response();
+                }
+            }
+        }
+    }
+
+    let confirmed_ids: Vec<Uuid> = households.iter().map(|h| h.id).collect();
+
     let mut tx = match state.pool.begin().await {
         Ok(t) => t,
         Err(_) => {
@@ -1305,21 +1574,15 @@ pub async fn batch_delete_households(
         }
     };
 
-    let _ = sqlx::query(
-        "UPDATE qlhk.households SET is_deleted = true, deleted_at = NOW(), version = version + 1, updated_at = NOW() WHERE id = ANY($1)",
+    let hh_update = sqlx::query(
+        "UPDATE qlhk.households SET is_deleted = true, deleted_at = NOW(), version = version + 1, updated_at = NOW() WHERE id = ANY($1) AND is_deleted = false",
     )
-    .bind(&req.ids)
+    .bind(&confirmed_ids)
     .execute(&mut *tx)
     .await;
 
-    let _ = sqlx::query(
-        "UPDATE qlhk.citizens SET is_deleted = true, deleted_at = NOW(), updated_at = NOW() WHERE household_id = ANY($1)",
-    )
-    .bind(&req.ids)
-    .execute(&mut *tx)
-    .await;
-
-    if tx.commit().await.is_err() {
+    if hh_update.is_err() {
+        let _ = tx.rollback().await;
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({ "error": "Lỗi xóa hàng loạt hộ khẩu" })),
@@ -1327,19 +1590,60 @@ pub async fn batch_delete_households(
             .into_response();
     }
 
-    let audit_pool = state.pool.clone();
-    let audit_ids = req.ids.clone();
-    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    let citizen_update = sqlx::query(
+        "UPDATE qlhk.citizens SET is_deleted = true, deleted_at = NOW(), version = version + 1, updated_at = NOW() WHERE household_id = ANY($1) AND is_deleted = false",
+    )
+    .bind(&confirmed_ids)
+    .execute(&mut *tx)
+    .await;
+
+    if citizen_update.is_err() {
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Lỗi xóa nhân khẩu trong các hộ" })),
+        )
+            .into_response();
+    }
+
+    if tx.commit().await.is_err() {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Lỗi hoàn tất giao dịch xóa hàng loạt" })),
+        )
+            .into_response();
+    }
+
+    let sync_pool = state.pool.clone();
+    let sync_hids = confirmed_ids.clone();
     tokio::spawn(async move {
-        for hid in audit_ids {
+        let citizen_ids = sqlx::query_scalar::<_, Uuid>(
+            "SELECT id FROM qlhk.citizens WHERE household_id = ANY($1)",
+        )
+        .bind(&sync_hids)
+        .fetch_all(&sync_pool)
+        .await
+        .unwrap_or_default();
+
+        for cid in citizen_ids {
+            let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, cid).await;
+        }
+    });
+
+    let audit_pool = state.pool.clone();
+    let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
+    let audit_households = households;
+    tokio::spawn(async move {
+        for h in audit_households {
+            let old_val = serde_json::to_string(&h).ok();
             let _ = crate::utils::audit::record_audit(
                 &audit_pool,
-                None,
+                Some(h.village_id),
                 audit_uid,
                 "DELETE",
                 "household",
-                Some(&hid.to_string()),
-                None,
+                Some(&h.id.to_string()),
+                old_val.as_deref(),
                 None,
                 None,
             )
@@ -1349,7 +1653,7 @@ pub async fn batch_delete_households(
 
     Json(json!({
         "message": "Đã chuyển vào thùng rác thành công",
-        "count": req.ids.len()
+        "count": confirmed_ids.len()
     }))
     .into_response()
 }
@@ -1415,6 +1719,19 @@ pub async fn split_household(
         }
     };
 
+    if req.version.is_some() && req.version.unwrap() != source.version {
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::CONFLICT,
+            Json(json!({
+                "error": "Dữ liệu hộ khẩu đã bị thay đổi bởi người dùng khác. Vui lòng tải lại trang.",
+                "currentVersion": source.version,
+                "submittedVersion": req.version
+            })),
+        )
+            .into_response();
+    }
+
     if let Some(c) = &claims {
         if c.role != "admin" {
             if let Some(user_vid) = c.village_id.as_deref().and_then(|v| Uuid::parse_str(v).ok()) {
@@ -1431,7 +1748,7 @@ pub async fn split_household(
     }
 
     let moving_citizens = match sqlx::query_as::<_, CitizenDb>(
-        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND id = ANY($2) AND is_deleted = false FOR UPDATE",
+        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, huu_tri, age75plus, age70to74poor, bao_tro, huu_tuat_bao_hiem, nguoi_co_cong, pension_policies, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND id = ANY($2) AND is_deleted = false FOR UPDATE",
     )
     .bind(id)
     .bind(&req.citizen_ids)
@@ -1512,7 +1829,7 @@ pub async fn split_household(
     }
 
     let remaining_citizens = sqlx::query_as::<_, CitizenDb>(
-        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false FOR UPDATE",
+        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, huu_tri, age75plus, age70to74poor, bao_tro, huu_tuat_bao_hiem, nguoi_co_cong, pension_policies, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false FOR UPDATE",
     )
     .bind(id)
     .fetch_all(&mut *tx)
@@ -1556,6 +1873,14 @@ pub async fn split_household(
             .into_response();
     }
 
+    let sync_pool = state.pool.clone();
+    let sync_cids = req.citizen_ids.clone();
+    tokio::spawn(async move {
+        for cid in sync_cids {
+            let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, cid).await;
+        }
+    });
+
     let village = sqlx::query_as::<_, VillageInfo>(
         "SELECT id, name, code FROM qlhk.villages WHERE id = $1",
     )
@@ -1565,7 +1890,7 @@ pub async fn split_household(
     .unwrap_or_default();
 
     let new_citizens = sqlx::query_as::<_, CitizenDb>(
-        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false ORDER BY is_head DESC, stt ASC NULLS LAST",
+        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, huu_tri, age75plus, age70to74poor, bao_tro, huu_tuat_bao_hiem, nguoi_co_cong, pension_policies, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false ORDER BY is_head DESC, stt ASC NULLS LAST",
     )
     .bind(new_hh.id)
     .fetch_all(&state.pool)
@@ -1595,6 +1920,8 @@ pub async fn split_household(
     let audit_uid = claims.as_ref().and_then(|c| Uuid::parse_str(&c.id).ok());
     let audit_vid = new_hh.village_id;
     let audit_nid = new_hh.id;
+    let audit_src_vid = source.village_id;
+    let audit_src_id = id;
     tokio::spawn(async move {
         let _ = crate::utils::audit::record_audit(
             &audit_pool,
@@ -1605,6 +1932,19 @@ pub async fn split_household(
             Some(&audit_nid.to_string()),
             None,
             audit_new.as_deref(),
+            None,
+        )
+        .await;
+
+        let _ = crate::utils::audit::record_audit(
+            &audit_pool,
+            Some(audit_src_vid),
+            audit_uid,
+            "UPDATE",
+            "household",
+            Some(&audit_src_id.to_string()),
+            None,
+            None,
             None,
         )
         .await;
@@ -1672,6 +2012,19 @@ pub async fn merge_household(
                 .into_response();
         }
     };
+
+    if req.version.is_some() && req.version.unwrap() != source.version {
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::CONFLICT,
+            Json(json!({
+                "error": "Dữ liệu hộ khẩu đã bị thay đổi bởi người dùng khác. Vui lòng tải lại trang.",
+                "currentVersion": source.version,
+                "submittedVersion": req.version
+            })),
+        )
+            .into_response();
+    }
 
     let target = match sqlx::query_as::<_, HouseholdDb>(
         "SELECT id, village_id, book_number, address, status, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.households WHERE id = $1 AND is_deleted = false FOR UPDATE",
@@ -1771,6 +2124,22 @@ pub async fn merge_household(
             .into_response();
     }
 
+    let sync_pool = state.pool.clone();
+    let sync_tgt_id = req.target_household_id;
+    tokio::spawn(async move {
+        let citizen_ids = sqlx::query_scalar::<_, Uuid>(
+            "SELECT id FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false",
+        )
+        .bind(sync_tgt_id)
+        .fetch_all(&sync_pool)
+        .await
+        .unwrap_or_default();
+
+        for cid in citizen_ids {
+            let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, cid).await;
+        }
+    });
+
     let village = sqlx::query_as::<_, VillageInfo>(
         "SELECT id, name, code FROM qlhk.villages WHERE id = $1",
     )
@@ -1780,7 +2149,7 @@ pub async fn merge_household(
     .unwrap_or_default();
 
     let target_citizens = sqlx::query_as::<_, CitizenDb>(
-        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false ORDER BY is_head DESC, stt ASC NULLS LAST",
+        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, huu_tri, age75plus, age70to74poor, bao_tro, huu_tuat_bao_hiem, nguoi_co_cong, pension_policies, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false ORDER BY is_head DESC, stt ASC NULLS LAST",
     )
     .bind(req.target_household_id)
     .fetch_all(&state.pool)
@@ -1900,6 +2269,19 @@ pub async fn change_head(
         }
     };
 
+    if req.version.is_some() && req.version.unwrap() != household.version {
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::CONFLICT,
+            Json(json!({
+                "error": "Dữ liệu hộ khẩu đã bị thay đổi bởi người dùng khác. Vui lòng tải lại trang.",
+                "currentVersion": household.version,
+                "submittedVersion": req.version
+            })),
+        )
+            .into_response();
+    }
+
     if let Some(c) = &claims {
         if c.role != "admin" {
             if let Some(user_vid) = c.village_id.as_deref().and_then(|v| Uuid::parse_str(v).ok()) {
@@ -1916,7 +2298,7 @@ pub async fn change_head(
     }
 
     let citizen = match sqlx::query_as::<_, CitizenDb>(
-        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE id = $1 AND household_id = $2 AND is_deleted = false FOR UPDATE",
+        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, huu_tri, age75plus, age70to74poor, bao_tro, huu_tuat_bao_hiem, nguoi_co_cong, pension_policies, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE id = $1 AND household_id = $2 AND is_deleted = false FOR UPDATE",
     )
     .bind(req.new_head_id)
     .bind(id)
@@ -1999,6 +2381,12 @@ pub async fn change_head(
             .into_response();
     }
 
+    let sync_pool = state.pool.clone();
+    let sync_hid = citizen.id;
+    tokio::spawn(async move {
+        let _ = crate::handlers::policies::sync_single_citizen_to_policies(&sync_pool, sync_hid).await;
+    });
+
     let village = sqlx::query_as::<_, VillageInfo>(
         "SELECT id, name, code FROM qlhk.villages WHERE id = $1",
     )
@@ -2008,7 +2396,7 @@ pub async fn change_head(
     .unwrap_or_default();
 
     let citizens = sqlx::query_as::<_, CitizenDb>(
-        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false ORDER BY is_head DESC, stt ASC NULLS LAST",
+        "SELECT id, household_id, stt, is_head, relationship, full_name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4, ethnicity, religion, education, military_status, occupation, native_place, notes, huu_tri, age75plus, age70to74poor, bao_tro, huu_tuat_bao_hiem, nguoi_co_cong, pension_policies, version, is_deleted, deleted_at, created_at, updated_at FROM qlhk.citizens WHERE household_id = $1 AND is_deleted = false ORDER BY is_head DESC, stt ASC NULLS LAST",
     )
     .bind(id)
     .fetch_all(&state.pool)

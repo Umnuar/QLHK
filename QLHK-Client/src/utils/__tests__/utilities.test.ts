@@ -147,6 +147,20 @@ describe("Date & Age Utilities", () => {
 			expect(calculateAge(2000, 2026)).toBe(26);
 		});
 
+		it("tính tuổi chính xác theo referenceDate (ngày và tháng)", () => {
+			const dob = "15/08/1966";
+			expect(calculateAge(dob, 2026, new Date(2026, 4, 1))).toBe(59);
+			expect(calculateAge(dob, 2026, new Date(2026, 7, 14))).toBe(59);
+			expect(calculateAge(dob, 2026, new Date(2026, 7, 15))).toBe(60);
+			expect(calculateAge(dob, 2026, new Date(2026, 7, 31))).toBe(60);
+			expect(calculateAge(dob, 2026, new Date(2026, 11, 31))).toBe(60);
+
+			const dobMonthOnly = "08/1966";
+			expect(calculateAge(dobMonthOnly, 2026, new Date(2026, 6, 31))).toBe(59);
+			expect(calculateAge(dobMonthOnly, 2026, new Date(2026, 7, 31))).toBe(60);
+			expect(calculateAge(dobMonthOnly, 2026, new Date(2026, 11, 31))).toBe(60);
+		});
+
 		it("trả về 0 cho ngày sinh không hợp lệ", () => {
 			expect(calculateAge("invalid-date")).toBe(0);
 			expect(calculateAge("")).toBe(0);

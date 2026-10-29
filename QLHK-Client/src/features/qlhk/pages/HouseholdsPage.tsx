@@ -5,7 +5,7 @@ import {
 	Users,
 } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useApp } from "@/AppContext";
 import { householdApi } from "@/api/householdApi";
 import {
@@ -36,6 +36,89 @@ import {
 } from "@/utils/date";
 import { sanitizeExcelRow } from "@/utils/excelParser";
 import { normalizeUnaccented, splitFullName } from "@/utils/vietnamese";
+
+function matchesHouseholdSearch(h: Household, searchStr: string): boolean {
+	const trimmed = searchStr.trim();
+	if (!trimmed) return true;
+	const q = normalizeUnaccented(trimmed);
+	const cleanDigits = trimmed.replace(/\D/g, "");
+
+	if (h.head_name && normalizeUnaccented(h.head_name).includes(q)) return true;
+	if (h.book_number && normalizeUnaccented(h.book_number).includes(q)) return true;
+	if (h.code && normalizeUnaccented(h.code).includes(q)) return true;
+	if (h.address && normalizeUnaccented(h.address).includes(q)) return true;
+	if (cleanDigits && h.head_cccd && h.head_cccd.replace(/\D/g, "").includes(cleanDigits)) return true;
+
+	const members = h.members || [];
+	return members.some((m) => {
+		if (m.full_name && normalizeUnaccented(m.full_name).includes(q)) return true;
+		if (m.name_unaccented && normalizeUnaccented(m.name_unaccented).includes(q)) return true;
+		if (cleanDigits) {
+			const mDigits = (m.cccd || "").replace(/\D/g, "");
+			if (mDigits && mDigits.includes(cleanDigits)) return true;
+			if (m.cccd_last4 && m.cccd_last4.includes(cleanDigits)) return true;
+		}
+		return false;
+	});
+}
+
+function matchesHouseholdFilters(
+	hh: Household,
+	filters: {
+		statusFilter: string;
+		ageFilter: AgeFilter | null;
+		genderFilter: string;
+		ethnicityFilter: string;
+		calculationYear: number;
+	},
+): boolean {
+	if (filters.statusFilter && hh.status !== filters.statusFilter) {
+		return false;
+	}
+
+	const members = hh.members || [];
+
+	if (filters.ageFilter) {
+		const hasAgeMatch = members.some((m) => {
+			const mAge =
+				typeof m.birth_year === "number" && m.birth_year > 1900
+					? filters.calculationYear - m.birth_year
+					: calculateAge(
+							m.dob_formatted || m.dob_raw || m.dob,
+							filters.calculationYear,
+						);
+			if (filters.ageFilter!.min !== undefined && mAge < filters.ageFilter!.min) {
+				return false;
+			}
+			if (filters.ageFilter!.max !== undefined && mAge > filters.ageFilter!.max) {
+				return false;
+			}
+			return true;
+		});
+		if (!hasAgeMatch) return false;
+	}
+
+	if (filters.genderFilter) {
+		const hasGenderMatch = members.some((m) => m.gender === filters.genderFilter);
+		if (!hasGenderMatch) return false;
+	}
+
+	if (filters.ethnicityFilter) {
+		if (filters.ethnicityFilter === "dtts") {
+			const hasDttsMatch = members.some(
+				(m) => m.ethnicity && m.ethnicity !== "Kinh",
+			);
+			if (!hasDttsMatch) return false;
+		} else {
+			const hasEthMatch = members.some(
+				(m) => m.ethnicity === filters.ethnicityFilter,
+			);
+			if (!hasEthMatch) return false;
+		}
+	}
+
+	return true;
+}
 
 export const HouseholdsPage: React.FC = () => {
 	const {
@@ -81,7 +164,10 @@ export const HouseholdsPage: React.FC = () => {
 	const [conflictClientData, setConflictClientData] = useState<Partial<Household> | null>(null);
 	const [isResolvingConflict, setIsResolvingConflict] = useState(false);
 
+	const fetchRequestIdRef = useRef(0);
+
 	const fetchHouseholds = useCallback(async () => {
+		const currentRequestId = ++fetchRequestIdRef.current;
 		setLoading(true);
 		const targetVillageId =
 			user?.role === "user" && user?.village_id
@@ -108,18 +194,21 @@ export const HouseholdsPage: React.FC = () => {
 				limit,
 			});
 
+			if (currentRequestId !== fetchRequestIdRef.current) return;
+
+			const safeTotalPages = Math.max(1, res.pagination.totalPages || Math.ceil(res.pagination.total / limit) || 1);
 			setHouseholds(res.data);
 			setTotal(res.pagination.total);
-			setTotalPages(res.pagination.totalPages);
+			setTotalPages(safeTotalPages);
+			if (page > safeTotalPages) {
+				setPage(safeTotalPages);
+			}
 			setIsUsingCachedData(false);
 
 			await setCache(cacheKey, res);
 			await setCache(fallbackCacheKey, res);
 		} catch (err: any) {
-			console.warn(
-				"[HouseholdsPage] Gọi API thất bại, chuyển sang nạp từ Offline Cache:",
-				err,
-			);
+			if (currentRequestId !== fetchRequestIdRef.current) return;
 
 			const isRealNetworkError =
 				err?.code === "ERR_NETWORK" ||
@@ -129,52 +218,14 @@ export const HouseholdsPage: React.FC = () => {
 			const shouldMarkOffline = !isBackendHealthy || isRealNetworkError;
 			setIsUsingCachedData(shouldMarkOffline);
 
-			const matchesFilters = (hh: Household) => {
-				if (statusFilter && hh.status !== statusFilter) {
-					return false;
-				}
-
-				const members = hh.members || [];
-
-				if (ageFilter) {
-					const hasAgeMatch = members.some((m) => {
-						const mAge =
-							typeof m.birth_year === "number" && m.birth_year > 1900
-								? calculationYear - m.birth_year
-								: calculateAge(
-										m.dob_formatted || m.dob_raw || m.dob,
-										calculationYear,
-									);
-						if (ageFilter.min !== undefined && mAge < ageFilter.min)
-							return false;
-						if (ageFilter.max !== undefined && mAge > ageFilter.max)
-							return false;
-						return true;
-					});
-					if (!hasAgeMatch) return false;
-				}
-
-				if (genderFilter) {
-					const hasGenderMatch = members.some((m) => m.gender === genderFilter);
-					if (!hasGenderMatch) return false;
-				}
-
-				if (ethnicityFilter) {
-					if (ethnicityFilter === "dtts") {
-						const hasDttsMatch = members.some(
-							(m) => m.ethnicity && m.ethnicity !== "Kinh",
-						);
-						if (!hasDttsMatch) return false;
-					} else {
-						const hasEthMatch = members.some(
-							(m) => m.ethnicity === ethnicityFilter,
-						);
-						if (!hasEthMatch) return false;
-					}
-				}
-
-				return true;
-			};
+			const matchesCombined = (hh: Household) =>
+				matchesHouseholdFilters(hh, {
+					statusFilter,
+					ageFilter,
+					genderFilter,
+					ethnicityFilter,
+					calculationYear,
+				}) && matchesHouseholdSearch(hh, debouncedSearch);
 
 			const cached =
 				(await getCache<any>(cacheKey)) ||
@@ -182,36 +233,38 @@ export const HouseholdsPage: React.FC = () => {
 				(await getCache<any>("households_latest_all"));
 
 			if (cached && Array.isArray(cached.data)) {
-				const filteredList = cached.data.filter(matchesFilters);
-				setHouseholds(filteredList);
-				setTotal(cached.pagination?.total ?? filteredList.length);
-				setTotalPages(
-					cached.pagination?.totalPages ??
-						(Math.ceil(filteredList.length / limit) || 1),
-				);
+				const filteredList = cached.data.filter(matchesCombined);
+				const filteredTotal = filteredList.length;
+				const safeTotalPages = Math.max(1, Math.ceil(filteredTotal / limit));
+				const safePage = Math.min(page, safeTotalPages);
+				const paginated = filteredList.slice((safePage - 1) * limit, safePage * limit);
+				setHouseholds(paginated);
+				setTotal(filteredTotal);
+				setTotalPages(safeTotalPages);
+				if (page !== safePage) {
+					setPage(safePage);
+				}
 			} else {
 				let list = INITIAL_HOUSEHOLDS.filter((h) => !h.is_deleted);
 				if (targetVillageId) {
 					list = list.filter((h) => h.village_id === targetVillageId);
 				}
-				if (debouncedSearch.trim()) {
-					const q = normalizeUnaccented(debouncedSearch.toLowerCase().trim());
-					list = list.filter(
-						(h) =>
-							((h as any).head_name_unaccented || normalizeUnaccented(h.head_name.toLowerCase())).includes(q) ||
-							(h.book_number || "").toLowerCase().includes(q),
-					);
-				}
-				list = list.filter(matchesFilters);
-				const pTotal = list.length;
-				const pTotalPages = Math.ceil(pTotal / limit) || 1;
-				const paginated = list.slice((page - 1) * limit, page * limit);
+				list = list.filter(matchesCombined);
+				const filteredTotal = list.length;
+				const safeTotalPages = Math.max(1, Math.ceil(filteredTotal / limit));
+				const safePage = Math.min(page, safeTotalPages);
+				const paginated = list.slice((safePage - 1) * limit, safePage * limit);
 				setHouseholds(paginated);
-				setTotal(pTotal);
-				setTotalPages(pTotalPages);
+				setTotal(filteredTotal);
+				setTotalPages(safeTotalPages);
+				if (page !== safePage) {
+					setPage(safePage);
+				}
 			}
 		} finally {
-			setLoading(false);
+			if (currentRequestId === fetchRequestIdRef.current) {
+				setLoading(false);
+			}
 		}
 	}, [
 		user,
@@ -224,6 +277,7 @@ export const HouseholdsPage: React.FC = () => {
 		genderFilter,
 		ethnicityFilter,
 		statusFilter,
+		isBackendHealthy,
 	]);
 
 	useEffect(() => {
@@ -275,6 +329,17 @@ export const HouseholdsPage: React.FC = () => {
 		setModalOpen(true);
 	};
 
+	const handlePageChange = (newPage: number) => {
+		const safePage = Math.max(1, Math.min(newPage, totalPages || 1));
+		setPage(safePage);
+	};
+
+	const handleLimitChange = (newLimit: number) => {
+		const safeLimit = Math.max(1, newLimit);
+		setLimit(safeLimit);
+		setPage(1);
+	};
+
 	const handleSaveHousehold = async (data: Partial<Household>) => {
 		try {
 			if (editingHousehold) {
@@ -308,14 +373,9 @@ export const HouseholdsPage: React.FC = () => {
 					if (fetchErr.message?.includes("xung đột phiên bản")) {
 						throw fetchErr;
 					}
-					console.error("[HouseholdsPage] Lỗi lấy bản ghi server khi xung đột:", fetchErr);
 				}
 			}
 
-			console.warn(
-				"[HouseholdsPage] Lỗi khi lưu qua API, ghi nhận offline:",
-				err,
-			);
 			showModal({
 				title: "Lưu ngoại tuyến",
 				message:
@@ -343,8 +403,7 @@ export const HouseholdsPage: React.FC = () => {
 			setModalOpen(false);
 			setEditingHousehold(null);
 			await fetchHouseholds();
-		} catch (err: any) {
-			console.error("[HouseholdsPage] Lỗi khi ghi đè bản ghi xung đột:", err);
+		} catch {
 			showModal({
 				title: "Lỗi ghi đè",
 				message: "Không thể ghi đè phiên bản mới của máy chủ. Vui lòng thử lại sau.",
@@ -388,8 +447,7 @@ export const HouseholdsPage: React.FC = () => {
 									message: "Đã hoàn tác",
 									type: "success",
 								});
-							} catch (restoreErr) {
-								console.error("Lỗi hoàn tác:", restoreErr);
+							} catch {
 								showToast({
 									message: "Không thể hoàn tác thao tác xóa",
 									type: "danger",
@@ -397,8 +455,7 @@ export const HouseholdsPage: React.FC = () => {
 							}
 						},
 					});
-				} catch (err: any) {
-					console.warn("[HouseholdsPage] Lỗi xóa qua API:", err);
+				} catch {
 					showToast({
 						actionKey: `delete-hh-${hh.id}`,
 						message: `Đã chuyển hộ ${hh.head_name} vào thùng rác`,
@@ -411,8 +468,11 @@ export const HouseholdsPage: React.FC = () => {
 									message: "Đã hoàn tác",
 									type: "success",
 								});
-							} catch (restoreErr) {
-								console.error("Lỗi hoàn tác:", restoreErr);
+							} catch {
+								showToast({
+									message: "Không thể hoàn tác thao tác xóa",
+									type: "danger",
+								});
 							}
 						},
 					});
@@ -450,8 +510,7 @@ export const HouseholdsPage: React.FC = () => {
 									message: "Đã hoàn tác",
 									type: "success",
 								});
-							} catch (restoreErr) {
-								console.error("Lỗi hoàn tác:", restoreErr);
+							} catch {
 								showToast({
 									message: "Không thể hoàn tác thao tác xóa hàng loạt",
 									type: "danger",
@@ -459,8 +518,7 @@ export const HouseholdsPage: React.FC = () => {
 							}
 						},
 					});
-				} catch (err: any) {
-					console.warn("[HouseholdsPage] Lỗi batch delete qua API:", err);
+				} catch {
 					showToast({
 						actionKey: `batch-delete-${Date.now()}`,
 						message: `Đã chuyển ${count} hộ gia đình vào thùng rác`,
@@ -508,11 +566,8 @@ export const HouseholdsPage: React.FC = () => {
 					if (allRes?.data && Array.isArray(allRes.data)) {
 						sourceList = allRes.data;
 					}
-				} catch (fetchErr) {
-					console.warn(
-						"[HouseholdsPage] Không thể lấy 100% dữ liệu từ API cho xuất Excel, dùng dữ liệu hiện tại:",
-						fetchErr,
-					);
+				} catch {
+					sourceList = households;
 				}
 			}
 
@@ -777,7 +832,6 @@ export const HouseholdsPage: React.FC = () => {
 				});
 			}
 		} catch (err: any) {
-			console.error(err);
 			showModal({
 				title: "Lỗi xuất file",
 				message: `Không thể xuất file Excel: ${err.message}`,
@@ -895,19 +949,11 @@ export const HouseholdsPage: React.FC = () => {
 
 				try {
 					addHousehold(newHhData);
-				} catch (ctxErr) {
-					console.warn("[HouseholdsPage] Lỗi cập nhật context store:", ctxErr);
-				}
+				} catch {}
 
 				try {
 					await householdApi.create(newHhData);
-				} catch (apiErr) {
-					console.warn(
-						"[HouseholdsPage] Lưu API ngoại tuyến cho hộ:",
-						group.code,
-						apiErr,
-					);
-				}
+				} catch {}
 				addedCount++;
 			}
 
@@ -919,7 +965,6 @@ export const HouseholdsPage: React.FC = () => {
 			});
 			await fetchHouseholds();
 		} catch (err: any) {
-			console.error(err);
 			showModal({
 				title: "Lỗi nhập dữ liệu",
 				message: `Không thể nhập dữ liệu vào CSDL: ${err.message}`,
@@ -1021,6 +1066,7 @@ export const HouseholdsPage: React.FC = () => {
 					setGenderFilter("");
 					setEthnicityFilter("");
 					setStatusFilter("");
+					setPage(1);
 				}}
 			/>
 
@@ -1034,8 +1080,8 @@ export const HouseholdsPage: React.FC = () => {
 				page={page}
 				limit={limit}
 				totalPages={totalPages}
-				onPageChange={setPage}
-				onLimitChange={setLimit}
+				onPageChange={handlePageChange}
+				onLimitChange={handleLimitChange}
 				onEdit={handleOpenEdit}
 				onDelete={handleDeleteHousehold}
 				ageFilter={ageFilter}

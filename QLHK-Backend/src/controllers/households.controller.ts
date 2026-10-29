@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import { prisma } from "../config/prisma";
 import type { AuthRequest } from "../middlewares/auth.middleware";
+import { syncSingleCitizenToPolicy } from "../services/policySync.service";
 import { logAudit, logAuditBatch } from "../utils/audit";
 import {
 	decryptCCCD,
@@ -264,6 +265,13 @@ export const getHouseholds = async (
 							occupation: true,
 							native_place: true,
 							notes: true,
+							pension_policies: true,
+							age75plus: true,
+							age70to74poor: true,
+							bao_tro: true,
+							huu_tri: true,
+							huu_tuat_bao_hiem: true,
+							nguoi_co_cong: true,
 						},
 					},
 				},
@@ -375,6 +383,13 @@ export const createHousehold = async (
 					await tx.citizens.create({
 						data: {
 							household_id: hh.id,
+							age75plus: m.age75plus ? "x" : (m.pension_policies?.includes("age75plus") ? "x" : ""),
+							age70to74poor: m.age70to74poor ? "x" : (m.pension_policies?.includes("age70to74poor") ? "x" : ""),
+							bao_tro: m.bao_tro ? "x" : (m.pension_policies?.includes("bao_tro") ? "x" : ""),
+							huu_tri: m.huu_tri ? "x" : (m.pension_policies?.includes("huu_tri") ? "x" : ""),
+							huu_tuat_bao_hiem: m.huu_tuat_bao_hiem ? "x" : (m.pension_policies?.includes("huu_tuat_bao_hiem") ? "x" : ""),
+							nguoi_co_cong: m.nguoi_co_cong ? "x" : (m.pension_policies?.includes("nguoi_co_cong") ? "x" : ""),
+							pension_policies: Array.isArray(m.pension_policies) ? m.pension_policies : [],
 							stt: m.stt ? Number(m.stt) : idx + 1,
 							is_head: Boolean(m.is_head),
 							relationship:
@@ -442,6 +457,11 @@ export const createHousehold = async (
 			ipAddress: req.ip ? String(req.ip) : null,
 		});
 
+		if (newHousehold?.citizens) {
+			for (const c of newHousehold.citizens) {
+				await syncSingleCitizenToPolicy(c.id).catch(() => {});
+			}
+		}
 		res.status(201).json({
 			message: "Tạo hộ khẩu thành công",
 			data: formatHouseholdWithDecryptedCitizens(newHousehold),
@@ -503,6 +523,7 @@ export const updateHousehold = async (
 
 		const existingCitizens = current.citizens || [];
 
+		const affectedCitizenIds = new Set<string>();
 		const updated = await prisma.$transaction(async (tx) => {
 			const updateResult = await tx.households.updateMany({
 				where: {
@@ -551,6 +572,7 @@ export const updateHousehold = async (
 
 					if (existing) {
 						processedIds.add(existing.id);
+						affectedCitizenIds.add(existing.id);
 
 						const updateData: any = {
 							full_name: cleanName || existing.full_name,
@@ -618,6 +640,13 @@ export const updateHousehold = async (
 										: null
 									: existing.notes,
 							stt: m.stt ? Number(m.stt) : idx + 1,
+								age75plus: m.age75plus ? "x" : (m.pension_policies?.includes("age75plus") ? "x" : ""),
+								age70to74poor: m.age70to74poor ? "x" : (m.pension_policies?.includes("age70to74poor") ? "x" : ""),
+								bao_tro: m.bao_tro ? "x" : (m.pension_policies?.includes("bao_tro") ? "x" : ""),
+								huu_tri: m.huu_tri ? "x" : (m.pension_policies?.includes("huu_tri") ? "x" : ""),
+								huu_tuat_bao_hiem: m.huu_tuat_bao_hiem ? "x" : (m.pension_policies?.includes("huu_tuat_bao_hiem") ? "x" : ""),
+								nguoi_co_cong: m.nguoi_co_cong ? "x" : (m.pension_policies?.includes("nguoi_co_cong") ? "x" : ""),
+								pension_policies: Array.isArray(m.pension_policies) ? m.pension_policies : [],
 							version: existing.version + 1,
 						};
 
@@ -640,6 +669,13 @@ export const updateHousehold = async (
 							data: {
 								household_id: id,
 								stt: m.stt ? Number(m.stt) : idx + 1,
+								age75plus: m.age75plus ? "x" : (m.pension_policies?.includes("age75plus") ? "x" : ""),
+								age70to74poor: m.age70to74poor ? "x" : (m.pension_policies?.includes("age70to74poor") ? "x" : ""),
+								bao_tro: m.bao_tro ? "x" : (m.pension_policies?.includes("bao_tro") ? "x" : ""),
+								huu_tri: m.huu_tri ? "x" : (m.pension_policies?.includes("huu_tri") ? "x" : ""),
+								huu_tuat_bao_hiem: m.huu_tuat_bao_hiem ? "x" : (m.pension_policies?.includes("huu_tuat_bao_hiem") ? "x" : ""),
+								nguoi_co_cong: m.nguoi_co_cong ? "x" : (m.pension_policies?.includes("nguoi_co_cong") ? "x" : ""),
+								pension_policies: Array.isArray(m.pension_policies) ? m.pension_policies : [],
 								is_head: Boolean(m.is_head),
 								relationship:
 									m.relationship?.trim() ||
@@ -663,6 +699,7 @@ export const updateHousehold = async (
 							},
 						});
 						processedIds.add(newCitizen.id);
+						affectedCitizenIds.add(newCitizen.id);
 					}
 				}
 
@@ -670,6 +707,7 @@ export const updateHousehold = async (
 					(c) => !processedIds.has(c.id),
 				);
 				for (const c of citizensToDelete) {
+					affectedCitizenIds.add(c.id);
 					await tx.citizens.update({
 						where: { id: c.id },
 						data: {
@@ -784,6 +822,10 @@ export const updateHousehold = async (
 			newValues,
 			ipAddress: req.ip ? String(req.ip) : null,
 		});
+
+		for (const cid of affectedCitizenIds) {
+			await syncSingleCitizenToPolicy(cid).catch(() => {});
+		}
 
 		res.json({
 			message: "Cập nhật hộ khẩu thành công",

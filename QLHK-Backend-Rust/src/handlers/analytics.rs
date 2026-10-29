@@ -15,9 +15,8 @@ use crate::{
     middlewares::auth::Claims,
     models::{
         analytics::{
-            calculate_percentages, AgePyramidStats, AgeStats,
-            AnalyticsOverviewData, CountPct, GenderStats, NameCountPct,
-            PolicySummaryStats, VillageAnalyticsSummary,
+            calculate_percentages, AgePyramidStats, AgeStats, AnalyticsOverviewData, CountPct,
+            GenderStats, NameCountPct, PolicySummaryStats, VillageAnalyticsSummary,
         },
         policy::extract_birth_year,
     },
@@ -54,14 +53,20 @@ struct PolicyCountRow {
 }
 
 #[derive(FromRow)]
-struct VillageSummaryRow {
-    pub village_id: Uuid,
-    pub village_name: String,
-    pub village_code: Option<String>,
+struct VillageBaseRow {
+    pub id: Uuid,
+    pub name: String,
+    pub code: Option<String>,
     pub household_count: i64,
-    pub citizen_count: i64,
-    pub male_count: i64,
-    pub female_count: i64,
+}
+
+#[derive(FromRow)]
+struct CitizenGroupRow {
+    pub village_id: Uuid,
+    pub gender: Option<String>,
+    pub ethnicity: Option<String>,
+    pub religion: Option<String>,
+    pub count: i64,
 }
 
 pub async fn get_overview(
@@ -153,7 +158,8 @@ pub async fn get_overview(
     }
 
     let gender_counts = [male_count, female_count];
-    let gender_pcts = calculate_percentages(&gender_counts, |&c| c, Some(total_citizens));
+    let gender_total = male_count + female_count;
+    let gender_pcts = calculate_percentages(&gender_counts, |&c| c, Some(gender_total));
     let gender_stats = GenderStats {
         male: CountPct {
             count: male_count,
@@ -196,7 +202,8 @@ pub async fn get_overview(
 
     let mut ethnic_list: Vec<(String, i64)> = eth_map.into_iter().collect();
     ethnic_list.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
-    let eth_pcts = calculate_percentages(&ethnic_list, |item| item.1, Some(total_citizens));
+    let eth_total: i64 = ethnic_list.iter().map(|item| item.1).sum();
+    let eth_pcts = calculate_percentages(&ethnic_list, |item| item.1, Some(eth_total));
     let ethnicities: Vec<NameCountPct> = ethnic_list
         .into_iter()
         .enumerate()
@@ -223,7 +230,8 @@ pub async fn get_overview(
     .await
     .unwrap_or_default();
 
-    let rel_pcts = calculate_percentages(&religion_rows, |r| r.count, Some(total_citizens));
+    let rel_total: i64 = religion_rows.iter().map(|r| r.count).sum();
+    let rel_pcts = calculate_percentages(&religion_rows, |r| r.count, Some(rel_total));
     let religions: Vec<NameCountPct> = religion_rows
         .into_iter()
         .enumerate()
@@ -296,7 +304,8 @@ pub async fn get_overview(
         over60_count,
         unknown_age_count,
     ];
-    let age_pcts = calculate_percentages(&raw_age_list, |&c| c, Some(total_citizens));
+    let age_total: i64 = raw_age_list.iter().copied().sum();
+    let age_pcts = calculate_percentages(&raw_age_list, |&c| c, Some(age_total));
     let legal_workforce_pct = if total_citizens > 0 {
         ((working_age_count as f64 / total_citizens as f64) * 1000.0).round() / 10.0
     } else {
@@ -339,7 +348,8 @@ pub async fn get_overview(
     };
 
     let pyramid_counts = [pyramid_children, pyramid_working, pyramid_elderly];
-    let pyramid_pcts = calculate_percentages(&pyramid_counts, |&c| c, Some(total_citizens));
+    let pyramid_total = pyramid_children + pyramid_working + pyramid_elderly;
+    let pyramid_pcts = calculate_percentages(&pyramid_counts, |&c| c, Some(pyramid_total));
     let age_pyramid = AgePyramidStats {
         children: CountPct {
             count: pyramid_children,
@@ -499,39 +509,122 @@ pub async fn get_overview(
 
 pub async fn get_by_village(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(claims): Extension<Claims>,
 ) -> Response {
-    let query = r#"
+    let target_village_id = if claims.role != "admin" {
+        claims.village_id.and_then(|v| Uuid::parse_str(&v).ok())
+    } else {
+        None
+    };
+
+    let village_rows = sqlx::query_as::<_, VillageBaseRow>(
+        r#"
         SELECT
-            v.id as village_id,
-            v.name as village_name,
-            v.code as village_code,
-            COUNT(DISTINCT h.id) FILTER (WHERE h.is_deleted = false) as household_count,
-            COUNT(c.id) FILTER (WHERE c.is_deleted = false AND h.is_deleted = false) as citizen_count,
-            COUNT(c.id) FILTER (WHERE c.is_deleted = false AND h.is_deleted = false AND c.gender != 'Nữ') as male_count,
-            COUNT(c.id) FILTER (WHERE c.is_deleted = false AND h.is_deleted = false AND c.gender = 'Nữ') as female_count
+            v.id,
+            v.name,
+            v.code,
+            COUNT(DISTINCT h.id) FILTER (WHERE h.is_deleted = false) as household_count
         FROM qlhk.villages v
         LEFT JOIN qlhk.households h ON v.id = h.village_id AND h.is_deleted = false
-        LEFT JOIN qlhk.citizens c ON h.id = c.household_id AND c.is_deleted = false
+        WHERE ($1::uuid IS NULL OR v.id = $1)
         GROUP BY v.id, v.name, v.code
         ORDER BY v.name ASC
-    "#;
+        "#,
+    )
+    .bind(target_village_id)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
 
-    let rows = sqlx::query_as::<_, VillageSummaryRow>(query)
-        .fetch_all(&state.pool)
-        .await
-        .unwrap_or_default();
+    let group_rows = sqlx::query_as::<_, CitizenGroupRow>(
+        r#"
+        SELECT
+            h.village_id,
+            COALESCE(c.gender, 'Khác') as gender,
+            COALESCE(NULLIF(TRIM(c.ethnicity), ''), 'Kinh') as ethnicity,
+            COALESCE(NULLIF(TRIM(c.religion), ''), 'Không') as religion,
+            COUNT(*) as count
+        FROM qlhk.citizens c
+        JOIN qlhk.households h ON c.household_id = h.id
+        WHERE c.is_deleted = false AND h.is_deleted = false
+          AND ($1::uuid IS NULL OR h.village_id = $1)
+        GROUP BY h.village_id, 2, 3, 4
+        "#,
+    )
+    .bind(target_village_id)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
 
-    let data: Vec<VillageAnalyticsSummary> = rows
+    let mut groups_by_village: HashMap<Uuid, Vec<CitizenGroupRow>> = HashMap::new();
+    for r in group_rows {
+        groups_by_village.entry(r.village_id).or_default().push(r);
+    }
+
+    let data: Vec<VillageAnalyticsSummary> = village_rows
         .into_iter()
-        .map(|r| VillageAnalyticsSummary {
-            village_id: r.village_id,
-            village_name: r.village_name,
-            village_code: r.village_code,
-            household_count: r.household_count,
-            citizen_count: r.citizen_count,
-            male_count: r.male_count,
-            female_count: r.female_count,
+        .map(|v| {
+            let rows = groups_by_village.remove(&v.id).unwrap_or_default();
+            let mut citizen_count = 0i64;
+            let mut male_count = 0i64;
+            let mut female_count = 0i64;
+            let mut dtts_count = 0i64;
+            let mut eth_map: HashMap<String, i64> = HashMap::new();
+            let mut rel_map: HashMap<String, i64> = HashMap::new();
+
+            for r in rows {
+                citizen_count += r.count;
+                if r.gender.as_deref() == Some("Nữ") {
+                    female_count += r.count;
+                } else {
+                    male_count += r.count;
+                }
+
+                let eth = r.ethnicity.unwrap_or_else(|| "Kinh".to_string());
+                if eth != "Kinh" {
+                    dtts_count += r.count;
+                }
+                *eth_map.entry(eth).or_insert(0) += r.count;
+
+                let rel = r.religion.unwrap_or_else(|| "Không".to_string());
+                *rel_map.entry(rel).or_insert(0) += r.count;
+            }
+
+            let mut eth_sorted: Vec<(String, i64)> = eth_map.into_iter().collect();
+            eth_sorted.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+            let top_ethnicity = eth_sorted
+                .into_iter()
+                .next()
+                .map(|(name, _)| name)
+                .unwrap_or_else(|| "Kinh".to_string());
+
+            let mut rel_sorted: Vec<(String, i64)> = rel_map.into_iter().collect();
+            rel_sorted.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+            let top_religion = rel_sorted
+                .into_iter()
+                .next()
+                .map(|(name, _)| name)
+                .unwrap_or_else(|| "Không".to_string());
+
+            let dtts_percentage = if citizen_count > 0 {
+                ((dtts_count as f64 / citizen_count as f64) * 1000.0).round() / 10.0
+            } else {
+                0.0
+            };
+
+            VillageAnalyticsSummary {
+                village_id: v.id,
+                village_name: v.name,
+                village_code: v.code,
+                household_count: v.household_count,
+                citizen_count,
+                male_count,
+                female_count,
+                dtts_count,
+                dtts_percentage,
+                top_ethnicity,
+                top_religion,
+            }
         })
         .collect();
 
@@ -547,4 +640,3 @@ pub fn router() -> axum::Router<AppState> {
         .route("/overview", axum::routing::get(get_overview))
         .route("/by-village", axum::routing::get(get_by_village))
 }
-

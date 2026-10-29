@@ -21,7 +21,7 @@ export const syncCitizensToPolicy = async (
 ): Promise<{ chucthoCount: number; htxhCount: number }> => {
   const now = new Date();
   const targetYear = calcYear || now.getFullYear();
-  const refDate = targetYear === now.getFullYear() ? now : new Date(targetYear, 11, 31);
+  const refDate = new Date(targetYear, 11, 31);
   const citizenWhere: Record<string, unknown> = {
     is_deleted: false,
     household: {
@@ -154,6 +154,13 @@ export const syncCitizensToPolicy = async (
       });
     }
 
+    const hasPolicy = (key: string) => {
+      const p = citizen as any;
+      if (Array.isArray(p.pension_policies) && p.pension_policies.includes(key)) return true;
+      if (p[key] === "x" || p[key] === true || p[key] === "true") return true;
+      return false;
+    };
+
     const payload = {
       name: citizen.full_name,
       name_unaccented: citizen.name_unaccented,
@@ -167,7 +174,12 @@ export const syncCitizensToPolicy = async (
       current_address: citizen.household?.address || "",
       village_id: citizen.household?.village_id || "",
       calculation_year: targetYear,
-      huu_tri: "x",
+      huu_tri: hasPolicy("huu_tri") ? "x" : "",
+      age75plus: hasPolicy("age75plus") ? "x" : "",
+      age70to74poor: hasPolicy("age70to74poor") ? "x" : "",
+      bao_tro: hasPolicy("bao_tro") ? "x" : "",
+      huu_tuat_bao_hiem: hasPolicy("huu_tuat_bao_hiem") ? "x" : "",
+      nguoi_co_cong: hasPolicy("nguoi_co_cong") ? "x" : "",
       notes: citizen.id,
     };
 
@@ -291,15 +303,18 @@ export const syncSingleCitizenToPolicy = async (citizenId: string): Promise<void
         },
       });
     }
-  } else {
-    await prisma.chuctho_profiles.updateMany({
-      where: { notes: citizen.id, is_deleted: false },
-      data: { is_deleted: true, deleted_at: new Date() },
-    });
   }
 
   const occupation = citizen.occupation?.toLowerCase() || "";
-  if (occupation.includes("hưu")) {
+  const isRetiree =
+    occupation.includes("hưu") ||
+    occupation.includes("huu") ||
+    occupation.includes("mất sức") ||
+    occupation.includes("mat suc") ||
+    occupation.includes("bhxh") ||
+    citizen.huu_tri === "x" ||
+    (Array.isArray(citizen.pension_policies) && citizen.pension_policies.length > 0);
+  if (isRetiree) {
     let existing = await prisma.htxh_profiles.findFirst({
       where: { notes: citizen.id, is_deleted: false },
     });
@@ -308,6 +323,13 @@ export const syncSingleCitizenToPolicy = async (citizenId: string): Promise<void
         where: { cccd_hash: citizen.cccd_hash, is_deleted: false },
       });
     }
+
+    const hasPolicy = (key: string) => {
+      const p = citizen as any;
+      if (Array.isArray(p.pension_policies) && p.pension_policies.includes(key)) return true;
+      if (p[key] === "x" || p[key] === true || p[key] === "true") return true;
+      return false;
+    };
 
     const payload = {
       name: citizen.full_name,
@@ -322,7 +344,12 @@ export const syncSingleCitizenToPolicy = async (citizenId: string): Promise<void
       current_address: citizen.household?.address || "",
       village_id: citizen.household?.village_id || "",
       calculation_year: targetYear,
-      huu_tri: "x",
+      huu_tri: hasPolicy("huu_tri") ? "x" : "",
+      age75plus: hasPolicy("age75plus") ? "x" : "",
+      age70to74poor: hasPolicy("age70to74poor") ? "x" : "",
+      bao_tro: hasPolicy("bao_tro") ? "x" : "",
+      huu_tuat_bao_hiem: hasPolicy("huu_tuat_bao_hiem") ? "x" : "",
+      nguoi_co_cong: hasPolicy("nguoi_co_cong") ? "x" : "",
       notes: citizen.id,
     };
 

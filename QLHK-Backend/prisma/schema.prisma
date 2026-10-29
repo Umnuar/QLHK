@@ -88,6 +88,13 @@ model citizens {
   occupation      String?    @db.VarChar(100)
   native_place    String?    @db.VarChar(255)
   notes           String?
+  age75plus         String?    @default("") @db.VarChar(5)
+  age70to74poor     String?    @default("") @db.VarChar(5)
+  bao_tro           String?    @default("") @db.VarChar(5)
+  huu_tri           String?    @default("") @db.VarChar(5)
+  huu_tuat_bao_hiem String?    @default("") @db.VarChar(5)
+  nguoi_co_cong     String?    @default("") @db.VarChar(5)
+  pension_policies  String[]   @default([])
   version         Int        @default(1)
   is_deleted      Boolean    @default(false)
   deleted_at      DateTime?  @db.Timestamptz

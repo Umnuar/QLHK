@@ -22,15 +22,17 @@ pub struct EncryptedCCCD {
 }
 
 pub fn derive_key(raw_key: &str) -> [u8; 32] {
-    let key_to_use = if raw_key.is_empty() {
+    let raw_trimmed = raw_key.trim();
+    let key_to_use = if raw_trimmed.is_empty() {
         env::var("ENCRYPTION_KEY")
             .unwrap_or_else(|_| DEFAULT_ENCRYPTION_KEY.to_string())
     } else {
-        raw_key.to_string()
+        raw_trimmed.to_string()
     };
+    let key_to_use = key_to_use.trim();
 
     if key_to_use.len() == 64 && key_to_use.chars().all(|c| c.is_ascii_hexdigit()) {
-        if let Ok(bytes) = hex::decode(&key_to_use) {
+        if let Ok(bytes) = hex::decode(key_to_use) {
             if bytes.len() == 32 {
                 let mut key = [0u8; 32];
                 key.copy_from_slice(&bytes);
@@ -48,15 +50,19 @@ pub fn derive_key(raw_key: &str) -> [u8; 32] {
 
 pub fn hash_cccd_with_pepper(plain: &str, pepper: &str) -> String {
     let cleaned = plain.trim();
-    let pepper_str = if pepper.is_empty() {
+    if cleaned.is_empty() {
+        return String::new();
+    }
+    let pepper_str = if pepper.trim().is_empty() {
         env::var("CCCD_HASH_PEPPER")
             .unwrap_or_else(|_| DEFAULT_CCCD_HASH_PEPPER.to_string())
     } else {
         pepper.to_string()
     };
 
-    let mut mac = <HmacSha256 as Mac>::new_from_slice(pepper_str.as_bytes())
-        .expect("HMAC supports keys of any size");
+    let Ok(mut mac) = <HmacSha256 as Mac>::new_from_slice(pepper_str.trim().as_bytes()) else {
+        return String::new();
+    };
     mac.update(cleaned.as_bytes());
     hex::encode(mac.finalize().into_bytes())
 }
@@ -67,6 +73,48 @@ pub fn hash_cccd(plain: &str) -> String {
 
 pub fn hash_cccd_default(plain: &str) -> String {
     hash_cccd(plain)
+}
+
+pub fn constant_time_eq_bytes(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff = 0u8;
+    for (&x, &y) in a.iter().zip(b.iter()) {
+        diff |= core::hint::black_box(x ^ y);
+    }
+    core::hint::black_box(diff) == 0
+}
+
+pub fn constant_time_compare(a: &str, b: &str) -> bool {
+    constant_time_eq_bytes(a.as_bytes(), b.as_bytes())
+}
+
+pub fn verify_cccd_hash_with_pepper(plain: &str, expected_hash_hex: &str, pepper: &str) -> bool {
+    let cleaned = plain.trim();
+    let expected_trimmed = expected_hash_hex.trim();
+    if cleaned.is_empty() || expected_trimmed.is_empty() {
+        return false;
+    }
+    let Ok(expected_bytes) = hex::decode(expected_trimmed) else {
+        return false;
+    };
+    let pepper_str = if pepper.trim().is_empty() {
+        env::var("CCCD_HASH_PEPPER")
+            .unwrap_or_else(|_| DEFAULT_CCCD_HASH_PEPPER.to_string())
+    } else {
+        pepper.to_string()
+    };
+
+    let Ok(mut mac) = <HmacSha256 as Mac>::new_from_slice(pepper_str.trim().as_bytes()) else {
+        return false;
+    };
+    mac.update(cleaned.as_bytes());
+    mac.verify_slice(&expected_bytes).is_ok()
+}
+
+pub fn verify_cccd_hash(plain: &str, expected_hash: &str) -> bool {
+    verify_cccd_hash_with_pepper(plain, expected_hash, "")
 }
 
 pub fn remove_accents(s: &str) -> String {
@@ -138,15 +186,9 @@ pub fn encrypt_cccd_with_iv(
 
     let encrypted_string = format!("{}:{}:{}", iv_hex, tag_hex, ciphertext_hex);
     let hash = hash_cccd_with_pepper(cleaned, pepper);
-    let last4 = if cleaned.chars().count() >= 4 {
-        cleaned
-            .chars()
-            .rev()
-            .take(4)
-            .collect::<Vec<_>>()
-            .into_iter()
-            .rev()
-            .collect::<String>()
+    let char_count = cleaned.chars().count();
+    let last4: String = if char_count >= 4 {
+        cleaned.chars().skip(char_count - 4).collect()
     } else {
         cleaned.to_string()
     };
@@ -163,20 +205,21 @@ pub fn encrypt_cccd_default(plain_cccd: &str) -> Result<EncryptedCCCD, String> {
 }
 
 pub fn decrypt_cccd_with_key(encrypted_string: &str, key: &str) -> Result<String, String> {
-    if encrypted_string.is_empty() || !encrypted_string.contains(':') {
-        return Ok(encrypted_string.to_string());
+    let trimmed = encrypted_string.trim();
+    if trimmed.is_empty() || !trimmed.contains(':') {
+        return Ok(trimmed.to_string());
     }
 
-    let parts: Vec<&str> = encrypted_string.split(':').collect();
+    let parts: Vec<&str> = trimmed.split(':').collect();
     if parts.len() != 3 {
         return Err(
             "Định dạng chuỗi mã hóa không hợp lệ (cần iv:authTag:encryptedHex)".to_string(),
         );
     }
 
-    let iv_bytes = hex::decode(parts[0]).map_err(|e| e.to_string())?;
-    let tag_bytes = hex::decode(parts[1]).map_err(|e| e.to_string())?;
-    let ciphertext_bytes = hex::decode(parts[2]).map_err(|e| e.to_string())?;
+    let iv_bytes = hex::decode(parts[0].trim()).map_err(|e| e.to_string())?;
+    let tag_bytes = hex::decode(parts[1].trim()).map_err(|e| e.to_string())?;
+    let ciphertext_bytes = hex::decode(parts[2].trim()).map_err(|e| e.to_string())?;
 
     if iv_bytes.len() != 12 {
         return Err("IV must be 12 bytes".to_string());
@@ -293,5 +336,48 @@ mod tests {
         let key2 = derive_key(raw);
         assert_eq!(key1, key2);
         assert_eq!(key1.len(), 32);
+    }
+
+    #[test]
+    fn test_constant_time_compare() {
+        assert!(constant_time_compare("hello", "hello"));
+        assert!(!constant_time_compare("hello", "world"));
+        assert!(!constant_time_compare("hello", "hell"));
+        assert!(!constant_time_compare("", "a"));
+        assert!(constant_time_compare("", ""));
+    }
+
+    #[test]
+    fn test_verify_cccd_hash() {
+        let plain = "064095000123";
+        let expected = "ff0fea6de77f041854027b5390b5f41eb1a2fecfff13586345749181e64c7e4a";
+        assert!(verify_cccd_hash(plain, expected));
+        assert!(!verify_cccd_hash(plain, "0000000000000000000000000000000000000000000000000000000000000000"));
+        assert!(!verify_cccd_hash("", expected));
+        assert!(!verify_cccd_hash(plain, ""));
+    }
+
+    #[test]
+    fn test_decrypt_tampered_ciphertext_fails() {
+        let tampered =
+            "0102030405060708090a0b0c:26540c874b4d3479541ca6c98cbb4efd:2e193e78eaac155269f88e2e";
+        let result = decrypt_cccd_default(tampered);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_decrypt_invalid_tag_fails() {
+        let invalid_tag =
+            "0102030405060708090a0b0c:00000000000000000000000000000000:2e193e78eaac155269f88e2d";
+        let result = decrypt_cccd_default(invalid_tag);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_empty_plain_encrypt() {
+        let empty_result = encrypt_cccd("   ").unwrap();
+        assert_eq!(empty_result.encrypted, "");
+        assert_eq!(empty_result.hash, "");
+        assert_eq!(empty_result.last4, "");
     }
 }

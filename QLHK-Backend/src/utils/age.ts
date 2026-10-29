@@ -1,6 +1,7 @@
 import { ChucthoMilestones, HtxhMilestones } from "../types/policy.types";
 
 const FULL_DOB_REGEX = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/;
+const ISO_DOB_REGEX = /^(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})$/;
 const MONTH_YEAR_DOB_REGEX = /^(\d{1,2})[/.-](\d{4})$/;
 const YEAR_ONLY_DOB_REGEX = /^(\d{4})$/;
 
@@ -28,6 +29,14 @@ export function parseDobValue(raw: unknown): { dob: string; year: number } | nul
   }
 
   const str = String(raw).trim();
+  const iso = str.match(ISO_DOB_REGEX);
+  if (iso) {
+    return {
+      dob: `${iso[3].padStart(2, "0")}/${iso[2].padStart(2, "0")}/${iso[1]}`,
+      year: parseInt(iso[1], 10),
+    };
+  }
+
   const full = str.match(FULL_DOB_REGEX);
   if (full) {
     return {
@@ -108,10 +117,7 @@ export function computeHtxhMilestones(
   const age = calculationYear - birthYear;
   return {
     age75plus: age >= 75 ? "x" : String(record?.age75plus || record?.age_75_plus || ""),
-    age70to74poor:
-      age >= 70 && age <= 74
-        ? String(record?.age70to74poor || record?.age_70_74_poor || "")
-        : "",
+    age70to74poor: String(record?.age70to74poor || record?.age_70_74_poor || ""),
     bao_tro: String(record?.bao_tro || record?.baoTro || ""),
     huu_tri: String(record?.huu_tri || record?.huuTri || ""),
     huu_tuat_bao_hiem: String(

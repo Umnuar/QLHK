@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { createPortal } from "react-dom";
 import {
-	Download,
-	Sparkles,
-	CheckCircle2,
 	AlertCircle,
-	X,
-	RefreshCw,
 	ArrowRight,
+	CheckCircle2,
+	Download,
+	RefreshCw,
+	Sparkles,
+	X,
 } from "lucide-react";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface UpdateInfo {
 	currentVersion: string;
@@ -27,6 +28,7 @@ export const checkAppUpdateManually = () => {
 
 export const AppUpdateModal: React.FC = () => {
 	const [isOpen, setIsOpen] = useState(false);
+	const [isClosing, setIsClosing] = useState(false);
 	const [status, setStatus] = useState<
 		"idle" | "checking" | "available" | "downloading" | "ready" | "up_to_date" | "error"
 	>("idle");
@@ -80,7 +82,6 @@ export const AppUpdateModal: React.FC = () => {
 					}
 				}
 			} catch (err: any) {
-				console.warn("[Auto-Updater] Lỗi kiểm tra bản cập nhật:", err);
 				if (manual) {
 					setErrorMessage(
 						err?.message ||
@@ -95,6 +96,23 @@ export const AppUpdateModal: React.FC = () => {
 		},
 		[isTauri],
 	);
+
+	const handleClose = useCallback(async () => {
+		if (status === "downloading") return;
+
+		setIsClosing(true);
+		setTimeout(async () => {
+			if (updateRef.current) {
+				try {
+					await updateRef.current.close();
+				} catch {}
+				updateRef.current = null;
+			}
+			setIsOpen(false);
+			setIsClosing(false);
+			setStatus("idle");
+		}, 150);
+	}, [status]);
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
@@ -111,6 +129,19 @@ export const AppUpdateModal: React.FC = () => {
 			window.removeEventListener("app:check-update", handleManualTrigger);
 		};
 	}, [checkForUpdates]);
+
+	useEffect(() => {
+		if (!isOpen || status === "downloading") return;
+
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				handleClose();
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [isOpen, status, handleClose]);
 
 	const handleDownloadAndInstall = async () => {
 		if (!updateRef.current) return;
@@ -131,7 +162,7 @@ export const AppUpdateModal: React.FC = () => {
 					const mbDownloaded = (downloadedBytes / (1024 * 1024)).toFixed(1);
 					const mbTotal =
 						totalBytes > 0
-							? (totalBytes / (1024 * 1024)).toFixed(1) + " MB"
+							? `${(totalBytes / (1024 * 1024)).toFixed(1)} MB`
 							: "...";
 					setDownloadedStr(`${mbDownloaded} MB / ${mbTotal}`);
 
@@ -154,7 +185,6 @@ export const AppUpdateModal: React.FC = () => {
 				await relaunch();
 			}, 1200);
 		} catch (err: any) {
-			console.error("[Auto-Updater] Lỗi tải/cài đặt cập nhật:", err);
 			setErrorMessage(
 				err?.message || "Tải bản cập nhật thất bại. Vui lòng thử lại sau.",
 			);
@@ -162,26 +192,13 @@ export const AppUpdateModal: React.FC = () => {
 		}
 	};
 
-	const handleClose = async () => {
-		if (status === "downloading") return;
-
-		if (updateRef.current) {
-			try {
-				await updateRef.current.close();
-			} catch {
-			}
-			updateRef.current = null;
-		}
-
-		setIsOpen(false);
-		setStatus("idle");
-	};
-
 	if (!isOpen || typeof document === "undefined") return null;
 
 	return createPortal(
 		<div
-			className="fixed inset-0 !m-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm select-none animate-in fade-in duration-150"
+			className={`fixed inset-0 !m-0 z-[110] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm select-none transition-all duration-150 ${
+				isClosing ? "opacity-0 pointer-events-none" : "animate-in fade-in duration-150"
+			}`}
 			onClick={(e) => {
 				if (e.target === e.currentTarget && status !== "downloading") {
 					handleClose();
@@ -191,7 +208,9 @@ export const AppUpdateModal: React.FC = () => {
 			aria-modal="true"
 		>
 			<div
-				className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-900 dark:text-slate-100 animate-in zoom-in-95 duration-150 relative"
+				className={`w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-900 dark:text-slate-100 transition-all duration-150 relative ${
+					isClosing ? "opacity-0 scale-95" : "animate-in zoom-in-95 duration-150"
+				}`}
 				onClick={(e) => e.stopPropagation()}
 			>
 				<div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/40">
@@ -248,7 +267,7 @@ export const AppUpdateModal: React.FC = () => {
 								<div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
 									Phiên bản hiện tại:{" "}
 									<strong className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-										v1.5.0
+										{updateInfo?.currentVersion ? `v${updateInfo.currentVersion}` : "v1.5.0"}
 									</strong>
 								</div>
 							</div>

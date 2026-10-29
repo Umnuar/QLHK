@@ -1,6 +1,7 @@
 import {
 	LogOut,
 	MapPin,
+	Menu,
 	Moon,
 	Shield,
 	Sun,
@@ -28,6 +29,7 @@ export const Header: React.FC = () => {
 		zoomIn,
 		zoomOut,
 		resetZoom,
+		toggleSidebar,
 	} = useApp();
 
 	const { isOnline, isBackendHealthy, latency } = useNetwork();
@@ -37,7 +39,17 @@ export const Header: React.FC = () => {
 	return (
 		<>
 			<header className="h-16 bg-slate-900 border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between shadow-xs sticky top-0 z-30 select-none transition-colors duration-150">
-				<div className="flex items-center gap-3">
+				<div className="flex items-center gap-2 sm:gap-3">
+					<button
+						type="button"
+						onClick={toggleSidebar}
+						aria-label="Menu điều hướng"
+						title="Menu điều hướng"
+						className="p-2 -ml-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all cursor-pointer md:hidden shrink-0"
+					>
+						<Menu className="w-5 h-5" />
+					</button>
+
 					<div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
 						<Users className="w-5 h-5" />
 					</div>

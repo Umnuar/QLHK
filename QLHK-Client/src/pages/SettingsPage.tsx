@@ -1051,7 +1051,7 @@ export const SettingsPage: React.FC = () => {
 									Phiên bản phát hành:
 								</span>
 								<span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-									v1.5.0 (Production Stable Edition)
+									v1.5.2 (Production Stable Edition)
 								</span>
 							</div>
 							<div className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">

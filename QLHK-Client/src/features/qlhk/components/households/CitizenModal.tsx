@@ -233,22 +233,22 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				if (Array.isArray(initialMember.pension_policies)) {
 					loadedPolicies.push(...initialMember.pension_policies);
 				}
-				if (initialMember.age75plus && !loadedPolicies.includes("age75plus")) {
+				if ((initialMember.age75plus === true || initialMember.age75plus === "x") && !loadedPolicies.includes("age75plus")) {
 					loadedPolicies.push("age75plus");
 				}
-				if (initialMember.age70to74poor && !loadedPolicies.includes("age70to74poor")) {
+				if ((initialMember.age70to74poor === true || initialMember.age70to74poor === "x") && !loadedPolicies.includes("age70to74poor")) {
 					loadedPolicies.push("age70to74poor");
 				}
-				if (initialMember.bao_tro && !loadedPolicies.includes("bao_tro")) {
+				if ((initialMember.bao_tro === true || initialMember.bao_tro === "x") && !loadedPolicies.includes("bao_tro")) {
 					loadedPolicies.push("bao_tro");
 				}
-				if (initialMember.huu_tri && !loadedPolicies.includes("huu_tri")) {
+				if ((initialMember.huu_tri === true || initialMember.huu_tri === "x") && !loadedPolicies.includes("huu_tri")) {
 					loadedPolicies.push("huu_tri");
 				}
-				if (initialMember.huu_tuat_bao_hiem && !loadedPolicies.includes("huu_tuat_bao_hiem")) {
+				if ((initialMember.huu_tuat_bao_hiem === true || initialMember.huu_tuat_bao_hiem === "x") && !loadedPolicies.includes("huu_tuat_bao_hiem")) {
 					loadedPolicies.push("huu_tuat_bao_hiem");
 				}
-				if (initialMember.nguoi_co_cong && !loadedPolicies.includes("nguoi_co_cong")) {
+				if ((initialMember.nguoi_co_cong === true || initialMember.nguoi_co_cong === "x") && !loadedPolicies.includes("nguoi_co_cong")) {
 					loadedPolicies.push("nguoi_co_cong");
 				}
 				if (isRetireeOccupation(initialMember.occupation || (initialMember as any).nghe_nghiep) && loadedPolicies.length === 0) {
@@ -475,19 +475,6 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 			}
 		}
 
-		if (isRetiree) {
-			if (pensionPolicies.includes("age75plus") && age < 75) {
-				setActiveTab("pension");
-				setError(`Chính sách "Đối tượng đủ 75 tuổi trở lên" chỉ áp dụng cho người từ đủ 75 tuổi trở lên (hiện tại ${age} tuổi).`);
-				return;
-			}
-			if (pensionPolicies.includes("age70to74poor") && (age < 70 || age > 74)) {
-				setActiveTab("pension");
-				setError(`Chính sách "Đối tượng từ 70-74 tuổi thuộc hộ nghèo, cận nghèo" chỉ áp dụng cho người từ 70 đến 74 tuổi (hiện tại ${age} tuổi).`);
-				return;
-			}
-		}
-
 		const { lastName, firstName } = splitFullName(trimmedName);
 		const isMinority = ethnicity !== "Kinh";
 		const cccdLast4 = isMasked
@@ -506,7 +493,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 				? trimmedCccd
 				: "";
 
-		const finalPolicies = isRetiree ? pensionPolicies : [];
+		const finalPolicies = isRetiree || pensionPolicies.length > 0 ? pensionPolicies : [];
 		const hasPolicy = (key: string) => finalPolicies.includes(key);
 
 		const memberData: Partial<Person> = {
@@ -1143,26 +1130,30 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 										{RETIREMENT_POLICIES.map((p) => {
 											const isChecked = isRetiree && pensionPolicies.includes(p.key);
 											return (
-												<div
+												<button
 													key={p.key}
+													type="button"
+													role="checkbox"
+													aria-checked={isChecked}
+													disabled={readOnly || !isRetiree}
 													onClick={() => handleTogglePolicy(p.key)}
-													className={`p-3.5 rounded-2xl border transition-all flex items-start gap-3 select-none ${
+													className={`text-left p-3.5 rounded-2xl border transition-all flex items-start gap-3 select-none outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
 														!isRetiree
 															? "opacity-50 bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 cursor-not-allowed"
 															: isChecked
-																? "bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-400 dark:border-emerald-700 shadow-xs cursor-pointer ring-1 ring-emerald-400/30"
+																? "bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-500 dark:border-emerald-600 shadow-xs cursor-pointer ring-1 ring-emerald-500/30"
 																: "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer"
 													}`}
 												>
-													<input
-														type="checkbox"
-														id={`policy-${p.key}`}
-														disabled={readOnly || !isRetiree}
-														checked={isChecked}
-														onClick={(e) => e.stopPropagation()}
-														onChange={() => handleTogglePolicy(p.key)}
-														className="mt-0.5 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-700 cursor-pointer disabled:cursor-not-allowed shrink-0"
-													/>
+													<div
+														className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center transition-colors shrink-0 ${
+															isChecked
+																? "bg-emerald-600 text-white"
+																: "border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
+														}`}
+													>
+														{isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+													</div>
 													<div className="space-y-0.5 flex-1 min-w-0">
 														<div className="flex items-center justify-between gap-1.5 flex-wrap">
 															<span
@@ -1182,7 +1173,7 @@ export const CitizenModal: React.FC<CitizenModalProps> = ({
 															{p.desc}
 														</p>
 													</div>
-												</div>
+												</button>
 											);
 										})}
 									</div>

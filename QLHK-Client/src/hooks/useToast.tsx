@@ -33,6 +33,7 @@ export interface ToastItem extends ToastOptions {
 	createdAt: number;
 	duration: number;
 	type: ToastType;
+	isExiting?: boolean;
 }
 
 export interface ToastContextType {
@@ -56,7 +57,7 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss }) => {
 		window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 	useEffect(() => {
-		if (isPaused) return;
+		if (isPaused || toast.isExiting) return;
 
 		const interval = 25;
 		const timer = setInterval(() => {
@@ -71,14 +72,14 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss }) => {
 		}, interval);
 
 		return () => clearInterval(timer);
-	}, [isPaused, toast.id, onDismiss]);
+	}, [isPaused, toast.id, toast.isExiting, onDismiss]);
 
 	const handleUndo = async () => {
 		if (toast.onUndo) {
 			try {
 				await toast.onUndo();
 			} catch (err) {
-				console.error("[Toast] Lỗi hoàn tác:", err);
+				console.error(err);
 			}
 		}
 		onDismiss(toast.id);
@@ -140,7 +141,11 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss }) => {
 		<div
 			role={isError ? "alert" : "status"}
 			aria-live={isError ? "assertive" : "polite"}
-			className="pointer-events-auto relative overflow-hidden flex items-center justify-between gap-3 w-full max-w-[480px] min-w-[320px] px-4 py-3 bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xl dark:shadow-2xl backdrop-blur-md transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 text-slate-800 dark:text-slate-100"
+			className={`pointer-events-auto relative overflow-hidden flex items-center justify-between gap-3 w-full max-w-[480px] min-w-[320px] px-4 py-3 bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xl dark:shadow-2xl backdrop-blur-md transition-all duration-200 ease-in-out text-slate-800 dark:text-slate-100 ${
+				toast.isExiting
+					? "opacity-0 -translate-y-3 scale-95 pointer-events-none"
+					: "opacity-100 translate-y-0 scale-100 animate-in fade-in slide-in-from-bottom-2"
+			}`}
 			onMouseEnter={() => setIsPaused(true)}
 			onMouseLeave={() => setIsPaused(false)}
 			onFocus={() => setIsPaused(true)}
@@ -193,13 +198,34 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
 	const [toasts, setToasts] = useState<ToastItem[]>([]);
 	const toastsRef = useRef<ToastItem[]>([]);
 	toastsRef.current = toasts;
+	const dismissingIdsRef = useRef<Set<string>>(new Set());
 
 	const dismissToast = useCallback((id: string) => {
-		setToasts((prev) => prev.filter((t) => t.id !== id));
+		if (dismissingIdsRef.current.has(id)) return;
+		dismissingIdsRef.current.add(id);
+
+		setToasts((prev) =>
+			prev.map((t) => (t.id === id ? { ...t, isExiting: true } : t)),
+		);
+
+		setTimeout(() => {
+			dismissingIdsRef.current.delete(id);
+			setToasts((prev) => prev.filter((t) => t.id !== id));
+		}, 200);
 	}, []);
 
 	const dismissAll = useCallback(() => {
-		setToasts([]);
+		setToasts((prev) => {
+			for (const t of prev) {
+				dismissingIdsRef.current.add(t.id);
+			}
+			return prev.map((t) => ({ ...t, isExiting: true }));
+		});
+
+		setTimeout(() => {
+			dismissingIdsRef.current.clear();
+			setToasts([]);
+		}, 200);
 	}, []);
 
 	const showToast = useCallback((options: ToastOptions | string): string => {
@@ -223,11 +249,20 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
 				updated = updated.filter((t) => t.actionKey !== opts.actionKey);
 			}
 
-			const nextList = [...updated, newToast];
-			if (nextList.length > 3) {
-				return nextList.slice(-3);
+			const active = updated.filter((t) => !t.isExiting);
+			if (active.length >= 3) {
+				const oldestId = active[0].id;
+				dismissingIdsRef.current.add(oldestId);
+				updated = updated.map((t) =>
+					t.id === oldestId ? { ...t, isExiting: true } : t,
+				);
+				setTimeout(() => {
+					dismissingIdsRef.current.delete(oldestId);
+					setToasts((current) => current.filter((t) => t.id !== oldestId));
+				}, 200);
 			}
-			return nextList;
+
+			return [...updated, newToast];
 		});
 
 		return id;
@@ -236,7 +271,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "Escape" && toastsRef.current.length > 0) {
-				const latest = toastsRef.current[toastsRef.current.length - 1];
+				const active = toastsRef.current.filter((t) => !t.isExiting);
+				const latest = active[active.length - 1];
 				if (latest) {
 					dismissToast(latest.id);
 				}
@@ -287,3 +323,5 @@ export const useToast = (): ToastContextType => {
 	}
 	return context;
 };
+
+export default useToast;

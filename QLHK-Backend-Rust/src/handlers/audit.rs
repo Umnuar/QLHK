@@ -58,9 +58,14 @@ pub async fn get_audit_logs(
     Query(filter): Query<AuditLogFilter>,
 ) -> Response {
     let claims = claims_ext.map(|Extension(c)| c);
+    let limit = filter.limit.unwrap_or(50).clamp(1, 100);
     let page = filter.page.unwrap_or(1).max(1);
-    let limit = filter.limit.unwrap_or(20).clamp(1, 100);
     let offset = filter.offset.unwrap_or((page - 1) * limit).max(0);
+    let current_page = if filter.offset.is_some() {
+        (offset / limit) + 1
+    } else {
+        page
+    };
 
     let target_village_id = match &claims {
         Some(c) if c.role != "admin" => {
@@ -70,10 +75,10 @@ pub async fn get_audit_logs(
     };
 
     let mut count_builder = QueryBuilder::new(
-        "SELECT COUNT(*) FROM qlhk.audit_logs a LEFT JOIN qlhk.users u ON a.user_id = u.id LEFT JOIN qlhk.villages v ON a.village_id = v.id WHERE 1=1",
+        "SELECT COUNT(*) FROM qlhk.audit_logs a LEFT JOIN qlhk.users u ON a.user_id = u.id LEFT JOIN qlhk.villages v ON COALESCE(a.village_id, u.village_id) = v.id WHERE 1=1",
     );
     let mut select_builder = QueryBuilder::new(
-        "SELECT a.id, a.village_id, v.name AS village_name, a.user_id, u.username, u.full_name AS user_full_name, a.action, a.entity_type, a.entity_id, a.old_values, a.new_values, a.ip_address, a.created_at FROM qlhk.audit_logs a LEFT JOIN qlhk.users u ON a.user_id = u.id LEFT JOIN qlhk.villages v ON a.village_id = v.id WHERE 1=1",
+        "SELECT a.id, COALESCE(a.village_id, u.village_id) AS village_id, v.name AS village_name, a.user_id, u.username, u.full_name AS user_full_name, a.action, a.entity_type, a.entity_id, a.old_values, a.new_values, a.ip_address, a.created_at FROM qlhk.audit_logs a LEFT JOIN qlhk.users u ON a.user_id = u.id LEFT JOIN qlhk.villages v ON COALESCE(a.village_id, u.village_id) = v.id WHERE 1=1",
     );
 
     if let Some(vid) = target_village_id {
@@ -101,11 +106,16 @@ pub async fn get_audit_logs(
     if let Some(act) = &filter.action {
         let trimmed = act.trim();
         if !trimmed.is_empty() && trimmed != "all" && trimmed != "Tất cả" {
-            count_builder.push(" AND a.action = ");
-            count_builder.push_bind(trimmed.to_string());
+            if trimmed.eq_ignore_ascii_case("DELETE") {
+                count_builder.push(" AND a.action IN ('DELETE', 'BULK_DELETE', 'HARD_DELETE')");
+                select_builder.push(" AND a.action IN ('DELETE', 'BULK_DELETE', 'HARD_DELETE')");
+            } else {
+                count_builder.push(" AND a.action = ");
+                count_builder.push_bind(trimmed.to_string());
 
-            select_builder.push(" AND a.action = ");
-            select_builder.push_bind(trimmed.to_string());
+                select_builder.push(" AND a.action = ");
+                select_builder.push_bind(trimmed.to_string());
+            }
         }
     }
 
@@ -242,7 +252,7 @@ pub async fn get_audit_logs(
     let logs: Vec<AuditLogResponse> = raw_logs.into_iter().map(AuditLogResponse::from).collect();
 
     let total_pages = if total == 0 {
-        0
+        1
     } else {
         ((total as f64) / (limit as f64)).ceil() as i64
     };
@@ -251,8 +261,9 @@ pub async fn get_audit_logs(
         success: true,
         data: logs,
         pagination: PaginationMeta {
-            page,
+            page: current_page,
             limit,
+            offset: Some(offset),
             total,
             total_pages,
             total_pages_camel: Some(total_pages),
@@ -275,7 +286,7 @@ pub async fn get_audit_log_by_id(
     };
 
     let mut select_builder = QueryBuilder::new(
-        "SELECT a.id, a.village_id, v.name AS village_name, a.user_id, u.username, u.full_name AS user_full_name, a.action, a.entity_type, a.entity_id, a.old_values, a.new_values, a.ip_address, a.created_at FROM qlhk.audit_logs a LEFT JOIN qlhk.users u ON a.user_id = u.id LEFT JOIN qlhk.villages v ON a.village_id = v.id WHERE a.id = ",
+        "SELECT a.id, COALESCE(a.village_id, u.village_id) AS village_id, v.name AS village_name, a.user_id, u.username, u.full_name AS user_full_name, a.action, a.entity_type, a.entity_id, a.old_values, a.new_values, a.ip_address, a.created_at FROM qlhk.audit_logs a LEFT JOIN qlhk.users u ON a.user_id = u.id LEFT JOIN qlhk.villages v ON COALESCE(a.village_id, u.village_id) = v.id WHERE a.id = ",
     );
     select_builder.push_bind(id);
 

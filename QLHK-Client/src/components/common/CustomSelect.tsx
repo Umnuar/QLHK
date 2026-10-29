@@ -1,6 +1,6 @@
 import { Check, ChevronDown, Search, X } from "lucide-react";
 import type React from "react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 export interface SelectOption<T = string | number> {
@@ -61,6 +61,7 @@ export function CustomSelect<T extends string | number = string | number>({
 	const [isOpen, setIsOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [openUpward, setOpenUpward] = useState(false);
+	const [maxMenuHeight, setMaxMenuHeight] = useState(260);
 	const [menuPosition, setMenuPosition] = useState<{
 		top: number;
 		left: number;
@@ -107,26 +108,40 @@ export function CustomSelect<T extends string | number = string | number>({
 		});
 	}, [normalizedOptions, searchQuery, shouldShowSearch]);
 
-	const updatePosition = () => {
+	const updatePosition = useCallback(() => {
 		if (!containerRef.current) return;
 		const rect = containerRef.current.getBoundingClientRect();
-		const spaceBelow = window.innerHeight - rect.bottom;
-		const upward = spaceBelow < 240 && rect.top > spaceBelow;
-		setOpenUpward(upward);
+		const viewportWidth = window.innerWidth;
+		const viewportHeight = window.innerHeight;
 
-		const menuHeight = dropdownRef.current?.offsetHeight || 220;
+		const currentMenuHeight = dropdownRef.current?.offsetHeight || 240;
+		const spaceBelow = viewportHeight - rect.bottom - 8;
+		const spaceAbove = rect.top - 8;
+		const shouldOpenUpward = spaceBelow < currentMenuHeight && spaceAbove > spaceBelow;
+
+		setOpenUpward(shouldOpenUpward);
+
+		const availableSpace = shouldOpenUpward ? spaceAbove : spaceBelow;
+		const calculatedMaxHeight = Math.max(140, Math.min(320, availableSpace));
+		setMaxMenuHeight(calculatedMaxHeight);
+
 		const measuredWidth =
 			rect.width > 0 ? rect.width : containerRef.current.offsetWidth || 160;
-		const targetTop = upward
-			? Math.max(8, rect.top - menuHeight - 6)
-			: rect.bottom + 6;
+		const clampedWidth = Math.max(160, Math.min(measuredWidth, viewportWidth - 16));
+
+		const maxLeft = Math.max(8, viewportWidth - clampedWidth - 8);
+		const targetLeft = Math.min(Math.max(8, rect.left), maxLeft);
+
+		const targetTop = shouldOpenUpward
+			? Math.max(8, rect.top - (dropdownRef.current?.offsetHeight || currentMenuHeight) - 6)
+			: Math.min(viewportHeight - 60, rect.bottom + 6);
 
 		setMenuPosition({
 			top: targetTop,
-			left: rect.left,
-			width: measuredWidth,
+			left: targetLeft,
+			width: clampedWidth,
 		});
-	};
+	}, []);
 
 	useLayoutEffect(() => {
 		if (!isOpen) return;
@@ -140,11 +155,28 @@ export function CustomSelect<T extends string | number = string | number>({
 		window.addEventListener("scroll", handleScrollOrResize, true);
 		window.addEventListener("resize", handleScrollOrResize);
 
+		let resizeObserver: ResizeObserver | null = null;
+		if (dropdownRef.current && typeof ResizeObserver !== "undefined") {
+			resizeObserver = new ResizeObserver(() => {
+				updatePosition();
+			});
+			resizeObserver.observe(dropdownRef.current);
+		}
+
 		return () => {
 			window.removeEventListener("scroll", handleScrollOrResize, true);
 			window.removeEventListener("resize", handleScrollOrResize);
+			if (resizeObserver) {
+				resizeObserver.disconnect();
+			}
 		};
-	}, [isOpen]);
+	}, [isOpen, updatePosition]);
+
+	useLayoutEffect(() => {
+		if (isOpen) {
+			updatePosition();
+		}
+	}, [isOpen, filteredOptions.length, searchQuery, updatePosition]);
 
 	useEffect(() => {
 		if (isOpen && shouldShowSearch) {
@@ -349,7 +381,7 @@ export function CustomSelect<T extends string | number = string | number>({
 								} else if (defaultValue !== undefined) {
 									onChange(defaultValue);
 								} else {
-									onChange("" as any);
+									onChange("" as unknown as T);
 								}
 							}}
 							onKeyDown={(e) => {
@@ -357,7 +389,7 @@ export function CustomSelect<T extends string | number = string | number>({
 									e.stopPropagation();
 									if (onClear) onClear();
 									else if (defaultValue !== undefined) onChange(defaultValue);
-									else onChange("" as any);
+									else onChange("" as unknown as T);
 								}
 							}}
 							className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer mr-1"
@@ -396,13 +428,15 @@ export function CustomSelect<T extends string | number = string | number>({
 							left: `${menuPosition.left}px`,
 							width: `${menuPosition.width}px`,
 							minWidth: "160px",
-							zIndex: 9999,
+							maxWidth: "calc(100vw - 16px)",
+							maxHeight: `${maxMenuHeight}px`,
+							zIndex: 99999,
 							transformOrigin: openUpward ? "bottom center" : "top center",
 						}}
-						className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-2xl shadow-xl shadow-slate-950/20 dark:shadow-slate-950/60 overflow-hidden animate-in fade-in zoom-in-95 duration-150 ${dropdownClassName}`}
+						className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-2xl shadow-xl shadow-slate-950/20 dark:shadow-slate-950/60 overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col ${dropdownClassName}`}
 					>
 						{shouldShowSearch && (
-							<div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
+							<div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 shrink-0">
 								<div className="relative flex items-center">
 									<Search
 										className="w-3.5 h-3.5 absolute left-2.5 text-slate-400 dark:text-slate-500 pointer-events-none"
@@ -431,7 +465,12 @@ export function CustomSelect<T extends string | number = string | number>({
 							</div>
 						)}
 
-						<div className="max-h-56 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
+						<div
+							style={{
+								maxHeight: `${Math.max(90, maxMenuHeight - (shouldShowSearch ? 52 : 0) - 12)}px`,
+							}}
+							className="overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar flex-1"
+						>
 							{filteredOptions.length === 0 ? (
 								<div className="py-6 px-3 text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
 									Không tìm thấy kết quả

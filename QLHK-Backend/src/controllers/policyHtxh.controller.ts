@@ -7,7 +7,7 @@ import { decryptCCCD, encryptCCCD, removeAccents } from "../utils/crypto";
 export const isValidUuid = (id: string): boolean =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-export const formatPolicyProfile = <T extends Record<string, any>>(p: T): T => {
+export const formatPolicyProfile = <T extends Record<string, any>>(p: T, targetYear?: number): T => {
   if (!p) return p;
   let plainCccd = p.cccd || "";
   if (plainCccd && typeof plainCccd === "string" && plainCccd.includes(":")) {
@@ -17,10 +17,21 @@ export const formatPolicyProfile = <T extends Record<string, any>>(p: T): T => {
       plainCccd = p.cccd_last4 ? `***${p.cccd_last4}` : "";
     }
   }
-  return {
+  const formatted: any = {
     ...p,
     cccd: plainCccd,
   };
+  if (targetYear) {
+    formatted.calculation_year = targetYear;
+    if (p.dob) {
+      const parsed = parseDobValue(p.dob);
+      if (parsed) {
+        const ms = computeHtxhMilestones(parsed.year, targetYear, p);
+        Object.assign(formatted, ms);
+      }
+    }
+  }
+  return formatted;
 };
 
 const SORT_KEY_MAP: Record<string, string> = {
@@ -49,8 +60,9 @@ export const getHtxhProfiles = async (req: AuthRequest, res: Response): Promise<
     const search = (req.query.search as string)?.trim();
     const category = ((req.query.category || req.query.ageGroup || req.query.milestone) as string)?.trim();
     const statusQuery = ((req.query.status || req.query.received) as string)?.trim()?.toLowerCase();
-    const rawCalcYear = req.query.calculation_year || req.query.calculationYear;
-    const calcYear = rawCalcYear ? parseInt(rawCalcYear as string, 10) : undefined;
+    const rawCalcYear = req.query.calculation_year || req.query.calculationYear || req.query.year;
+    const targetYear = rawCalcYear ? parseInt(rawCalcYear as string, 10) : new Date().getFullYear();
+
     const gender = (req.query.gender as string)?.trim();
     const ethnicity = (req.query.ethnicity as string)?.trim();
     const residence = (req.query.residence as string)?.trim();
@@ -65,11 +77,15 @@ export const getHtxhProfiles = async (req: AuthRequest, res: Response): Promise<
     const where: Record<string, unknown> = { is_deleted: false, huu_tri: "x" };
     if (villageId) where.village_id = villageId;
     if (received !== undefined) where.received = received;
-    if (calcYear) where.calculation_year = calcYear;
+
     if (gender) where.gender = gender;
     if (ethnicity) where.ethnicity = ethnicity;
     if (residence) where.residence = residence;
-    if (category) where[category] = "x";
+    const validCategory = category && category !== "all" ? category : undefined;
+    const isAgeCategory = validCategory === "age75plus" || validCategory === "age70to74poor";
+    if (validCategory && !isAgeCategory) {
+      where[validCategory] = "x";
+    }
     if (search) {
       where.OR = [{ name_unaccented: { contains: removeAccents(search) } }, { cccd_last4: search.slice(-4) }];
     }
@@ -122,12 +138,29 @@ export const getHtxhProfiles = async (req: AuthRequest, res: Response): Promise<
     const sortDirection = ((req.query.sortDirection as string) || "asc").toLowerCase() === "desc" ? "desc" : "asc";
     const orderBy = { [sortField]: sortDirection };
 
-    const [items, total] = await Promise.all([
-      prisma.htxh_profiles.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy, include: { village: true } }),
-      prisma.htxh_profiles.count({ where }),
-    ]);
+    let items: any[] = [];
+    let total = 0;
+    if (isAgeCategory && validCategory) {
+      const allRows = await prisma.htxh_profiles.findMany({ where, orderBy, include: { village: true } });
+      const filtered = allRows
+        .map((p) => formatPolicyProfile(p, targetYear))
+        .filter((p: any) => p[validCategory] === "x");
+      total = filtered.length;
+      items = filtered.slice((page - 1) * limit, page * limit);
+    } else {
+      const [rows, cnt] = await Promise.all([
+        prisma.htxh_profiles.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy, include: { village: true } }),
+        prisma.htxh_profiles.count({ where }),
+      ]);
+      total = cnt;
+      items = rows.map((p) => formatPolicyProfile(p, targetYear));
+    }
 
-    res.json({ success: true, data: items.map(formatPolicyProfile), pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
+
+
+
+
+    res.json({ success: true, data: items, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (error) {
     res.status(500).json({ error: "Lỗi hệ thống khi tải danh sách HTXH" });
   }
@@ -137,11 +170,12 @@ export const getHtxhStream = async (req: AuthRequest, res: Response): Promise<vo
   try {
     const rawVillageId = (req.query.village_id || req.query.villageId) as string;
     const villageId = req.user?.role === "admin" ? rawVillageId : req.user?.village_id;
-    const rawCalcYear = req.query.calculation_year || req.query.calculationYear;
-    const calcYear = rawCalcYear ? parseInt(rawCalcYear as string, 10) : undefined;
+    const rawCalcYear = req.query.calculation_year || req.query.calculationYear || req.query.year;
+    const targetYear = rawCalcYear ? parseInt(rawCalcYear as string, 10) : new Date().getFullYear();
+
     const where: Record<string, unknown> = { is_deleted: false, huu_tri: "x" };
     if (villageId) where.village_id = villageId;
-    if (calcYear) where.calculation_year = calcYear;
+
 
     res.setHeader("Content-Type", "application/x-ndjson");
     res.setHeader("Transfer-Encoding", "chunked");
@@ -151,7 +185,7 @@ export const getHtxhStream = async (req: AuthRequest, res: Response): Promise<vo
     const profiles = await prisma.htxh_profiles.findMany({ where, orderBy: { stt: "asc" } });
     for (const p of profiles) {
       if (closed) break;
-      res.write(JSON.stringify(formatPolicyProfile(p)) + "\n");
+      res.write(JSON.stringify(formatPolicyProfile(p, targetYear)) + "\n");
     }
     res.end();
   } catch (error) {

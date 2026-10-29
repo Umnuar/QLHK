@@ -355,6 +355,13 @@ export const createCitizen = async (
 					occupation: occupation?.trim() || null,
 					native_place: native_place?.trim() || null,
 					notes: notes?.trim() || null,
+					age75plus: req.body.age75plus ? "x" : (req.body.pension_policies?.includes("age75plus") ? "x" : ""),
+					age70to74poor: req.body.age70to74poor ? "x" : (req.body.pension_policies?.includes("age70to74poor") ? "x" : ""),
+					bao_tro: req.body.bao_tro ? "x" : (req.body.pension_policies?.includes("bao_tro") ? "x" : ""),
+					huu_tri: req.body.huu_tri ? "x" : (req.body.pension_policies?.includes("huu_tri") ? "x" : ""),
+					huu_tuat_bao_hiem: req.body.huu_tuat_bao_hiem ? "x" : (req.body.pension_policies?.includes("huu_tuat_bao_hiem") ? "x" : ""),
+					nguoi_co_cong: req.body.nguoi_co_cong ? "x" : (req.body.pension_policies?.includes("nguoi_co_cong") ? "x" : ""),
+					pension_policies: Array.isArray(req.body.pension_policies) ? req.body.pension_policies : [],
 					version: 1,
 					is_deleted: false,
 				},
@@ -471,6 +478,32 @@ export const updateCitizen = async (
 		if (occupation !== undefined) updateData.occupation = occupation ? occupation.trim() : null;
 		if (native_place !== undefined) updateData.native_place = native_place ? native_place.trim() : null;
 		if (notes !== undefined) updateData.notes = notes ? notes.trim() : null;
+		if (req.body.age75plus !== undefined) updateData.age75plus = req.body.age75plus ? "x" : "";
+		else if (req.body.pension_policies) updateData.age75plus = req.body.pension_policies.includes("age75plus") ? "x" : "";
+		if (req.body.age70to74poor !== undefined) updateData.age70to74poor = req.body.age70to74poor ? "x" : "";
+		else if (req.body.pension_policies) updateData.age70to74poor = req.body.pension_policies.includes("age70to74poor") ? "x" : "";
+		if (req.body.bao_tro !== undefined) updateData.bao_tro = req.body.bao_tro ? "x" : "";
+		else if (req.body.pension_policies) updateData.bao_tro = req.body.pension_policies.includes("bao_tro") ? "x" : "";
+		if (req.body.huu_tri !== undefined) updateData.huu_tri = req.body.huu_tri ? "x" : "";
+		else if (req.body.pension_policies) updateData.huu_tri = req.body.pension_policies.includes("huu_tri") ? "x" : "";
+		if (req.body.huu_tuat_bao_hiem !== undefined) updateData.huu_tuat_bao_hiem = req.body.huu_tuat_bao_hiem ? "x" : "";
+		else if (req.body.pension_policies) updateData.huu_tuat_bao_hiem = req.body.pension_policies.includes("huu_tuat_bao_hiem") ? "x" : "";
+		if (req.body.nguoi_co_cong !== undefined) updateData.nguoi_co_cong = req.body.nguoi_co_cong ? "x" : "";
+		else if (req.body.pension_policies) updateData.nguoi_co_cong = req.body.pension_policies.includes("nguoi_co_cong") ? "x" : "";
+		if (Array.isArray(req.body.pension_policies)) updateData.pension_policies = req.body.pension_policies;
+		if (req.body.age75plus !== undefined) updateData.age75plus = req.body.age75plus ? "x" : "";
+		else if (req.body.pension_policies) updateData.age75plus = req.body.pension_policies.includes("age75plus") ? "x" : "";
+		if (req.body.age70to74poor !== undefined) updateData.age70to74poor = req.body.age70to74poor ? "x" : "";
+		else if (req.body.pension_policies) updateData.age70to74poor = req.body.pension_policies.includes("age70to74poor") ? "x" : "";
+		if (req.body.bao_tro !== undefined) updateData.bao_tro = req.body.bao_tro ? "x" : "";
+		else if (req.body.pension_policies) updateData.bao_tro = req.body.pension_policies.includes("bao_tro") ? "x" : "";
+		if (req.body.huu_tri !== undefined) updateData.huu_tri = req.body.huu_tri ? "x" : "";
+		else if (req.body.pension_policies) updateData.huu_tri = req.body.pension_policies.includes("huu_tri") ? "x" : "";
+		if (req.body.huu_tuat_bao_hiem !== undefined) updateData.huu_tuat_bao_hiem = req.body.huu_tuat_bao_hiem ? "x" : "";
+		else if (req.body.pension_policies) updateData.huu_tuat_bao_hiem = req.body.pension_policies.includes("huu_tuat_bao_hiem") ? "x" : "";
+		if (req.body.nguoi_co_cong !== undefined) updateData.nguoi_co_cong = req.body.nguoi_co_cong ? "x" : "";
+		else if (req.body.pension_policies) updateData.nguoi_co_cong = req.body.pension_policies.includes("nguoi_co_cong") ? "x" : "";
+		if (Array.isArray(req.body.pension_policies)) updateData.pension_policies = req.body.pension_policies;
 
 		if (cccd !== undefined) {
 			if (cccd && typeof cccd === "string" && cccd.trim()) {

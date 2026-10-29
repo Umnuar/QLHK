@@ -338,4 +338,99 @@ describe("ProfileRow residence display", () => {
 
 		expect(screen.getAllByText("Trên 100 tuổi (101 tuổi)").length).toBeGreaterThanOrEqual(1);
 	});
+
+	it("calculates age accurately according to Day, Month, and Year referenceDate", () => {
+		const testProfile: TableProfile = {
+			id: "ct-ref-1",
+			village_id: "v-1",
+			name: "Hoàng Văn D",
+			dob: "20/05/1966",
+			gender: "Nam",
+			cccd: "064066001234",
+			ethnicity: "Kinh",
+			residence: "Thường trú",
+			currentAddress: "Thôn 1",
+			received: false,
+		};
+
+		const { rerender } = render(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={testProfile}
+						activeTab="chuctho"
+						calculationYear={2026}
+						referenceDate={new Date(2026, 4, 15)}
+					/>
+				</tbody>
+			</table>,
+		);
+
+		expect(screen.queryByText("Tròn 60 tuổi")).toBeNull();
+
+		rerender(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={testProfile}
+						activeTab="chuctho"
+						calculationYear={2026}
+						referenceDate={new Date(2026, 4, 25)}
+					/>
+				</tbody>
+			</table>,
+		);
+
+		expect(screen.getAllByText("Tròn 60 tuổi").length).toBeGreaterThanOrEqual(1);
+
+		rerender(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={testProfile}
+						activeTab="chuctho"
+						calculationYear={2026}
+						referenceDate={new Date(2026, 4, 0)}
+					/>
+				</tbody>
+			</table>,
+		);
+
+		expect(screen.queryByText("Tròn 60 tuổi")).toBeNull();
+
+		rerender(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={testProfile}
+						activeTab="chuctho"
+						calculationYear={2026}
+						referenceDate={new Date(2026, 5, 0)}
+					/>
+				</tbody>
+			</table>,
+		);
+
+		expect(screen.getAllByText("Tròn 60 tuổi").length).toBeGreaterThanOrEqual(1);
+
+		rerender(
+			<table>
+				<tbody>
+					<ProfileRow
+						{...defaultProps}
+						profile={testProfile}
+						activeTab="chuctho"
+						calculationYear={2026}
+						referenceDate={new Date(2026, 11, 31)}
+					/>
+				</tbody>
+			</table>,
+		);
+
+		expect(screen.getAllByText("Tròn 60 tuổi").length).toBeGreaterThanOrEqual(1);
+	});
 });

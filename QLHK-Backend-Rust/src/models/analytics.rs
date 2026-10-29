@@ -118,6 +118,14 @@ pub struct VillageAnalyticsSummary {
     pub citizen_count: i64,
     pub male_count: i64,
     pub female_count: i64,
+    #[serde(rename = "dtts_count", default)]
+    pub dtts_count: i64,
+    #[serde(rename = "dtts_percentage", default)]
+    pub dtts_percentage: f64,
+    #[serde(rename = "top_ethnicity", default)]
+    pub top_ethnicity: String,
+    #[serde(rename = "top_religion", default)]
+    pub top_religion: String,
 }
 
 pub fn calculate_percentages<T, F>(
@@ -154,7 +162,7 @@ where
         }
     }
     let diff = target_sum - current_sum;
-    if diff > 0 && (diff as usize) < len && !eligible_indices.is_empty() {
+    if diff > 0 && !eligible_indices.is_empty() {
         eligible_indices.sort_by(|&a, &b| {
             remainders[b]
                 .partial_cmp(&remainders[a])

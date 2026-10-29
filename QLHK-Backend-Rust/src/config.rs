@@ -13,13 +13,23 @@ pub struct AppConfig {
 impl AppConfig {
     pub fn from_env() -> Self {
         dotenvy::dotenv().ok();
+        let database_url = match env::var("DATABASE_URL") {
+            Ok(url) => {
+                if !url.contains("search_path") {
+                    let separator = if url.contains('?') { "&" } else { "?" };
+                    format!("{url}{separator}options=-c%20search_path=qlhk,public")
+                } else {
+                    url
+                }
+            }
+            Err(_) => "postgresql://postgres:admin123@localhost:5432/postgres?options=-c%20search_path=qlhk,public".to_string(),
+        };
         Self {
             port: env::var("PORT")
                 .unwrap_or_else(|_| "5012".to_string())
                 .parse::<u16>()
                 .unwrap_or(5012),
-            database_url: env::var("DATABASE_URL")
-                .unwrap_or_else(|_| "postgresql://postgres:admin123@localhost:5432/postgres?options=-c%20search_path=qlhk,public".to_string()),
+            database_url,
             jwt_secret: env::var("JWT_SECRET")
                 .unwrap_or_else(|_| "qlhk-dakha-jwt-access-secret-32-chars-min".to_string()),
             encryption_key: env::var("ENCRYPTION_KEY")

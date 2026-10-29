@@ -32,6 +32,31 @@ async fn health_check() -> Json<serde_json::Value> {
     }))
 }
 
+async fn security_headers_middleware(
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let mut res = next.run(req).await;
+    let headers = res.headers_mut();
+    headers.insert(
+        axum::http::HeaderName::from_static("x-content-type-options"),
+        axum::http::HeaderValue::from_static("nosniff"),
+    );
+    headers.insert(
+        axum::http::HeaderName::from_static("x-frame-options"),
+        axum::http::HeaderValue::from_static("DENY"),
+    );
+    headers.insert(
+        axum::http::HeaderName::from_static("x-xss-protection"),
+        axum::http::HeaderValue::from_static("1; mode=block"),
+    );
+    headers.insert(
+        axum::http::HeaderName::from_static("referrer-policy"),
+        axum::http::HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+    res
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::registry()
@@ -47,6 +72,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let pool = PgPoolOptions::new()
         .max_connections(20)
+        .acquire_timeout(std::time::Duration::from_secs(10))
+        .idle_timeout(std::time::Duration::from_secs(300))
+        .max_lifetime(std::time::Duration::from_secs(1800))
         .connect(&config.database_url)
         .await?;
 
@@ -70,10 +98,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         qlhk_backend_rust::handlers::policies::start_audit_retiree_watcher(watcher_pool).await;
     });
 
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+    let cors = if config.cors_origin == "*" {
+        CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any)
+    } else {
+        let parsed_origins: Vec<axum::http::HeaderValue> = config
+            .cors_origin
+            .split(',')
+            .filter_map(|s| s.trim().parse().ok())
+            .collect();
+        if parsed_origins.is_empty() {
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_headers(Any)
+        } else {
+            CorsLayer::new()
+                .allow_origin(parsed_origins)
+                .allow_methods(Any)
+                .allow_headers(Any)
+        }
+    };
 
     let protected_routes = Router::new()
         .nest("/households", households::router())
@@ -101,6 +148,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest("/updates", updates::router())
         .nest("/api", public_api_routes.merge(protected_routes))
         .layer(cors)
+        .layer(from_fn(security_headers_middleware))
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 

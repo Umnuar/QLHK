@@ -10,6 +10,7 @@ import type React from "react";
 import { useState } from "react";
 import { useApp } from "../../AppContext";
 import { authApi } from "../../api/authApi";
+import { setCachedAccessToken } from "../../api/client";
 import { secureStorage } from "../../utils/secureStorage";
 
 export const LoginView: React.FC = () => {
@@ -22,7 +23,8 @@ export const LoginView: React.FC = () => {
 
 	const handleLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!username.trim() || !password.trim()) {
+		const trimmedUsername = username.trim();
+		if (!trimmedUsername || !password) {
 			setError("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.");
 			return;
 		}
@@ -31,13 +33,19 @@ export const LoginView: React.FC = () => {
 		setError(null);
 
 		try {
-			const data = await authApi.login({ username: username.trim(), password });
+			const data = await authApi.login({ username: trimmedUsername, password });
 			if (!data?.accessToken || !data?.user) {
 				throw new Error("Phản hồi đăng nhập không hợp lệ.");
 			}
+			setCachedAccessToken(data.accessToken);
 			await secureStorage.setItem("accessToken", data.accessToken);
-			await secureStorage.setItem("refreshToken", data.refreshToken);
+			if (data.refreshToken) {
+				await secureStorage.setItem("refreshToken", data.refreshToken);
+			} else {
+				await secureStorage.removeItem("refreshToken");
+			}
 			await secureStorage.setItem("user", JSON.stringify(data.user));
+			setPassword("");
 			setUser(data.user);
 			if (data.user.role === "admin") {
 				setSelectedVillageId("");
@@ -73,7 +81,11 @@ export const LoginView: React.FC = () => {
 				</div>
 
 				{error && (
-					<div className="mb-6 p-3.5 bg-rose-950/40 border border-rose-800/60 rounded-xl flex items-start gap-3 text-rose-300 text-xs leading-relaxed">
+					<div
+						role="alert"
+						aria-live="assertive"
+						className="mb-6 p-3.5 bg-rose-950/40 border border-rose-800/60 rounded-xl flex items-start gap-3 text-rose-300 text-xs leading-relaxed"
+					>
 						<AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
 						<span>{error}</span>
 					</div>
@@ -81,7 +93,10 @@ export const LoginView: React.FC = () => {
 
 				<form onSubmit={handleLogin} className="space-y-5">
 					<div>
-						<label htmlFor="login-username" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">
+						<label
+							htmlFor="login-username"
+							className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2"
+						>
 							Tên đăng nhập
 						</label>
 						<div className="relative">
@@ -92,17 +107,22 @@ export const LoginView: React.FC = () => {
 								id="login-username"
 								type="text"
 								value={username}
+								disabled={loading}
+								autoComplete="username"
 								onChange={(e) => setUsername(e.target.value)}
 								placeholder="Nhập tài khoản"
 								required
 								autoFocus
-								className="w-full h-12 pl-11 pr-4 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors font-medium"
+								className="w-full h-12 pl-11 pr-4 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
 							/>
 						</div>
 					</div>
 
 					<div>
-						<label htmlFor="login-password" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">
+						<label
+							htmlFor="login-password"
+							className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2"
+						>
 							Mật khẩu
 						</label>
 						<div className="relative">
@@ -113,17 +133,19 @@ export const LoginView: React.FC = () => {
 								id="login-password"
 								type={showPassword ? "text" : "password"}
 								value={password}
+								disabled={loading}
+								autoComplete="current-password"
 								onChange={(e) => setPassword(e.target.value)}
 								placeholder="Nhập mật khẩu"
 								required
-								className="w-full h-12 pl-11 pr-12 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors font-medium"
+								className="w-full h-12 pl-11 pr-12 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
 							/>
 							<button
 								type="button"
 								onClick={() => setShowPassword(!showPassword)}
+								disabled={loading}
 								aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-								className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer"
-								tabIndex={0}
+								className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer disabled:opacity-50"
 							>
 								{showPassword ? (
 									<EyeOff className="w-5 h-5" />

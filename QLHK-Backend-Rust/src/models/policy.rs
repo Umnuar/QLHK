@@ -89,6 +89,7 @@ pub struct ChucthoProfileResponse {
     pub name: String,
     pub name_unaccented: Option<String>,
     pub dob: Option<String>,
+    pub age: Option<i32>,
     pub gender: Option<String>,
     pub cccd: Option<String>,
     pub cccd_hash: Option<String>,
@@ -147,6 +148,7 @@ impl ChucthoProfileRow {
             name: self.name,
             name_unaccented: self.name_unaccented,
             dob: self.dob,
+            age: None,
             gender: self.gender,
             cccd: Some(plain_cccd),
             cccd_hash: self.cccd_hash,
@@ -197,6 +199,7 @@ impl ChucthoProfileDb {
             name: self.name,
             name_unaccented: self.name_unaccented,
             dob: self.dob,
+            age: None,
             gender: self.gender,
             cccd: Some(plain_cccd),
             cccd_hash: self.cccd_hash,
@@ -300,6 +303,7 @@ pub struct HtxhProfileResponse {
     pub name: String,
     pub name_unaccented: Option<String>,
     pub dob: Option<String>,
+    pub age: Option<i32>,
     pub gender: Option<String>,
     pub cccd: Option<String>,
     pub cccd_hash: Option<String>,
@@ -354,6 +358,7 @@ impl HtxhProfileRow {
             name: self.name,
             name_unaccented: self.name_unaccented,
             dob: self.dob,
+            age: None,
             gender: self.gender,
             cccd: Some(plain_cccd),
             cccd_hash: self.cccd_hash,
@@ -400,6 +405,7 @@ impl HtxhProfileDb {
             name: self.name,
             name_unaccented: self.name_unaccented,
             dob: self.dob,
+            age: None,
             gender: self.gender,
             cccd: Some(plain_cccd),
             cccd_hash: self.cccd_hash,
@@ -462,19 +468,37 @@ pub fn parse_dob_value(raw: &str) -> Option<(String, i32)> {
     }
     let parts: Vec<&str> = trimmed.split(['/', '-', '.']).collect();
     if parts.len() == 3 {
-        let d = parts[0].parse::<u32>().ok()?;
-        let m = parts[1].parse::<u32>().ok()?;
-        let y = parts[2].parse::<i32>().ok()?;
+        let p0 = parts[0].parse::<i32>().ok()?;
+        let p1 = parts[1].parse::<u32>().ok()?;
+        let p2 = parts[2].parse::<i32>().ok()?;
+        let (d, m, y) = if parts[0].len() == 4 || p0 > 31 {
+            (p2 as u32, p1, p0)
+        } else {
+            (p0 as u32, p1, p2)
+        };
+        if !(1..=31).contains(&d) || !(1..=12).contains(&m) || !(1900..=2100).contains(&y) {
+            return None;
+        }
         return Some((format!("{:02}/{:02}/{}", d, m, y), y));
     }
     if parts.len() == 2 {
-        let m = parts[0].parse::<u32>().ok()?;
-        let y = parts[1].parse::<i32>().ok()?;
+        let p0 = parts[0].parse::<i32>().ok()?;
+        let p1 = parts[1].parse::<i32>().ok()?;
+        let (m, y) = if parts[0].len() == 4 || p0 > 12 {
+            (p1 as u32, p0)
+        } else {
+            (p0 as u32, p1)
+        };
+        if !(1..=12).contains(&m) || !(1900..=2100).contains(&y) {
+            return None;
+        }
         return Some((format!("01/{:02}/{}", m, y), y));
     }
     if parts.len() == 1 && trimmed.len() == 4 {
         let y = trimmed.parse::<i32>().ok()?;
-        return Some((format!("01/01/{}", y), y));
+        if (1900..=2100).contains(&y) {
+            return Some((format!("01/01/{}", y), y));
+        }
     }
     None
 }
@@ -485,6 +509,12 @@ pub fn extract_birth_year(dob: &str) -> Option<i32> {
     }
     let trimmed = dob.trim();
     if trimmed.len() >= 4 {
+        let start = &trimmed[..4];
+        if let Ok(y) = start.parse::<i32>() {
+            if (1900..=2100).contains(&y) {
+                return Some(y);
+            }
+        }
         let end = &trimmed[trimmed.len() - 4..];
         if let Ok(y) = end.parse::<i32>() {
             if (1900..=2100).contains(&y) {

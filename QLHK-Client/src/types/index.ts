@@ -32,12 +32,12 @@ export interface Person {
 	phone?: string;
 	notes?: string;
 	pension_policies?: string[];
-	huu_tri?: boolean;
-	huu_tuat_bao_hiem?: boolean;
-	age75plus?: boolean;
-	age70to74poor?: boolean;
-	bao_tro?: boolean;
-	nguoi_co_cong?: boolean;
+	huu_tri?: boolean | string;
+	huu_tuat_bao_hiem?: boolean | string;
+	age75plus?: boolean | string;
+	age70to74poor?: boolean | string;
+	bao_tro?: boolean | string;
+	nguoi_co_cong?: boolean | string;
 }
 
 export interface Household {

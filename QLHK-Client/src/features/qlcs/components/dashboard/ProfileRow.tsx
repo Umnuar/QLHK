@@ -35,6 +35,7 @@ interface ProfileRowProps {
 	softTextClass: string;
 	isFirstOfGroup?: boolean;
 	calculationYear?: number;
+	referenceDate?: Date;
 }
 
 export const ProfileRow = React.memo(function ProfileRow({
@@ -53,6 +54,7 @@ export const ProfileRow = React.memo(function ProfileRow({
 	panelClass,
 	softTextClass,
 	calculationYear,
+	referenceDate,
 }: ProfileRowProps) {
 	const [showCccd, setShowCccd] = useState(false);
 	const [isTogglingGift, setIsTogglingGift] = useState(false);
@@ -64,7 +66,7 @@ export const ProfileRow = React.memo(function ProfileRow({
 				calculationYear ||
 				Number(profile.calculation_year || profile.calculationYear) ||
 				new Date().getFullYear();
-			const age = profile.dob ? calculateAge(profile.dob, targetYear) : 0;
+			const age = profile.dob ? calculateAge(profile.dob, targetYear, referenceDate) : 0;
 			if (age > 0) {
 				if (age >= 60 && age < 65) m.push("60");
 				else if (age >= 65 && age < 70) m.push("65");
@@ -93,6 +95,7 @@ export const ProfileRow = React.memo(function ProfileRow({
 	}, [
 		activeTab,
 		calculationYear,
+		referenceDate,
 		profile.dob,
 		profile.calculation_year,
 		profile.calculationYear,
@@ -115,7 +118,7 @@ export const ProfileRow = React.memo(function ProfileRow({
 				calculationYear ||
 				Number(profile.calculation_year || profile.calculationYear) ||
 				new Date().getFullYear();
-			const age = profile.dob ? calculateAge(profile.dob, targetYear) : 0;
+			const age = profile.dob ? calculateAge(profile.dob, targetYear, referenceDate) : 0;
 			const m = milestone[0];
 
 			if (age >= 100) {
@@ -147,6 +150,7 @@ export const ProfileRow = React.memo(function ProfileRow({
 		activeTab,
 		milestone,
 		calculationYear,
+		referenceDate,
 		profile.calculation_year,
 		profile.calculationYear,
 		profile.dob,
@@ -349,8 +353,9 @@ export const ProfileRow = React.memo(function ProfileRow({
 								calculationYear ||
 								Number(profile.calculation_year || profile.calculationYear) ||
 								new Date().getFullYear();
-							const age = profile.dob ? calculateAge(profile.dob, targetYear) : 0;
-							const is75Plus = age >= 75 || Boolean(profile.age75plus);
+							const pAny = profile as any;
+							const age = profile.dob ? calculateAge(profile.dob, targetYear, referenceDate) : 0;
+							const is75Plus = age >= 75 || profile.age75plus === "x" || Boolean(profile.age75plus) || (Array.isArray(pAny.pension_policies) && pAny.pension_policies.includes("age75plus"));
 							return is75Plus ? (
 								<span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 rounded-lg text-xs font-bold">
 									CÓ
@@ -362,13 +367,8 @@ export const ProfileRow = React.memo(function ProfileRow({
 					</td>
 					<td className="py-3 px-2 text-center border-b border-slate-100 dark:border-slate-800/80 whitespace-nowrap">
 						{(() => {
-							const targetYear =
-								calculationYear ||
-								Number(profile.calculation_year || profile.calculationYear) ||
-								new Date().getFullYear();
-							const age = profile.dob ? calculateAge(profile.dob, targetYear) : 0;
-							const inRange = age > 0 ? (age >= 70 && age < 75) : true;
-							const isPoor = inRange && Boolean(profile.age70to74poor);
+							const pAny = profile as any;
+							const isPoor = profile.age70to74poor === "x" || Boolean(profile.age70to74poor) || (Array.isArray(pAny.pension_policies) && pAny.pension_policies.includes("age70to74poor"));
 							return isPoor ? (
 								<span className="px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800 rounded-lg text-xs font-bold">
 									CÓ
@@ -381,12 +381,18 @@ export const ProfileRow = React.memo(function ProfileRow({
 					<td className="py-3 px-3 text-center relative border-b border-slate-100 dark:border-slate-800/80 whitespace-nowrap">
 						{(() => {
 							const policies = [];
-							if (profile.baoTro || profile.bao_tro)
+							const pAny = profile as any;
+							if (profile.age75plus === "x" || profile.age75plus === true || (Array.isArray(pAny.pension_policies) && pAny.pension_policies.includes("age75plus")))
+								policies.push("Đủ 75 tuổi trở lên");
+							if (profile.age70to74poor === "x" || profile.age70to74poor === true || (Array.isArray(pAny.pension_policies) && pAny.pension_policies.includes("age70to74poor")))
+								policies.push("70-74 tuổi hộ nghèo, cận nghèo");
+							if (profile.baoTro || profile.bao_tro === "x" || profile.bao_tro === true || (Array.isArray(pAny.pension_policies) && pAny.pension_policies.includes("bao_tro")))
 								policies.push("Bảo trợ xã hội");
-							if (profile.huuTri || profile.huu_tri) policies.push("Hưu trí");
-							if (profile.huuTuatBaoHiem || profile.huu_tuat_bao_hiem)
+							if (profile.huuTri || profile.huu_tri === "x" || profile.huu_tri === true || (Array.isArray(pAny.pension_policies) && pAny.pension_policies.includes("huu_tri")))
+								policies.push("Hưu trí");
+							if (profile.huuTuatBaoHiem || profile.huu_tuat_bao_hiem === "x" || profile.huu_tuat_bao_hiem === true || (Array.isArray(pAny.pension_policies) && pAny.pension_policies.includes("huu_tuat_bao_hiem")))
 								policies.push("Hưu, Tuất Bảo hiểm");
-							if (profile.nguoiCoCong || profile.nguoi_co_cong)
+							if (profile.nguoiCoCong || profile.nguoi_co_cong === "x" || profile.nguoi_co_cong === true || (Array.isArray(pAny.pension_policies) && pAny.pension_policies.includes("nguoi_co_cong")))
 								policies.push("Người có công");
 
 							if (policies.length === 0) {

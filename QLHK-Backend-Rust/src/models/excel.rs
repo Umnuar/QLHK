@@ -29,6 +29,7 @@ pub struct ExportQuery {
     pub year: Option<i32>,
     pub gender: Option<String>,
     pub ethnicity: Option<String>,
+    pub columns: Option<usize>,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -87,6 +88,7 @@ pub struct ExportChucthoRow {
     pub dob: Option<String>,
     pub gender: Option<String>,
     pub cccd: Option<String>,
+    pub cccd_last4: Option<String>,
     pub ethnicity: Option<String>,
     pub residence: Option<String>,
     pub current_address: Option<String>,
@@ -113,6 +115,7 @@ pub struct ExportHtxhRow {
     pub dob: Option<String>,
     pub gender: Option<String>,
     pub cccd: Option<String>,
+    pub cccd_last4: Option<String>,
     pub ethnicity: Option<String>,
     pub residence: Option<String>,
     pub current_address: Option<String>,
@@ -126,19 +129,4 @@ pub struct ExportHtxhRow {
     pub received: Option<bool>,
     pub calculation_year: Option<i32>,
     pub notes: Option<String>,
-}
-
-#[derive(Debug, Clone, Deserialize, Default)]
-pub struct PolicyImportPayload {
-    pub r#type: Option<String>,
-    #[serde(rename = "villageId")]
-    pub village_id_camel: Option<Uuid>,
-    pub village_id: Option<Uuid>,
-    #[serde(rename = "calculationYear")]
-    pub calculation_year_camel: Option<i32>,
-    pub calculation_year: Option<i32>,
-    pub file_name: Option<String>,
-    #[serde(rename = "fileName")]
-    pub file_name_camel: Option<String>,
-    pub profiles: Option<Vec<serde_json::Value>>,
 }

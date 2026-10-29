@@ -7,6 +7,7 @@ import { useModal } from "./useModal";
 import type { AuditLog, TabType } from "../types";
 import type { FilterParams } from "./useProfilesTypes";
 import { useProfilesActions } from "./useProfilesActions";
+import type { CalculationTarget } from "../features/qlcs/components/dashboard/YearSelector";
 
 export * from "./useProfilesTypes";
 
@@ -110,6 +111,7 @@ export function useProfiles(
 	activeTab: TabType,
 	filters: FilterParams,
 	globalCalculationYear?: number,
+	calculationTarget?: CalculationTarget,
 ) {
 	const [page, setPage] = useState<number>(filters.currentPage || 1);
 	const [pageData, setPageData] = useState<any[]>([]);
@@ -184,8 +186,15 @@ export function useProfiles(
 		abortControllerRef.current = abortController;
 
 		const vid = isGlobal || !villageId || villageId === "all" ? undefined : villageId?.trim() || undefined;
-		const yearTag = activeTab === "chuctho" && globalCalculationYear && globalCalculationYear > 0 ? `y${globalCalculationYear}` : "current";
-		const cacheKey = `profiles_${activeTab}_${vid || "all"}_${yearTag}_p${currentPage}_l${itemsPerPage}_${statusFilter}_${genderFilter || ""}_${ethnicityFilter || ""}_${residenceFilter || ""}_${ageGroup || ""}_${debouncedSearch || ""}_${dateFilter || ""}`;
+		const targetYear = calculationTarget?.year || globalCalculationYear || new Date().getFullYear();
+		const precision = activeTab === "chuctho" ? (calculationTarget?.precision || "year") : "year";
+		const monthVal = activeTab === "chuctho" && precision !== "year" ? calculationTarget?.month : undefined;
+		const dayVal = activeTab === "chuctho" && precision === "date" ? calculationTarget?.day : undefined;
+
+		const targetTag = activeTab === "chuctho" && targetYear && targetYear > 0 
+			? `y${targetYear}_${precision}_m${monthVal || ""}_d${dayVal || ""}` 
+			: "current";
+		const cacheKey = `profiles_${activeTab}_${vid || "all"}_${targetTag}_p${currentPage}_l${itemsPerPage}_${statusFilter}_${genderFilter || ""}_${ethnicityFilter || ""}_${residenceFilter || ""}_${ageGroup || ""}_${debouncedSearch || ""}_${dateFilter || ""}`;
 
 		try {
 			const cached = await getCache<any>(cacheKey);
@@ -207,14 +216,16 @@ export function useProfiles(
 		} catch {}
 
 		try {
-			const queryParams = {
+			const queryParams: any = {
 				villageId: vid, search: debouncedSearch || undefined,
 				dob: dateFilter?.trim() || undefined,
 				status: statusFilter !== "all" ? statusFilter : undefined, ageGroup,
 				gender: genderFilter || undefined, ethnicity: ethnicityFilter || undefined,
 				residence: residenceFilter || undefined, sortKey: sortKey || undefined,
 				sortDirection: sortDirection || undefined, page: currentPage || 1, limit: itemsPerPage || 50,
-				calculationYear: activeTab === "chuctho" && globalCalculationYear && globalCalculationYear > 0 ? globalCalculationYear : undefined,
+				calculationYear: activeTab === "chuctho" && targetYear > 0 ? targetYear : undefined,
+				month: monthVal !== undefined ? String(monthVal) : undefined,
+				day: dayVal !== undefined ? String(dayVal) : undefined,
 			};
 
 			const fetchFn = activeTab === "chuctho"
@@ -250,12 +261,13 @@ export function useProfiles(
 				setTotal(fallback.length);
 			}
 		}
-	}, [isGlobal, villageId, activeTab, currentPage, itemsPerPage, statusFilter, ageGroup, genderFilter, ethnicityFilter, residenceFilter, debouncedSearch, dateFilter, sortKey, sortDirection, globalCalculationYear]);
+	}, [isGlobal, villageId, activeTab, currentPage, itemsPerPage, statusFilter, ageGroup, genderFilter, ethnicityFilter, residenceFilter, debouncedSearch, dateFilter, sortKey, sortDirection, globalCalculationYear, calculationTarget?.precision, calculationTarget?.year, calculationTarget?.month, calculationTarget?.day]);
 
 	const loadStats = useCallback(async () => {
 		try {
 			const vid = isGlobal || !villageId || villageId === "all" ? undefined : villageId?.trim() || undefined;
-			const res = await api.getProfileStats(vid, globalCalculationYear && globalCalculationYear > 0 ? globalCalculationYear : undefined);
+			const targetYear = calculationTarget?.year || globalCalculationYear || new Date().getFullYear();
+			const res = await api.getProfileStats(vid, targetYear && targetYear > 0 ? targetYear : undefined);
 			if (res) {
 				setStats((prev: any) => {
 					if (prev && prev.total === res.total && prev.received === res.received && prev.unreceived === res.unreceived && prev.rate === res.rate) return prev;
@@ -267,7 +279,7 @@ export function useProfiles(
 			const fallbackStats = activeTab === "chuctho" ? FALLBACK_CHUC_THO_STATS : FALLBACK_HTXH_STATS;
 			setStats((prev: any) => (prev?.total ? prev : fallbackStats));
 		}
-	}, [isGlobal, villageId, api, globalCalculationYear]);
+	}, [isGlobal, villageId, api, globalCalculationYear, calculationTarget?.year]);
 
 	useEffect(() => {
 		loadPage();

@@ -1,5 +1,5 @@
 {
-  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "$schema": "https://schema.tauri.app/config/2",
   "productName": "Quan Ly Ho Khau - Nhan Khau Dak Ha",
   "version": "1.5.0",
   "identifier": "com.quanly.hokhau",

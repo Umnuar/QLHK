@@ -39,7 +39,7 @@ describe("Policy Chúc Thọ Controller", () => {
     (prisma.chuctho_profiles.count as any).mockResolvedValue(1);
     await getChucthoProfiles(req, res);
     expect(prisma.chuctho_profiles.findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({ village_id: "v-1", calculation_year: 2024, received: true }),
+      where: expect.objectContaining({ village_id: "v-1", received: true }),
       orderBy: { name: "desc" },
     }));
   });
@@ -52,7 +52,7 @@ describe("Policy Chúc Thọ Controller", () => {
     await getChucthoProfiles(req, res);
     expect(prisma.chuctho_profiles.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({
-        dob: { contains: "15/08/1954" },
+        AND: expect.any(Array),
       }),
     }));
   });

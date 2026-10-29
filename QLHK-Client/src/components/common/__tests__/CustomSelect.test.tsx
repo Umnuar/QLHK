@@ -1,10 +1,15 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CustomSelect } from "../CustomSelect";
 
 describe("CustomSelect Component", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+	});
+
+	afterEach(() => {
+		cleanup();
+		document.body.innerHTML = "";
 	});
 
 	it("1. Render options dạng string và object chuẩn xác", () => {

@@ -1673,6 +1673,20 @@ pub async fn sync_single_citizen_to_policies(
         pub occupation: Option<String>,
         pub military_status: Option<String>,
         pub notes: Option<String>,
+        #[sqlx(default)]
+        pub huu_tri: Option<String>,
+        #[sqlx(default)]
+        pub age75plus: Option<String>,
+        #[sqlx(default)]
+        pub age70to74poor: Option<String>,
+        #[sqlx(default)]
+        pub bao_tro: Option<String>,
+        #[sqlx(default)]
+        pub huu_tuat_bao_hiem: Option<String>,
+        #[sqlx(default)]
+        pub nguoi_co_cong: Option<String>,
+        #[sqlx(default)]
+        pub pension_policies: Option<Vec<String>>,
         pub is_deleted: bool,
         pub household_address: Option<String>,
         pub household_village_id: Uuid,
@@ -1684,7 +1698,9 @@ pub async fn sync_single_citizen_to_policies(
         r#"
         SELECT c.full_name, c.name_unaccented, c.dob, c.gender,
                c.cccd, c.cccd_hash, c.cccd_last4, c.ethnicity, c.occupation,
-               c.military_status, c.notes, c.is_deleted,
+               c.military_status, c.notes,
+               c.huu_tri, c.age75plus, c.age70to74poor, c.bao_tro, c.huu_tuat_bao_hiem, c.nguoi_co_cong, c.pension_policies,
+               c.is_deleted,
                h.address as household_address, h.village_id as household_village_id,
                h.status as household_status, h.is_deleted as household_deleted
         FROM qlhk.citizens c
@@ -1911,14 +1927,27 @@ pub async fn sync_single_citizen_to_policies(
     let occ_and_notes = format!("{} {}", occ, not);
     let mil_and_notes = format!("{} {} {}", occ, mil, not);
 
-    let is_retiree = is_retiree_text(&occ_and_notes);
-    let is_huu_tuat = is_huu_tuat_text(&occ_and_notes);
-    let is_bao_tro = is_bao_tro_text(&occ_and_notes);
-    let is_nguoi_co_cong = is_nguoi_co_cong_text(&mil_and_notes);
+    let explicit_retiree = citizen.huu_tri.as_deref() == Some("x")
+        || citizen.pension_policies.as_ref().map(|p| p.iter().any(|s| s == "huu_tri")).unwrap_or(false);
+    let explicit_huu_tuat = citizen.huu_tuat_bao_hiem.as_deref() == Some("x")
+        || citizen.pension_policies.as_ref().map(|p| p.iter().any(|s| s == "huu_tuat_bao_hiem")).unwrap_or(false);
+    let explicit_bao_tro = citizen.bao_tro.as_deref() == Some("x")
+        || citizen.pension_policies.as_ref().map(|p| p.iter().any(|s| s == "bao_tro")).unwrap_or(false);
+    let explicit_nguoi_co_cong = citizen.nguoi_co_cong.as_deref() == Some("x")
+        || citizen.pension_policies.as_ref().map(|p| p.iter().any(|s| s == "nguoi_co_cong")).unwrap_or(false);
+    let explicit_75plus = citizen.age75plus.as_deref() == Some("x")
+        || citizen.pension_policies.as_ref().map(|p| p.iter().any(|s| s == "age75plus")).unwrap_or(false);
+    let explicit_70to74poor = citizen.age70to74poor.as_deref() == Some("x")
+        || citizen.pension_policies.as_ref().map(|p| p.iter().any(|s| s == "age70to74poor")).unwrap_or(false);
+
+    let is_retiree = explicit_retiree || is_retiree_text(&occ_and_notes);
+    let is_huu_tuat = explicit_huu_tuat || is_huu_tuat_text(&occ_and_notes);
+    let is_bao_tro = explicit_bao_tro || is_bao_tro_text(&occ_and_notes);
+    let is_nguoi_co_cong = explicit_nguoi_co_cong || is_nguoi_co_cong_text(&mil_and_notes);
 
     let htxh_age = age_in_target_year.or(effective_age);
-    let is_75plus = htxh_age.map(|a| a >= 75).unwrap_or(false);
-    let is_70to74poor = htxh_age
+    let is_75plus = explicit_75plus || htxh_age.map(|a| a >= 75).unwrap_or(false);
+    let is_70to74poor = explicit_70to74poor || htxh_age
         .map(|a| (70..=74).contains(&a) && is_poor_status_or_notes(h_status, not))
         .unwrap_or(false);
 
@@ -1974,12 +2003,12 @@ pub async fn sync_single_citizen_to_policies(
         };
 
         if let Some(existing) = existing_htxh {
-            let final_retiree = if is_retiree { "x".to_string() } else { existing.huu_tri.unwrap_or_default() };
-            let final_75plus = if is_75plus { "x".to_string() } else { existing.age75plus.unwrap_or_default() };
-            let final_70to74poor = if is_70to74poor { "x".to_string() } else { existing.age70to74poor.unwrap_or_default() };
-            let final_bao_tro = if is_bao_tro { "x".to_string() } else { existing.bao_tro.unwrap_or_default() };
-            let final_huu_tuat = if is_huu_tuat { "x".to_string() } else { existing.huu_tuat_bao_hiem.unwrap_or_default() };
-            let final_nguoi_co_cong = if is_nguoi_co_cong { "x".to_string() } else { existing.nguoi_co_cong.unwrap_or_default() };
+            let final_retiree = if is_retiree { "x".to_string() } else { String::new() };
+            let final_75plus = if is_75plus { "x".to_string() } else { String::new() };
+            let final_70to74poor = if is_70to74poor { "x".to_string() } else { String::new() };
+            let final_bao_tro = if is_bao_tro { "x".to_string() } else { String::new() };
+            let final_huu_tuat = if is_huu_tuat { "x".to_string() } else { String::new() };
+            let final_nguoi_co_cong = if is_nguoi_co_cong { "x".to_string() } else { String::new() };
 
             let _ = sqlx::query(
                 r#"

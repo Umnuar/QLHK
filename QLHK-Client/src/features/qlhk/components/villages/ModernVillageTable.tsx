@@ -30,6 +30,7 @@ import type {
 import type { User, Village } from "@/types";
 import { exportExcelWithDialog, loadXlsx } from "@/utils/fileExport";
 import { normalizeUnaccented } from "@/utils/vietnamese";
+import { CustomSelect } from "@/components/common/CustomSelect";
 
 export interface ModernVillageTableProps {
 	villages: Village[];
@@ -122,6 +123,22 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 			};
 		});
 	}, [villages, villageStats, overview?.totalHouseholds, userList]);
+
+	const officerOptions = useMemo(() => [
+		{ value: "", label: "-- Chưa phân công cán bộ --" },
+		...userList.map((u) => {
+			const currentAssignedVillage = villages.find((v) => v.id === u.village_id);
+			const isCurrentVillage = editingVillage && u.village_id === editingVillage.id;
+			const assignedNote =
+				currentAssignedVillage && !isCurrentVillage
+					? ` (Đang phụ trách: ${currentAssignedVillage.name})`
+					: "";
+			return {
+				value: u.id,
+				label: `${u.full_name || u.username}${assignedNote}`,
+			};
+		}),
+	], [userList, villages, editingVillage]);
 
 	const displayStats = useMemo(() => {
 		if (isAdmin) {
@@ -1024,18 +1041,14 @@ export const ModernVillageTable: React.FC<ModernVillageTableProps> = ({
 									<label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
 										Cán Bộ Phụ Trách Thôn
 									</label>
-									<select
+									<CustomSelect
 										value={formOfficerId}
-										onChange={(e) => setFormOfficerId(e.target.value)}
-										className="w-full h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-									>
-										<option value="">-- Chưa phân công cán bộ --</option>
-										{userList.map((u) => (
-											<option key={u.id} value={u.id}>
-												{u.full_name || u.username} {u.role === "admin" ? "[Admin]" : ""}
-											</option>
-										))}
-									</select>
+										onChange={(val) => setFormOfficerId(String(val))}
+										options={officerOptions}
+										placeholder="-- Chưa phân công cán bộ --"
+										size="md"
+										searchable
+									/>
 								</div>
 							</div>
 

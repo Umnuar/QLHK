@@ -10,8 +10,8 @@ export const htxhApi = {
 			search: params.search?.trim() || undefined,
 			dob: params.dob?.trim() || undefined,
 			status: params.status !== "all" ? params.status : undefined,
-			ageGroup: params.ageGroup || undefined,
-			category: params.ageGroup || undefined,
+			ageGroup: params.ageGroup && params.ageGroup !== "all" ? params.ageGroup : undefined,
+			category: params.ageGroup && params.ageGroup !== "all" ? params.ageGroup : undefined,
 			gender: params.gender || undefined,
 			ethnicity: params.ethnicity || undefined,
 			residence: params.residence || undefined,
@@ -25,6 +25,7 @@ export const htxhApi = {
 		if (params.calculationYear && !isNaN(params.calculationYear)) {
 			cleanParams.calculationYear = params.calculationYear;
 			cleanParams.calculation_year = params.calculationYear;
+			cleanParams.year = params.calculationYear;
 		}
 		if (cleanParams.status === "received" || cleanParams.status === 1 || cleanParams.status === true) {
 			cleanParams.received = true;
@@ -58,6 +59,7 @@ export const htxhApi = {
 		if (calculationYear) {
 			params.calculationYear = calculationYear;
 			params.calculation_year = calculationYear;
+			params.year = calculationYear;
 		}
 		const res = await apiClient.get("/policies/analytics", { params });
 		const d = res.data?.data || res.data;

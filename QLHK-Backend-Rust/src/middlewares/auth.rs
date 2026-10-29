@@ -150,19 +150,6 @@ pub async fn auth_middleware(
         }
     };
 
-    if token == "test-admin" || token == "dev-token" {
-        let claims = Claims {
-            id: "00000000-0000-0000-0000-000000000000".to_string(),
-            username: "admin".to_string(),
-            role: "admin".to_string(),
-            village_id: None,
-            exp: None,
-            iat: None,
-        };
-        req.extensions_mut().insert(claims);
-        return next.run(req).await;
-    }
-
     let secret = std::env::var("JWT_SECRET")
         .unwrap_or_else(|_| "qlhk-dakha-jwt-access-secret-32-chars-min".to_string());
 
@@ -377,5 +364,24 @@ mod tests {
             &expired_validation,
         );
         assert!(expired_result.is_err());
+    }
+
+    #[test]
+    fn test_reject_static_backdoor_tokens() {
+        let secret = "qlhk-dakha-jwt-access-secret-32-chars-min";
+        let validation = Validation::default();
+        let decode_test_admin = decode::<Claims>(
+            "test-admin",
+            &DecodingKey::from_secret(secret.as_bytes()),
+            &validation,
+        );
+        assert!(decode_test_admin.is_err());
+
+        let decode_dev_token = decode::<Claims>(
+            "dev-token",
+            &DecodingKey::from_secret(secret.as_bytes()),
+            &validation,
+        );
+        assert!(decode_dev_token.is_err());
     }
 }

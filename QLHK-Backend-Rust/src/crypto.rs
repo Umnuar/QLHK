@@ -76,12 +76,12 @@ pub fn hash_cccd_default(plain: &str) -> String {
 }
 
 pub fn constant_time_eq_bytes(a: &[u8], b: &[u8]) -> bool {
-    if a.len() != b.len() {
-        return false;
-    }
-    let mut diff = 0u8;
-    for (&x, &y) in a.iter().zip(b.iter()) {
-        diff |= core::hint::black_box(x ^ y);
+    let mut diff = a.len() ^ b.len();
+    let max_len = a.len().max(b.len());
+    for i in 0..max_len {
+        let x = a.get(i).copied().unwrap_or(0);
+        let y = b.get(i).copied().unwrap_or(0);
+        diff |= core::hint::black_box((x ^ y) as usize);
     }
     core::hint::black_box(diff) == 0
 }
@@ -345,6 +345,19 @@ mod tests {
         assert!(!constant_time_compare("hello", "hell"));
         assert!(!constant_time_compare("", "a"));
         assert!(constant_time_compare("", ""));
+    }
+
+    #[test]
+    fn test_constant_time_eq_bytes() {
+        assert!(constant_time_eq_bytes(b"abcdef", b"abcdef"));
+        assert!(!constant_time_eq_bytes(b"abcdef", b"abcdeg"));
+        assert!(!constant_time_eq_bytes(b"abcdef", b"abcde"));
+        assert!(!constant_time_eq_bytes(b"abcde", b"abcdef"));
+        assert!(!constant_time_eq_bytes(b"", b"a"));
+        assert!(!constant_time_eq_bytes(b"a", b""));
+        assert!(constant_time_eq_bytes(b"", b""));
+        assert!(!constant_time_eq_bytes(b"token\0", b"token"));
+        assert!(!constant_time_eq_bytes(b"token", b"token\0"));
     }
 
     #[test]

@@ -88,11 +88,12 @@ async fn create_backup(
     }
 
     if let Err(err) = tokio::fs::create_dir_all("backups").await {
+        tracing::error!("Failed to create backups directory: {}", err);
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({
                 "success": false,
-                "error": err.to_string(),
+                "error": "Lỗi máy chủ trong quá trình xử lý sao lưu",
             })),
         )
             .into_response();
@@ -101,9 +102,10 @@ async fn create_backup(
     let villages = match fetch_table_json(&state.pool, "qlhk.villages").await {
         Ok(v) => v,
         Err(err) => {
+            tracing::error!("Failed to export table qlhk.villages: {}", err);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "success": false, "error": err.to_string() })),
+                Json(json!({ "success": false, "error": "Lỗi máy chủ trong quá trình trích xuất dữ liệu sao lưu" })),
             )
                 .into_response();
         }
@@ -112,9 +114,10 @@ async fn create_backup(
     let households = match fetch_table_json(&state.pool, "qlhk.households").await {
         Ok(v) => v,
         Err(err) => {
+            tracing::error!("Failed to export table qlhk.households: {}", err);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "success": false, "error": err.to_string() })),
+                Json(json!({ "success": false, "error": "Lỗi máy chủ trong quá trình trích xuất dữ liệu sao lưu" })),
             )
                 .into_response();
         }
@@ -123,9 +126,10 @@ async fn create_backup(
     let citizens = match fetch_table_json(&state.pool, "qlhk.citizens").await {
         Ok(v) => v,
         Err(err) => {
+            tracing::error!("Failed to export table qlhk.citizens: {}", err);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "success": false, "error": err.to_string() })),
+                Json(json!({ "success": false, "error": "Lỗi máy chủ trong quá trình trích xuất dữ liệu sao lưu" })),
             )
                 .into_response();
         }
@@ -134,9 +138,10 @@ async fn create_backup(
     let settings = match fetch_table_json(&state.pool, "qlhk.settings").await {
         Ok(v) => v,
         Err(err) => {
+            tracing::error!("Failed to export table qlhk.settings: {}", err);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "success": false, "error": err.to_string() })),
+                Json(json!({ "success": false, "error": "Lỗi máy chủ trong quá trình trích xuất dữ liệu sao lưu" })),
             )
                 .into_response();
         }
@@ -145,9 +150,10 @@ async fn create_backup(
     let chuctho_profiles = match fetch_table_json(&state.pool, "qlhk.chuctho_profiles").await {
         Ok(v) => v,
         Err(err) => {
+            tracing::error!("Failed to export table qlhk.chuctho_profiles: {}", err);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "success": false, "error": err.to_string() })),
+                Json(json!({ "success": false, "error": "Lỗi máy chủ trong quá trình trích xuất dữ liệu sao lưu" })),
             )
                 .into_response();
         }
@@ -156,9 +162,10 @@ async fn create_backup(
     let htxh_profiles = match fetch_table_json(&state.pool, "qlhk.htxh_profiles").await {
         Ok(v) => v,
         Err(err) => {
+            tracing::error!("Failed to export table qlhk.htxh_profiles: {}", err);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "success": false, "error": err.to_string() })),
+                Json(json!({ "success": false, "error": "Lỗi máy chủ trong quá trình trích xuất dữ liệu sao lưu" })),
             )
                 .into_response();
         }
@@ -187,9 +194,10 @@ async fn create_backup(
     let content = match serde_json::to_string_pretty(&backup_data) {
         Ok(c) => c,
         Err(err) => {
+            tracing::error!("Failed to serialize backup data: {}", err);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "success": false, "error": err.to_string() })),
+                Json(json!({ "success": false, "error": "Lỗi máy chủ trong quá trình đóng gói dữ liệu sao lưu" })),
             )
                 .into_response();
         }
@@ -197,9 +205,10 @@ async fn create_backup(
 
     let file_path = std::path::Path::new("backups").join(&filename);
     if let Err(err) = tokio::fs::write(&file_path, content.as_bytes()).await {
+        tracing::error!("Failed to write backup file {}: {}", file_path.display(), err);
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "success": false, "error": err.to_string() })),
+            Json(json!({ "success": false, "error": "Lỗi máy chủ trong quá trình lưu tệp sao lưu" })),
         )
             .into_response();
     }
@@ -277,9 +286,10 @@ async fn download_backup(
     let content = match tokio::fs::read(&file_path).await {
         Ok(c) => c,
         Err(err) => {
+            tracing::error!("Failed to read backup file {}: {}", file_path.display(), err);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "success": false, "error": format!("Không thể đọc tệp: {}", err) })),
+                Json(json!({ "success": false, "error": "Không thể đọc tệp sao lưu" })),
             )
                 .into_response();
         }
@@ -359,9 +369,10 @@ async fn restore_backup(
         let text = match tokio::fs::read_to_string(&file_path).await {
             Ok(t) => t,
             Err(err) => {
+                tracing::error!("Failed to read backup file {}: {}", file_path.display(), err);
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({ "success": false, "error": format!("Không thể đọc tệp sao lưu: {}", err) })),
+                    Json(json!({ "success": false, "error": "Không thể đọc tệp sao lưu" })),
                 )
                     .into_response();
             }
@@ -370,11 +381,12 @@ async fn restore_backup(
         match serde_json::from_str(&text) {
             Ok(v) => v,
             Err(err) => {
+                tracing::error!("Failed to parse backup JSON: {}", err);
                 return (
                     StatusCode::BAD_REQUEST,
                     Json(json!({
                         "success": false,
-                        "error": format!("Dữ liệu JSON không hợp lệ: {}", err)
+                        "error": "Dữ liệu JSON trong tệp sao lưu không hợp lệ"
                     })),
                 )
                     .into_response();
@@ -417,9 +429,10 @@ async fn restore_backup(
     let mut tx = match state.pool.begin().await {
         Ok(t) => t,
         Err(err) => {
+            tracing::error!("Failed to begin restore transaction: {}", err);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "success": false, "error": format!("Không thể khởi tạo giao dịch: {}", err) })),
+                Json(json!({ "success": false, "error": "Không thể khởi tạo giao dịch khôi phục dữ liệu" })),
             )
                 .into_response();
         }
@@ -437,10 +450,11 @@ async fn restore_backup(
 
     for delete_sql in delete_queries {
         if let Err(err) = sqlx::query(delete_sql).execute(&mut *tx).await {
+            tracing::error!("Failed to clean up old data: {}", err);
             let _ = tx.rollback().await;
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "success": false, "error": format!("Lỗi xóa dữ liệu cũ: {}", err) })),
+                Json(json!({ "success": false, "error": "Lỗi máy chủ khi dọn dẹp dữ liệu cũ" })),
             )
                 .into_response();
         }
@@ -451,10 +465,11 @@ async fn restore_backup(
             let json_str = match serde_json::to_string(arr) {
                 Ok(s) => s,
                 Err(err) => {
+                    tracing::error!("Failed to serialize villages: {}", err);
                     let _ = tx.rollback().await;
                     return (
                         StatusCode::BAD_REQUEST,
-                        Json(json!({ "success": false, "error": format!("Lỗi định dạng thôn/tổ: {}", err) })),
+                        Json(json!({ "success": false, "error": "Lỗi định dạng dữ liệu thôn/tổ" })),
                     )
                         .into_response();
                 }
@@ -472,10 +487,11 @@ async fn restore_backup(
             .bind(&json_str)
             .execute(&mut *tx)
             .await {
+                tracing::error!("Failed to restore villages: {}", err);
                 let _ = tx.rollback().await;
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({ "success": false, "error": format!("Lỗi khôi phục thôn/tổ: {}", err) })),
+                    Json(json!({ "success": false, "error": "Lỗi máy chủ khi khôi phục dữ liệu thôn/tổ" })),
                 )
                     .into_response();
             }
@@ -487,10 +503,11 @@ async fn restore_backup(
             let json_str = match serde_json::to_string(arr) {
                 Ok(s) => s,
                 Err(err) => {
+                    tracing::error!("Failed to serialize settings: {}", err);
                     let _ = tx.rollback().await;
                     return (
                         StatusCode::BAD_REQUEST,
-                        Json(json!({ "success": false, "error": format!("Lỗi định dạng cấu hình: {}", err) })),
+                        Json(json!({ "success": false, "error": "Lỗi định dạng dữ liệu cấu hình" })),
                     )
                         .into_response();
                 }
@@ -508,10 +525,11 @@ async fn restore_backup(
             .bind(&json_str)
             .execute(&mut *tx)
             .await {
+                tracing::error!("Failed to restore settings: {}", err);
                 let _ = tx.rollback().await;
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({ "success": false, "error": format!("Lỗi khôi phục cấu hình: {}", err) })),
+                    Json(json!({ "success": false, "error": "Lỗi máy chủ khi khôi phục dữ liệu cấu hình" })),
                 )
                     .into_response();
             }
@@ -523,10 +541,11 @@ async fn restore_backup(
             let json_str = match serde_json::to_string(arr) {
                 Ok(s) => s,
                 Err(err) => {
+                    tracing::error!("Failed to serialize households: {}", err);
                     let _ = tx.rollback().await;
                     return (
                         StatusCode::BAD_REQUEST,
-                        Json(json!({ "success": false, "error": format!("Lỗi định dạng hộ khẩu: {}", err) })),
+                        Json(json!({ "success": false, "error": "Lỗi định dạng dữ liệu hộ khẩu" })),
                     )
                         .into_response();
                 }
@@ -541,10 +560,11 @@ async fn restore_backup(
             .bind(&json_str)
             .execute(&mut *tx)
             .await {
+                tracing::error!("Failed to restore households: {}", err);
                 let _ = tx.rollback().await;
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({ "success": false, "error": format!("Lỗi khôi phục hộ khẩu: {}", err) })),
+                    Json(json!({ "success": false, "error": "Lỗi máy chủ khi khôi phục dữ liệu hộ khẩu" })),
                 )
                     .into_response();
             }
@@ -556,10 +576,11 @@ async fn restore_backup(
             let json_str = match serde_json::to_string(arr) {
                 Ok(s) => s,
                 Err(err) => {
+                    tracing::error!("Failed to serialize citizens: {}", err);
                     let _ = tx.rollback().await;
                     return (
                         StatusCode::BAD_REQUEST,
-                        Json(json!({ "success": false, "error": format!("Lỗi định dạng nhân khẩu: {}", err) })),
+                        Json(json!({ "success": false, "error": "Lỗi định dạng dữ liệu nhân khẩu" })),
                     )
                         .into_response();
                 }
@@ -574,10 +595,11 @@ async fn restore_backup(
             .bind(&json_str)
             .execute(&mut *tx)
             .await {
+                tracing::error!("Failed to restore citizens: {}", err);
                 let _ = tx.rollback().await;
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({ "success": false, "error": format!("Lỗi khôi phục nhân khẩu: {}", err) })),
+                    Json(json!({ "success": false, "error": "Lỗi máy chủ khi khôi phục dữ liệu nhân khẩu" })),
                 )
                     .into_response();
             }
@@ -589,10 +611,11 @@ async fn restore_backup(
             let json_str = match serde_json::to_string(arr) {
                 Ok(s) => s,
                 Err(err) => {
+                    tracing::error!("Failed to serialize chuctho profiles: {}", err);
                     let _ = tx.rollback().await;
                     return (
                         StatusCode::BAD_REQUEST,
-                        Json(json!({ "success": false, "error": format!("Lỗi định dạng hồ sơ chúc thọ: {}", err) })),
+                        Json(json!({ "success": false, "error": "Lỗi định dạng dữ liệu hồ sơ chúc thọ" })),
                     )
                         .into_response();
                 }
@@ -607,10 +630,11 @@ async fn restore_backup(
             .bind(&json_str)
             .execute(&mut *tx)
             .await {
+                tracing::error!("Failed to restore chuctho profiles: {}", err);
                 let _ = tx.rollback().await;
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({ "success": false, "error": format!("Lỗi khôi phục hồ sơ chúc thọ: {}", err) })),
+                    Json(json!({ "success": false, "error": "Lỗi máy chủ khi khôi phục dữ liệu hồ sơ chúc thọ" })),
                 )
                     .into_response();
             }
@@ -622,10 +646,11 @@ async fn restore_backup(
             let json_str = match serde_json::to_string(arr) {
                 Ok(s) => s,
                 Err(err) => {
+                    tracing::error!("Failed to serialize htxh profiles: {}", err);
                     let _ = tx.rollback().await;
                     return (
                         StatusCode::BAD_REQUEST,
-                        Json(json!({ "success": false, "error": format!("Lỗi định dạng hồ sơ bảo trợ xã hội: {}", err) })),
+                        Json(json!({ "success": false, "error": "Lỗi định dạng dữ liệu hồ sơ bảo trợ xã hội" })),
                     )
                         .into_response();
                 }
@@ -640,10 +665,11 @@ async fn restore_backup(
             .bind(&json_str)
             .execute(&mut *tx)
             .await {
+                tracing::error!("Failed to restore htxh profiles: {}", err);
                 let _ = tx.rollback().await;
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({ "success": false, "error": format!("Lỗi khôi phục hồ sơ bảo trợ xã hội: {}", err) })),
+                    Json(json!({ "success": false, "error": "Lỗi máy chủ khi khôi phục dữ liệu hồ sơ bảo trợ xã hội" })),
                 )
                     .into_response();
             }
@@ -651,9 +677,10 @@ async fn restore_backup(
     }
 
     if let Err(err) = tx.commit().await {
+        tracing::error!("Failed to commit restore transaction: {}", err);
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "success": false, "error": format!("Không thể hoàn tất giao dịch: {}", err) })),
+            Json(json!({ "success": false, "error": "Không thể hoàn tất giao dịch khôi phục dữ liệu" })),
         )
             .into_response();
     }

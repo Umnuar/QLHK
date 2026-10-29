@@ -49,12 +49,7 @@ fn get_refresh_secret(state: &AppState) -> String {
     std::env::var("JWT_REFRESH_SECRET").unwrap_or_else(|_| state.config.jwt_secret.clone())
 }
 
-pub fn verify_password(password: &str, password_hash: &str) -> bool {
-    if let Ok(matched) = bcrypt::verify(password, password_hash) {
-        if matched {
-            return true;
-        }
-    }
+fn verify_sha256(password: &str, password_hash: &str) -> bool {
     let mut hasher = Sha256::new();
     hasher.update(password.as_bytes());
     let sha256_hex = hex::encode(hasher.finalize());
@@ -68,6 +63,15 @@ pub fn verify_password(password: &str, password_hash: &str) -> bool {
         diff |= x.to_ascii_lowercase() ^ y.to_ascii_lowercase();
     }
     diff == 0
+}
+
+pub fn verify_password(password: &str, password_hash: &str) -> bool {
+    if let Ok(matched) = bcrypt::verify(password, password_hash) {
+        if matched {
+            return true;
+        }
+    }
+    verify_sha256(password, password_hash)
 }
 
 pub async fn login(
@@ -108,6 +112,10 @@ pub async fn login(
     let user = match user_row {
         Some(u) => u,
         None => {
+            let _ = bcrypt::verify(
+                password,
+                "$2b$12$e8NV510ep8O/Yp8qM0Y3ieTj8uN96A44/uD4rM4p49vXo97/YdEa6",
+            );
             return (
                 StatusCode::UNAUTHORIZED,
                 Json(json!({ "error": "Tên đăng nhập hoặc mật khẩu không chính xác" })),
@@ -124,7 +132,7 @@ pub async fn login(
     let authenticated = if is_bcrypt {
         true
     } else {
-        verify_password(password, &user.password_hash)
+        verify_sha256(password, &user.password_hash)
     };
 
     if !authenticated {
@@ -571,5 +579,23 @@ mod tests {
     fn test_verify_password_length_mismatch() {
         assert!(!verify_password("admin123", "short_hash"));
         assert!(!verify_password("admin123", ""));
+    }
+
+    #[test]
+    fn test_verify_sha256() {
+        let plain = "admin123";
+        let sha256_hash = "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9";
+        assert!(verify_sha256(plain, sha256_hash));
+        assert!(verify_sha256(plain, &sha256_hash.to_uppercase()));
+        assert!(!verify_sha256("wrongpassword", sha256_hash));
+    }
+
+    #[test]
+    fn test_dummy_bcrypt_hash_verify() {
+        let res = bcrypt::verify(
+            "dummy_password",
+            "$2b$12$e8NV510ep8O/Yp8qM0Y3ieTj8uN96A44/uD4rM4p49vXo97/YdEa6",
+        );
+        assert!(matches!(res, Ok(false)));
     }
 }

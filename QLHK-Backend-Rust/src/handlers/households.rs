@@ -151,21 +151,10 @@ pub async fn get_households(
                     target_year
                 };
                 if start_year <= end_year {
-                    let mut years = Vec::new();
-                    for y in start_year..=end_year {
-                        years.push(y);
-                        if years.len() >= 150 {
-                            break;
-                        }
-                    }
-                    builder.push(" AND (");
-                    for (idx, y) in years.into_iter().enumerate() {
-                        if idx > 0 {
-                            builder.push(" OR ");
-                        }
-                        builder.push("c.dob ILIKE ");
-                        builder.push_bind(format!("%{}%", y));
-                    }
+                    builder.push(" AND c.dob ~ '[0-9]{4}' AND (SUBSTRING(c.dob FROM '[0-9]{4}')::integer BETWEEN ");
+                    builder.push_bind(start_year);
+                    builder.push(" AND ");
+                    builder.push_bind(end_year);
                     builder.push(")");
                 }
             }
@@ -1805,27 +1794,30 @@ pub async fn split_household(
         }
     };
 
-    for c_id in &req.citizen_ids {
-        let is_head = *c_id == req.new_head_id;
-        let relationship = if is_head { "Chủ hộ" } else { "Thành viên" };
-        let move_res = sqlx::query(
-            "UPDATE qlhk.citizens SET household_id = $1, is_head = $2, relationship = $3, version = version + 1, updated_at = NOW() WHERE id = $4",
-        )
-        .bind(new_hh_id)
-        .bind(is_head)
-        .bind(relationship)
-        .bind(c_id)
-        .execute(&mut *tx)
-        .await;
+    let move_res = sqlx::query(
+        r#"
+        UPDATE qlhk.citizens
+        SET household_id = $1,
+            is_head = (id = $2),
+            relationship = CASE WHEN id = $2 THEN 'Chủ hộ' ELSE 'Thành viên' END,
+            version = version + 1,
+            updated_at = NOW()
+        WHERE id = ANY($3)
+        "#,
+    )
+    .bind(new_hh_id)
+    .bind(req.new_head_id)
+    .bind(&req.citizen_ids)
+    .execute(&mut *tx)
+    .await;
 
-        if move_res.is_err() {
-            let _ = tx.rollback().await;
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Lỗi chuyển nhân khẩu sang hộ mới" })),
-            )
-                .into_response();
-        }
+    if move_res.is_err() {
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Lỗi chuyển nhân khẩu sang hộ mới" })),
+        )
+            .into_response();
     }
 
     let remaining_citizens = sqlx::query_as::<_, CitizenDb>(

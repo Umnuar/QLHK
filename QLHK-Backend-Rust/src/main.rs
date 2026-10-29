@@ -70,9 +70,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = AppConfig::from_env();
     info!("Starting QLHK Backend Rust on port {}", config.port);
 
+    let max_connections = std::env::var("DATABASE_MAX_CONNECTIONS")
+        .ok()
+        .and_then(|val| val.parse::<u32>().ok())
+        .unwrap_or(25);
+    let min_connections = std::env::var("DATABASE_MIN_CONNECTIONS")
+        .ok()
+        .and_then(|val| val.parse::<u32>().ok())
+        .unwrap_or(5);
+
     let pool = PgPoolOptions::new()
-        .max_connections(20)
-        .acquire_timeout(std::time::Duration::from_secs(10))
+        .max_connections(max_connections)
+        .min_connections(min_connections)
+        .acquire_timeout(std::time::Duration::from_secs(5))
         .idle_timeout(std::time::Duration::from_secs(300))
         .max_lifetime(std::time::Duration::from_secs(1800))
         .connect(&config.database_url)

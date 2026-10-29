@@ -375,32 +375,35 @@ pub async fn get_chuctho_profiles(
     let ref_date = chrono::NaiveDate::from_ymd_opt(target_year, 12, 31)
         .unwrap_or_else(|| Utc::now().date_naive());
 
-    let missing_candidate_ids = sqlx::query_scalar::<_, Uuid>(
-        r#"
-        SELECT c.id
-        FROM qlhk.citizens c
-        JOIN qlhk.households h ON c.household_id = h.id
-        WHERE c.is_deleted = false
-          AND h.is_deleted = false
-          AND ($1::uuid IS NULL OR h.village_id = $1)
-          AND c.dob ~ '\d{4}'
-          AND SUBSTRING(c.dob FROM '\d{4}')::int <= $2
-          AND NOT EXISTS (
-              SELECT 1 FROM qlhk.chuctho_profiles p
-              WHERE p.notes = c.id::text AND p.is_deleted = false
-          )
-        LIMIT 20
-        "#,
-    )
-    .bind(target_village_id)
-    .bind(target_year - 60)
-    .fetch_all(&state.pool)
-    .await
-    .unwrap_or_default();
+    let sync_pool = state.pool.clone();
+    tokio::spawn(async move {
+        let missing_candidate_ids = sqlx::query_scalar::<_, Uuid>(
+            r#"
+            SELECT c.id
+            FROM qlhk.citizens c
+            JOIN qlhk.households h ON c.household_id = h.id
+            WHERE c.is_deleted = false
+              AND h.is_deleted = false
+              AND ($1::uuid IS NULL OR h.village_id = $1)
+              AND c.dob ~ '\d{4}'
+              AND SUBSTRING(c.dob FROM '\d{4}')::int <= $2
+              AND NOT EXISTS (
+                  SELECT 1 FROM qlhk.chuctho_profiles p
+                  WHERE p.notes = c.id::text AND p.is_deleted = false
+              )
+            LIMIT 20
+            "#,
+        )
+        .bind(target_village_id)
+        .bind(target_year - 60)
+        .fetch_all(&sync_pool)
+        .await
+        .unwrap_or_default();
 
-    for cid in missing_candidate_ids {
-        let _ = sync_single_citizen_to_policies(&state.pool, cid).await;
-    }
+        for cid in missing_candidate_ids {
+            let _ = sync_single_citizen_to_policies(&sync_pool, cid).await;
+        }
+    });
 
     let mut data_builder = QueryBuilder::new(
         "SELECT p.*, v.name as village_name, v.code as village_code FROM qlhk.chuctho_profiles p LEFT JOIN qlhk.villages v ON p.village_id = v.id WHERE p.is_deleted = false",
@@ -978,37 +981,40 @@ pub async fn get_htxh_profiles(
     let ref_date = chrono::NaiveDate::from_ymd_opt(target_year, 12, 31)
         .unwrap_or_else(|| Utc::now().date_naive());
 
-    let missing_candidate_ids = sqlx::query_scalar::<_, Uuid>(
-        r#"
-        SELECT c.id
-        FROM qlhk.citizens c
-        JOIN qlhk.households h ON c.household_id = h.id
-        WHERE c.is_deleted = false
-          AND h.is_deleted = false
-          AND ($1::uuid IS NULL OR h.village_id = $1)
-          AND (
-              c.occupation ILIKE '%hưu%' OR c.occupation ILIKE '%huu%' OR c.occupation ILIKE '%tuất%' OR c.occupation ILIKE '%tuat%'
-              OR c.occupation ILIKE '%bảo trợ%' OR c.occupation ILIKE '%bao tro%'
-              OR c.military_status ILIKE '%thương binh%' OR c.military_status ILIKE '%người có công%'
-              OR c.notes ILIKE '%bảo trợ%' OR c.notes ILIKE '%người có công%' OR c.notes ILIKE '%hộ nghèo%'
-              OR (SUBSTRING(c.dob FROM '\d{4}')::int <= $2)
-          )
-          AND NOT EXISTS (
-              SELECT 1 FROM qlhk.htxh_profiles p
-              WHERE p.notes = c.id::text AND p.is_deleted = false
-          )
-        LIMIT 20
-        "#,
-    )
-    .bind(target_village_id)
-    .bind(target_year - 70)
-    .fetch_all(&state.pool)
-    .await
-    .unwrap_or_default();
+    let sync_pool = state.pool.clone();
+    tokio::spawn(async move {
+        let missing_candidate_ids = sqlx::query_scalar::<_, Uuid>(
+            r#"
+            SELECT c.id
+            FROM qlhk.citizens c
+            JOIN qlhk.households h ON c.household_id = h.id
+            WHERE c.is_deleted = false
+              AND h.is_deleted = false
+              AND ($1::uuid IS NULL OR h.village_id = $1)
+              AND (
+                  c.occupation ILIKE '%hưu%' OR c.occupation ILIKE '%huu%' OR c.occupation ILIKE '%tuất%' OR c.occupation ILIKE '%tuat%'
+                  OR c.occupation ILIKE '%bảo trợ%' OR c.occupation ILIKE '%bao tro%'
+                  OR c.military_status ILIKE '%thương binh%' OR c.military_status ILIKE '%người có công%'
+                  OR c.notes ILIKE '%bảo trợ%' OR c.notes ILIKE '%người có công%' OR c.notes ILIKE '%hộ nghèo%'
+                  OR (SUBSTRING(c.dob FROM '\d{4}')::int <= $2)
+              )
+              AND NOT EXISTS (
+                  SELECT 1 FROM qlhk.htxh_profiles p
+                  WHERE p.notes = c.id::text AND p.is_deleted = false
+              )
+            LIMIT 20
+            "#,
+        )
+        .bind(target_village_id)
+        .bind(target_year - 70)
+        .fetch_all(&sync_pool)
+        .await
+        .unwrap_or_default();
 
-    for cid in missing_candidate_ids {
-        let _ = sync_single_citizen_to_policies(&state.pool, cid).await;
-    }
+        for cid in missing_candidate_ids {
+            let _ = sync_single_citizen_to_policies(&sync_pool, cid).await;
+        }
+    });
 
     let mut count_builder = QueryBuilder::new(
         "SELECT COUNT(*) FROM qlhk.htxh_profiles p WHERE p.is_deleted = false",
@@ -2149,7 +2155,7 @@ pub async fn sync_all_citizens_to_policies(
         .unwrap_or_else(|| chrono::Utc::now().date_naive());
 
     let query_citizens = r#"
-        SELECT c.full_name, c.name_unaccented, c.dob, c.gender,
+        SELECT c.id, c.full_name, c.name_unaccented, c.dob, c.gender,
                c.cccd, c.cccd_hash, c.cccd_last4, c.ethnicity, c.occupation,
                c.military_status, c.notes,
                h.address as household_address, h.village_id as household_village_id,
@@ -2170,44 +2176,260 @@ pub async fn sync_all_citizens_to_policies(
     let mut chuctho_count = 0usize;
     let mut htxh_count = 0usize;
 
-    for citizen in &citizens {
-        let note_id = citizen.id.to_string();
-        let age = citizen
-            .dob
-            .as_deref()
-            .and_then(|d| calculate_exact_age(d, ref_date))
-            .or_else(|| {
-                citizen
-                    .dob
-                    .as_deref()
-                    .and_then(extract_birth_year)
-                    .map(|by| target_year - by)
-            });
+    for chunk in citizens.chunks(100) {
+        let mut evaluated = Vec::with_capacity(chunk.len());
+        let mut chuctho_notes = Vec::new();
+        let mut htxh_notes = Vec::new();
 
-        if let Some(age_val) = age {
-            if age_val >= 60 {
-                let milestones = compute_chuctho_milestones(age_val);
+        for citizen in chunk {
+            let note_id = citizen.id.to_string();
+            let age = citizen
+                .dob
+                .as_deref()
+                .and_then(|d| calculate_exact_age(d, ref_date))
+                .or_else(|| {
+                    citizen
+                        .dob
+                        .as_deref()
+                        .and_then(extract_birth_year)
+                        .map(|by| target_year - by)
+                });
 
-                let existing = sqlx::query_as::<_, ChucthoProfileDb>(
-                    "SELECT * FROM qlhk.chuctho_profiles WHERE notes = $1 LIMIT 1",
-                )
-                .bind(&note_id)
-                .fetch_optional(pool)
-                .await
-                .ok()
-                .flatten();
+            let is_chuctho_eligible = age.map(|a| a >= 60).unwrap_or(false);
+            if is_chuctho_eligible {
+                chuctho_notes.push(note_id.clone());
+            }
 
-                if let Some(ext) = existing {
+            let occ = citizen.occupation.as_deref().unwrap_or("");
+            let mil = citizen.military_status.as_deref().unwrap_or("");
+            let not = citizen.notes.as_deref().unwrap_or("");
+            let h_status = citizen.household_status.as_deref().unwrap_or("");
+
+            let occ_and_notes = format!("{} {}", occ, not);
+            let mil_and_notes = format!("{} {} {}", occ, mil, not);
+
+            let is_retiree = is_retiree_text(&occ_and_notes);
+            let is_huu_tuat = is_huu_tuat_text(&occ_and_notes);
+            let is_bao_tro = is_bao_tro_text(&occ_and_notes);
+            let is_nguoi_co_cong = is_nguoi_co_cong_text(&mil_and_notes);
+            let is_75plus = age.map(|a| a >= 75).unwrap_or(false);
+            let is_70to74poor = age
+                .map(|a| (70..=74).contains(&a) && is_poor_status_or_notes(h_status, not))
+                .unwrap_or(false);
+
+            let is_htxh_eligible = is_retiree
+                || is_huu_tuat
+                || is_bao_tro
+                || is_nguoi_co_cong
+                || is_75plus
+                || is_70to74poor;
+
+            if is_htxh_eligible {
+                htxh_notes.push(note_id.clone());
+            }
+
+            evaluated.push((
+                citizen,
+                note_id,
+                age,
+                is_retiree,
+                is_huu_tuat,
+                is_bao_tro,
+                is_nguoi_co_cong,
+                is_75plus,
+                is_70to74poor,
+                is_htxh_eligible,
+            ));
+        }
+
+        let mut tx = pool.begin().await?;
+
+        let mut chuctho_map = std::collections::HashMap::new();
+        if !chuctho_notes.is_empty() {
+            let existing = sqlx::query_as::<_, ChucthoProfileDb>(
+                "SELECT * FROM qlhk.chuctho_profiles WHERE notes = ANY($1::text[])",
+            )
+            .bind(&chuctho_notes)
+            .fetch_all(&mut *tx)
+            .await?;
+
+            for profile in existing {
+                if let Some(ref note) = profile.notes {
+                    chuctho_map.entry(note.clone()).or_insert(profile);
+                }
+            }
+        }
+
+        let mut htxh_map = std::collections::HashMap::new();
+        if !htxh_notes.is_empty() {
+            let existing = sqlx::query_as::<_, HtxhProfileDb>(
+                "SELECT * FROM qlhk.htxh_profiles WHERE notes = ANY($1::text[])",
+            )
+            .bind(&htxh_notes)
+            .fetch_all(&mut *tx)
+            .await?;
+
+            for profile in existing {
+                if let Some(ref note) = profile.notes {
+                    htxh_map.entry(note.clone()).or_insert(profile);
+                }
+            }
+        }
+
+        for (
+            citizen,
+            note_id,
+            age,
+            is_retiree,
+            is_huu_tuat,
+            is_bao_tro,
+            is_nguoi_co_cong,
+            is_75plus,
+            is_70to74poor,
+            is_htxh_eligible,
+        ) in evaluated
+        {
+            if let Some(age_val) = age {
+                if age_val >= 60 {
+                    let milestones = compute_chuctho_milestones(age_val);
+
+                    if let Some(ext) = chuctho_map.get(&note_id) {
+                        let _ = sqlx::query(
+                            r#"
+                            UPDATE qlhk.chuctho_profiles
+                            SET name = $1, name_unaccented = $2, dob = $3, gender = $4,
+                                cccd = $5, cccd_hash = $6, cccd_last4 = $7, ethnicity = $8,
+                                residence = $9, current_address = $10, village_id = $11,
+                                calculation_year = $12, notes = $13, is_deleted = false, deleted_at = NULL, updated_at = NOW(),
+                                age60 = $14, age65 = $15, age70 = $16, age75 = $17, age80 = $18,
+                                age85 = $19, age90 = $20, age95 = $21, age100 = $22, age_over_100 = $23
+                            WHERE id = $24
+                            "#,
+                        )
+                        .bind(&citizen.full_name)
+                        .bind(&citizen.name_unaccented)
+                        .bind(&citizen.dob)
+                        .bind(&citizen.gender)
+                        .bind(&citizen.cccd)
+                        .bind(&citizen.cccd_hash)
+                        .bind(&citizen.cccd_last4)
+                        .bind(&citizen.ethnicity)
+                        .bind(&citizen.household_address)
+                        .bind(&citizen.household_address)
+                        .bind(citizen.household_village_id)
+                        .bind(target_year)
+                        .bind(&note_id)
+                        .bind(&milestones.age60)
+                        .bind(&milestones.age65)
+                        .bind(&milestones.age70)
+                        .bind(&milestones.age75)
+                        .bind(&milestones.age80)
+                        .bind(&milestones.age85)
+                        .bind(&milestones.age90)
+                        .bind(&milestones.age95)
+                        .bind(&milestones.age100)
+                        .bind(&milestones.age_over_100)
+                        .bind(ext.id)
+                        .execute(&mut *tx)
+                        .await;
+                    } else {
+                        let _ = sqlx::query(
+                            r#"
+                            INSERT INTO qlhk.chuctho_profiles (
+                                id, name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4,
+                                ethnicity, residence, current_address, village_id, stt, notes,
+                                calculation_year, received, is_deleted, version, created_at, updated_at,
+                                age60, age65, age70, age75, age80, age85, age90, age95, age100, age_over_100
+                            ) VALUES (
+                                $1, $2, $3, $4, $5, $6, $7, $8,
+                                $9, $10, $11, $12, $13, $14,
+                                $15, false, false, 1, NOW(), NOW(),
+                                $16, $17, $18, $19, $20, $21, $22, $23, $24, $25
+                            )
+                            "#,
+                        )
+                        .bind(Uuid::new_v4())
+                        .bind(&citizen.full_name)
+                        .bind(&citizen.name_unaccented)
+                        .bind(&citizen.dob)
+                        .bind(&citizen.gender)
+                        .bind(&citizen.cccd)
+                        .bind(&citizen.cccd_hash)
+                        .bind(&citizen.cccd_last4)
+                        .bind(&citizen.ethnicity)
+                        .bind(&citizen.household_address)
+                        .bind(&citizen.household_address)
+                        .bind(citizen.household_village_id)
+                        .bind((chuctho_count + 1) as i32)
+                        .bind(&note_id)
+                        .bind(target_year)
+                        .bind(&milestones.age60)
+                        .bind(&milestones.age65)
+                        .bind(&milestones.age70)
+                        .bind(&milestones.age75)
+                        .bind(&milestones.age80)
+                        .bind(&milestones.age85)
+                        .bind(&milestones.age90)
+                        .bind(&milestones.age95)
+                        .bind(&milestones.age100)
+                        .bind(&milestones.age_over_100)
+                        .execute(&mut *tx)
+                        .await;
+                    }
+                    chuctho_count += 1;
+                }
+            }
+
+            if is_htxh_eligible {
+                let val_retiree = if is_retiree { "x" } else { "" };
+                let val_75plus = if is_75plus { "x" } else { "" };
+                let val_70to74poor = if is_70to74poor { "x" } else { "" };
+                let val_bao_tro = if is_bao_tro { "x" } else { "" };
+                let val_huu_tuat = if is_huu_tuat { "x" } else { "" };
+                let val_nguoi_co_cong = if is_nguoi_co_cong { "x" } else { "" };
+
+                if let Some(ext) = htxh_map.get(&note_id) {
+                    let final_retiree = if is_retiree {
+                        "x".to_string()
+                    } else {
+                        ext.huu_tri.clone().unwrap_or_default()
+                    };
+                    let final_75plus = if is_75plus {
+                        "x".to_string()
+                    } else {
+                        ext.age75plus.clone().unwrap_or_default()
+                    };
+                    let final_70to74poor = if is_70to74poor {
+                        "x".to_string()
+                    } else {
+                        ext.age70to74poor.clone().unwrap_or_default()
+                    };
+                    let final_bao_tro = if is_bao_tro {
+                        "x".to_string()
+                    } else {
+                        ext.bao_tro.clone().unwrap_or_default()
+                    };
+                    let final_huu_tuat = if is_huu_tuat {
+                        "x".to_string()
+                    } else {
+                        ext.huu_tuat_bao_hiem.clone().unwrap_or_default()
+                    };
+                    let final_nguoi_co_cong = if is_nguoi_co_cong {
+                        "x".to_string()
+                    } else {
+                        ext.nguoi_co_cong.clone().unwrap_or_default()
+                    };
+
                     let _ = sqlx::query(
                         r#"
-                        UPDATE qlhk.chuctho_profiles
+                        UPDATE qlhk.htxh_profiles
                         SET name = $1, name_unaccented = $2, dob = $3, gender = $4,
                             cccd = $5, cccd_hash = $6, cccd_last4 = $7, ethnicity = $8,
                             residence = $9, current_address = $10, village_id = $11,
                             calculation_year = $12, notes = $13, is_deleted = false, deleted_at = NULL, updated_at = NOW(),
-                            age60 = $14, age65 = $15, age70 = $16, age75 = $17, age80 = $18,
-                            age85 = $19, age90 = $20, age95 = $21, age100 = $22, age_over_100 = $23
-                        WHERE id = $24
+                            huu_tri = $14, age75plus = $15, age70to74poor = $16, bao_tro = $17,
+                            huu_tuat_bao_hiem = $18, nguoi_co_cong = $19
+                        WHERE id = $20
                         "#,
                     )
                     .bind(&citizen.full_name)
@@ -2223,32 +2445,27 @@ pub async fn sync_all_citizens_to_policies(
                     .bind(citizen.household_village_id)
                     .bind(target_year)
                     .bind(&note_id)
-                    .bind(&milestones.age60)
-                    .bind(&milestones.age65)
-                    .bind(&milestones.age70)
-                    .bind(&milestones.age75)
-                    .bind(&milestones.age80)
-                    .bind(&milestones.age85)
-                    .bind(&milestones.age90)
-                    .bind(&milestones.age95)
-                    .bind(&milestones.age100)
-                    .bind(&milestones.age_over_100)
+                    .bind(final_retiree)
+                    .bind(final_75plus)
+                    .bind(final_70to74poor)
+                    .bind(final_bao_tro)
+                    .bind(final_huu_tuat)
+                    .bind(final_nguoi_co_cong)
                     .bind(ext.id)
-                    .execute(pool)
+                    .execute(&mut *tx)
                     .await;
                 } else {
                     let _ = sqlx::query(
                         r#"
-                        INSERT INTO qlhk.chuctho_profiles (
+                        INSERT INTO qlhk.htxh_profiles (
                             id, name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4,
                             ethnicity, residence, current_address, village_id, stt, notes,
-                            calculation_year, received, is_deleted, version, created_at, updated_at,
-                            age60, age65, age70, age75, age80, age85, age90, age95, age100, age_over_100
+                            calculation_year, huu_tri, age75plus, age70to74poor, bao_tro,
+                            huu_tuat_bao_hiem, nguoi_co_cong, received, is_deleted, version, created_at, updated_at
                         ) VALUES (
                             $1, $2, $3, $4, $5, $6, $7, $8,
                             $9, $10, $11, $12, $13, $14,
-                            $15, false, false, 1, NOW(), NOW(),
-                            $16, $17, $18, $19, $20, $21, $22, $23, $24, $25
+                            $15, $16, $17, $18, $19, $20, $21, false, false, 1, NOW(), NOW()
                         )
                         "#,
                     )
@@ -2264,145 +2481,23 @@ pub async fn sync_all_citizens_to_policies(
                     .bind(&citizen.household_address)
                     .bind(&citizen.household_address)
                     .bind(citizen.household_village_id)
-                    .bind((chuctho_count + 1) as i32)
+                    .bind((htxh_count + 1) as i32)
                     .bind(&note_id)
                     .bind(target_year)
-                    .bind(&milestones.age60)
-                    .bind(&milestones.age65)
-                    .bind(&milestones.age70)
-                    .bind(&milestones.age75)
-                    .bind(&milestones.age80)
-                    .bind(&milestones.age85)
-                    .bind(&milestones.age90)
-                    .bind(&milestones.age95)
-                    .bind(&milestones.age100)
-                    .bind(&milestones.age_over_100)
-                    .execute(pool)
+                    .bind(val_retiree)
+                    .bind(val_75plus)
+                    .bind(val_70to74poor)
+                    .bind(val_bao_tro)
+                    .bind(val_huu_tuat)
+                    .bind(val_nguoi_co_cong)
+                    .execute(&mut *tx)
                     .await;
                 }
-                chuctho_count += 1;
+                htxh_count += 1;
             }
         }
 
-        let occ = citizen.occupation.as_deref().unwrap_or("");
-        let mil = citizen.military_status.as_deref().unwrap_or("");
-        let not = citizen.notes.as_deref().unwrap_or("");
-        let h_status = citizen.household_status.as_deref().unwrap_or("");
-
-        let occ_and_notes = format!("{} {}", occ, not);
-        let mil_and_notes = format!("{} {} {}", occ, mil, not);
-
-        let is_retiree = is_retiree_text(&occ_and_notes);
-        let is_huu_tuat = is_huu_tuat_text(&occ_and_notes);
-        let is_bao_tro = is_bao_tro_text(&occ_and_notes);
-        let is_nguoi_co_cong = is_nguoi_co_cong_text(&mil_and_notes);
-        let is_75plus = age.map(|a| a >= 75).unwrap_or(false);
-        let is_70to74poor = age
-            .map(|a| (70..=74).contains(&a) && is_poor_status_or_notes(h_status, not))
-            .unwrap_or(false);
-
-        let is_htxh_eligible = is_retiree || is_huu_tuat || is_bao_tro || is_nguoi_co_cong || is_75plus || is_70to74poor;
-
-        if is_htxh_eligible {
-            let existing = sqlx::query_as::<_, HtxhProfileDb>(
-                "SELECT * FROM qlhk.htxh_profiles WHERE notes = $1 LIMIT 1",
-            )
-            .bind(&note_id)
-            .fetch_optional(pool)
-            .await
-            .ok()
-            .flatten();
-
-            let val_retiree = if is_retiree { "x" } else { "" };
-            let val_75plus = if is_75plus { "x" } else { "" };
-            let val_70to74poor = if is_70to74poor { "x" } else { "" };
-            let val_bao_tro = if is_bao_tro { "x" } else { "" };
-            let val_huu_tuat = if is_huu_tuat { "x" } else { "" };
-            let val_nguoi_co_cong = if is_nguoi_co_cong { "x" } else { "" };
-
-            if let Some(ext) = existing {
-                let final_retiree = if is_retiree { "x".to_string() } else { ext.huu_tri.unwrap_or_default() };
-                let final_75plus = if is_75plus { "x".to_string() } else { ext.age75plus.unwrap_or_default() };
-                let final_70to74poor = if is_70to74poor { "x".to_string() } else { ext.age70to74poor.unwrap_or_default() };
-                let final_bao_tro = if is_bao_tro { "x".to_string() } else { ext.bao_tro.unwrap_or_default() };
-                let final_huu_tuat = if is_huu_tuat { "x".to_string() } else { ext.huu_tuat_bao_hiem.unwrap_or_default() };
-                let final_nguoi_co_cong = if is_nguoi_co_cong { "x".to_string() } else { ext.nguoi_co_cong.unwrap_or_default() };
-
-                let _ = sqlx::query(
-                    r#"
-                    UPDATE qlhk.htxh_profiles
-                    SET name = $1, name_unaccented = $2, dob = $3, gender = $4,
-                        cccd = $5, cccd_hash = $6, cccd_last4 = $7, ethnicity = $8,
-                        residence = $9, current_address = $10, village_id = $11,
-                        calculation_year = $12, notes = $13, is_deleted = false, deleted_at = NULL, updated_at = NOW(),
-                        huu_tri = $14, age75plus = $15, age70to74poor = $16, bao_tro = $17,
-                        huu_tuat_bao_hiem = $18, nguoi_co_cong = $19
-                    WHERE id = $20
-                    "#,
-                )
-                .bind(&citizen.full_name)
-                .bind(&citizen.name_unaccented)
-                .bind(&citizen.dob)
-                .bind(&citizen.gender)
-                .bind(&citizen.cccd)
-                .bind(&citizen.cccd_hash)
-                .bind(&citizen.cccd_last4)
-                .bind(&citizen.ethnicity)
-                .bind(&citizen.household_address)
-                .bind(&citizen.household_address)
-                .bind(citizen.household_village_id)
-                .bind(target_year)
-                .bind(&note_id)
-                .bind(final_retiree)
-                .bind(final_75plus)
-                .bind(final_70to74poor)
-                .bind(final_bao_tro)
-                .bind(final_huu_tuat)
-                .bind(final_nguoi_co_cong)
-                .bind(ext.id)
-                .execute(pool)
-                .await;
-            } else {
-                let _ = sqlx::query(
-                    r#"
-                    INSERT INTO qlhk.htxh_profiles (
-                        id, name, name_unaccented, dob, gender, cccd, cccd_hash, cccd_last4,
-                        ethnicity, residence, current_address, village_id, stt, notes,
-                        calculation_year, huu_tri, age75plus, age70to74poor, bao_tro,
-                        huu_tuat_bao_hiem, nguoi_co_cong, received, is_deleted, version, created_at, updated_at
-                    ) VALUES (
-                        $1, $2, $3, $4, $5, $6, $7, $8,
-                        $9, $10, $11, $12, $13, $14,
-                        $15, $16, $17, $18, $19, $20, $21, false, false, 1, NOW(), NOW()
-                    )
-                    "#,
-                )
-                .bind(Uuid::new_v4())
-                .bind(&citizen.full_name)
-                .bind(&citizen.name_unaccented)
-                .bind(&citizen.dob)
-                .bind(&citizen.gender)
-                .bind(&citizen.cccd)
-                .bind(&citizen.cccd_hash)
-                .bind(&citizen.cccd_last4)
-                .bind(&citizen.ethnicity)
-                .bind(&citizen.household_address)
-                .bind(&citizen.household_address)
-                .bind(citizen.household_village_id)
-                .bind((htxh_count + 1) as i32)
-                .bind(&note_id)
-                .bind(target_year)
-                .bind(val_retiree)
-                .bind(val_75plus)
-                .bind(val_70to74poor)
-                .bind(val_bao_tro)
-                .bind(val_huu_tuat)
-                .bind(val_nguoi_co_cong)
-                .execute(pool)
-                .await;
-            }
-            htxh_count += 1;
-        }
+        tx.commit().await?;
     }
 
     Ok((chuctho_count, htxh_count))

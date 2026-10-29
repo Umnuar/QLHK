@@ -193,15 +193,16 @@ fn apply_common_policy_filters(
     }
     if let (Some(u), Some(raw)) = (search_unaccented, search_raw) {
         if !u.is_empty() {
-            let last4 = if raw.len() >= 4 {
-                &raw[raw.len() - 4..]
+            let char_count = raw.chars().count();
+            let last4: String = if char_count >= 4 {
+                raw.chars().skip(char_count - 4).collect()
             } else {
-                raw
+                raw.to_string()
             };
             builder.push(" AND (p.name_unaccented ILIKE ");
             builder.push_bind(format!("%{}%", u));
             builder.push(" OR p.cccd_last4 = ");
-            builder.push_bind(last4.to_string());
+            builder.push_bind(last4);
             builder.push(")");
         }
     }
@@ -3061,16 +3062,17 @@ pub async fn download_policy_template(
         Err(_) => return (StatusCode::INTERNAL_SERVER_ERROR, "Lỗi tạo mẫu Excel").into_response(),
     };
 
-    let filename = if is_htxh { "Mau_nhap_lieu_HTXH.xlsx" } else { "Mau_nhap_lieu_chuc_tho.xlsx" };
+    let disposition = if is_htxh {
+        HeaderValue::from_static("attachment; filename=\"Mau_nhap_lieu_HTXH.xlsx\"")
+    } else {
+        HeaderValue::from_static("attachment; filename=\"Mau_nhap_lieu_chuc_tho.xlsx\"")
+    };
     let mut headers_map = HeaderMap::new();
     headers_map.insert(
         header::CONTENT_TYPE,
         HeaderValue::from_static("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
     );
-    headers_map.insert(
-        header::CONTENT_DISPOSITION,
-        HeaderValue::from_str(&format!("attachment; filename=\"{}\"", filename)).unwrap(),
-    );
+    headers_map.insert(header::CONTENT_DISPOSITION, disposition);
 
     (StatusCode::OK, headers_map, buf).into_response()
 }

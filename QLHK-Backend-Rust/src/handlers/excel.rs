@@ -144,12 +144,16 @@ fn format_cccd_for_export(
         } else {
             raw.to_string()
         };
-        if plain.len() >= 4 {
-            format!("••••••••{}", &plain[plain.len() - 4..])
-        } else if !plain.is_empty() {
-            format!("••••••••{}", plain)
-        } else {
+        if plain.is_empty() {
             String::new()
+        } else {
+            let char_count = plain.chars().count();
+            let last4: String = if char_count >= 4 {
+                plain.chars().skip(char_count - 4).collect()
+            } else {
+                plain.clone()
+            };
+            format!("••••••••{}", last4)
         }
     } else {
         String::new()
@@ -567,8 +571,9 @@ pub async fn import_excel(
                 Ok(enc) => (Some(enc.encrypted), Some(enc.hash), Some(enc.last4)),
                 Err(_) => {
                     let h = hash_cccd(cleaned);
-                    let l4 = if cleaned.len() >= 4 {
-                        cleaned[cleaned.len() - 4..].to_string()
+                    let char_count = cleaned.chars().count();
+                    let l4 = if char_count >= 4 {
+                        cleaned.chars().skip(char_count - 4).collect()
                     } else {
                         cleaned.to_string()
                     };

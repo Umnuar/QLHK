@@ -733,7 +733,7 @@ pub async fn update_household(
     }
 
     let expected_version = req.version.unwrap_or(current.version);
-    if req.version.is_some() && req.version.unwrap() != current.version {
+    if req.version.is_some_and(|v| v != current.version) {
         return (
             StatusCode::CONFLICT,
             Json(json!({
@@ -1719,7 +1719,7 @@ pub async fn split_household(
         }
     };
 
-    if req.version.is_some() && req.version.unwrap() != source.version {
+    if req.version.is_some_and(|v| v != source.version) {
         let _ = tx.rollback().await;
         return (
             StatusCode::CONFLICT,
@@ -1841,7 +1841,8 @@ pub async fn split_household(
         let new_source_head_id = req
             .remaining_head_id
             .filter(|hid| remaining_citizens.iter().any(|rc| rc.id == *hid))
-            .unwrap_or(remaining_citizens[0].id);
+            .or_else(|| remaining_citizens.first().map(|rc| rc.id))
+            .unwrap_or(id);
 
         let _ = sqlx::query(
             "UPDATE qlhk.citizens SET is_head = false, version = version + 1, updated_at = NOW() WHERE household_id = $1 AND is_head = true",
@@ -2013,7 +2014,7 @@ pub async fn merge_household(
         }
     };
 
-    if req.version.is_some() && req.version.unwrap() != source.version {
+    if req.version.is_some_and(|v| v != source.version) {
         let _ = tx.rollback().await;
         return (
             StatusCode::CONFLICT,
@@ -2269,7 +2270,7 @@ pub async fn change_head(
         }
     };
 
-    if req.version.is_some() && req.version.unwrap() != household.version {
+    if req.version.is_some_and(|v| v != household.version) {
         let _ = tx.rollback().await;
         return (
             StatusCode::CONFLICT,

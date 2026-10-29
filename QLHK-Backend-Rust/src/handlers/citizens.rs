@@ -768,7 +768,7 @@ pub async fn update_citizen(
     }
 
     let expected_version = req.version.unwrap_or(current.version);
-    if req.version.is_some() && req.version.unwrap() != current.version {
+    if req.version.is_some_and(|v| v != current.version) {
         return (
             StatusCode::CONFLICT,
             Json(json!({

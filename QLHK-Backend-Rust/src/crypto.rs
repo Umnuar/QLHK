@@ -118,12 +118,21 @@ pub fn verify_cccd_hash(plain: &str, expected_hash: &str) -> bool {
 }
 
 pub fn remove_accents(s: &str) -> String {
-    let lowered = s.to_lowercase().replace('đ', "d").replace('Đ', "d");
-    let normalized = lowered.nfd();
-    let filtered: String = normalized
-        .filter(|c| !('\u{0300}'..='\u{036f}').contains(c))
-        .collect();
-    filtered.trim().to_string()
+    let trimmed = s.trim();
+    let mut result = String::with_capacity(trimmed.len());
+    for c in trimmed
+        .chars()
+        .flat_map(|c| match c {
+            'đ' | 'Đ' => 'd'.to_lowercase(),
+            other => other.to_lowercase(),
+        })
+        .nfd()
+    {
+        if !('\u{0300}'..='\u{036f}').contains(&c) {
+            result.push(c);
+        }
+    }
+    result
 }
 
 pub fn encrypt_cccd_with_key_and_pepper(
@@ -210,31 +219,46 @@ pub fn decrypt_cccd_with_key(encrypted_string: &str, key: &str) -> Result<String
         return Ok(trimmed.to_string());
     }
 
-    let parts: Vec<&str> = trimmed.split(':').collect();
-    if parts.len() != 3 {
+    let mut parts = trimmed.split(':');
+    let (Some(part_iv), Some(part_tag), Some(part_cipher), None) =
+        (parts.next(), parts.next(), parts.next(), parts.next())
+    else {
         return Err(
             "Định dạng chuỗi mã hóa không hợp lệ (cần iv:authTag:encryptedHex)".to_string(),
         );
-    }
+    };
 
-    let iv_bytes = hex::decode(parts[0].trim()).map_err(|e| e.to_string())?;
-    let tag_bytes = hex::decode(parts[1].trim()).map_err(|e| e.to_string())?;
-    let ciphertext_bytes = hex::decode(parts[2].trim()).map_err(|e| e.to_string())?;
-
-    if iv_bytes.len() != 12 {
+    let iv_trimmed = part_iv.trim();
+    let mut iv_bytes = [0u8; 12];
+    if iv_trimmed.len() != 24 {
+        if let Err(e) = hex::decode(iv_trimmed) {
+            return Err(e.to_string());
+        }
         return Err("IV must be 12 bytes".to_string());
     }
-    if tag_bytes.len() != 16 {
+    hex::decode_to_slice(iv_trimmed, &mut iv_bytes).map_err(|e| e.to_string())?;
+
+    let tag_trimmed = part_tag.trim();
+    let mut tag_bytes = [0u8; 16];
+    if tag_trimmed.len() != 32 {
+        if let Err(e) = hex::decode(tag_trimmed) {
+            return Err(e.to_string());
+        }
         return Err("Auth tag must be 16 bytes".to_string());
     }
+    hex::decode_to_slice(tag_trimmed, &mut tag_bytes).map_err(|e| e.to_string())?;
+
+    let cipher_trimmed = part_cipher.trim();
+    let cipher_len = cipher_trimmed.len() / 2;
+    let mut combined = vec![0u8; cipher_len + 16];
+    hex::decode_to_slice(cipher_trimmed, &mut combined[..cipher_len])
+        .map_err(|e| e.to_string())?;
+    combined[cipher_len..].copy_from_slice(&tag_bytes);
 
     let key_bytes = derive_key(key);
     let cipher = <Aes256Gcm as KeyInit>::new_from_slice(&key_bytes)
         .map_err(|e| e.to_string())?;
     let nonce = Nonce::from_slice(&iv_bytes);
-
-    let mut combined = ciphertext_bytes;
-    combined.extend_from_slice(&tag_bytes);
 
     let decrypted_bytes = cipher
         .decrypt(nonce, combined.as_ref())

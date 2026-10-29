@@ -367,111 +367,164 @@ pub async fn import_excel(
         col_map.insert("notes".to_string(), 10);
     }
 
-    let mut parsed_rows: Vec<ExcelCitizenRow> = Vec::new();
+    let mut parsed_rows: Vec<ExcelCitizenRow> =
+        Vec::with_capacity(rows_vec.len().saturating_sub(header_row_idx + 1));
     let mut last_book_number = String::new();
     let mut last_address = String::new();
 
     for row in rows_vec.iter().skip(header_row_idx + 1) {
-        let get_val = |key: &str| -> String {
+        let get_cell = |key: &str| -> Option<&Data> {
+            col_map.get(key).and_then(|idx| row.get(*idx))
+        };
+
+        let full_name = match get_cell("full_name") {
+            Some(Data::Empty) | None => continue,
+            Some(Data::String(s)) => {
+                let trimmed = s.trim();
+                if trimmed.is_empty() {
+                    continue;
+                }
+                trimmed.to_string()
+            }
+            Some(cell) => {
+                let s = cell_to_string(cell);
+                if s.trim().is_empty() {
+                    continue;
+                }
+                s
+            }
+        };
+
+        let stt = match get_cell("stt") {
+            Some(Data::Int(i)) => Some(*i as i32),
+            Some(Data::Float(f)) => Some(*f as i32),
+            Some(Data::String(s)) => s.trim().parse::<i32>().ok(),
+            Some(cell) => cell_to_string(cell).trim().parse::<i32>().ok(),
+            None => None,
+        };
+
+        let book_number = match get_cell("book_number") {
+            None | Some(Data::Empty) => {
+                if !last_book_number.is_empty() {
+                    last_book_number.clone()
+                } else {
+                    let generated = format!("HK-{}", &Uuid::new_v4().to_string()[..8].to_uppercase());
+                    last_book_number.clone_from(&generated);
+                    generated
+                }
+            }
+            Some(cell) => {
+                let s = cell_to_string(cell);
+                let trimmed = s.trim();
+                if trimmed.is_empty() {
+                    if !last_book_number.is_empty() {
+                        last_book_number.clone()
+                    } else {
+                        let generated = format!("HK-{}", &Uuid::new_v4().to_string()[..8].to_uppercase());
+                        last_book_number.clone_from(&generated);
+                        generated
+                    }
+                } else {
+                    if last_book_number != trimmed {
+                        last_book_number.clone_from(&s);
+                    }
+                    s
+                }
+            }
+        };
+
+        let address = match get_cell("address") {
+            None | Some(Data::Empty) => {
+                if last_address.is_empty() {
+                    None
+                } else {
+                    Some(last_address.clone())
+                }
+            }
+            Some(cell) => {
+                let s = cell_to_string(cell);
+                if s.trim().is_empty() {
+                    if last_address.is_empty() {
+                        None
+                    } else {
+                        Some(last_address.clone())
+                    }
+                } else {
+                    if last_address != s {
+                        last_address.clone_from(&s);
+                    }
+                    Some(s)
+                }
+            }
+        };
+
+        let get_opt_val = |key: &str| -> Option<String> {
             col_map
                 .get(key)
                 .and_then(|idx| row.get(*idx))
-                .map(cell_to_string)
-                .unwrap_or_default()
+                .and_then(|cell| match cell {
+                    Data::Empty => None,
+                    Data::String(s) => {
+                        let trimmed = s.trim();
+                        if trimmed.is_empty() {
+                            None
+                        } else {
+                            Some(trimmed.to_string())
+                        }
+                    }
+                    other => {
+                        let s = cell_to_string(other);
+                        if s.trim().is_empty() {
+                            None
+                        } else {
+                            Some(s)
+                        }
+                    }
+                })
         };
 
-        let full_name = get_val("full_name");
-        if full_name.trim().is_empty() {
-            continue;
-        }
-
-        let stt_raw = get_val("stt");
-        let stt = stt_raw.parse::<i32>().ok();
-
-        let mut book_number = get_val("book_number");
-        if book_number.trim().is_empty() {
-            if !last_book_number.is_empty() {
-                book_number = last_book_number.clone();
-            } else {
-                book_number = format!("HK-{}", &Uuid::new_v4().to_string()[..8].to_uppercase());
+        let relationship = get_opt_val("relationship");
+        let dob = match get_cell("dob") {
+            None | Some(Data::Empty) => None,
+            Some(Data::String(s)) => parse_excel_dob(s),
+            Some(cell) => {
+                let s = cell_to_string(cell);
+                parse_excel_dob(&s)
             }
-        } else {
-            last_book_number = book_number.clone();
-        }
-
-        let mut address = get_val("address");
-        if address.trim().is_empty() {
-            address = last_address.clone();
-        } else {
-            last_address = address.clone();
-        }
-
-        let relationship = get_val("relationship");
-        let raw_dob = get_val("dob");
-        let dob = parse_excel_dob(&raw_dob);
-        let gender = get_val("gender");
-        let ethnicity = get_val("ethnicity");
-        let religion = get_val("religion");
-        let raw_cccd = get_val("cccd");
-        let cccd = parse_excel_cccd(&raw_cccd);
-        let education = get_val("education");
-        let occupation = get_val("occupation");
-        let workplace = get_val("workplace");
-        let native_place = get_val("native_place");
-        let notes = get_val("notes");
+        };
+        let gender = get_opt_val("gender");
+        let ethnicity = get_opt_val("ethnicity");
+        let religion = get_opt_val("religion");
+        let cccd = match get_cell("cccd") {
+            None | Some(Data::Empty) => None,
+            Some(Data::String(s)) => parse_excel_cccd(s),
+            Some(cell) => {
+                let s = cell_to_string(cell);
+                parse_excel_cccd(&s)
+            }
+        };
+        let education = get_opt_val("education");
+        let occupation = get_opt_val("occupation");
+        let workplace = get_opt_val("workplace");
+        let native_place = get_opt_val("native_place");
+        let notes = get_opt_val("notes");
 
         parsed_rows.push(ExcelCitizenRow {
             stt,
             book_number,
             full_name,
-            relationship: if relationship.is_empty() {
-                None
-            } else {
-                Some(relationship)
-            },
+            relationship,
             dob,
-            gender: if gender.is_empty() {
-                None
-            } else {
-                Some(gender)
-            },
-            ethnicity: if ethnicity.is_empty() {
-                None
-            } else {
-                Some(ethnicity)
-            },
-            religion: if religion.is_empty() {
-                None
-            } else {
-                Some(religion)
-            },
+            gender,
+            ethnicity,
+            religion,
             cccd,
-            education: if education.is_empty() {
-                None
-            } else {
-                Some(education)
-            },
-            occupation: if occupation.is_empty() {
-                None
-            } else {
-                Some(occupation)
-            },
-            workplace: if workplace.is_empty() {
-                None
-            } else {
-                Some(workplace)
-            },
-            native_place: if native_place.is_empty() {
-                None
-            } else {
-                Some(native_place)
-            },
-            address: if address.is_empty() {
-                None
-            } else {
-                Some(address)
-            },
-            notes: if notes.is_empty() { None } else { Some(notes) },
+            education,
+            occupation,
+            workplace,
+            native_place,
+            address,
+            notes,
         });
     }
 
@@ -503,8 +556,9 @@ pub async fn import_excel(
     };
 
     let mut imported_count: usize = 0;
-    let mut errors: Vec<String> = Vec::new();
-    let mut household_cache: HashMap<String, Uuid> = HashMap::new();
+    let mut errors: Vec<String> = Vec::with_capacity(parsed_rows.len().min(64));
+    let mut household_cache: HashMap<String, Uuid> =
+        HashMap::with_capacity(parsed_rows.len().min(1024));
 
     for row in parsed_rows {
         let household_id = if let Some(hid) = household_cache.get(&row.book_number) {
@@ -915,9 +969,9 @@ pub async fn export_excel_internal(
             let r = (idx + 1) as u32;
             let stt_val = row.stt.unwrap_or((idx + 1) as i32);
             let rel_str = if row.is_head {
-                "Chủ hộ".to_string()
+                "Chủ hộ"
             } else {
-                row.relationship.clone().unwrap_or_default()
+                row.relationship.as_deref().unwrap_or_default()
             };
 
             let cccd_str = format_cccd_for_export(row.cccd.as_deref(), row.cccd_last4.as_deref(), is_auth);
@@ -925,7 +979,7 @@ pub async fn export_excel_internal(
             let _ = worksheet.write_with_format(r, 0, stt_val, &center_format);
             let _ = worksheet.write_with_format(r, 1, &row.book_number, &center_format);
             let _ = worksheet.write_with_format(r, 2, &row.full_name, &data_format);
-            let _ = worksheet.write_with_format(r, 3, &rel_str, &data_format);
+            let _ = worksheet.write_with_format(r, 3, rel_str, &data_format);
             let _ = worksheet.write_with_format(r, 4, row.dob.as_deref().unwrap_or(""), &center_format);
             let _ = worksheet.write_with_format(r, 5, row.gender.as_deref().unwrap_or(""), &center_format);
             let _ = worksheet.write_with_format(r, 6, &cccd_str, &center_format);
@@ -986,9 +1040,9 @@ pub async fn export_excel_internal(
             let r = (idx + 1) as u32;
             let stt_val = row.stt.unwrap_or((idx + 1) as i32);
             let rel_str = if row.is_head {
-                "Chủ hộ".to_string()
+                "Chủ hộ"
             } else {
-                row.relationship.clone().unwrap_or_default()
+                row.relationship.as_deref().unwrap_or_default()
             };
 
             let cccd_str = format_cccd_for_export(row.cccd.as_deref(), row.cccd_last4.as_deref(), is_auth);
@@ -996,7 +1050,7 @@ pub async fn export_excel_internal(
             let _ = worksheet.write_with_format(r, 0, stt_val, &center_format);
             let _ = worksheet.write_with_format(r, 1, &row.book_number, &center_format);
             let _ = worksheet.write_with_format(r, 2, &row.full_name, &data_format);
-            let _ = worksheet.write_with_format(r, 3, &rel_str, &data_format);
+            let _ = worksheet.write_with_format(r, 3, rel_str, &data_format);
             let _ = worksheet.write_with_format(r, 4, row.dob.as_deref().unwrap_or(""), &center_format);
             let _ = worksheet.write_with_format(r, 5, row.gender.as_deref().unwrap_or(""), &center_format);
             let _ = worksheet.write_with_format(r, 6, row.ethnicity.as_deref().unwrap_or(""), &center_format);

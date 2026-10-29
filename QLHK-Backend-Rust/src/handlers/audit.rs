@@ -111,10 +111,10 @@ pub async fn get_audit_logs(
                 select_builder.push(" AND a.action IN ('DELETE', 'BULK_DELETE', 'HARD_DELETE')");
             } else {
                 count_builder.push(" AND a.action = ");
-                count_builder.push_bind(trimmed.to_string());
+                count_builder.push_bind(trimmed);
 
                 select_builder.push(" AND a.action = ");
-                select_builder.push_bind(trimmed.to_string());
+                select_builder.push_bind(trimmed);
             }
         }
     }
@@ -123,10 +123,10 @@ pub async fn get_audit_logs(
         let trimmed = ent.trim();
         if !trimmed.is_empty() && trimmed != "all" && trimmed != "Tất cả" {
             count_builder.push(" AND a.entity_type = ");
-            count_builder.push_bind(trimmed.to_string());
+            count_builder.push_bind(trimmed);
 
             select_builder.push(" AND a.entity_type = ");
-            select_builder.push_bind(trimmed.to_string());
+            select_builder.push_bind(trimmed);
         }
     }
 
@@ -134,10 +134,10 @@ pub async fn get_audit_logs(
         let trimmed = eid.trim();
         if !trimmed.is_empty() {
             count_builder.push(" AND a.entity_id = ");
-            count_builder.push_bind(trimmed.to_string());
+            count_builder.push_bind(trimmed);
 
             select_builder.push(" AND a.entity_id = ");
-            select_builder.push_bind(trimmed.to_string());
+            select_builder.push_bind(trimmed);
         }
     }
 
@@ -161,51 +161,55 @@ pub async fn get_audit_logs(
         }
     }
 
-    if let Some(q) = &filter.search {
+    let search_like = filter.search.as_ref().and_then(|q| {
         let trimmed = q.trim();
-        if !trimmed.is_empty() {
-            let like_q = format!("%{}%", trimmed);
-
-            count_builder.push(" AND (a.entity_id ILIKE ");
-            count_builder.push_bind(like_q.clone());
-            count_builder.push(" OR a.action ILIKE ");
-            count_builder.push_bind(like_q.clone());
-            count_builder.push(" OR a.entity_type ILIKE ");
-            count_builder.push_bind(like_q.clone());
-            count_builder.push(" OR a.old_values ILIKE ");
-            count_builder.push_bind(like_q.clone());
-            count_builder.push(" OR a.new_values ILIKE ");
-            count_builder.push_bind(like_q.clone());
-            count_builder.push(" OR a.ip_address ILIKE ");
-            count_builder.push_bind(like_q.clone());
-            count_builder.push(" OR u.username ILIKE ");
-            count_builder.push_bind(like_q.clone());
-            count_builder.push(" OR u.full_name ILIKE ");
-            count_builder.push_bind(like_q.clone());
-            count_builder.push(" OR v.name ILIKE ");
-            count_builder.push_bind(like_q.clone());
-            count_builder.push(")");
-
-            select_builder.push(" AND (a.entity_id ILIKE ");
-            select_builder.push_bind(like_q.clone());
-            select_builder.push(" OR a.action ILIKE ");
-            select_builder.push_bind(like_q.clone());
-            select_builder.push(" OR a.entity_type ILIKE ");
-            select_builder.push_bind(like_q.clone());
-            select_builder.push(" OR a.old_values ILIKE ");
-            select_builder.push_bind(like_q.clone());
-            select_builder.push(" OR a.new_values ILIKE ");
-            select_builder.push_bind(like_q.clone());
-            select_builder.push(" OR a.ip_address ILIKE ");
-            select_builder.push_bind(like_q.clone());
-            select_builder.push(" OR u.username ILIKE ");
-            select_builder.push_bind(like_q.clone());
-            select_builder.push(" OR u.full_name ILIKE ");
-            select_builder.push_bind(like_q.clone());
-            select_builder.push(" OR v.name ILIKE ");
-            select_builder.push_bind(like_q);
-            select_builder.push(")");
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(format!("%{}%", trimmed))
         }
+    });
+
+    if let Some(like_q) = &search_like {
+        count_builder.push(" AND (a.entity_id ILIKE ");
+        count_builder.push_bind(like_q.as_str());
+        count_builder.push(" OR a.action ILIKE ");
+        count_builder.push_bind(like_q.as_str());
+        count_builder.push(" OR a.entity_type ILIKE ");
+        count_builder.push_bind(like_q.as_str());
+        count_builder.push(" OR a.old_values ILIKE ");
+        count_builder.push_bind(like_q.as_str());
+        count_builder.push(" OR a.new_values ILIKE ");
+        count_builder.push_bind(like_q.as_str());
+        count_builder.push(" OR a.ip_address ILIKE ");
+        count_builder.push_bind(like_q.as_str());
+        count_builder.push(" OR u.username ILIKE ");
+        count_builder.push_bind(like_q.as_str());
+        count_builder.push(" OR u.full_name ILIKE ");
+        count_builder.push_bind(like_q.as_str());
+        count_builder.push(" OR v.name ILIKE ");
+        count_builder.push_bind(like_q.as_str());
+        count_builder.push(")");
+
+        select_builder.push(" AND (a.entity_id ILIKE ");
+        select_builder.push_bind(like_q.as_str());
+        select_builder.push(" OR a.action ILIKE ");
+        select_builder.push_bind(like_q.as_str());
+        select_builder.push(" OR a.entity_type ILIKE ");
+        select_builder.push_bind(like_q.as_str());
+        select_builder.push(" OR a.old_values ILIKE ");
+        select_builder.push_bind(like_q.as_str());
+        select_builder.push(" OR a.new_values ILIKE ");
+        select_builder.push_bind(like_q.as_str());
+        select_builder.push(" OR a.ip_address ILIKE ");
+        select_builder.push_bind(like_q.as_str());
+        select_builder.push(" OR u.username ILIKE ");
+        select_builder.push_bind(like_q.as_str());
+        select_builder.push(" OR u.full_name ILIKE ");
+        select_builder.push_bind(like_q.as_str());
+        select_builder.push(" OR v.name ILIKE ");
+        select_builder.push_bind(like_q.as_str());
+        select_builder.push(")");
     }
 
     let total: i64 = match count_builder

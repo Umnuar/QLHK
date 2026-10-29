@@ -90,7 +90,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let state = AppState {
         pool: pool.clone(),
-        config: config.clone(),
+        config: std::sync::Arc::new(config.clone()),
     };
 
     let startup_pool = pool.clone();

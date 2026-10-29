@@ -47,9 +47,46 @@ struct CitizenSyncRow {
     pub household_status: Option<String>,
 }
 
-fn is_retiree_text(text: &str) -> bool {
-    let lower = text.to_lowercase();
-    let unacc = crate::crypto::remove_accents(text).to_lowercase();
+struct NormalizedField {
+    lower: String,
+    unacc: String,
+}
+
+impl NormalizedField {
+    fn new(text: &str) -> Option<Self> {
+        let trimmed = text.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(Self {
+                lower: trimmed.to_lowercase(),
+                unacc: crate::crypto::remove_accents(trimmed),
+            })
+        }
+    }
+}
+
+fn check_field<F>(field: &Option<NormalizedField>, f: F) -> bool
+where
+    F: Fn(&str, &str) -> bool,
+{
+    match field {
+        Some(nf) => f(&nf.lower, &nf.unacc),
+        None => false,
+    }
+}
+
+fn check_any_field<F>(fields: &[&Option<NormalizedField>], f: F) -> bool
+where
+    F: Fn(&str, &str) -> bool,
+{
+    fields.iter().any(|field| match field {
+        Some(nf) => f(&nf.lower, &nf.unacc),
+        None => false,
+    })
+}
+
+fn is_retiree_normalized(lower: &str, unacc: &str) -> bool {
     lower.contains("hưu")
         || unacc.contains("huu")
         || lower.contains("mất sức")
@@ -59,9 +96,14 @@ fn is_retiree_text(text: &str) -> bool {
         || lower.contains("bhxh")
 }
 
-fn is_huu_tuat_text(text: &str) -> bool {
-    let lower = text.to_lowercase();
-    let unacc = crate::crypto::remove_accents(text).to_lowercase();
+fn is_retiree_text(text: &str) -> bool {
+    match NormalizedField::new(text) {
+        Some(nf) => is_retiree_normalized(&nf.lower, &nf.unacc),
+        None => false,
+    }
+}
+
+fn is_huu_tuat_normalized(lower: &str, unacc: &str) -> bool {
     lower.contains("tuất")
         || unacc.contains("tuat")
         || lower.contains("tiền tuất")
@@ -70,9 +112,14 @@ fn is_huu_tuat_text(text: &str) -> bool {
         || unacc.contains("tro cap tuat")
 }
 
-fn is_bao_tro_text(text: &str) -> bool {
-    let lower = text.to_lowercase();
-    let unacc = crate::crypto::remove_accents(text).to_lowercase();
+fn is_huu_tuat_text(text: &str) -> bool {
+    match NormalizedField::new(text) {
+        Some(nf) => is_huu_tuat_normalized(&nf.lower, &nf.unacc),
+        None => false,
+    }
+}
+
+fn is_bao_tro_normalized(lower: &str, unacc: &str) -> bool {
     lower.contains("bảo trợ")
         || unacc.contains("bao tro")
         || lower.contains("btxh")
@@ -84,9 +131,14 @@ fn is_bao_tro_text(text: &str) -> bool {
         || unacc.contains("tro cap xa hoi")
 }
 
-fn is_nguoi_co_cong_text(text: &str) -> bool {
-    let lower = text.to_lowercase();
-    let unacc = crate::crypto::remove_accents(text).to_lowercase();
+fn is_bao_tro_text(text: &str) -> bool {
+    match NormalizedField::new(text) {
+        Some(nf) => is_bao_tro_normalized(&nf.lower, &nf.unacc),
+        None => false,
+    }
+}
+
+fn is_nguoi_co_cong_normalized(lower: &str, unacc: &str) -> bool {
     lower.contains("người có công")
         || unacc.contains("nguoi co cong")
         || lower.contains("thương binh")
@@ -104,13 +156,23 @@ fn is_nguoi_co_cong_text(text: &str) -> bool {
         || unacc.contains("co cong")
 }
 
-fn is_poor_status_or_notes(status: &str, notes: &str) -> bool {
-    let combined = format!("{} {}", status, notes);
-    let lower = combined.to_lowercase();
-    let unacc = crate::crypto::remove_accents(&combined).to_lowercase();
+fn is_nguoi_co_cong_text(text: &str) -> bool {
+    match NormalizedField::new(text) {
+        Some(nf) => is_nguoi_co_cong_normalized(&nf.lower, &nf.unacc),
+        None => false,
+    }
+}
+
+fn is_poor_normalized(lower: &str, unacc: &str) -> bool {
     lower.contains("nghèo")
         || unacc.contains("ngheo")
         || lower.contains("poor")
+}
+
+fn is_poor_status_or_notes(status: &str, notes: &str) -> bool {
+    let s_norm = NormalizedField::new(status);
+    let n_norm = NormalizedField::new(notes);
+    check_any_field(&[&s_norm, &n_norm], is_poor_normalized)
 }
 
 fn normalize_chuctho_milestone(raw: &str) -> Option<&'static str> {
@@ -2200,21 +2262,23 @@ pub async fn sync_all_citizens_to_policies(
                 chuctho_notes.push(note_id.clone());
             }
 
-            let occ = citizen.occupation.as_deref().unwrap_or("");
-            let mil = citizen.military_status.as_deref().unwrap_or("");
-            let not = citizen.notes.as_deref().unwrap_or("");
-            let h_status = citizen.household_status.as_deref().unwrap_or("");
+            let occ_norm = NormalizedField::new(citizen.occupation.as_deref().unwrap_or(""));
+            let mil_norm = NormalizedField::new(citizen.military_status.as_deref().unwrap_or(""));
+            let not_norm = NormalizedField::new(citizen.notes.as_deref().unwrap_or(""));
 
-            let occ_and_notes = format!("{} {}", occ, not);
-            let mil_and_notes = format!("{} {} {}", occ, mil, not);
-
-            let is_retiree = is_retiree_text(&occ_and_notes);
-            let is_huu_tuat = is_huu_tuat_text(&occ_and_notes);
-            let is_bao_tro = is_bao_tro_text(&occ_and_notes);
-            let is_nguoi_co_cong = is_nguoi_co_cong_text(&mil_and_notes);
+            let is_retiree = check_any_field(&[&occ_norm, &not_norm], is_retiree_normalized);
+            let is_huu_tuat = check_any_field(&[&occ_norm, &not_norm], is_huu_tuat_normalized);
+            let is_bao_tro = check_any_field(&[&occ_norm, &not_norm], is_bao_tro_normalized);
+            let is_nguoi_co_cong = check_any_field(&[&occ_norm, &mil_norm, &not_norm], is_nguoi_co_cong_normalized);
             let is_75plus = age.map(|a| a >= 75).unwrap_or(false);
             let is_70to74poor = age
-                .map(|a| (70..=74).contains(&a) && is_poor_status_or_notes(h_status, not))
+                .map(|a| {
+                    (70..=74).contains(&a)
+                        && (check_field(
+                            &NormalizedField::new(citizen.household_status.as_deref().unwrap_or("")),
+                            is_poor_normalized,
+                        ) || check_field(&not_norm, is_poor_normalized))
+                })
                 .unwrap_or(false);
 
             let is_htxh_eligible = is_retiree

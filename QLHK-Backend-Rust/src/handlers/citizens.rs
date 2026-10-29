@@ -180,9 +180,9 @@ pub async fn get_citizens(
         let trimmed = gender.trim();
         if !trimmed.is_empty() && trimmed != "all" && trimmed != "Tất cả" {
             count_builder.push(" AND c.gender = ");
-            count_builder.push_bind(trimmed.to_string());
+            count_builder.push_bind(trimmed);
             select_builder.push(" AND c.gender = ");
-            select_builder.push_bind(trimmed.to_string());
+            select_builder.push_bind(trimmed);
         }
     }
 
@@ -195,9 +195,9 @@ pub async fn get_citizens(
                 select_builder.push(" AND c.ethnicity != 'Kinh'");
             } else {
                 count_builder.push(" AND c.ethnicity = ");
-                count_builder.push_bind(trimmed.to_string());
+                count_builder.push_bind(trimmed);
                 select_builder.push(" AND c.ethnicity = ");
-                select_builder.push_bind(trimmed.to_string());
+                select_builder.push_bind(trimmed);
             }
         }
     }
@@ -206,9 +206,9 @@ pub async fn get_citizens(
         let trimmed = religion.trim();
         if !trimmed.is_empty() && trimmed != "all" && trimmed != "Tất cả" {
             count_builder.push(" AND c.religion = ");
-            count_builder.push_bind(trimmed.to_string());
+            count_builder.push_bind(trimmed);
             select_builder.push(" AND c.religion = ");
-            select_builder.push_bind(trimmed.to_string());
+            select_builder.push_bind(trimmed);
         }
     }
 
@@ -219,26 +219,34 @@ pub async fn get_citizens(
         select_builder.push_bind(is_head);
     }
 
-    if let Some(cccd_query) = &filter.cccd {
+    let cccd_hash_filter = filter.cccd.as_ref().and_then(|cccd_query| {
         let trimmed = cccd_query.trim();
         if !trimmed.is_empty() {
-            let hash = hash_cccd(trimmed);
-            count_builder.push(" AND c.cccd_hash = ");
-            count_builder.push_bind(hash.clone());
-            select_builder.push(" AND c.cccd_hash = ");
-            select_builder.push_bind(hash);
+            Some(hash_cccd(trimmed))
+        } else {
+            None
         }
+    });
+    if let Some(hash) = &cccd_hash_filter {
+        count_builder.push(" AND c.cccd_hash = ");
+        count_builder.push_bind(hash.as_str());
+        select_builder.push(" AND c.cccd_hash = ");
+        select_builder.push_bind(hash.as_str());
     }
 
-    if let Some(dob_q) = &filter.dob {
+    let dob_like = filter.dob.as_ref().and_then(|dob_q| {
         let trimmed = dob_q.trim();
         if !trimmed.is_empty() {
-            let like_dob = format!("%{}%", trimmed);
-            count_builder.push(" AND c.dob ILIKE ");
-            count_builder.push_bind(like_dob.clone());
-            select_builder.push(" AND c.dob ILIKE ");
-            select_builder.push_bind(like_dob);
+            Some(format!("%{}%", trimmed))
+        } else {
+            None
         }
+    });
+    if let Some(like_dob) = &dob_like {
+        count_builder.push(" AND c.dob ILIKE ");
+        count_builder.push_bind(like_dob.as_str());
+        select_builder.push(" AND c.dob ILIKE ");
+        select_builder.push_bind(like_dob.as_str());
     }
 
     if let Some(by) = filter.birth_year.or(filter.birth_year_camel) {
@@ -266,9 +274,11 @@ pub async fn get_citizens(
         select_builder.push_bind(min_birth_year);
     }
 
-    if let Some(q) = &filter.search {
+    let search_params = filter.search.as_ref().and_then(|q| {
         let trimmed_q = q.trim();
-        if !trimmed_q.is_empty() {
+        if trimmed_q.is_empty() {
+            None
+        } else {
             let like_q = format!("%{}%", trimmed_q);
             let unacc = format!("%{}%", remove_accents(trimmed_q));
             let digits: String = trimmed_q.chars().filter(|c| c.is_ascii_digit()).collect();
@@ -285,44 +295,48 @@ pub async fn get_citizens(
                 None
             };
 
-            count_builder.push(" AND (c.full_name ILIKE ");
-            count_builder.push_bind(like_q.clone());
-            count_builder.push(" OR c.name_unaccented ILIKE ");
-            count_builder.push_bind(unacc.clone());
-            count_builder.push(" OR c.dob ILIKE ");
-            count_builder.push_bind(like_q.clone());
-
-            if let Some(hash) = &cccd_hash {
-                count_builder.push(" OR c.cccd_hash = ");
-                count_builder.push_bind(hash.clone());
-            }
-
-            if let Some(l4) = &cccd_l4 {
-                count_builder.push(" OR c.cccd_last4 ILIKE ");
-                count_builder.push_bind(l4.clone());
-            }
-
-            count_builder.push(")");
-
-            select_builder.push(" AND (c.full_name ILIKE ");
-            select_builder.push_bind(like_q.clone());
-            select_builder.push(" OR c.name_unaccented ILIKE ");
-            select_builder.push_bind(unacc);
-            select_builder.push(" OR c.dob ILIKE ");
-            select_builder.push_bind(like_q);
-
-            if let Some(hash) = cccd_hash {
-                select_builder.push(" OR c.cccd_hash = ");
-                select_builder.push_bind(hash);
-            }
-
-            if let Some(l4) = cccd_l4 {
-                select_builder.push(" OR c.cccd_last4 ILIKE ");
-                select_builder.push_bind(l4);
-            }
-
-            select_builder.push(")");
+            Some((like_q, unacc, cccd_hash, cccd_l4))
         }
+    });
+
+    if let Some((like_q, unacc, cccd_hash, cccd_l4)) = &search_params {
+        count_builder.push(" AND (c.full_name ILIKE ");
+        count_builder.push_bind(like_q.as_str());
+        count_builder.push(" OR c.name_unaccented ILIKE ");
+        count_builder.push_bind(unacc.as_str());
+        count_builder.push(" OR c.dob ILIKE ");
+        count_builder.push_bind(like_q.as_str());
+
+        if let Some(hash) = cccd_hash {
+            count_builder.push(" OR c.cccd_hash = ");
+            count_builder.push_bind(hash.as_str());
+        }
+
+        if let Some(l4) = cccd_l4 {
+            count_builder.push(" OR c.cccd_last4 ILIKE ");
+            count_builder.push_bind(l4.as_str());
+        }
+
+        count_builder.push(")");
+
+        select_builder.push(" AND (c.full_name ILIKE ");
+        select_builder.push_bind(like_q.as_str());
+        select_builder.push(" OR c.name_unaccented ILIKE ");
+        select_builder.push_bind(unacc.as_str());
+        select_builder.push(" OR c.dob ILIKE ");
+        select_builder.push_bind(like_q.as_str());
+
+        if let Some(hash) = cccd_hash {
+            select_builder.push(" OR c.cccd_hash = ");
+            select_builder.push_bind(hash.as_str());
+        }
+
+        if let Some(l4) = cccd_l4 {
+            select_builder.push(" OR c.cccd_last4 ILIKE ");
+            select_builder.push_bind(l4.as_str());
+        }
+
+        select_builder.push(")");
     }
 
     let total: i64 = match count_builder.build_query_scalar::<i64>().fetch_one(&state.pool).await {

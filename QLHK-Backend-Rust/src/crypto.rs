@@ -71,10 +71,6 @@ pub fn hash_cccd(plain: &str) -> String {
     hash_cccd_with_pepper(plain, "")
 }
 
-pub fn hash_cccd_default(plain: &str) -> String {
-    hash_cccd(plain)
-}
-
 pub fn constant_time_eq_bytes(a: &[u8], b: &[u8]) -> bool {
     let mut diff = a.len() ^ b.len();
     let max_len = a.len().max(b.len());
@@ -209,10 +205,6 @@ pub fn encrypt_cccd_with_iv(
     })
 }
 
-pub fn encrypt_cccd_default(plain_cccd: &str) -> Result<EncryptedCCCD, String> {
-    encrypt_cccd(plain_cccd)
-}
-
 pub fn decrypt_cccd_with_key(encrypted_string: &str, key: &str) -> Result<String, String> {
     let trimmed = encrypted_string.trim();
     if trimmed.is_empty() || !trimmed.contains(':') {
@@ -271,10 +263,6 @@ pub fn decrypt_cccd(encrypted_string: &str) -> Result<String, String> {
     decrypt_cccd_with_key(encrypted_string, "")
 }
 
-pub fn decrypt_cccd_default(encrypted_string: &str) -> Result<String, String> {
-    decrypt_cccd(encrypted_string)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -282,12 +270,12 @@ mod tests {
     #[test]
     fn test_encrypt_and_decrypt_roundtrip() {
         let plain = "064095000123";
-        let encrypted_obj = encrypt_cccd_default(plain).unwrap();
+        let encrypted_obj = encrypt_cccd(plain).unwrap();
         assert_eq!(encrypted_obj.last4, "0123");
         assert!(!encrypted_obj.encrypted.is_empty());
         assert!(!encrypted_obj.hash.is_empty());
 
-        let decrypted = decrypt_cccd_default(&encrypted_obj.encrypted).unwrap();
+        let decrypted = decrypt_cccd(&encrypted_obj.encrypted).unwrap();
         assert_eq!(decrypted, plain);
     }
 
@@ -295,7 +283,7 @@ mod tests {
     fn test_decrypt_known_node_ciphertext() {
         let known_node_encrypted =
             "0102030405060708090a0b0c:26540c874b4d3479541ca6c98cbb4efd:2e193e78eaac155269f88e2d";
-        let decrypted = decrypt_cccd_default(known_node_encrypted).unwrap();
+        let decrypted = decrypt_cccd(known_node_encrypted).unwrap();
         assert_eq!(decrypted, "064095000123");
     }
 
@@ -323,7 +311,7 @@ mod tests {
     #[test]
     fn test_hash_cccd_matches_node() {
         let plain = "064095000123";
-        let hash = hash_cccd_default(plain);
+        let hash = hash_cccd(plain);
         assert_eq!(
             hash,
             "ff0fea6de77f041854027b5390b5f41eb1a2fecfff13586345749181e64c7e4a"
@@ -342,14 +330,14 @@ mod tests {
     #[test]
     fn test_decrypt_unencrypted_fallback() {
         let plain = "064095000123";
-        let result = decrypt_cccd_default(plain).unwrap();
+        let result = decrypt_cccd(plain).unwrap();
         assert_eq!(result, plain);
     }
 
     #[test]
     fn test_decrypt_invalid_format() {
         let invalid = "part1:part2";
-        let result = decrypt_cccd_default(invalid);
+        let result = decrypt_cccd(invalid);
         assert!(result.is_err());
     }
 
@@ -398,7 +386,7 @@ mod tests {
     fn test_decrypt_tampered_ciphertext_fails() {
         let tampered =
             "0102030405060708090a0b0c:26540c874b4d3479541ca6c98cbb4efd:2e193e78eaac155269f88e2e";
-        let result = decrypt_cccd_default(tampered);
+        let result = decrypt_cccd(tampered);
         assert!(result.is_err());
     }
 
@@ -406,7 +394,7 @@ mod tests {
     fn test_decrypt_invalid_tag_fails() {
         let invalid_tag =
             "0102030405060708090a0b0c:00000000000000000000000000000000:2e193e78eaac155269f88e2d";
-        let result = decrypt_cccd_default(invalid_tag);
+        let result = decrypt_cccd(invalid_tag);
         assert!(result.is_err());
     }
 

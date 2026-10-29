@@ -198,40 +198,6 @@ pub async fn auth_middleware(
     next.run(req).await
 }
 
-pub async fn require_admin_middleware(req: Request, next: Next) -> Response {
-    match req.extensions().get::<Claims>() {
-        Some(claims) if claims.is_admin() => next.run(req).await,
-        Some(_) => (
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Truy cập bị từ chối: Yêu cầu quyền quản trị viên" })),
-        )
-            .into_response(),
-        None => (
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "Yêu cầu xác thực tài khoản" })),
-        )
-            .into_response(),
-    }
-}
-
-pub async fn require_village_scope_middleware(req: Request, next: Next) -> Response {
-    match req.extensions().get::<Claims>() {
-        Some(claims) if claims.is_admin() || claims.get_village_uuid().is_some() => {
-            next.run(req).await
-        }
-        Some(_) => (
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Tài khoản chưa được phân công thôn quản lý" })),
-        )
-            .into_response(),
-        None => (
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "Yêu cầu xác thực tài khoản" })),
-        )
-            .into_response(),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

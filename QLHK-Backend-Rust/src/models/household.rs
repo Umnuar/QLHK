@@ -124,11 +124,3 @@ pub struct PaginatedResponse<T> {
     pub pagination: PaginationMeta,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OccConflictResponse {
-    pub error: String,
-    #[serde(rename = "currentVersion")]
-    pub current_version: i32,
-    #[serde(rename = "submittedVersion")]
-    pub submitted_version: Option<i32>,
-}

@@ -2611,35 +2611,6 @@ pub async fn sync_policy_data(
     }
 }
 
-pub fn extract_occupation_from_json(json_str: &str) -> Option<String> {
-    let parsed: serde_json::Value = serde_json::from_str(json_str).ok()?;
-    if let Some(occ) = parsed.get("occupation").and_then(|v| v.as_str()) {
-        return Some(occ.to_string());
-    }
-    if let Some(occ) = parsed.get("nghe_nghiep").and_then(|v| v.as_str()) {
-        return Some(occ.to_string());
-    }
-    if let Some(occ) = parsed.get("ngheNghiep").and_then(|v| v.as_str()) {
-        return Some(occ.to_string());
-    }
-    if let Some(citizen) = parsed.get("citizen") {
-        if let Some(occ) = citizen.get("occupation").and_then(|v| v.as_str()) {
-            return Some(occ.to_string());
-        }
-        if let Some(occ) = citizen.get("nghe_nghiep").and_then(|v| v.as_str()) {
-            return Some(occ.to_string());
-        }
-        if let Some(occ) = citizen.get("ngheNghiep").and_then(|v| v.as_str()) {
-            return Some(occ.to_string());
-        }
-    }
-    None
-}
-
-pub fn is_retiree_occupation(occ: &str) -> bool {
-    is_retiree_text(occ)
-}
-
 #[derive(FromRow)]
 pub struct AuditSyncCandidate {
     pub id: Uuid,

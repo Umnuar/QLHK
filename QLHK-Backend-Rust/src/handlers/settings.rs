@@ -165,23 +165,9 @@ async fn get_time() -> Response {
     .into_response()
 }
 
-async fn sync_time() -> Response {
-    let now = Utc::now();
-    let year = now.year();
-    Json(json!({
-        "isoTime": now.to_rfc3339(),
-        "timestamp": now.timestamp_millis(),
-        "source": "machine",
-        "sourceLabel": "Đồng hồ máy chủ",
-        "calculationYear": year,
-        "lastSyncedAt": now.to_rfc3339(),
-    }))
-    .into_response()
-}
-
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(get_settings).put(update_settings))
         .route("/time", get(get_time))
-        .route("/time/sync", post(sync_time))
+        .route("/time/sync", post(get_time))
 }

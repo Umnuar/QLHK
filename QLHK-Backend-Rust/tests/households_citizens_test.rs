@@ -3,7 +3,7 @@ use qlhk_backend_rust::{
     models::{
         citizen::{format_citizen, CitizenDb},
         household::{
-            ChangeHeadRequest, MergeHouseholdRequest, OccConflictResponse, SplitHouseholdRequest,
+            ChangeHeadRequest, MergeHouseholdRequest, SplitHouseholdRequest,
         },
     },
 };
@@ -119,19 +119,6 @@ fn test_citizen_format_without_cccd() {
     assert_eq!(formatted.cccd, None);
     assert_eq!(formatted.cccd_masked, None);
     assert_eq!(formatted.cccd_last4, None);
-}
-
-#[test]
-fn test_occ_conflict_response_serialization() {
-    let conflict = OccConflictResponse {
-        error: "Dữ liệu hộ khẩu đã bị thay đổi bởi người dùng khác. Vui lòng tải lại trang.".to_string(),
-        current_version: 5,
-        submitted_version: Some(4),
-    };
-
-    let json_str = serde_json::to_string(&conflict).expect("Serialization failed");
-    assert!(json_str.contains("\"currentVersion\":5"));
-    assert!(json_str.contains("\"submittedVersion\":4"));
 }
 
 #[test]
